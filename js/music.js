@@ -134,7 +134,7 @@
         const prev = window.onYouTubeIframeAPIReady;
         window.onYouTubeIframeAPIReady = () => { if (prev) prev(); res(); };
         const sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api'; sc.async = true;
-        sc.onerror = () => { this._api = null; B.toast('YouTube inaccessible (connexion ?)', 'info'); };
+        sc.onerror = () => { this._api = null; if (this.ytWant) B.toast('YouTube inaccessible (connexion ?)', 'info'); };
         document.head.appendChild(sc);
       });
       return this._api;
@@ -143,40 +143,67 @@
       let b = $('#ytbox');
       if (!b) {
         b = document.createElement('div'); b.id = 'ytbox'; b.className = 'ytbox';
-        b.innerHTML = '<div class="ytbar"><span>Vidéo</span><button data-act="ytShow" aria-label="Réduire la vidéo">' + ico('chevD') + '</button></div><div id="ytp"></div>';
+        b.innerHTML = '<div class="ytbar"><span>' + ico('youtube') + 'YouTube</span><button data-act="ytShow" aria-label="Réduire la vidéo">' + ico('chevD') + '</button></div><div class="ytwrap"><div id="ytp"></div></div>' +
+          '<div class="ythint">' + ico('volume') + '<span>Touchez la vidéo une fois pour lancer le son<br><small>(règle de sécurité d’iOS / du navigateur)</small></span></div>';
         document.body.appendChild(b);
       }
       return b;
     },
-    async ytLoad(s) {
-      const y = ytParse(s.ref);
+    /* Le lecteur YouTube est créé dès le démarrage : ainsi, toucher ▶ lance la vidéo immédiatement,
+       dans le même geste, ce qu'exigent Safari/iOS et Chrome pour autoriser le son. */
+    ytInit() {
+      if (this.yt || this._init) return this._init;
       this.ytBox();
-      await this.ytApi();
-      const start = Math.floor(S.music.pos[s.id] || 0);
-      const vars = { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1, start };
-      if (y.list) { vars.listType = 'playlist'; vars.list = y.list; }
-      if (this.yt && this.ytReady) {
+      this._init = this.ytApi().then(() => new Promise(res => {
+        this.yt = new YT.Player('ytp', {
+          width: '100%', height: '100%', host: 'https://www.youtube.com',
+          playerVars: { playsinline: 1, rel: 0, modestbranding: 1, autoplay: 0, origin: location.origin && location.origin !== 'null' ? location.origin : undefined },
+          events: {
+            onReady: () => { this.ytReady = true; res(); if (this.ytWant) { const w = this.ytWant; this.ytWant = null; this.ytStart(w); } },
+            onStateChange: e => this.ytState(e.data),
+            onError: () => { this.playing = false; this.state = 'error'; B.emit('music'); B.toast('Cette vidéo refuse la lecture intégrée — ouvrez-la sur YouTube', 'video'); }
+          }
+        });
+      }));
+      return this._init;
+    },
+    ytState(st) {
+      const b = $('#ytbox');
+      if (st === 1) {
+        this.state = 'playing'; this.playing = true; this.ytMeta();
+        if (b && b.classList.contains('needtap')) { b.classList.remove('needtap'); setTimeout(() => b.classList.remove('show'), 2500); }
+        clearTimeout(this.ytWatch);
+        // le navigateur peut démarrer la vidéo en sourdine : on réactive le son, sinon on demande un toucher
+        if (!S.music.mute) { try { this.yt.unMute(); this.yt.setVolume(S.music.vol); } catch (e) { } setTimeout(() => { try { if (this.yt.isMuted() && !S.music.mute) this.needTap(); } catch (e) { } }, 700); }
+      }
+      else if (st === 2) { this.state = 'paused'; this.playing = false; }
+      else if (st === 0) { if (!ytParse(this.cur().ref).list) { delete S.music.pos[S.music.src]; this.step(1); return; } }
+      else if (st === 3) this.state = 'loading';
+      B.emit('music');
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = this.playing ? 'playing' : 'paused';
+    },
+    needTap() {
+      const b = this.ytBox();
+      b.classList.add('show', 'needtap');
+      B.toast('Touchez la vidéo pour activer le son', 'volume');
+    },
+    ytStart(w) {
+      const { y, start } = w;
+      try {
         if (y.list) this.yt.loadPlaylist({ list: y.list, listType: 'playlist', index: 0, startSeconds: start });
         else this.yt.loadVideoById({ videoId: y.v, startSeconds: start });
         this.yt.setVolume(S.music.vol); if (S.music.mute) this.yt.mute(); else this.yt.unMute();
-        return;
-      }
-      this.yt = new YT.Player('ytp', {
-        width: '100%', height: '100%', videoId: y.v || undefined, playerVars: vars,
-        events: {
-          onReady: e => { this.ytReady = true; e.target.setVolume(S.music.vol); if (S.music.mute) e.target.mute(); e.target.playVideo(); },
-          onStateChange: e => {
-            const st = e.data;
-            if (st === 1) { this.state = 'playing'; this.playing = true; this.ytMeta(); }
-            else if (st === 2) { this.state = 'paused'; this.playing = false; }
-            else if (st === 0) { if (!ytParse(this.cur().ref).list) { delete S.music.pos[S.music.src]; this.step(1); return; } }
-            else if (st === 3) this.state = 'loading';
-            B.emit('music');
-            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = this.playing ? 'playing' : 'paused';
-          },
-          onError: () => { this.playing = false; this.state = 'error'; B.emit('music'); B.toast('Cette vidéo refuse la lecture intégrée — ouvrez-la sur YouTube', 'video'); }
-        }
-      });
+        this.yt.playVideo();
+      } catch (e) { }
+      clearTimeout(this.ytWatch);
+      // si rien ne démarre (iOS bloque la lecture déclenchée hors de la vidéo), on affiche le lecteur à toucher
+      this.ytWatch = setTimeout(() => { if (this.kindOf() === 'yt' && this.state !== 'playing') this.needTap(); }, 3500);
+    },
+    ytLoad(s) {
+      const y = ytParse(s.ref), start = Math.floor(S.music.pos[s.id] || 0);
+      if (this.yt && this.ytReady) return this.ytStart({ y, start });
+      this.ytWant = { y, start };
+      this.ytInit();
     },
     ytMeta() {
       try {
@@ -283,6 +310,8 @@
     }
   };
   setInterval(() => M.tick(), 1000);
+  // préparation du lecteur YouTube (sans lecture) pour que le premier ▶ soit instantané
+  setTimeout(() => M.ytInit(), 1500);
   // en quittant / masquant l'application, on mémorise la position pour reprendre au même endroit
   document.addEventListener('visibilitychange', () => { if (document.hidden) M.savePos(); });
   window.addEventListener('pagehide', () => M.savePos());

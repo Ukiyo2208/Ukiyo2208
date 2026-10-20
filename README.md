@@ -1,4 +1,4 @@
-# Bêta OS 5.1 — Maison intelligente
+# Bêta OS 5.2 — Maison intelligente
 
 Tableau de bord domotique au thème « Japon nocturne » (glassmorphism bleu néon), reproduit d'après les maquettes de référence :
 écran verrouillé, Accueil, Extérieur, RDC, Étage 1 — plus Étage 2, Énergie, Multimédia, NAS, Calendrier, Mails, Bêta IA et Paramètres.
@@ -53,3 +53,14 @@ assets/               fonds, photos des pièces, caméras, avatars, médias
 - Mobile : météo à côté du logo, dock avec bouton Bêta IA, panneaux en feuille glissante.
 
 Limites : la lecture YouTube en arrière-plan (écran éteint / application quittée) dépend d’iOS et de YouTube et n’est pas garantie ; la radio continue en général. Le titre en direct des radios n’est disponible que pour les stations qui le publient (Radio France).
+
+## Nouveautés 5.2
+
+- YouTube : le lecteur est préparé au démarrage pour que ▶ lance la vidéo avec le son ; si iOS bloque, la vidéo s’affiche et un toucher suffit.
+- Home Assistant : connexion en temps réel (WebSocket), assistant « Relier automatiquement » (appareils, caméras, détecteurs de mouvement, sonnette, capteurs d’énergie, vigilance Météo-France), caméras en direct.
+- Énergie réelle : puissance, solaire, batterie et graphiques Jour / Semaine / Mois depuis Home Assistant.
+- Pièces & appareils : ajout/suppression/masquage réservé aux administrateurs (Paramètres › Maison & sauvegarde), page « Pièces ».
+- Routines (Je pars, Je rentre, Bonne nuit, Réveil programmable) et automatismes « Quand… alors… » (coucher du soleil, sonnette, mouvement, pluie, heure).
+- Ambiances jour/nuit et saisons (pétales, lucioles, feuilles, neige) — choix manuel dans Paramètres › Ambiance & saisons ; sons et vibrations discrets.
+- Météo : pluie et température heure par heure, alertes, arrosage annulé automatiquement s’il va pleuvoir.
+- Écran verrouillé : salutation, routines en un geste, alerte météo/sonnette, glisser vers le haut, animation de déverrouillage.

@@ -20,6 +20,8 @@
     ['calendrier', 'Calendrier', 'calendar', 'calendar'],
     ['mails', 'Mails', 'mail', 'mail'],
     ['ia', 'Bêta IA', 'ai', 'ai'],
+    ['routines', 'Routines', 'wand', 'wand'],
+    ['pieces', 'Pièces', 'rooms', 'rooms', 'noside'],
     ['parametres', 'Paramètres', 'gear', 'gearFill']
   ];
   const GUEST_HIDE = ['nas', 'calendrier', 'mails', 'parametres'];
@@ -30,7 +32,7 @@
   function side(active) {
     return '<aside class="side">' +
       '<button class="burger" data-act="lock" title="Verrouiller">' + ico('menu') + '</button><nav>' +
-      navItems().map(n => '<a href="#' + n[0] + '" class="' + (n[0] === active ? 'on' : '') + '">' + ico(n[0] === active ? n[3] : n[2]) + '<span>' + n[1] + '</span>' + badgeHTML(n[0]) + '</a>').join('') +
+      navItems().filter(n => !n[4]).map(n => '<a href="#' + n[0] + '" class="' + (n[0] === active ? 'on' : '') + '">' + ico(n[0] === active ? n[3] : n[2]) + '<span>' + n[1] + '</span>' + badgeHTML(n[0]) + '</a>').join('') +
       '</nav><div class="seal">' + toriiSVG('', true) + '<b>家</b><b>夜</b></div></aside>' + dock(active) + fluidTop();
   }
   /* dock mobile : raccourcis essentiels + bouton Bêta IA central */
@@ -52,7 +54,7 @@
     return '<div class="ftop">' + '<a href="#accueil" class="logo">' + toriiSVG('torii') + '<span class="word"><span class="name">Bêta <span>OS</span></span></span></a>' +
       T({ t: 'wxchip', keys: ['weather', 'clock'] }) + '</div>';
   }
-  RENDER.wxchip = () => '<button class="wxchip" data-act="weather" aria-label="Météo">' + ico(B.wxIcon(WX.now.code, B.isNight())) + '<b>' + WX.now.temp + '°</b><span>' + F.time(new Date()) + '</span></button>';
+  RENDER.wxchip = () => '<button class="wxchip" data-act="weather" aria-label="Météo">' + ico(B.wxIcon(WX.now.code, B.isNight())) + '<b>' + WX.now.temp + '°</b>' + (B.wxAlerts().length || (B.haAlert && B.haAlert()) ? ico('alert', 'wa') : '') + '<span>' + F.time(new Date()) + '</span></button>';
 
   function logo(style, small) {
     return '<a href="#accueil" class="logo abs hide-fluid ' + (small ? '' : 'big') + '" style="' + style + '">' + toriiSVG('torii') +
@@ -87,6 +89,7 @@
   }
   RENDER.topicons = () => '<div class="topicons glass abs hide-fluid" style="' + px(1262, 20, 120, 50) + '">' +
     '<button data-act="notifs" title="Notifications">' + ico('bellFill') + (unread() ? '<span class="badge">' + unread() + '</span>' : '') + '</button>' +
+    '<a href="#routines" title="Routines" class="rtop">' + ico('wand') + '</a>' +
     '<button data-act="iaOpen" title="Parler à Bêta IA" class="iatop">' + brainSVG() + '</button></div>';
   RENDER.clockbox = () => { const d = new Date(); return '<div class="clockbox glass abs hide-fluid" style="' + px(1388, 18, 137, 54) + '"><span class="t">' + F.time(d) + '</span><span class="d">' + F.short(d) + '</span></div>'; };
 
@@ -98,7 +101,7 @@
     }).join('');
   }
   RENDER.wxcard = s => '<div class="wxcard glass abs" style="' + s.style + '" data-act="weather" role="button" tabindex="0"><div class="now"><div class="loc">' + ico('pinFill') + esc(S.settings.city) + '</div>' +
-    ico(B.wxIcon(WX.now.code, B.isNight()), 'big') + '<div class="temp">' + WX.now.temp + '°C</div><div class="cond">' + B.wxText(WX.now.code) + '</div></div>' +
+    ico(B.wxIcon(WX.now.code, B.isNight()), 'big') + '<div class="temp">' + WX.now.temp + '°C</div><div class="cond">' + B.wxText(WX.now.code) + '</div></div>' + (B.wxAlerts().length || (B.haAlert && B.haAlert()) ? '<span class="wxwarn" title="Alerte météo">' + ico('alert') + '</span>' : '') +
     '<div class="days">' + wxDays(3) + '</div></div>';
 
   /* actions rapides */
@@ -273,12 +276,13 @@
   act('camBell', (el, e) => { e.stopPropagation(); const st = camState(el.dataset.id); st.mute = !st.mute; B.save(); B.toast(st.mute ? 'Notifications coupées' : 'Notifications activées', 'bellFill'); });
   act('cam', el => {
     const id = el.dataset.id, c = DATA.CAMS[id], st = camState(id), ev = camEv(id);
-    B.modal('<h2>' + ico('camera') + esc(c.name) + '</h2><div class="camview"><img src="' + (st.live || c.img) + '" alt="' + esc(c.name) + '"><span class="live">LIVE</span><span class="ts" id="camts"></span></div>' +
+    const live = B.HA.online && B.HA.camUrl ? B.HA.camUrl(id, true) : '';
+    B.modal('<h2>' + ico('camera') + esc(c.name) + '</h2><div class="camview"><img src="' + (live || st.live || c.img) + '" alt="' + esc(c.name) + '" onerror="if(this.dataset.f!==\'1\'){this.dataset.f=\'1\';this.src=\'' + c.img + '\'}"><span class="live">LIVE</span><span class="ts" id="camts"></span></div>' +
       '<div class="row" style="margin-top:14px;flex-wrap:wrap"><span class="dot ' + ev.dot + '"></span>' + ev.icon.replace('class="ico', 'style="font-size:18px" class="ico') + '<span>' + ev.txt + '</span><span style="flex:1"></span>' +
       '<button class="btn" data-act="camClear" data-id="' + id + '">' + ico('check') + 'Acquitter</button>' +
       '<button class="btn" data-act="snap" data-id="' + id + '">' + ico('photo') + 'Capture</button>' +
       (c.bell ? '<button class="btn pri" data-act="talk">' + ico('mic') + 'Parler</button>' : '') + '</div>' +
-      '<p class="muted" style="font-size:13px;margin:12px 0 0">' + (st.live ? 'Image fournie par Home Assistant (' + esc(B.HA.entity(id) || c.ha) + ').' : 'Aperçu de démonstration — reliez l’entité <b>' + esc(c.ha) + '</b> dans Paramètres › Home Assistant pour le flux réel.') + '</p>', 'wide');
+      '<p class="muted" style="font-size:13px;margin:12px 0 0">' + (live || st.live ? 'Flux en direct de Home Assistant (' + esc(B.HA.camEntity ? B.HA.camEntity(id) : c.ha) + ').' : 'Aperçu de démonstration — reliez l’entité <b>' + esc(c.ha) + '</b> dans Paramètres › Home Assistant pour le flux réel.') + '</p>', 'wide');
     const ts = () => { const e2 = document.getElementById('camts'); if (!e2) return clearInterval(t); const d = new Date(); e2.textContent = B.ymd(d) + ' ' + d.toLocaleTimeString('fr-FR'); };
     const t = setInterval(ts, 1000); ts();
   });

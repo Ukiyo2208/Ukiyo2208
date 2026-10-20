@@ -1138,3 +1138,125 @@ html.fluid .room .photo { height: 180px !important; }
 .hpx .row .poster.mini { width: 36px; height: 52px; max-height: none; flex: none; }
 .hpx .row .btn { margin: 0 auto 0 0; }
 html.fluid .ftop { margin: -10px -10px 0; padding: calc(8px + env(safe-area-inset-top)) 14px 8px; background: linear-gradient(180deg, rgba(4, 11, 28, .92), rgba(4, 11, 28, .75)); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid rgba(80, 150, 255, .2); }
+/* lecteur YouTube : discret mais toujours dans l'écran (iOS met en pause ce qui est hors champ) */
+.ytbox, .ytbox.show { position: fixed; z-index: 45; right: 12px; bottom: 12px; left: auto; width: 2px; height: 2px; opacity: .01; pointer-events: none; overflow: hidden; border-radius: 12px; display: flex; flex-direction: column; transition: width .25s, height .25s, opacity .25s; }
+.ytbox.show { width: 340px; height: 222px; opacity: 1; pointer-events: auto; border: 1px solid rgba(255, 80, 80, .45); box-shadow: 0 10px 30px rgba(0, 0, 0, .6), 0 0 20px rgba(255, 60, 60, .25); background: #000; }
+.ytbox .ytbar span { display: flex; align-items: center; gap: 6px; } .ytbox .ytbar .ico { font-size: 16px; color: #ff4b4b; }
+.ytbox .ytbar button { font-size: 18px; padding: 4px; }
+.ytwrap { position: relative; flex: 1; } .ytwrap > * { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.ythint { display: none; }
+.ytbox.needtap .ythint { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-size: 12.5px; line-height: 1.3; background: linear-gradient(90deg, #7a1fff, #1f8bff); color: #fff; }
+.ytbox.needtap .ythint .ico { font-size: 22px; flex: none; animation: pulse 1s infinite; }
+.ytbox.needtap { height: 270px; }
+html.fluid .ytbox.show { left: 12px; right: 12px; width: auto; bottom: calc(90px + env(safe-area-inset-bottom)); height: 240px; }
+html.fluid .ytbox.needtap { height: 290px; }
+
+/* =========================================================
+   v5.2 — ambiances, saisons, effets, routines, Home Assistant
+   ========================================================= */
+.stage::before, .stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; transition: background .8s, opacity .8s; }
+.stage > .page { z-index: 1; }
+/* ambiance jour : ciel éclairci, verre plus clair */
+html.a-jour .stage::before { background: linear-gradient(180deg, rgba(120, 185, 255, .55) 0%, rgba(150, 200, 255, .28) 30%, rgba(255, 225, 180, .14) 62%, rgba(255, 255, 255, .04)); mix-blend-mode: screen; }
+html.a-jour .backdrop { filter: blur(26px) brightness(.9) saturate(1.05); }
+html.a-jour .card { background: linear-gradient(180deg, rgba(22, 50, 104, .74), rgba(15, 36, 82, .76)); }
+html.a-jour .glass { background: rgba(20, 46, 100, .55); }
+html.a-jour .side { background: linear-gradient(180deg, rgba(12, 30, 70, .94), rgba(8, 22, 54, .95)); }
+/* teintes de saison */
+html.s-printemps .stage::after { background: radial-gradient(ellipse at 15% 0%, rgba(255, 110, 180, .16), transparent 55%), radial-gradient(ellipse at 90% 100%, rgba(255, 140, 200, .1), transparent 50%); }
+html.s-ete .stage::after { background: radial-gradient(ellipse at 80% 0%, rgba(255, 200, 90, .18), transparent 55%), linear-gradient(0deg, rgba(40, 255, 180, .05), transparent 40%); }
+html.s-automne .stage::after { background: radial-gradient(ellipse at 10% 10%, rgba(255, 120, 30, .2), transparent 55%), radial-gradient(ellipse at 95% 90%, rgba(220, 70, 30, .16), transparent 50%); mix-blend-mode: screen; }
+html.s-hiver .stage::after { background: radial-gradient(ellipse at 50% -10%, rgba(200, 230, 255, .28), transparent 60%), radial-gradient(ellipse at 50% 120%, rgba(220, 240, 255, .2), transparent 55%); mix-blend-mode: screen; }
+html.s-hiver .card { box-shadow: inset 0 1px 0 rgba(220, 240, 255, .18), 0 0 14px rgba(160, 210, 255, .14), 0 10px 30px rgba(0, 0, 0, .35); }
+html.s-automne .bdg, html.s-automne .side nav a.on { --g1: #ffb020 !important; }
+/* particules */
+.fx { position: fixed; inset: 0; pointer-events: none; z-index: 4; overflow: hidden; }
+.fx i { position: absolute; top: -40px; display: block; font-size: 22px; animation: fall linear infinite; opacity: .85; }
+.fx-printemps i { color: #ff9cc8; filter: drop-shadow(0 0 4px rgba(255, 120, 180, .6)); }
+.fx-automne i { color: #ff8a2a; filter: drop-shadow(0 0 4px rgba(255, 110, 30, .55)); animation-name: fallsway; }
+.fx-automne i:nth-child(3n) { color: #e8452c; } .fx-automne i:nth-child(4n) { color: #ffc23a; }
+.fx-hiver i { color: #f2f8ff; font-size: 16px; filter: drop-shadow(0 0 4px rgba(200, 230, 255, .9)); animation-name: snow; }
+.fx-ete i { top: auto; animation-name: firefly; animation-timing-function: ease-in-out; }
+.fx-ete .fly { display: block; width: 6px; height: 6px; border-radius: 50%; background: #fff7a8; box-shadow: 0 0 10px 4px rgba(255, 230, 90, .75), 0 0 22px 8px rgba(160, 255, 120, .25); }
+@keyframes fallsway { 0% { transform: translate(0, -40px) rotate(0) scale(var(--s)); } 25% { transform: translate(calc(var(--d) * .6), 25vh) rotate(140deg) scale(var(--s)); } 50% { transform: translate(calc(var(--d) * -.3), 52vh) rotate(260deg) scale(var(--s)); } 100% { transform: translate(var(--d), 106vh) rotate(520deg) scale(var(--s)); } }
+@keyframes snow { 0% { transform: translate(0, -30px) scale(var(--s)); } 50% { transform: translate(calc(var(--d) * .5), 52vh) scale(var(--s)) rotate(90deg); } 100% { transform: translate(var(--d), 106vh) scale(var(--s)) rotate(180deg); } }
+@keyframes firefly { 0%, 100% { transform: translate(0, 0) scale(var(--s)); opacity: 0; } 20% { opacity: 1; } 50% { transform: translate(var(--d), -60px) scale(var(--s)); opacity: .3; } 75% { opacity: 1; } }
+@keyframes fall { 0% { transform: translate(0, -40px) rotate(0) scale(var(--s)); } 100% { transform: translate(var(--d), 106vh) rotate(540deg) scale(var(--s)); } }
+@media (prefers-reduced-motion: reduce) { .fx { display: none; } }
+
+/* entrée des cartes en cascade */
+.page.enter > .card, .page.enter > .glass, .page.enter > .iabar { animation: cardIn .55s cubic-bezier(.2, .8, .2, 1) both; }
+.page.enter > :nth-child(3) { animation-delay: .03s; } .page.enter > :nth-child(4) { animation-delay: .06s; } .page.enter > :nth-child(5) { animation-delay: .09s; } .page.enter > :nth-child(6) { animation-delay: .12s; } .page.enter > :nth-child(7) { animation-delay: .15s; } .page.enter > :nth-child(8) { animation-delay: .18s; } .page.enter > :nth-child(9) { animation-delay: .21s; } .page.enter > :nth-child(10) { animation-delay: .24s; } .page.enter > :nth-child(11) { animation-delay: .27s; } .page.enter > :nth-child(n+12) { animation-delay: .3s; }
+@keyframes cardIn { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+.burst { position: fixed; left: 50%; top: 45%; width: 20px; height: 20px; margin: -10px; border-radius: 50%; z-index: 80; pointer-events: none; box-shadow: 0 0 0 2px rgba(80, 220, 255, .9), 0 0 60px 30px rgba(40, 160, 255, .55); animation: burst 1.2s cubic-bezier(.2, .7, .2, 1) forwards; }
+@keyframes burst { 0% { transform: scale(1); opacity: 1; } 60% { opacity: .8; } 100% { transform: scale(160); opacity: 0; } }
+
+/* barre du haut : 3 boutons */
+.topicons > * { width: 38px !important; font-size: 24px !important; }
+.topicons .rtop { color: #c9a8ff; }
+.topicons .iatop svg { width: 28px; height: 28px; }
+
+/* verrouillage */
+.lk-clock .t small { display: block; font-size: 15px; font-weight: 400; letter-spacing: 0; color: var(--cyan); margin-top: 2px; }
+.lk-routines { display: flex; justify-content: center; gap: 10px; }
+.lk-routines button { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 19px; font-size: 13.5px; transition: background .2s; }
+.lk-routines button:hover { background: rgba(40, 90, 200, .5); }
+.lk-routines .ico { font-size: 17px; color: #c9a8ff; }
+.lk-alert.warn { border-color: rgba(255, 190, 60, .6); }
+.lk-alert.warn .ico { color: #ffc23a; }
+.swipe { display: none; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; color: var(--soft); animation: swipe 2s ease-in-out infinite; }
+.swipe .ico { font-size: 18px; color: var(--cyan); }
+@media (hover: none) { .swipe.show-touch { display: flex; } }
+@keyframes swipe { 0%, 100% { transform: translateY(4px); opacity: .6; } 50% { transform: translateY(-4px); opacity: 1; } }
+
+/* météo */
+.wxwarn { position: absolute; right: 10px; top: 8px; font-size: 18px; color: #ffc23a; filter: drop-shadow(0 0 6px rgba(255, 190, 60, .8)); animation: pulse 1.6s infinite; }
+.wxcard { position: relative; }
+.wxchip .wa { color: #ffc23a; font-size: 16px; }
+.wxh { margin: 18px 0 6px; font-weight: 500; font-size: 15px; color: var(--soft); }
+.wxal { display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
+.wxalert, .wxok { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; background: rgba(255, 180, 40, .12); border: 1px solid rgba(255, 190, 60, .45); }
+.wxalert .ico { font-size: 22px; color: #ffc23a; flex: none; }
+.wxalert b { display: block; font-weight: 600; }
+.wxalert.off { background: rgba(255, 80, 60, .14); border-color: rgba(255, 100, 80, .5); } .wxalert.off .ico { color: #ff6b4a; }
+.wxok { background: rgba(30, 220, 160, .1); border-color: rgba(30, 220, 160, .35); color: var(--green); } .wxok .ico { font-size: 18px; }
+
+/* routines & automatismes */
+.rtn { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.rcard { display: flex; align-items: center; gap: 14px; padding: 12px 14px; }
+.rcard .rt { flex: 1; min-width: 0; }
+.rcard .rt b { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 500; flex-wrap: wrap; }
+.rcard .rt small { display: block; font-size: 12.5px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+.rcard .tag2 .ico { font-size: 12px; }
+.li.auto { grid-template-columns: 40px 1fr auto; }
+.li.auto b { font-weight: 500; font-size: 14px; }
+.dayck span { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; font-size: 12px; background: rgba(20, 44, 96, .6); border: 1px solid rgba(90, 160, 255, .3); cursor: pointer; }
+.dayck input:checked + span { background: #1f8bff; border-color: #6fc2ff; box-shadow: 0 0 8px rgba(40, 150, 255, .6); }
+select.search, .field select { appearance: auto; }
+
+/* assistant Home Assistant */
+.wzgrid { max-height: 62vh; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; padding-right: 6px; }
+.wzgrid h4 { grid-column: 1 / 3; margin: 12px 0 2px; font-size: 14px; color: #8fd0ff; letter-spacing: .5px; text-transform: uppercase; }
+.field.wz span { font-size: 12.5px; } .field.wz b { font-weight: 600; color: #fff; }
+.field.wz select { height: 34px; font-size: 13px; }
+
+/* pièces */
+.pieces { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; align-content: start; flex: 1; }
+.proom { display: flex; flex-direction: column; padding-bottom: 8px; }
+.proom .chead { height: 42px; }
+.proom .photo { margin: 0 10px; }
+.tiles.wrap { flex-wrap: wrap; height: auto !important; padding: 8px 10px 0; }
+.tiles.wrap > .tile { flex: 1 1 140px; min-height: 76px; }
+.mgr { display: grid; grid-template-columns: 1fr 1.1fr; gap: 20px; }
+.mgr h4 { margin: 4px 0 10px; font-size: 14px; color: #8fd0ff; text-transform: uppercase; letter-spacing: .5px; }
+.mgr form + h4 { margin-top: 18px; }
+.mroom { padding: 10px 12px; border-radius: 10px; background: rgba(12, 28, 64, .45); border: 1px solid rgba(80, 140, 230, .16); margin-bottom: 8px; }
+.mroom > .row { gap: 8px; }
+.mdev { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0 0 12px; font-size: 13.5px; }
+html.fluid .mgr { grid-template-columns: 1fr; }
+html.fluid .wzgrid { grid-template-columns: 1fr; } html.fluid .wzgrid h4 { grid-column: auto; }
+html.fluid .lk-routines { flex-wrap: wrap; }
+html.fluid .pieces { grid-template-columns: 1fr; }
+.wxal { flex: 0 0 auto; min-width: 270px; }
+html.fluid .rcard { flex-wrap: wrap; } html.fluid .rcard .rt { flex: 1 1 60%; } html.fluid .rcard > .row { margin-left: auto; }
+html.fluid .li.prow { grid-template-columns: 64px 1fr 1fr !important; } html.fluid .li.prow > .field:nth-child(n+3) { grid-column: auto; }

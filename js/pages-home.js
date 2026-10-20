@@ -50,7 +50,7 @@
       '<a href="#mails" class="mailb" title="Mails">' + ico('mail') + (un ? '<span class="badge">' + un + '</span>' : '') + '</a>' +
       '<a href="#calendrier" class="calb" title="Calendrier">' + ico('calendar') + (evs ? '<span class="badge">' + evs + '</span>' : '') + '</a>' +
       '<button data-act="notifs" title="Notifications">' + ico('bellFill') + '</button>' +
-      '<button data-act="haStatus" title="Réseau">' + ico('wifi') + '</button>' +
+      '<a href="#routines" title="Routines">' + ico('wand') + '</a>' +
       '<button data-act="iaOpen" class="iatop" title="Parler à Bêta IA">' + brainSVG() + '</button>' +
       '<a href="#parametres" class="gearb" title="Paramètres">' + ico('gearFill') + '</a></div>';
   };
@@ -71,7 +71,7 @@
       '<div class="mlist2">' + S.mails.slice(0, 4).map(m => '<div class="mrow' + (m.read ? ' read' : '') + '" data-act="openMail" data-arg="' + m.id + '"><span class="lg" style="background:' + m.bg + '">' + esc(m.logo) + '</span><span class="s">' + esc(m.from) + '<small>' + esc(m.subj) + '</small></span><span class="tm">' + m.time + (m.invite ? ico('calendar', 'inv') : '') + '</span></div>').join('') + '</div></section>';
   };
   RENDER.henergy = s => {
-    const h = house(), sol = solarNow(), pct = Math.min(1, h.kw / 2.3);
+    const L = B.Energy.live(), h = Object.assign(house(), { kw: L.cons }), sol = L.solar, pct = Math.min(1, h.kw / 2.3);
     const C = 2 * Math.PI * 56, arc = C * .78;
     const bars = [3, 5, 9, 14, 18, 22, 19, 16, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 4, 3, 3, 2, 2];
     const ch = dev('home.chauffage');
@@ -85,7 +85,7 @@
       '<div class="erows"><div class="erow tile">' + ico('sun').replace('class="ico', 'style="color:#ffd23f;filter:drop-shadow(0 0 8px rgba(255,210,63,.8))" class="ico') +
       '<b>' + (sol > .05 ? sol.toFixed(1).replace('.', ',') + ' kW' : '18,6 kWh') + '</b><small>' + (sol > .05 ? 'Panneaux solaires' : 'Produits aujourd’hui') + '</small><div class="chart">' + bars.map((v, i) => '<i style="height:' + (v / 22 * 100) + '%;opacity:' + (i <= new Date().getHours() - 6 ? 1 : .35) + '"></i>').join('') + '</div></div>' +
       '<div class="erow tile">' + ico('batteryV').replace('class="ico', 'style="color:#22e3a4;filter:drop-shadow(0 0 8px rgba(34,227,164,.7))" class="ico') +
-      '<b>12,4 / 16 kWh</b><small>Batterie</small><div class="bar"><div><i style="width:76%"></i></div>76 %</div></div></div>' +
+      '<b>' + (L.bat / 100 * 16).toFixed(1).replace('.', ',') + ' / 16 kWh</b><small>Batterie</small><div class="bar"><div><i style="width:' + Math.round(L.bat) + '%"></i></div>' + Math.round(L.bat) + ' %</div></div></div>' +
       '<div class="epills">' +
       pill('data-act="chauffage"', 'flame', '#ff6a2b', 'Chauffage', (ch.on ? (ch.mode || 'Auto') + ' · ' + String(ch.temp).replace('.', ',') + '°' : 'Arrêt')) +
       pill('data-act="toggle" data-id="home.ecs"', 'hotWater', '#2fb0ff', 'Eau chaude', dev('home.ecs').on ? '52 °C' : 'Hors-gel') +
@@ -133,7 +133,7 @@
       T({ t: 'hmeteo', style: box([652, 120, 1064, 362]), keys: ['weather'] }) +
       T({ t: 'hcal', style: box([1077, 120, 1357, 362]), keys: ['events'] }) +
       T({ t: 'hmail', style: box([1366, 120, 1662, 362]), keys: ['mails'] }) +
-      T({ t: 'henergy', style: box([105, 375, 684, 660]), keys: ['house', 'music', 'plex'] }) +
+      T({ t: 'henergy', style: box([105, 375, 684, 660]), keys: ['house', 'music', 'plex', 'energy'] }) +
       '<section class="card hcard abs hcams" style="' + box([692, 375, 1662, 660]) + '">' + B.whead('cam', 'Vidéosurveillance', '<button class="wmore" data-act="allCams" aria-label="Toutes les caméras">' + ico('chevR') + '</button>') +
       '<div class="camgrid">' + cams.map(c => T({ t: 'cam', cam: c[0], style: box(c[1], C), bottom: true, tile: true, short: true, det: DATA.CAMS[c[0]].det.slice(0, 3), keys: ['cam:' + c[0]] })).join('') + '</div></section>' +
       T({ t: 'hmusic', style: box([105, 683, 640, 912]), keys: ['music'] }) +
@@ -168,19 +168,36 @@
   B.act('setPlace', el => { const u = S.users.find(x => x.id === el.dataset.id); u.place = el.dataset.arg; B.save(); B.$$('.pop').forEach(p => p.remove()); B.emit('users'); });
   B.act('switchUser', el => { S.user = el.dataset.arg; B.save(); B.$$('.pop').forEach(p => p.remove()); B.emit('users'); B.toast('Profil actif : ' + B.user().name, 'user'); });
   B.act('openMail', el => { S.openMail = el.dataset.arg; B.go('mails'); });
+  RENDER.wxhours = () => {
+    const H = WX.hours.slice(0, 24), W = 760, Ht = 170, bw = (W - 20) / H.length;
+    const tmin = Math.min(...H.map(x => x.temp)) - 2, tmax = Math.max(...H.map(x => x.temp)) + 2, ty = v => 20 + (1 - (v - tmin) / (tmax - tmin)) * 70;
+    return '<svg viewBox="0 0 ' + W + ' ' + Ht + '" style="width:100%" role="img" aria-label="Prévisions heure par heure">' +
+      H.map((h, i) => '<rect x="' + (10 + i * bw + bw * .18) + '" y="' + (150 - h.prob * .55) + '" width="' + (bw * .64) + '" height="' + (h.prob * .55) + '" rx="2" fill="' + (h.mm > 0 ? '#2f8bff' : 'rgba(80,140,230,.35)') + '"><title>' + h.prob + ' % · ' + h.mm + ' mm</title></rect>' +
+        (i % 3 ? '' : '<text x="' + (10 + i * bw + bw / 2) + '" y="166" text-anchor="middle" fill="#93a8cc" font-size="11">' + h.t.getHours() + ' h</text><text x="' + (10 + i * bw + bw / 2) + '" y="' + (ty(h.temp) - 8) + '" text-anchor="middle" fill="#ffd84a" font-size="11">' + Math.round(h.temp) + '°</text>')).join('') +
+      '<path d="' + H.map((h, i) => (i ? 'L' : 'M') + (10 + i * bw + bw / 2).toFixed(1) + ' ' + ty(h.temp).toFixed(1)).join(' ') + '" fill="none" stroke="#ffd84a" stroke-width="2" style="filter:drop-shadow(0 0 5px rgba(255,210,60,.7))"/></svg>' +
+      '<div class="row legend"><span><i style="background:#2f8bff"></i>Probabilité de pluie</span><span><i style="height:3px;background:#ffd84a"></i>Température</span>' + (WX.sun ? '<span>' + ico('sun2') + ' ' + F.time(WX.sun.rise) + ' · ' + ico('moon') + ' ' + F.time(WX.sun.set) + '</span>' : '') + '</div>';
+  };
+  function alertsHTML() {
+    const off = B.haAlert && B.haAlert(), list = (off ? [{ icon: 'alert', text: off.text, official: true }] : []).concat(B.wxAlerts());
+    if (!list.length) return '<div class="wxok">' + ico('shieldCheck') + 'Aucune alerte météo dans les 24 heures</div>';
+    return list.map(a => '<div class="wxalert' + (a.official ? ' off' : '') + '">' + ico(a.icon) + '<span><b>' + (a.official ? 'Vigilance Météo-France' : 'À surveiller') + '</b>' + esc(a.text) + '</span></div>').join('');
+  }
+  B.wxAlertsHTML = alertsHTML;
   B.act('weather', () => {
     const night = B.isNight();
     B.modal('<h2>' + ico('pinFill') + 'Météo · ' + esc(S.settings.city) + '</h2><div style="display:flex;align-items:center;gap:22px">' + ico(B.wxIcon(WX.now.code, night)).replace('class="ico', 'style="font-size:90px;filter:drop-shadow(0 0 14px rgba(170,200,255,.9))" class="ico') +
-      '<div><div style="font-size:64px;font-weight:300;line-height:1">' + WX.now.temp + '°C</div><div style="font-size:18px;color:#dce8fa">' + B.wxText(WX.now.code) + '</div></div></div>' +
-      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:20px">' + WX.days.map((d, i) => '<div class="tile kpi" style="align-items:center">' + '<small>' + F.JOURS[new Date(Date.now() + (i + 1) * 864e5).getDay()] + '</small>' + ico(B.wxIcon(d.code, false)).replace('class="ico', 'style="font-size:34px;color:#ffd23f" class="ico') + '<b style="font-size:20px">' + d.max + '° / ' + d.min + '°</b><small>' + B.wxText(d.code) + '</small></div>').join('') + '</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px"><div class="tile kpi"><small>Pluie</small><b>' + WX.now.rain + ' %</b></div><div class="tile kpi"><small>Vent</small><b>' + WX.now.wind + ' km/h</b></div><div class="tile kpi"><small>Indice UV</small><b>' + WX.now.uv + '</b><em>' + B.uvLabel(WX.now.uv) + '</em></div></div>' +
-      '<p class="muted" style="font-size:12px;margin:14px 0 0">' + (WX.ok ? 'Données Open-Meteo, actualisées toutes les 15 minutes.' : 'Hors ligne : valeurs de démonstration affichées.') + '</p>', 'sm');
+      '<div><div style="font-size:64px;font-weight:300;line-height:1">' + WX.now.temp + '°C</div><div style="font-size:18px;color:#dce8fa">' + B.wxText(WX.now.code) + '</div></div><div style="flex:1"></div><div class="wxal">' + alertsHTML() + '</div></div>' +
+      '<h4 class="wxh">Les prochaines 24 heures</h4>' + T({ t: 'wxhours', keys: ['weather'] }) +
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px">' + WX.days.map((d, i) => '<div class="tile kpi" style="align-items:center">' + '<small>' + F.JOURS[new Date(Date.now() + (i + 1) * 864e5).getDay()] + '</small>' + ico(B.wxIcon(d.code, false)).replace('class="ico', 'style="font-size:34px;color:#ffd23f" class="ico') + '<b style="font-size:20px">' + d.max + '° / ' + d.min + '°</b><small>' + B.wxText(d.code) + '</small></div>').join('') + '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px"><div class="tile kpi"><small>Pluie maintenant</small><b>' + WX.now.rain + ' %</b></div><div class="tile kpi"><small>Vent</small><b>' + WX.now.wind + ' km/h</b></div><div class="tile kpi"><small>Indice UV</small><b>' + WX.now.uv + '</b><em>' + B.uvLabel(WX.now.uv) + '</em></div></div>' +
+      '<p class="muted" style="font-size:12px;margin:14px 0 0">' + (WX.ok ? 'Prévisions Open-Meteo. Les alertes « À surveiller » sont calculées d’après ces prévisions ; la vigilance officielle s’affiche si l’intégration Météo-France est reliée dans Home Assistant.' : 'Hors ligne : valeurs de démonstration affichées.') + '</p>', 'wide');
   });
 
   /* ======================= VERROUILLAGE ======================= */
   RENDER.lkclock = s => {
     const d = new Date(), tm = WX.tomorrow || WX.days[0];
-    return '<div class="lk-clock glass abs" style="' + s.style + '"><div class="d">' + F.long(d) + '</div><div class="t">' + F.time(d) + '</div>' +
+    const who = S.users.find(x => x.id === (S.lockSel || S.user));
+    return '<div class="lk-clock glass abs" style="' + s.style + '"><div class="d">' + F.long(d) + '</div><div class="t">' + F.time(d) + '<small>' + B.hello() + (who ? ' ' + esc(who.name) : '') + '</small></div>' +
       '<div class="w">' + ico(B.wxIcon(WX.now.code, false) === 'sun' ? 'sun' : B.wxIcon(WX.now.code, false)) + '<span>' + B.wxText(WX.now.code) + '</span><b>' + WX.now.temp + '°C</b></div>' +
       '<div class="w">' + ico('cloud', 'cl') + '<span>Demain : ' + tm.max + '°C / ' + tm.min + '°C</span></div>' + nextEv() + '</div>';
   };
@@ -239,18 +256,23 @@
       T({ t: 'lkclock', style: box([75, 125, 400, 322]), keys: ['clock', 'weather'] }) +
       T({ t: 'lkhouse', style: box([75, 340, 400, 675]), keys: ['house'] }) +
       fingerprint() +
-      '<div class="lk-hint abs" style="' + px(568, 602, 400, 70) + '"><b>Touchez pour déverrouiller</b><span>ou sélectionnez votre profil</span></div>' +
+      '<div class="lk-hint abs" style="' + px(568, 602, 400, 70) + '"><b>Touchez pour déverrouiller</b><span>ou choisissez votre profil</span></div>' +
       T({ t: 'lkusers', style: box([410, 722, 1135, 942]), keys: ['users'] }) +
       T({ t: 'lkwx', style: box([1135, 70, 1505, 310]), keys: ['weather'] }) +
       T({ t: 'lklinks', keys: ['mails', 'music', 'events', 'plex'] }) +
       T({ t: 'lkalert', keys: ['cam:cam.sonnette', 'cam:cam.cour'] }) +
-      (S.settings.petals !== false ? '<div class="petals" aria-hidden="true">' + Array.from({ length: 16 }, (_, i) => '<i style="left:' + (Math.random() * 100).toFixed(1) + '%;animation-delay:-' + (Math.random() * 14).toFixed(1) + 's;animation-duration:' + (10 + Math.random() * 8).toFixed(1) + 's;--s:' + (.5 + Math.random() * .7).toFixed(2) + ';--d:' + (Math.random() * 160 - 80).toFixed(0) + 'px">' + ico('sakura') + '</i>').join('') + '</div>' : '') +
+      '<div class="lk-routines abs" style="' + px(548, 672, 440, 42) + '">' + (S.routines || []).slice(0, 3).map(r => '<button class="glass" data-act="lockRoutine" data-arg="' + r.id + '">' + ico(r.icon) + esc(r.name) + '</button>').join('') + '</div>' +
+      '<div class="swipe show-touch abs" style="' + px(668, 975, 200, 40) + '">' + ico('chevU') + '<span>Glissez vers le haut</span></div>' +
       '<div class="lk-quote abs" style="' + px(45, 915, 320, 85) + '"><b>家</b>Un foyer, plus qu’une maison,<br>un équilibre au quotidien.</div>' +
       '<div class="lk-quote r abs" style="' + px(1150, 935, 345, 60) + '"><b>日々、より良く</b>Chaque jour, un peu mieux.</div></div>';
   } });
   RENDER.lkalert = () => {
     const ids = ['cam.sonnette', 'cam.cour'].filter(id => B.camEv(id).dot);
-    if (!ids.length) return '<div class="lk-alert abs" hidden></div>';
+    if (!ids.length) {
+      const al = (B.haAlert && B.haAlert()) || B.wxAlerts()[0];
+      if (!al) return '<div class="lk-alert abs" hidden></div>';
+      return '<button class="lk-alert warn glass abs" style="' + px(518, 24, 500, 46) + '" data-act="weather">' + ico('alert') + '<b>Météo</b><span>' + esc(al.text) + '</span></button>';
+    }
     const id = ids[0], e = B.camEv(id);
     return '<button class="lk-alert glass abs" style="' + px(568, 24, 400, 46) + '" data-act="unlockTo" data-arg="exterieur"><span class="dot ' + e.dot + '"></span>' + ico(id === 'cam.sonnette' ? 'bellFill' : 'cctv') + '<b>' + esc(DATA.CAMS[id].name) + '</b><span>' + e.txt.replace(/<[^>]+>/g, '') + '</span></button>';
   };
@@ -275,6 +297,8 @@
     unlock.ok = false;
     const fp = document.getElementById('fp');
     if (fp) fp.classList.add('scan');
+    if (B.fx) setTimeout(() => B.fx.sound('unlock'), 700);
+    setTimeout(() => { const b = document.createElement('div'); b.className = 'burst'; document.body.appendChild(b); setTimeout(() => b.remove(), 1400); }, 760);
     setTimeout(() => { if (fp) { fp.classList.remove('scan'); fp.classList.add('ok'); } }, 750);
     setTimeout(() => {
       S.user = S.lockSel || S.user; delete S.lockSel; B.save();
@@ -283,6 +307,11 @@
       setTimeout(() => { document.body.classList.remove('unlocking'); B.go(to || 'accueil'); }, 520);
     }, 1050);
   }
+  B.act('lockRoutine', el => { B.runRoutine(el.dataset.arg); B.emit('house'); });
+  /* glisser vers le haut pour déverrouiller (écrans tactiles) */
+  let y0 = null;
+  document.addEventListener('touchstart', e => { if (B.current === 'verrou' && !e.target.closest('button,a,input,.modal')) y0 = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener('touchend', e => { if (y0 != null && B.current === 'verrou' && y0 - e.changedTouches[0].clientY > 90) unlock(); y0 = null; }, { passive: true });
   B.act('unlock', () => unlock());
   B.act('unlockTo', el => unlock(el.dataset.arg));
   B.act('lockUser', el => { S.lockSel = el.dataset.arg; B.emit('users'); unlock(); });

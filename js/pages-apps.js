@@ -4,7 +4,7 @@
   const A = 'assets/', BG = A + 'bg/generic.jpg';
   const card = (r, title, badge, body, right) => '<section class="card pcard abs" style="' + box(r) + '">' + B.whead(badge, title, right || '') + body + '</section>';
   /* en-tête : à droite, un bloc d'informations propre à la page (plus de boutons « tout éteindre ») */
-  const head = (id, title, sub, icon, items, keys) => B.side(id) + B.header({ id, title, sub, icon, info: { t: 'infobox', items, keys: keys || ['house', 'music', 'plex', 'mails', 'events', 'ha', 'weather'] } });
+  const head = (id, title, sub, icon, items, keys) => B.side(id) + B.header({ id, title, sub, icon, info: { t: 'infobox', items, keys: keys || ['house', 'music', 'plex', 'mails', 'events', 'ha', 'weather', 'energy'] } });
   const nf = (v, d) => String(typeof v === 'number' ? v.toFixed(d == null ? 1 : d) : v).replace('.', ',');
 
   /* ======================= ÉNERGIE ======================= */
@@ -18,19 +18,36 @@
   }
   function prodToday() { const { prod } = hourly(), h = new Date().getHours() + new Date().getMinutes() / 60; let t = 0; prod.forEach((v, i) => { if (i + 1 <= h) t += v; else if (i < h) t += v * (h - i); }); return t; }
   RENDER.echart = s => {
-    const { prod, cons } = hourly(), W = 900, H = 260, now = new Date().getHours();
-    const x = i => 30 + i * (W - 40) / 24, y = v => H - 24 - v / 5 * (H - 40);
-    const line = cons.map((v, i) => (i ? 'L' : 'M') + (x(i) + 15).toFixed(1) + ' ' + y(v).toFixed(1)).join(' ');
-    return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;flex:1;min-height:0" role="img" aria-label="Production et consommation sur 24 heures"><defs><linearGradient id="pb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd84a"/><stop offset="1" stop-color="#ff8a34" stop-opacity=".45"/></linearGradient></defs>' +
-      [0, 1, 2, 3, 4, 5].map(v => '<line x1="30" x2="' + (W - 10) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="rgba(120,170,255,.12)"/><text x="4" y="' + (y(v) + 4) + '" fill="#93a8cc" font-size="11">' + v + '</text>').join('') +
-      prod.map((v, i) => '<rect x="' + (x(i) + 5) + '" y="' + y(v) + '" width="' + ((W - 40) / 24 - 10) + '" height="' + (H - 24 - y(v)) + '" rx="2" fill="url(#pb)" opacity="' + (i <= now ? 1 : .3) + '"/>').join('') +
+    const view = S.eview || 'jour', E = B.Energy, real = E.real();
+    if (real && !E.cache[view] && !E.loading) { E.loading = true; E.load(view).finally(() => { E.loading = false; }); }
+    const tabs = '<div class="tabs sm" style="margin:0 0 10px auto;align-self:flex-end">' + [['jour', 'Jour'], ['semaine', 'Semaine'], ['mois', 'Mois']].map(t => '<button class="' + (view === t[0] ? 'on' : '') + '" data-act="eView" data-arg="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
+    const W = 900, H = 250;
+    let prod, cons, labels, max, unit;
+    if (view === 'jour') {
+      const d = real && E.cache.jour ? E.cache.jour : hourly();
+      prod = (d.prod || hourly().prod).map(v => v || 0); cons = (d.cons || hourly().cons).map(v => v == null ? null : v);
+      labels = Array.from({ length: 24 }, (_, i) => i % 3 ? '' : i + ' h'); unit = 'kW'; max = Math.max(5, ...prod, ...cons.filter(v => v != null));
+    } else {
+      const n = view === 'semaine' ? 7 : 30, d = real && E.cache[view] ? E.cache[view] : E.demoDays(n);
+      prod = d.map(x => x.prod); cons = d.map(x => x.cons); unit = 'kWh';
+      labels = d.map((x, i) => n === 7 ? F.d3(x.d) : (i % 5 ? '' : x.d.getDate() + '/' + (x.d.getMonth() + 1))); max = Math.max(5, ...prod, ...cons);
+    }
+    const N = prod.length, bw = (W - 40) / N, x = i => 30 + i * bw, y = v => H - 24 - v / max * (H - 40), now = new Date().getHours();
+    const line = cons.map((v, i) => v == null ? '' : ((i && cons[i - 1] != null ? 'L' : 'M') + (x(i) + bw / 2).toFixed(1) + ' ' + y(v).toFixed(1))).join(' ');
+    const step = max > 20 ? 10 : max > 10 ? 5 : 1;
+    const tp = prod.reduce((a, v) => a + (v || 0), 0), tc = cons.reduce((a, v) => a + (v || 0), 0);
+    return '<div class="row" style="align-items:center;margin-bottom:4px"><span class="muted" style="font-size:13px">' + (real ? 'Données réelles de Home Assistant' : 'Exemple (reliez vos capteurs d’énergie dans Paramètres › Home Assistant)') + (E.cache.err && real ? ' · ' + esc(E.cache.err) : '') + '</span>' + tabs + '</div>' +
+      '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;flex:1;min-height:0" role="img" aria-label="Production et consommation"><defs><linearGradient id="pb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd84a"/><stop offset="1" stop-color="#ff8a34" stop-opacity=".45"/></linearGradient></defs>' +
+      Array.from({ length: Math.floor(max / step) + 1 }, (_, i) => i * step).map(v => '<line x1="30" x2="' + (W - 10) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="rgba(120,170,255,.12)"/><text x="2" y="' + (y(v) + 4) + '" fill="#93a8cc" font-size="11">' + v + '</text>').join('') +
+      prod.map((v, i) => '<rect x="' + (x(i) + bw * .15) + '" y="' + y(v || 0) + '" width="' + (bw * .7) + '" height="' + (H - 24 - y(v || 0)) + '" rx="2" fill="url(#pb)" opacity="' + (view !== 'jour' || i <= now ? 1 : .3) + '"><title>' + nf(v || 0) + ' ' + unit + '</title></rect>').join('') +
       '<path d="' + line + '" fill="none" stroke="#2fd3ff" stroke-width="2.5" style="filter:drop-shadow(0 0 6px rgba(40,200,255,.8))"/>' +
-      '<line x1="' + (x(now) + 15) + '" x2="' + (x(now) + 15) + '" y1="10" y2="' + (H - 24) + '" stroke="#ff6fae" stroke-dasharray="4 4"/>' +
-      [0, 3, 6, 9, 12, 15, 18, 21].map(h => '<text x="' + (x(h) + 6) + '" y="' + (H - 6) + '" fill="#93a8cc" font-size="11">' + h + ' h</text>').join('') + '</svg>' +
-      '<div class="row legend"><span><i style="background:#ffb53a"></i>Panneaux solaires</span><span><i style="height:3px;background:#2fd3ff"></i>Consommation de la maison</span><span><i style="height:0;border-top:2px dashed #ff6fae"></i>Maintenant</span></div>';
+      (view === 'jour' ? '<line x1="' + (x(now) + bw / 2) + '" x2="' + (x(now) + bw / 2) + '" y1="10" y2="' + (H - 24) + '" stroke="#ff6fae" stroke-dasharray="4 4"/>' : '') +
+      labels.map((l, i) => l ? '<text x="' + (x(i) + bw / 2) + '" text-anchor="middle" y="' + (H - 6) + '" fill="#93a8cc" font-size="11">' + l + '</text>' : '').join('') + '</svg>' +
+      '<div class="row legend"><span><i style="background:#ffb53a"></i>Solaire ' + (view === 'jour' ? '' : '· ' + nf(tp, 0) + ' kWh') + '</span><span><i style="height:3px;background:#2fd3ff"></i>Consommation ' + (view === 'jour' ? '' : '· ' + nf(tc, 0) + ' kWh') + '</span>' + (view === 'jour' ? '<span><i style="height:0;border-top:2px dashed #ff6fae"></i>Maintenant</span>' : '<span>Autonomie ' + Math.min(100, Math.round(tp / tc * 100)) + ' %</span>') + '</div>';
   };
+  B.act('eView', el => { S.eview = el.dataset.arg; B.emit('energy'); });
   RENDER.esolar = () => {
-    const sol = B.solarNow(), today = prodToday();
+    const L = B.Energy.live(), sol = L.solar, today = L.real && B.Energy.num('solarTotal') == null ? prodToday() : prodToday();
     const panel = i => '<i class="pv" style="opacity:' + (.35 + .65 * Math.min(1, sol / 4.6)) + '"></i>';
     return '<div class="solar"><div class="pvgrid">' + Array.from({ length: 12 }, panel).join('') + '</div>' +
       '<div class="kpis"><div class="tile kpi"><small>En ce moment</small><b>' + nf(sol) + ' kW</b><em>' + (sol > .05 ? Math.round(sol / 4.8 * 100) + ' % de la puissance' : 'Les panneaux dorment') + '</em></div>' +
@@ -50,9 +67,9 @@
     return '<div class="scroll" style="display:flex;flex-direction:column;gap:12px">' + (list.length ? list.map(r => '<div><div class="row" style="justify-content:space-between;font-size:14px;margin-bottom:5px"><span>' + esc(r[0]) + '</span><span class="cy">' + nf(r[1], 2) + ' kW</span></div><div class="hbar"><i style="width:' + (r[1] / max * 100) + '%"></i></div></div>').join('') : '<p class="muted">Tout est éteint, bravo !</p>') + '</div>';
   };
   RENDER.ebatt = () => {
-    const b = dev('ext.borne'), sol = B.solarNow(), h = B.house();
+    const b = dev('ext.borne'), L = B.Energy.live(), sol = L.solar, h = { kw: L.cons };
     return '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<div class="erow tile">' + ico('batteryV').replace('class="ico', 'style="color:#22e3a4" class="ico') + '<b>12,4 / 16 kWh</b><small>Batterie virtuelle</small><div class="bar"><div><i style="width:76%"></i></div>76 %</div></div>' +
+      '<div class="erow tile">' + ico('batteryV').replace('class="ico', 'style="color:#22e3a4" class="ico') + '<b>' + nf(L.bat / 100 * 16) + ' / 16 kWh</b><small>Batterie' + (L.real ? '' : ' virtuelle') + '</small><div class="bar"><div><i style="width:' + Math.round(L.bat) + '%"></i></div>' + Math.round(L.bat) + ' %</div></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="tile kpi"><small>Achat au réseau</small><b>' + nf(Math.max(0, h.kw - sol)) + ' kW</b><em style="color:#cfdcf3">Heures ' + (new Date().getHours() >= 22 || new Date().getHours() < 6 ? 'creuses' : 'pleines') + '</em></div><div class="tile kpi"><small>Revente</small><b>' + nf(Math.max(0, sol - h.kw)) + ' kW</b><em>Surplus solaire</em></div></div>' +
       '<div class="tile" style="display:flex;align-items:center;gap:14px;padding:12px 14px">' + ico('charger').replace('class="ico', 'style="font-size:30px;color:#2fb6ff" class="ico') + '<div style="flex:1"><b style="font-weight:400">Borne de recharge</b><div class="muted" style="font-size:13px">' + (b.on ? 'Recharge en cours · 7,4 kW' : 'Libre · aucun véhicule branché') + '</div></div><button class="pbtn' + (b.on ? '' : ' off') + '" data-act="borne" aria-label="Recharge">' + ico('power') + '</button></div></div>';
   };
@@ -61,12 +78,12 @@
     return '<div class="list scroll" style="flex:1">' + on.map(d => '<div class="li" style="min-height:44px"><span class="ic">' + ico({ light: 'bulbFill', group: 'bulbFill', clim: 'snow', power: 'power', app: 'washer', charger: 'charger' }[d.type]) + '</span><div><b>' + esc(d.name) + '</b><small>' + esc(d.room) + '</small></div><button class="sw on" data-act="toggle" data-id="' + d.id + '" aria-label="Éteindre ' + esc(d.name) + '"></button></div>').join('') + (on.length ? '' : '<p class="muted">Aucun appareil allumé.</p>') + '</div>';
   };
   B.route('energie', { title: 'Énergie', bg: BG, render: () => head('energie', 'Énergie', 'Production solaire et consommation', 'boltPlain', () => {
-    const sol = B.solarNow();
-    return [{ icon: 'solar', v: nf(sol) + ' kW', l: 'Panneaux', cls: 'y' }, { icon: 'sun', v: nf(prodToday()) + ' kWh', l: 'Aujourd’hui', cls: 'y' }, { icon: 'chart', v: '4,6 kW', l: 'Pic du jour' }, { icon: 'leaf', v: '68 %', l: 'Autoconso.', cls: 'g' }];
+    const L = B.Energy.live(), sol = L.solar;
+    return [{ icon: 'solar', v: nf(sol) + ' kW', l: L.real ? 'Panneaux (réel)' : 'Panneaux', cls: 'y' }, { icon: 'sun', v: nf(prodToday()) + ' kWh', l: 'Aujourd’hui', cls: 'y' }, { icon: 'chart', v: '4,6 kW', l: 'Pic du jour' }, { icon: 'leaf', v: '68 %', l: 'Autoconso.', cls: 'g' }];
   }) +
-    card([105, 235, 760, 600], 'Panneaux solaires', 'solar', T({ t: 'esolar' })) +
-    card([770, 235, 1522, 600], 'Production et consommation sur 24 h', 'chart', T({ t: 'echart' })) +
-    card([105, 612, 560, 1012], 'Batterie & réseau', 'battery', T({ t: 'ebatt', keys: ['dev:ext.borne', 'house'] })) +
+    card([105, 235, 760, 600], 'Panneaux solaires', 'solar', T({ t: 'esolar', keys: ['energy'] })) +
+    card([770, 235, 1522, 600], 'Production et consommation', 'chart', T({ t: 'echart', keys: ['energy'] })) +
+    card([105, 612, 560, 1012], 'Batterie & réseau', 'battery', T({ t: 'ebatt', keys: ['dev:ext.borne', 'house', 'energy'] })) +
     card([570, 612, 1040, 1012], 'Qui consomme ?', 'home', T({ t: 'erooms', keys: ['house'] })) +
     card([1050, 612, 1522, 1012], 'Allumés en ce moment', 'power', T({ t: 'eactive', keys: ['house'] })) });
 
@@ -345,6 +362,9 @@
     let m;
     const link = text.match(/https?:\/\/\S+/);
     if (link && (B.ytParse(link[0]) || /\.(mp3|m4a|aac|ogg|flac|wav)(\?|$)/i.test(link[0]))) { const it = Music.addItem(link[0]); if (it) { Music.play(it.id); return 'Je lance la lecture. Vous la retrouverez dans Musique › Ma bibliothèque.'; } }
+    const rt = (S.routines || []).find(r => q.includes(norm(r.name)) || (r.id === 'depart' && /je (m.en )?vais|je sors|on part/.test(q)) || (r.id === 'nuit' && /dodo|je vais dormir|au lit/.test(q)));
+    if (rt) { B.runRoutine(rt.id, true); return 'Routine « ' + rt.name + ' » lancée. ' + ({ depart: 'Bonne journée, la maison se met en veille.', retour: 'Bon retour à la maison !', nuit: 'Bonne nuit, à demain.', reveil: 'Debout ! Bonne journée.' }[rt.id] || ''); }
+    if (/routine|automatisme/.test(q)) { setTimeout(() => B.go('routines'), 400); return 'Je vous ouvre les routines et automatismes.'; }
     if (/j.?aime|like|favori/.test(q) && !/radio|playlist/.test(q)) { Music.like(); return Music.isFav(S.music.src) ? 'Ajouté à vos favoris ♥' : 'Retiré de vos favoris.'; }
     if (/(eteins|eteint|coupe|ferme).*(lumi|lampe|eclair|tout)|tout eteindre/.test(q)) { devsIn(sc, 'light', 'group').forEach(id => setDev(id, { on: false })); return 'C’est fait : lumières éteintes' + where + '.'; }
     if (/(allume|active).*(lumi|lampe|eclair)|allume/.test(q) && !/tondeuse|arrosage|tv|tele/.test(q)) { devsIn(sc, 'light', 'group').forEach(id => setDev(id, { on: true })); return 'Lumières allumées' + where + '.'; }
@@ -399,7 +419,7 @@
   B.act('iaSheetSend', el => { const i = el.querySelector('input'); askIA(i.value); i.value = ''; i.focus(); });
   B.act('iaChip', el => askIA(el.dataset.arg));
   B.act('chatClear', () => { S.chat = []; B.save(); B.emit('chat'); });
-  const SUGG = ['Fais le point sur la maison', 'Éteins tout au RDC', 'Ferme les volets de l’étage 1', 'Mets 21 degrés dans la suite parentale', 'Démarre l’arrosage 15 min', 'Lance la playlist Gaming', 'Mets la radio FIP', 'Quel temps fait-il ?', 'Qu’est-ce que j’ai aujourd’hui ?', 'Ai-je des mails ?', 'Combien je consomme ?', 'Mode soirée'];
+  const SUGG = ['Fais le point sur la maison', 'Je pars', 'Bonne nuit', 'Éteins tout au RDC', 'Ferme les volets de l’étage 1', 'Mets 21 degrés dans la suite parentale', 'Démarre l’arrosage 15 min', 'Lance la playlist Gaming', 'Mets la radio FIP', 'Quel temps fait-il ?', 'Qu’est-ce que j’ai aujourd’hui ?', 'Ai-je des mails ?', 'Combien je consomme ?', 'Mode soirée'];
   /* conversation dans un panneau, accessible depuis toutes les pages */
   function iaSheet() {
     if (document.querySelector('.modal .iasheet')) return;
@@ -431,44 +451,67 @@
     card([1110, 235, 1522, 1012], 'Idées de demandes', 'edit', '<div class="list scroll">' + SUGG.map(s => '<button class="li" style="grid-template-columns:30px 1fr;width:100%;text-align:left" data-act="iaChip" data-arg="' + esc(s) + '"><span class="ic" style="width:28px;height:28px;font-size:15px">' + ico('chat') + '</span><span>' + esc(s) + '</span></button>').join('') + '</div>') });
 
   /* ======================= PARAMÈTRES ======================= */
-  RENDER.sprof = () => '<div class="list scroll" style="flex:1">' + S.users.map((u, i) => '<div class="li" style="grid-template-columns:64px 1fr 1fr 90px;gap:12px">' +
+  const isAdmin = () => !!(B.user() && B.user().admin);
+  B.isAdmin = isAdmin;
+  RENDER.sprof = () => '<div class="list scroll" style="flex:1">' + S.users.map(u => '<div class="li prow" style="grid-template-columns:64px 1fr 1fr 78px 54px;gap:12px">' +
     '<button class="u" style="width:58px" data-act="pickAvatar" data-arg="' + u.id + '" aria-label="Changer l’avatar"><span class="av" style="width:56px;height:56px;margin:0;padding:3px;--ring:' + u.ring + ';--glow:' + (u.glow || (/gradient/.test(u.ring) ? '#ff6fae' : u.ring)) + '"><img src="' + u.avatar + '" alt=""></span></button>' +
     '<label class="field">Prénom<input value="' + esc(u.name) + '" data-change="uName" data-id="' + u.id + '"></label>' +
     '<label class="field">Où est-il/elle ?<select data-change="uPlace" data-id="' + u.id + '">' + Object.keys(DATA.PLACES).map(k => '<option value="' + k + '"' + (u.place === k ? ' selected' : '') + '>' + DATA.PLACES[k].label + '</option>').join('') + '</select></label>' +
-    '<label class="field">Code (facultatif)<input type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" placeholder="····" value="' + esc(u.pin || '') + '" data-change="uPin" data-id="' + u.id + '"></label></div>').join('') + '</div>' +
+    '<label class="field">Code<input type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" placeholder="····" value="' + esc(u.pin || '') + '" data-change="uPin" data-id="' + u.id + '"></label>' +
+    '<label class="field" title="Les administrateurs gèrent les pièces et les appareils">Admin<button class="sw sm' + (u.admin ? ' on' : '') + '" data-act="uAdmin" data-id="' + u.id + '" role="switch" aria-label="Administrateur"' + (isAdmin() ? '' : ' disabled') + '></button></label></div>').join('') + '</div>' +
     '<label class="row" style="margin-top:10px;font-size:14px;gap:10px"><button class="sw sm' + (S.settings.guest ? ' on' : '') + '" data-act="setFlag" data-arg="guest" aria-label="Profil invité"></button>Profil « Invité » (sans Mails, NAS, Calendrier ni Paramètres)</label>';
+  B.act('uAdmin', el => {
+    if (!isAdmin()) return B.toast('Seul un administrateur peut changer ce réglage', 'lock');
+    const u = S.users.find(x => x.id === el.dataset.id);
+    if (u.admin && S.users.filter(x => x.admin).length === 1) return B.toast('Il faut garder au moins un administrateur', 'info');
+    u.admin = !u.admin; B.save(); B.emit('sprof');
+  });
   RENDER.sha = () => {
-    const s = S.settings, st = !B.HA.enabled() ? ['wait', 'Pas encore relié — mode démo'] : B.HA.online ? ['', 'Connecté'] : ['off', B.HA.lastError ? 'Erreur : ' + B.HA.lastError : 'Connexion…'];
+    const s = S.settings, st = !B.HA.enabled() ? ['wait', 'Pas encore relié — mode démo'] : B.HA.wsOk ? ['', 'Connecté en temps réel'] : B.HA.online ? ['', 'Connecté'] : ['off', B.HA.lastError ? 'Erreur : ' + B.HA.lastError : 'Connexion…'];
+    const n = Object.values(s.haMap || {}).filter(v => v && v !== '-').length;
     return '<form data-submit="haSave" style="display:flex;flex-direction:column;gap:12px;flex:1">' +
-      '<div class="row"><span class="tag2 ' + st[0] + '">' + esc(st[1]) + '</span></div>' +
+      '<div class="row" style="flex-wrap:wrap"><span class="tag2 ' + st[0] + '">' + esc(st[1]) + '</span>' + (B.HA.enabled() ? '<span class="tag2 wait">' + n + ' appareil' + (n > 1 ? 's' : '') + ' relié' + (n > 1 ? 's' : '') + '</span>' : '') + '</div>' +
       '<label class="field">Adresse de Home Assistant<input name="url" placeholder="http://homeassistant.local:8123" value="' + esc(s.haUrl) + '"></label>' +
       '<label class="field">Jeton d’accès longue durée<input name="token" type="password" placeholder="Profil HA › Sécurité › Jetons d’accès longue durée" value="' + esc(s.haToken) + '"></label>' +
-      '<p class="muted" style="font-size:12.5px;margin:0;line-height:1.5">Pensez à autoriser Bêta OS dans <code>configuration.yaml</code> (<code>http: cors_allowed_origins:</code>). Le jeton reste uniquement sur cet appareil.</p>' +
-      '<div class="row" style="margin-top:auto;flex-wrap:wrap"><button class="btn pri">' + ico('check') + 'Enregistrer et tester</button><button type="button" class="btn" data-act="haMap">' + ico('edit') + 'Relier les appareils</button></div></form>';
+      '<p class="muted" style="font-size:12.5px;margin:0;line-height:1.5">Autorisez Bêta OS dans <code>configuration.yaml</code> : <code>http: cors_allowed_origins:</code> avec l’adresse de Bêta OS. Le jeton reste sur cet appareil.</p>' +
+      '<div class="row" style="margin-top:auto;flex-wrap:wrap"><button class="btn pri">' + ico('check') + 'Enregistrer et tester</button><button type="button" class="btn" data-act="haWizard">' + ico('sparkle') + 'Assistant d’association</button><button type="button" class="btn sm" data-act="haMap">' + ico('edit') + 'À la main</button></div></form>';
   };
   B.act('haSave', async el => {
     const f = new FormData(el); S.settings.haUrl = String(f.get('url')).trim(); S.settings.haToken = String(f.get('token')).trim(); B.save();
+    if (B.HA.ws) try { B.HA.ws.close(); } catch (e) { }
     if (!B.HA.enabled()) { B.emit('ha'); return B.toast('Home Assistant désactivé : mode démo', 'info'); }
-    try { await B.HA.req('/api/'); B.HA.online = true; B.toast('Home Assistant répond, tout est relié', 'check'); B.HA.sync(); }
+    try { await B.HA.req('/api/'); B.HA.online = true; B.HA.wsOk = false; B.toast('Home Assistant répond ! Lancez l’assistant pour relier vos appareils', 'check'); B.HA.sync(); }
     catch (e) { B.HA.online = false; B.HA.lastError = e.message === 'Failed to fetch' ? 'injoignable ou CORS' : e.message; B.toast('Échec : ' + B.HA.lastError, 'info'); }
     B.emit('ha');
   });
   B.act('haMap', () => {
-    const rows = Object.values(DATA.DEVICES).map(d => ['dev', d.id, d.room + ' · ' + d.name, B.HA.entity(d.id)]).concat(Object.keys(DATA.CAMS).map(id => ['cam', id, 'Caméra · ' + DATA.CAMS[id].name, (S.settings.haMap[id] || DATA.CAMS[id].ha)]));
+    const rows = Object.values(DATA.DEVICES).map(d => ['dev', d.id, d.room + ' · ' + d.name, B.HA.entity(d.id)]).concat(Object.keys(DATA.CAMS).map(id => ['cam', id, 'Caméra · ' + DATA.CAMS[id].name, B.HA.camEntity(id)]));
     B.modal('<h2>' + ico('homeFill') + 'Appareils Home Assistant</h2><form data-submit="haMapSave"><div class="scroll" style="max-height:60vh;display:grid;grid-template-columns:1fr 1fr;gap:8px 14px">' +
       rows.map(r => '<label class="field" style="font-size:12px">' + esc(r[2]) + '<input name="' + r[1] + '" value="' + esc(r[3]) + '" spellcheck="false"></label>').join('') + '</div>' +
       '<div class="row" style="justify-content:flex-end;margin-top:14px"><button type="button" class="btn" data-act="closeModal">Annuler</button><button class="btn pri">' + ico('check') + 'Enregistrer</button></div></form>', 'wide');
   });
-  B.act('haMapSave', el => { const f = new FormData(el); const map = {}; for (const [k, v] of f.entries()) { const def = (DATA.DEVICES[k] && DATA.DEVICES[k].ha) || (DATA.CAMS[k] && DATA.CAMS[k].ha); if (String(v).trim() && String(v).trim() !== def) map[k] = String(v).trim(); } S.settings.haMap = map; B.save(); B.closeModal(); B.toast('Appareils reliés', 'check'); B.HA.sync(); });
+  B.act('haMapSave', el => { const f = new FormData(el); const map = Object.assign({}, S.settings.haMap); for (const [k, v] of f.entries()) map[k] = String(v).trim() || '-'; S.settings.haMap = map; B.save(); B.closeModal(); B.toast('Appareils reliés', 'check'); B.HA.wsOk ? B.HA.applyAll() : B.HA.sync(); });
   RENDER.sgen = () => {
     const s = S.settings;
-    return '<form data-submit="genSave" style="display:flex;flex-direction:column;gap:12px;flex:1"><div class="grid2"><label class="field">Ville (météo)<input name="city" value="' + esc(s.city) + '"></label><div class="field">&nbsp;<button type="button" class="btn" data-act="geo">' + ico('pin') + 'Trouver la ville</button></div></div>' +
+    return '<form data-submit="genSave" style="display:flex;flex-direction:column;gap:12px;flex:1"><div class="grid2"><label class="field">Ville (météo)<input name="city" value="' + esc(s.city) + '"></label><div class="field">&nbsp;<button type="button" class="btn" data-act="geo">' + ico('pin') + 'Trouver</button></div></div>' +
       '<div class="grid2"><label class="field">Latitude<input name="lat" value="' + s.lat + '"></label><label class="field">Longitude<input name="lon" value="' + s.lon + '"></label></div>' +
       '<label class="field">Adresse du NAS (UGOS Pro)<input name="nasUrl" placeholder="http://192.168.1.20:9999" value="' + esc(s.nasUrl) + '"></label>' +
-      '<label class="row" style="font-size:14px;gap:10px"><button type="button" class="sw sm' + (s.skipLock ? ' on' : '') + '" data-act="setFlag" data-arg="skipLock" aria-label="Sans verrouillage"></button>Ouvrir directement l’accueil (sans écran verrouillé)</label>' +
-      '<label class="row" style="font-size:14px;gap:10px"><button type="button" class="sw sm' + (s.petals !== false ? ' on' : '') + '" data-act="setFlag2" data-arg="petals" aria-label="Pétales"></button>Pétales de sakura sur l’écran verrouillé</label>' +
+      '<label class="row" style="font-size:14px;gap:10px"><button type="button" class="sw sm' + (s.skipLock ? ' on' : '') + '" data-act="setFlag" data-arg="skipLock" aria-label="Sans verrouillage"></button>Ouvrir directement l’accueil</label>' +
       '<div class="row" style="margin-top:auto"><button class="btn pri">' + ico('check') + 'Enregistrer</button></div></form>';
   };
+  /* ambiance, saisons, effets, sons */
+  RENDER.sfx = () => {
+    const s = S.settings, o = (list, cur) => list.map(x => '<option value="' + x[0] + '"' + (cur === x[0] ? ' selected' : '') + '>' + x[1] + '</option>').join('');
+    return '<div style="display:flex;flex-direction:column;gap:12px;flex:1">' +
+      '<label class="field">Saison<select data-change="fxSet" data-arg="season">' + o([['auto', 'Automatique (selon la date) · ' + B.fx.SEASONS[B.fx.season()]], ['printemps', '🌸 Printemps — sakura'], ['ete', '✨ Été — lucioles'], ['automne', '🍁 Automne — érables'], ['hiver', '❄️ Hiver — neige']], s.season) + '</select></label>' +
+      '<label class="field">Ambiance<select data-change="fxSet" data-arg="ambiance">' + o([['auto', 'Automatique (lever / coucher du soleil)'], ['nuit', 'Nuit'], ['jour', 'Jour']], s.ambiance) + '</select></label>' +
+      '<label class="field">Effets animés<select data-change="fxSet" data-arg="fx">' + o([['lock', 'Sur l’écran verrouillé'], ['all', 'Partout (discret)'], ['off', 'Aucun']], s.fx) + '</select></label>' +
+      '<label class="row" style="font-size:14px;gap:10px"><button type="button" class="sw sm' + (s.sound ? ' on' : '') + '" data-act="fxSound" aria-label="Sons"></button>Sons et vibrations discrets</label>' +
+      '<div class="row" style="margin-top:auto;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="fxTest" data-arg="chime">' + ico('volume') + 'Essayer</button><button class="btn sm" data-act="fxTest" data-arg="dingdong">' + ico('bellFill') + 'Sonnette</button></div></div>';
+  };
+  B.act('fxSet', el => { S.settings[el.dataset.arg] = el.value; B.save(); B.fx.particles(true); B.fx.apply(); B.emit('sfx'); });
+  B.act('fxSound', el => { S.settings.sound = !S.settings.sound; B.save(); el.classList.toggle('on', S.settings.sound); if (S.settings.sound) B.fx.sound('on'); });
+  B.act('fxTest', el => B.fx.sound(el.dataset.arg));
   B.act('genSave', el => { const f = new FormData(el); const s = S.settings; s.city = String(f.get('city')).trim() || s.city; s.lat = parseFloat(f.get('lat')) || s.lat; s.lon = parseFloat(f.get('lon')) || s.lon; s.nasUrl = String(f.get('nasUrl')).trim(); B.save(); B.loadWeather(); B.toast('C’est enregistré', 'check'); });
   B.act('geo', async () => {
     const inp = document.querySelector('[name=city]'); const q = inp.value.trim(); if (!q) return;
@@ -476,7 +519,6 @@
     catch (e) { B.toast('Recherche impossible hors ligne', 'info'); }
   });
   B.act('setFlag', el => { const k = el.dataset.arg; S.settings[k] = !S.settings[k]; B.save(); el.classList.toggle('on', S.settings[k]); });
-  B.act('setFlag2', el => { const k = el.dataset.arg; S.settings[k] = S.settings[k] === false; B.save(); el.classList.toggle('on', S.settings[k] !== false); });
   B.act('uName', el => { const u = S.users.find(x => x.id === el.dataset.id); u.name = el.value.trim() || u.name; B.save(); B.emit('users'); });
   B.act('uPlace', el => { const u = S.users.find(x => x.id === el.dataset.id); u.place = el.value; B.save(); B.emit('users'); });
   B.act('uPin', el => { const u = S.users.find(x => x.id === el.dataset.id), v = el.value.replace(/\D/g, '').slice(0, 4); if (v && v.length !== 4) { B.toast('Le code doit faire 4 chiffres', 'lock'); return; } u.pin = v; B.save(); B.toast(v ? 'Code enregistré pour ' + u.name : 'Code retiré', 'lock'); });
@@ -486,15 +528,83 @@
       g.items.map(a => '<button class="' + (u.avatar === a.src ? 'sel' : '') + '" style="--ring:' + a.ring + ';--glow:' + a.ring + '" data-act="setAvatar" data-id="' + u.id + '" data-arg="' + a.src + '" data-ring="' + a.ring + '"><img src="' + a.src + '" alt="" loading="lazy"></button>').join('') + '</div>').join('') + '</div>', 'wide');
   });
   B.act('setAvatar', el => { const u = S.users.find(x => x.id === el.dataset.id); u.avatar = el.dataset.arg; u.ring = el.dataset.ring; u.glow = el.dataset.ring; B.save(); B.closeModal(); B.emit('users'); B.emit('sprof'); B.toast('Nouvel avatar pour ' + u.name, 'user'); });
-  RENDER.sdata = () => '<div style="display:flex;flex-direction:column;gap:12px;flex:1"><p class="muted" style="margin:0;font-size:13.5px;line-height:1.5">Réglages, favoris, profils, bibliothèque musicale et agenda sont gardés sur cet appareil. Exportez-les pour les retrouver sur une autre tablette.</p>' +
-    '<div class="row" style="flex-wrap:wrap"><button class="btn" data-act="exportCfg">' + ico('download') + 'Exporter</button><label class="btn" style="cursor:pointer">' + ico('upload') + 'Importer<input type="file" accept="application/json" data-change="importCfg" hidden></label><button class="btn dan" data-act="resetCfg">' + ico('refresh') + 'Tout réinitialiser</button></div>' +
-    '<div class="tile" style="padding:14px;margin-top:auto;display:flex;align-items:center;gap:14px">' + toriiSVG('').replace('<svg class=""', '<svg style="width:44px;height:42px;filter:drop-shadow(0 0 8px #1e90ff)"') + '<div><b style="font-weight:500">Bêta OS 5.1</b><div class="muted" style="font-size:13px">La maison, version Japon nocturne</div></div></div></div>';
+  RENDER.sdata = () => '<div style="display:flex;flex-direction:column;gap:12px;flex:1">' +
+    '<div class="tile" style="padding:12px 14px;display:flex;align-items:center;gap:12px">' + B.badge('home') + '<div style="flex:1"><b style="font-weight:500">Pièces & appareils</b><div class="muted" style="font-size:12.5px">' + (isAdmin() ? 'Ajouter, retirer ou masquer' : 'Réservé aux administrateurs') + '</div></div>' + (isAdmin() ? '<button class="btn sm pri" data-act="roomsManager">' + ico('edit') + 'Gérer</button>' : ico('lock').replace('class="ico', 'style="font-size:20px;color:#93a8cc" class="ico')) + '</div>' +
+    '<a class="tile" href="#pieces" style="padding:12px 14px;display:flex;align-items:center;gap:12px">' + B.badge('folder') + '<div style="flex:1"><b style="font-weight:500">Toutes les pièces</b><div class="muted" style="font-size:12.5px">Vue d’ensemble, pièces ajoutées comprises</div></div>' + ico('chevR') + '</a>' +
+    '<div class="row" style="flex-wrap:wrap;margin-top:auto"><button class="btn sm" data-act="exportCfg">' + ico('download') + 'Exporter</button><label class="btn sm" style="cursor:pointer">' + ico('upload') + 'Importer<input type="file" accept="application/json" data-change="importCfg" hidden></label><button class="btn sm dan" data-act="resetCfg">' + ico('refresh') + 'Réinitialiser</button></div>' +
+    '<span class="muted" style="font-size:12px">Bêta OS 5.2 · réglages gardés sur cet appareil</span></div>';
   B.act('exportCfg', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' })); a.download = 'beta-os-sauvegarde.json'; a.click(); });
   B.act('importCfg', el => { const f = el.files[0]; if (!f) return; f.text().then(t => { try { const j = JSON.parse(t); if (j.v !== 5) throw 0; localStorage.setItem('betaos.v5', JSON.stringify(j)); location.reload(); } catch (e) { B.toast('Ce fichier n’est pas une sauvegarde Bêta OS', 'info'); } }); });
   B.act('resetCfg', () => { if (confirm('Remettre Bêta OS à zéro ? Vos réglages, favoris et agenda seront effacés.')) { localStorage.removeItem('betaos.v5'); location.reload(); } });
-  B.route('parametres', { title: 'Paramètres', bg: BG, render: () => head('parametres', 'Paramètres', 'Profils, connexions et préférences', 'gearFill', () => [{ icon: 'homeFill', v: B.HA.enabled() ? (B.HA.online ? 'Relié' : 'Erreur') : 'Démo', l: 'Home Assistant', cls: 'c' }, { icon: 'family', v: S.users.length, l: 'Profils' }, { icon: 'plex', v: S.settings.plexServer ? 'Relié' : 'Démo', l: 'Plex', go: 'plex' }, { icon: 'info', v: '5.1', l: 'Version' }], ['ha', 'users']) +
-    card([105, 235, 800, 640], 'Profils (4 maximum)', 'users', T({ t: 'sprof', keys: ['sprof'] })) +
-    card([810, 235, 1522, 640], 'Home Assistant', 'home', T({ t: 'sha', keys: ['ha'] })) +
-    card([105, 650, 800, 1012], 'Général', 'gear', T({ t: 'sgen' })) +
-    card([810, 650, 1522, 1012], 'Sauvegarde', 'nas', T({ t: 'sdata' })) });
+  B.route('parametres', { title: 'Paramètres', bg: BG, render: () => head('parametres', 'Paramètres', 'Profils, connexions et préférences', 'gearFill', () => [{ icon: 'homeFill', v: B.HA.enabled() ? (B.HA.wsOk ? 'Temps réel' : B.HA.online ? 'Relié' : 'Erreur') : 'Démo', l: 'Home Assistant', cls: 'c' }, { icon: 'family', v: S.users.length, l: 'Profils' }, { icon: 'wand', v: S.routines.length, l: 'Routines', go: 'routines' }, { icon: 'info', v: '5.2', l: 'Version' }], ['ha', 'users']) +
+    card([105, 235, 760, 640], 'Profils (4 maximum)', 'users', T({ t: 'sprof', keys: ['sprof'] })) +
+    card([770, 235, 1522, 640], 'Home Assistant', 'home', T({ t: 'sha', keys: ['ha'] })) +
+    card([105, 650, 560, 1012], 'Général', 'gear', T({ t: 'sgen' })) +
+    card([570, 650, 1040, 1012], 'Ambiance & saisons', 'weather', T({ t: 'sfx', keys: ['sfx'] })) +
+    card([1050, 650, 1522, 1012], 'Maison & sauvegarde', 'nas', T({ t: 'sdata', keys: ['sprof'] })) });
+
+  /* ======================= PIÈCES (vue d'ensemble + gestion admin) ======================= */
+  const FLOORS = [['ext', 'Extérieur'], ['rdc', 'RDC'], ['e1', 'Étage 1'], ['e2', 'Étage 2'], ['home', 'Maison']];
+  const ROOMIMG = { 'Escalier & Couloir': 'e1-couloir', 'Chambre 1': 'e1-chambre1', 'Chambre 2': 'e1-chambre2', 'Suite parentale': 'e1-suite', 'Salle de bains': 'e1-sdb', 'Chambre d’amis': 'e1-chambre2', 'Bureau': 'e1-chambre1', 'Garage': 'rdc-garage', 'Buanderie': 'rdc-buanderie', 'Entrée': 'rdc-entree', 'Cuisine': 'rdc-cuisine', 'Salon': 'rdc-salon', 'Séjour': 'rdc-sejour', 'Aspirateur robot': 'rdc-robot' };
+  function floorOf(d) { if (d.custom) { const r = S.custom.rooms.find(x => x.name === d.room); if (r) return r.floor; const b = Object.values(DATA.DEVICES).find(x => !x.custom && x.room === d.room); return b ? b.id.split('.')[0] : 'home'; } return d.id.split('.')[0]; }
+  function rooms() {
+    const map = {};
+    Object.values(DATA.DEVICES).forEach(d => { const k = floorOf(d) + '|' + d.room; (map[k] = map[k] || { floor: floorOf(d), name: d.room, devs: [] }).devs.push(d); });
+    S.custom.rooms.forEach(r => { const k = r.floor + '|' + r.name; if (!map[k]) map[k] = { floor: r.floor, name: r.name, devs: [], custom: r.id }; else map[k].custom = r.id; });
+    return Object.values(map);
+  }
+  B.roomsList = rooms;
+  const TILE = d => {
+    if (S.custom.hidden[d.id]) return '';
+    if (d.type === 'light') return T({ t: 'light', id: d.id, rgb: !!d.def.rgb });
+    if (d.type === 'group') return T({ t: 'light', id: d.id });
+    if (d.type === 'cover') return T({ t: 'cover', id: d.id });
+    if (d.type === 'clim') return T({ t: 'clim', id: d.id, power: true });
+    if (d.type === 'app') return T({ t: 'app', id: d.id });
+    if (['power', 'charger', 'sprinkler'].includes(d.type)) return T({ t: 'power', id: d.id });
+    if (d.type === 'vacuum' || d.type === 'mower') return T({ t: 'gstat', id: d.id });
+    return '';
+  };
+  RENDER.pieces = () => {
+    const fl = S.piecesFloor || 'rdc', list = rooms().filter(r => r.floor === fl);
+    return '<div class="row" style="gap:8px;margin-bottom:12px;flex-wrap:wrap">' + FLOORS.map(f => '<button class="cat' + (fl === f[0] ? ' on' : '') + '" style="padding:0 16px" data-act="piecesFloor" data-arg="' + f[0] + '">' + f[1] + '</button>').join('') + (isAdmin() ? '<span style="flex:1"></span><button class="btn sm pri" data-act="roomsManager">' + ico('edit') + 'Gérer les pièces</button>' : '') + '</div>' +
+      '<div class="pieces scroll">' + (list.length ? list.map(r => {
+        const ov = (S.rooms || {})[r.name] || {}, img = ov.img || (ROOMIMG[r.name] ? A + 'rooms/' + ROOMIMG[r.name] + '.jpg' : '');
+        const tiles = r.devs.map(TILE).join('');
+        return '<div class="tile proom"><div class="chead">' + ico('homeFill', 'ci') + '<h3>' + esc(ov.name || r.name) + (r.custom ? ' <span class="tag2 wait">ajoutée</span>' : '') + '</h3><button class="more" data-act="roomInfo" data-arg="' + esc(r.name) + '" aria-label="Détails">' + ico('chevR') + '</button></div>' +
+          (img ? '<div class="photo" style="height:96px"><img src="' + img + '" alt="" loading="lazy"></div>' : '') +
+          '<div class="tiles wrap">' + (tiles || '<p class="muted" style="margin:6px 4px;font-size:13px">Aucun appareil' + (isAdmin() ? ' — ajoutez-en depuis « Gérer les pièces »' : '') + '.</p>') + '</div></div>';
+      }).join('') : '<p class="muted">Aucune pièce à cet étage.</p>') + '</div>';
+  };
+  RENDER.gstat = s => {
+    const d = DATA.DEVICES[s.id], st = dev(s.id), run = st.status === 'cleaning' || st.status === 'mowing';
+    return '<div class="tile t-app" data-act="gstat" data-id="' + s.id + '" role="button" tabindex="0"><span class="ai' + (run ? '' : ' off') + '">' + ico(d.type === 'vacuum' ? 'robotFill' : 'mowerRobot') + '</span><span class="lbl">' + esc(d.name) + '</span><span class="sub">' + (run ? 'En marche' : 'À la base') + (st.bat ? ' · ' + st.bat + ' %' : '') + '</span></div>';
+  };
+  B.act('gstat', el => { const d = DATA.DEVICES[el.dataset.id], st = dev(el.dataset.id), run = st.status === 'cleaning' || st.status === 'mowing'; setDev(el.dataset.id, { status: run ? (d.type === 'vacuum' ? 'returning' : 'docked') : (d.type === 'vacuum' ? 'cleaning' : 'mowing') }); });
+  B.act('piecesFloor', el => { S.piecesFloor = el.dataset.arg; B.emit('pieces'); });
+  B.route('pieces', { title: 'Pièces', bg: BG, render: () => head('pieces', 'Pièces', 'Toutes les pièces de la maison', 'rooms', () => {
+    const r = rooms();
+    return [{ icon: 'rooms', v: r.length, l: 'Pièces', cls: 'c' }, { icon: 'power', v: Object.keys(DATA.DEVICES).filter(id => !S.custom.hidden[id]).length, l: 'Appareils' }, { icon: 'plus', v: S.custom.devices.length + S.custom.rooms.length, l: 'Ajouts' }, { icon: 'homeFill', v: B.HA.enabled() ? 'Relié' : 'Démo', l: 'Home Assistant', cls: 'g' }];
+  }, ['pieces', 'house']) + card([105, 235, 1522, 1012], 'Pièces et appareils', 'home', T({ t: 'pieces', keys: ['pieces', 'house'] })) });
+
+  /* gestion admin */
+  const TYPES = [['light', 'Éclairage'], ['rgb', 'Éclairage RGB'], ['cover', 'Volet / store'], ['clim', 'Climatisation / chauffage'], ['power', 'Prise / appareil'], ['app', 'Électroménager']];
+  function manager() {
+    if (!isAdmin()) return B.toast('Réservé aux administrateurs', 'lock');
+    const rs = rooms(), ents = Object.keys(B.HA.states || {});
+    B.modal('<h2>' + ico('edit') + 'Pièces & appareils</h2>' +
+      '<div class="mgr"><div><h4>Ajouter une pièce</h4><form data-submit="roomAdd" class="row" style="flex-wrap:wrap;gap:8px"><input class="search" name="name" required placeholder="Nom (ex. Salle de sport)"><select class="search" name="floor" style="flex:0 0 130px">' + FLOORS.slice(0, 4).map(f => '<option value="' + f[0] + '">' + f[1] + '</option>').join('') + '</select><button class="btn pri sm">' + ico('plus') + 'Ajouter</button></form>' +
+      '<h4>Ajouter un appareil</h4><form data-submit="devAdd" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input class="search" name="name" required placeholder="Nom (ex. Lampe de chevet)"><select class="search" name="type">' + TYPES.map(t => '<option value="' + t[0] + '">' + t[1] + '</option>').join('') + '</select>' +
+      '<select class="search" name="room">' + rs.map(r => '<option value="' + esc(r.name) + '">' + esc(r.name) + ' (' + FLOORS.find(f => f[0] === r.floor)[1] + ')</option>').join('') + '</select><input class="search" name="ha" list="haents" placeholder="Entité Home Assistant (facultatif)"><datalist id="haents">' + ents.slice(0, 400).map(e => '<option value="' + esc(e) + '">').join('') + '</datalist>' +
+      '<button class="btn pri sm" style="grid-column:1/3;justify-self:start">' + ico('plus') + 'Ajouter l’appareil</button></form></div>' +
+      '<div class="scroll" style="max-height:52vh"><h4>Pièces et appareils existants</h4>' + rs.map(r => '<div class="mroom"><div class="row"><b>' + esc(r.name) + '</b><small class="muted">' + FLOORS.find(f => f[0] === r.floor)[1] + '</small><span style="flex:1"></span>' + (r.custom ? '<button class="sq" data-act="roomDel" data-arg="' + r.custom + '" aria-label="Supprimer la pièce">' + ico('trash') + '</button>' : '') + '</div>' +
+        r.devs.map(d => '<div class="mdev"><span>' + esc(d.name) + ' <small class="muted">' + (TYPES.find(t => t[0] === d.type) || [0, d.type])[1] + '</small></span>' + (d.custom ? '<button class="sq" data-act="devDel" data-arg="' + d.id + '" aria-label="Supprimer">' + ico('trash') + '</button>' : '<label class="row" style="gap:6px;font-size:12px">Installé<button class="sw sm' + (S.custom.hidden[d.id] ? '' : ' on') + '" data-act="devHide" data-arg="' + d.id + '" role="switch" aria-label="Installé"></button></label>') + '</div>').join('') + '</div>').join('') + '</div></div>', 'wide');
+  }
+  B.act('roomsManager', manager);
+  const changed = () => { B.registerCustom(); B.save(); B.emit('pieces'); B.emit('house'); manager(); };
+  B.act('roomAdd', el => { const f = new FormData(el), n = String(f.get('name')).trim(); if (!n) return; if (rooms().some(r => r.name === n)) return B.toast('Cette pièce existe déjà', 'info'); S.custom.rooms.push({ id: 'r' + Date.now(), name: n, floor: f.get('floor') }); S.piecesFloor = f.get('floor'); changed(); B.toast('Pièce « ' + n + ' » ajoutée', 'check'); });
+  B.act('devAdd', el => { const f = new FormData(el), n = String(f.get('name')).trim(); if (!n) return; S.custom.devices.push({ id: 'c.' + Date.now(), type: f.get('type'), name: n, room: f.get('room'), ha: String(f.get('ha') || '').trim() }); changed(); B.toast('Appareil « ' + n + ' » ajouté', 'check'); });
+  B.act('roomDel', el => { const r = S.custom.rooms.find(x => x.id === el.dataset.arg); if (!r || !confirm('Supprimer la pièce « ' + r.name + ' » et ses appareils ajoutés ?')) return; S.custom.rooms = S.custom.rooms.filter(x => x !== r); S.custom.devices = S.custom.devices.filter(d => d.room !== r.name); changed(); });
+  B.act('devDel', el => { S.custom.devices = S.custom.devices.filter(d => d.id !== el.dataset.arg); delete S.dev[el.dataset.arg]; changed(); });
+  B.act('devHide', el => { const id = el.dataset.arg; if (S.custom.hidden[id]) delete S.custom.hidden[id]; else S.custom.hidden[id] = true; B.save(); el.classList.toggle('on', !S.custom.hidden[id]); B.emit('pieces'); B.emit('house'); });
 })();
