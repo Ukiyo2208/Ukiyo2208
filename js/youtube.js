@@ -14,7 +14,7 @@
       return this._g || (this._g = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.onload = res; s.onerror = () => { this._g = null; rej(new Error('Google inaccessible')); }; document.head.appendChild(s); }));
     },
     /* adresse de retour après la connexion Google : la page elle-même, sans le #… */
-    redirectUri() { return location.origin + location.pathname; },
+    redirectUri() { return location.origin + location.pathname.replace(/index\.html$/, ''); },
     /* Connexion par redirection (et non par fenêtre pop-up) : sur iPhone, dans Sitecase ou une
        appli, la fenêtre pop-up de Google ne peut pas revenir vers Bêta OS et reste blanche. */
     connect() {
@@ -87,7 +87,7 @@
       const c = this.connected();
       return '<form class="addlink" data-submit="ytGo">' + ico('search2') + '<input name="q" placeholder="' + (c ? 'Rechercher sur YouTube ou coller un lien…' : 'Collez un lien YouTube (vidéo ou playlist)…') + '" autocomplete="off" aria-label="Lien ou recherche"><button class="btn pri">' + ico(c ? 'search2' : 'play') + (c ? 'Chercher' : 'Lire') + '</button></form>' +
         '<div class="ytacc">' + ico('youtube') + (c ? '<span>Compte YouTube connecté' + (this.busy ? ' · import…' : '') + '</span><button class="btn sm" data-act="ytImport">' + ico('refresh') + 'Réimporter</button>'
-          : '<span>Connectez votre compte pour retrouver vos playlists, vos titres aimés et chercher des morceaux.</span><button class="btn sm pri" data-act="ytConnect">Connecter</button>') + '</div>';
+          : '<span>Connectez votre compte pour retrouver vos playlists, vos titres aimés et chercher des morceaux.</span><button class="btn sm" data-act="ytDiag">Infos</button><button class="btn sm pri" data-act="ytConnect">Connecter</button>') + '</div>';
     },
     results() {
       if (!this.res) return '';
@@ -127,6 +127,13 @@
       '<div class="addlink"><input readonly value="' + esc(Y.redirectUri()) + '" onclick="this.select()" aria-label="Adresse à copier"><button class="btn sm" data-act="ytCopy">' + ico('files') + 'Copier</button></div>' +
       '<p class="muted" style="font-size:12.5px;margin:10px 0 14px">Google peut mettre quelques minutes à prendre en compte la modification.</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="closeModal">Plus tard</button><button class="btn pri" data-act="ytRedirOk">' + ico('check') + 'C’est fait, se connecter</button></div>', 'sm');
   });
+  B.act('ytDiag', () => B.modal('<h2>' + ico('info') + 'Réglages à mettre chez Google</h2><div style="display:flex;flex-direction:column;gap:12px;font-size:13.5px">' +
+    '<label class="field">Origines JavaScript autorisées<input readonly value="' + esc(location.origin) + '" onclick="this.select()"></label>' +
+    '<label class="field">URI de redirection autorisés<input readonly value="' + esc(Y.redirectUri()) + '" onclick="this.select()"></label>' +
+    '<label class="field">ID client utilisé<input readonly value="' + esc(S.settings.ytClient || '(aucun)') + '" onclick="this.select()"></label>' +
+    '<p class="muted" style="margin:0;line-height:1.5">Ces trois valeurs doivent être identiques, caractère pour caractère, à celles du client « Beta-os » dans Google Cloud. Version : 5.3.3</p>' +
+    '<div class="row"><button class="btn" data-act="ytResetClient">' + ico('edit') + 'Changer l’ID client</button></div></div>', 'sm'));
+  B.act('ytResetClient', () => { B.closeModal(); Y.setupModal(); });
   B.act('ytCopy', () => { navigator.clipboard && navigator.clipboard.writeText(Y.redirectUri()).then(() => B.toast('Adresse copiée', 'check'), () => { }); });
   B.act('ytRedirOk', () => { S.settings.ytRedir = Y.redirectUri(); B.save(); B.closeModal(); Y.connect(); });
   B.act('ytImport', () => Y.connected() ? Y.importAll() : Y.connect());
