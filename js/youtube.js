@@ -20,6 +20,9 @@
     connect() {
       const cid = S.settings.ytClient;
       if (!cid) return this.setupModal();
+      // Google n'accepte que https:// ou http://localhost comme adresse de retour
+      const okProto = location.protocol === 'https:' || (location.protocol === 'http:' && /^(localhost|127\.0\.0\.1)$/.test(location.hostname));
+      if (!okProto) return B.modal('<h2>' + ico('youtube') + 'Adresse non acceptée par Google</h2><p style="font-size:14px;line-height:1.55;margin:0 0 10px">Bêta OS est ouvert depuis <code>' + esc(location.href.split('#')[0]) + '</code>. Google n’autorise la connexion que depuis une adresse <b>https://</b> (site hébergé) ou <b>http://localhost</b>.</p><p style="font-size:14px;line-height:1.55;margin:0">Hébergez le dossier Bêta OS en https (NAS UGREEN avec reverse proxy, GitHub Pages, Netlify…), ouvrez-le depuis cette adresse, puis déclarez-la chez Google.</p>', 'sm');
       const q = new URLSearchParams({ client_id: cid, redirect_uri: this.redirectUri(), response_type: 'token', scope: SCOPE, include_granted_scopes: 'true', state: 'yt:' + (B.current || 'musique'), prompt: this.token ? 'select_account' : 'consent' });
       B.save();
       location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + q;
