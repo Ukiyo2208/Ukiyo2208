@@ -55,6 +55,8 @@
   const base = defaults();
   for (const k in base) if (!(k in S)) S[k] = base[k];
   for (const k in base.settings) if (!(k in S.settings)) S.settings[k] = base.settings[k];
+  // migrations légères entre versions
+  DATA.MAILS.forEach(dm => { const m = S.mails.find(x => x.id === dm.id); if (m && dm.invite && !m.invite) m.invite = dm.invite; });
   let saveT;
   function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }, 120); }
 
@@ -183,6 +185,19 @@
     document.body.appendChild(m);
     return m;
   }
+  /* notification avec actions (ex. « Ajouter à l'agenda ») */
+  function notify(o) {
+    let box = $('.notifs');
+    if (!box) { box = document.createElement('div'); box.className = 'notifs'; document.body.appendChild(box); }
+    const n = document.createElement('div');
+    n.className = 'notify card'; if (o.mail) n.dataset.mail = o.mail;
+    n.innerHTML = (window.BOS.badge ? window.BOS.badge(o.badge || 'mail') : '') + '<div class="nt"><b>' + esc(o.title) + '</b><span>' + (o.text || '') + '</span><div class="row">' +
+      (o.actions || []).map(a => '<button class="btn sm ' + (a[3] || '') + '" data-act="' + a[1] + '" data-arg="' + esc(a[2] || '') + '">' + esc(a[0]) + '</button>').join('') + '</div></div><button class="x2" data-act="notifyClose" aria-label="Fermer">' + ico('x') + '</button>';
+    box.appendChild(n);
+    setTimeout(() => n.remove(), o.ttl || 20000);
+    return n;
+  }
+  act('notifyClose', el => { const n = el.closest('.notify'); if (n) n.remove(); });
   function closeModal() { $$('.modal, .pop').forEach(m => m.remove()); }
   act('closeModal', closeModal);
   function popover(anchor, html) {
@@ -314,94 +329,5 @@
   };
   setInterval(() => HA.sync(), 15000);
 
-  /* ---------- moteur musique (radio HTML5 + YouTube) ---------- */
-  const Music = {
-    audio: null, playing: false, started: 0, elapsed: 0, ytReady: false,
-    sources() { return S.playlists.concat(DATA.RADIOS.map(r => Object.assign({ kind: 'radio', cover: '', artist: 'Radio en direct' }, r))); },
-    get(id) { return this.sources().find(s => s.id === id) || S.playlists[0]; },
-    cur() { return this.get(S.music.src); },
-    ytId(ref) {
-      const m = String(ref).match(/(?:v=|youtu\.be\/|embed\/|shorts\/|live\/)([\w-]{11})/);
-      if (m) return { v: m[1] };
-      const l = String(ref).match(/[?&]list=([\w-]+)/);
-      if (l) return { list: l[1] };
-      if (/^[\w-]{11}$/.test(ref)) return { v: ref };
-      if (/^(PL|OL|RD|UU)[\w-]+$/.test(ref)) return { list: ref };
-      return null;
-    },
-    ytBox() {
-      let b = $('#ytbox');
-      if (!b) { b = document.createElement('div'); b.id = 'ytbox'; b.className = 'ytbox'; document.body.appendChild(b); }
-      return b;
-    },
-    ytCmd(func, args) {
-      const f = $('#ytbox iframe');
-      if (f) f.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args: args || [] }), '*');
-    },
-    stopAll() {
-      if (this.audio) { this.audio.pause(); }
-      const b = $('#ytbox'); if (b) b.innerHTML = '';
-    },
-    play(id) {
-      if (id) { if (id !== S.music.src) this.elapsed = 0; S.music.src = id; save(); }
-      const s = this.cur();
-      this.stopAll();
-      if (s.kind === 'radio' || /^https?:.*\.(mp3|aac|m3u8|ogg)|icecast|revma|nrjaudio|stream/i.test(s.ref)) {
-        if (!this.audio) { this.audio = new Audio(); this.audio.preload = 'none'; this.audio.addEventListener('error', () => { if (this.playing) toast('Flux indisponible : ' + this.cur().name, 'info'); }); }
-        this.audio.src = s.ref;
-        this.audio.volume = S.music.vol / 100;
-        this.audio.play().catch(() => toast('Lecture bloquée par le navigateur — touchez ▶ à nouveau', 'info'));
-      } else {
-        const y = this.ytId(s.ref);
-        if (!y) { toast('Lien YouTube invalide pour « ' + s.name + ' »', 'info'); return; }
-        const src = 'https://www.youtube.com/embed/' + (y.v ? y.v + '?' : 'videoseries?list=' + y.list + '&') + 'autoplay=1&playsinline=1&enablejsapi=1&rel=0&origin=' + encodeURIComponent(location.origin === 'null' ? '' : location.origin);
-        this.ytBox().innerHTML = '<iframe src="' + src + '" allow="autoplay; encrypted-media" title="Lecteur YouTube"></iframe>';
-        setTimeout(() => this.ytCmd('setVolume', [S.music.vol]), 2500);
-      }
-      this.playing = true; this.started = Date.now();
-      this.session();
-      emit('music');
-    },
-    pause() {
-      const s = this.cur();
-      if (s.kind === 'radio' && this.audio) this.audio.pause(); else this.ytCmd('pauseVideo');
-      this.elapsed += (Date.now() - this.started) / 1000;
-      this.playing = false; emit('music');
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
-    },
-    resume() {
-      const s = this.cur();
-      if (s.kind === 'radio' && this.audio && this.audio.src) { this.audio.play().catch(() => { }); this.playing = true; this.started = Date.now(); emit('music'); }
-      else if (s.kind !== 'radio' && $('#ytbox iframe')) { this.ytCmd('playVideo'); this.playing = true; this.started = Date.now(); emit('music'); }
-      else this.play();
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
-    },
-    toggle() { this.playing ? this.pause() : this.resume(); },
-    step(dir) {
-      const list = S.playlists.map(p => p.id);
-      let i = list.indexOf(S.music.src);
-      if (i < 0) { const r = DATA.RADIOS.map(r => r.id); i = r.indexOf(S.music.src); const n = r[(i + dir + r.length) % r.length]; return this.play(n); }
-      this.play(list[(i + dir + list.length) % list.length]);
-    },
-    vol(v) {
-      S.music.vol = v; save();
-      if (this.audio) this.audio.volume = v / 100;
-      this.ytCmd('setVolume', [v]);
-    },
-    time() { return this.elapsed + (this.playing ? (Date.now() - this.started) / 1000 : 0); },
-    session() {
-      if (!('mediaSession' in navigator)) return;
-      const s = this.cur();
-      try {
-        navigator.mediaSession.metadata = new MediaMetadata({ title: s.name, artist: s.artist || 'Bêta OS', album: 'Bêta OS', artwork: s.cover ? [{ src: new URL(s.cover, location.href).href, sizes: '256x256', type: 'image/jpeg' }] : [] });
-        navigator.mediaSession.setActionHandler('play', () => this.resume());
-        navigator.mediaSession.setActionHandler('pause', () => this.pause());
-        navigator.mediaSession.setActionHandler('previoustrack', () => this.step(-1));
-        navigator.mediaSession.setActionHandler('nexttrack', () => this.step(1));
-      } catch (e) { }
-    }
-  };
-  setInterval(() => { if (Music.playing) emit('mtime'); }, 1000);
-
-  window.BOS = { S, DATA, $, $$, esc, F, save, dev, setDev, user, T, RENDER, emit, act, ACT, route, go, show, fit, toast, modal, closeModal, popover, WX, wxIcon, wxText, isNight, uvLabel, loadWeather, HA, Music, ymd, get current() { return current; } };
+  window.BOS = { S, DATA, $, $$, esc, F, save, dev, setDev, user, T, RENDER, emit, act, ACT, route, go, show, fit, toast, notify, modal, closeModal, popover, WX, wxIcon, wxText, isNight, uvLabel, loadWeather, HA, ymd, get current() { return current; } };
 })();

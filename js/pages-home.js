@@ -38,93 +38,91 @@
   B.house = house; B.solarNow = solarNow;
 
   /* ======================= ACCUEIL ======================= */
-  RENDER.hdate = () => { const d = new Date(); return '<div class="hdate glass abs" style="' + box([400, 15, 632, 101]) + '"><span class="d">' + F.long(d) + '</span><span class="t">' + F.time(d) + '</span></div>'; };
+  const hello = () => { const h = new Date().getHours(); return h < 5 ? 'Bonne nuit' : h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir'; };
+  B.hello = hello;
+  RENDER.hdate = () => { const d = new Date(); return '<div class="hdate glass abs hide-fluid" style="' + box([400, 15, 632, 101]) + '"><span class="d">' + F.long(d) + '</span><span class="t">' + F.time(d) + '</span></div>'; };
   RENDER.hwxs = () => '<div class="hwxs glass abs hide-fluid" style="' + box([730, 15, 1192, 101]) + '" data-act="weather" role="button">' + ico(B.wxIcon(WX.now.code, B.isNight()), 'big') +
     '<div class="n">' + esc(S.settings.city) + '<b>' + WX.now.temp + '°C</b>' + B.wxText(WX.now.code) + '</div>' +
     WX.days.slice(0, 3).map((d, i) => { const ic = B.wxIcon(d.code, false); return '<div class="dd">' + ico(ic, ic === 'sun' ? '' : 'c').replace('class="ico c"', 'class="ico" style="color:#dfe8ff;filter:none"') + '<span>' + F.d3(new Date(Date.now() + (i + 1) * 864e5)) + '</span><span>' + d.max + '° / ' + d.min + '°</span></div>'; }).join('') + '</div>';
   RENDER.hicons = () => {
     const un = B.unread(), tm = new Date(Date.now() + 864e5), evs = S.events.filter(e => e.date === F.ymd(tm)).length;
-    return '<div class="hicons glass abs" style="' + box([1300, 15, 1662, 92]) + '">' +
+    return '<div class="hicons glass abs hide-fluid" style="' + box([1300, 15, 1662, 92]) + '">' +
       '<a href="#mails" class="mailb" title="Mails">' + ico('mail') + (un ? '<span class="badge">' + un + '</span>' : '') + '</a>' +
       '<a href="#calendrier" class="calb" title="Calendrier">' + ico('calendar') + (evs ? '<span class="badge">' + evs + '</span>' : '') + '</a>' +
       '<button data-act="notifs" title="Notifications">' + ico('bellFill') + '</button>' +
       '<button data-act="haStatus" title="Réseau">' + ico('wifi') + '</button>' +
-      '<a href="#ia" title="Bêta IA">' + ico('ai') + '</a>' +
+      '<button data-act="iaOpen" class="iatop" title="Parler à Bêta IA">' + brainSVG() + '</button>' +
       '<a href="#parametres" class="gearb" title="Paramètres">' + ico('gearFill') + '</a></div>';
   };
-  RENDER.husers = s => '<section class="card hcard abs" style="' + s.style + '"><h2 class="h-title">Utilisateurs</h2><div class="users">' +
-    S.users.slice(0, 4).map(u => avatarBlock(u)).join('') +
-    '<a href="#parametres" class="rnd" style="align-self:center;margin:-40px 0 0 -6px" aria-label="Gérer les profils">' + ico('chevR') + '</a></div></section>';
-  RENDER.hmeteo = s => '<section class="card hcard abs" style="' + s.style + '" data-act="weather" role="button"><h2 class="h-title">Météo</h2><div class="hwx">' +
+  RENDER.husers = s => '<section class="card hcard abs" style="' + s.style + '">' + B.whead('users', 'La famille', '<a href="#parametres" class="wmore" aria-label="Gérer les profils">' + ico('chevR') + '</a>') + '<div class="users">' +
+    S.users.slice(0, 4).map(u => avatarBlock(u)).join('') + '</div></section>';
+  RENDER.hmeteo = s => '<section class="card hcard abs" style="' + s.style + '" data-act="weather" role="button">' + B.whead('weather', 'Météo du moment', '<span class="wsub">' + esc(S.settings.city) + '</span>') + '<div class="hwx">' +
     '<div class="now">' + ico(B.wxIcon(WX.now.code, B.isNight()), 'big') + '<span class="temp">' + WX.now.temp + '°C</span><span class="cond">' + B.wxText(WX.now.code) + '</span></div>' +
     '<div class="days">' + B.wxDays(3) + '</div>' +
     '<div class="stats"><div>' + ico('drop') + '<span>' + WX.now.rain + ' %</span><small>Pluie</small></div><div>' + ico('wind') + '<span>' + WX.now.wind + ' km/h</span><small>Vent</small></div><div>' + ico('uv', 'g') + '<span>UV ' + WX.now.uv + '</span><small>' + B.uvLabel(WX.now.uv) + '</small></div></div></div></section>';
   RENDER.hcal = s => {
     const t = new Date(), evs = S.events.filter(e => e.date === F.ymd(t)).sort((a, b) => a.time.localeCompare(b.time)).slice(0, 4);
-    return '<section class="card hcard hcal abs" style="' + s.style + '" data-act="goto" data-arg="calendrier" role="button"><h2 class="h-title">Calendrier</h2><div class="today">Aujourd\'hui, ' + F.dayMonth(t) + '</div>' +
-      (evs.length ? evs.map(e => '<div class="ev" style="--c:' + e.color + '"><i></i><span>' + e.time + '</span><span>' + esc(e.title) + '</span><span class="d">' + (e.dur >= 60 ? Math.round(e.dur / 60 * 10) / 10 + 'h' : e.dur + 'min') + '</span></div>').join('') : '<p class="muted">Aucun événement aujourd’hui</p>') + '</section>';
+    return '<section class="card hcard hcal abs" style="' + s.style + '" data-act="goto" data-arg="calendrier" role="button">' + B.whead('cal', 'Au programme') + '<div class="today">Aujourd\'hui, ' + F.dayMonth(t) + '</div>' +
+      (evs.length ? evs.map(e => '<div class="ev" style="--c:' + e.color + '"><i></i><span>' + e.time + '</span><span class="tt">' + esc(e.title) + '</span><span class="d">' + (e.dur >= 60 ? Math.round(e.dur / 60 * 10) / 10 + ' h' : e.dur + ' min') + '</span></div>').join('') : '<p class="muted">Rien de prévu aujourd’hui. Profitez !</p>') + '</section>';
   };
   RENDER.hmail = s => {
     const un = B.unread();
-    return '<section class="card hcard hmail abs" style="' + s.style + '"><h2 class="h-title" style="display:flex;align-items:center;gap:14px">' + ico('mail').replace('class="ico', 'style="font-size:30px;color:#cfe8ff" class="ico') + 'Mails</h2>' +
-      '<a href="#mails" class="new">' + ico('bellFill') + un + ' nouveau' + (un > 1 ? 'x' : '') + '<span class="more">' + ico('chevR') + '</span></a>' +
-      S.mails.slice(0, 4).map(m => '<div class="mrow' + (m.read ? ' read' : '') + '" data-act="openMail" data-arg="' + m.id + '"><span class="lg" style="background:' + m.bg + '">' + esc(m.logo) + '</span><span class="s">' + esc(m.from) + '<small>' + esc(m.subj) + '</small></span><span class="tm">' + m.time + '</span></div>').join('') + '</section>';
+    return '<section class="card hcard hmail abs" style="' + s.style + '">' + B.whead('mail', 'Courrier', '<a href="#mails" class="wcount">' + (un ? un + ' nouveau' + (un > 1 ? 'x' : '') : 'à jour') + ico('chevR') + '</a>') +
+      '<div class="mlist2">' + S.mails.slice(0, 4).map(m => '<div class="mrow' + (m.read ? ' read' : '') + '" data-act="openMail" data-arg="' + m.id + '"><span class="lg" style="background:' + m.bg + '">' + esc(m.logo) + '</span><span class="s">' + esc(m.from) + '<small>' + esc(m.subj) + '</small></span><span class="tm">' + m.time + (m.invite ? ico('calendar', 'inv') : '') + '</span></div>').join('') + '</div></section>';
   };
   RENDER.henergy = s => {
     const h = house(), sol = solarNow(), pct = Math.min(1, h.kw / 2.3);
-    const C = 2 * Math.PI * 66, arc = C * .8;
+    const C = 2 * Math.PI * 56, arc = C * .78;
     const bars = [3, 5, 9, 14, 18, 22, 19, 16, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 4, 3, 3, 2, 2];
-    const chs = S.dev['home.chauffage'] ? dev('home.chauffage') : dev('home.chauffage');
+    const ch = dev('home.chauffage');
     const clims = Object.keys(DATA.DEVICES).filter(id => DATA.DEVICES[id].type === 'clim' && id !== 'home.chauffage' && dev(id).on).length;
-    return '<section class="card hcard abs" style="' + s.style + '"><h2 class="h-title">Maison totale</h2><div class="energy">' +
-      '<div class="gauge" data-act="goto" data-arg="energie" role="button"><svg viewBox="0 0 160 160"><defs><linearGradient id="gg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#1f7dff"/><stop offset=".6" stop-color="#22c8ff"/><stop offset="1" stop-color="#2ff0d0"/></linearGradient></defs>' +
-      '<circle cx="80" cy="80" r="66" fill="none" stroke="rgba(40,80,150,.45)" stroke-width="9" stroke-dasharray="' + arc + ' ' + C + '" transform="rotate(126 80 80)" stroke-linecap="round"/>' +
-      '<circle cx="80" cy="80" r="66" fill="none" stroke="url(#gg)" stroke-width="9" stroke-dasharray="' + (arc * pct) + ' ' + C + '" transform="rotate(126 80 80)" stroke-linecap="round" style="filter:drop-shadow(0 0 6px rgba(40,200,255,.8))"/></svg>' +
-      '<div class="in">' + ico('leaf') + '<b>' + h.kw.toFixed(1) + ' kW</b><span>Consommation</span><em>vs -32%</em></div></div>' +
+    const pill = (act, icon, col, l, v, extra) => '<button class="tile epill" ' + act + '><span class="ei" style="--c:' + col + '">' + ico(icon) + '<small>' + l + '</small></span><span class="et"><b style="color:' + (extra || '#eaf2ff') + '">' + v + '</b></span></button>';
+    return '<section class="card hcard abs" style="' + s.style + '">' + B.whead('energy', 'Énergie de la maison', '<a href="#energie" class="wmore" aria-label="Détails énergie">' + ico('chevR') + '</a>') + '<div class="energy">' +
+      '<div class="gauge" data-act="goto" data-arg="energie" role="button"><svg viewBox="0 0 140 140"><defs><linearGradient id="gg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#1f7dff"/><stop offset=".6" stop-color="#22c8ff"/><stop offset="1" stop-color="#2ff0d0"/></linearGradient></defs>' +
+      '<circle cx="70" cy="70" r="56" fill="none" stroke="rgba(40,80,150,.45)" stroke-width="8" stroke-dasharray="' + arc + ' ' + C + '" transform="rotate(130 70 70)" stroke-linecap="round"/>' +
+      '<circle cx="70" cy="70" r="56" fill="none" stroke="url(#gg)" stroke-width="8" stroke-dasharray="' + (arc * pct) + ' ' + C + '" transform="rotate(130 70 70)" stroke-linecap="round" style="filter:drop-shadow(0 0 6px rgba(40,200,255,.8))"/></svg>' +
+      '<div class="in">' + ico('leaf') + '<b>' + h.kw.toFixed(1).replace('.', ',') + '<small> kW</small></b><span>consommés</span><em>' + ico('chevD') + '32 % vs hier</em></div></div>' +
       '<div class="erows"><div class="erow tile">' + ico('sun').replace('class="ico', 'style="color:#ffd23f;filter:drop-shadow(0 0 8px rgba(255,210,63,.8))" class="ico') +
-      '<b>' + (sol > .05 ? sol.toFixed(1) + ' kW' : '18.6 kWh') + '</b><small>' + (sol > .05 ? 'Production solaire' : 'Production solaire du jour') + '</small><div class="chart">' + bars.map(v => '<i style="height:' + (v / 22 * 100) + '%"></i>').join('') + '</div></div>' +
+      '<b>' + (sol > .05 ? sol.toFixed(1).replace('.', ',') + ' kW' : '18,6 kWh') + '</b><small>' + (sol > .05 ? 'Panneaux solaires' : 'Produits aujourd’hui') + '</small><div class="chart">' + bars.map((v, i) => '<i style="height:' + (v / 22 * 100) + '%;opacity:' + (i <= new Date().getHours() - 6 ? 1 : .35) + '"></i>').join('') + '</div></div>' +
       '<div class="erow tile">' + ico('batteryV').replace('class="ico', 'style="color:#22e3a4;filter:drop-shadow(0 0 8px rgba(34,227,164,.7))" class="ico') +
-      '<b>12.4 kWh / 16 kWh</b><small>Batterie virtuelle</small><div class="bar"><div><i style="width:76%"></i></div>76%</div></div></div>' +
-      '<div class="etiles">' +
-      '<button class="tile etile" data-act="chauffage">' + ico('flame').replace('class="ico', 'style="color:#ff6a2b;filter:drop-shadow(0 0 8px rgba(255,100,40,.7))" class="ico') + '<span>Chauffage maison</span><span class="v">' + (chs.on ? chs.mode || 'Auto' : 'Arrêt') + '</span><span class="s" style="color:#e5eefc">' + ico('pin') + chs.temp + '°C</span></button>' +
-      '<button class="tile etile" data-act="toggle" data-id="home.ecs">' + ico('hotWater').replace('class="ico', 'style="color:#2fb0ff;filter:drop-shadow(0 0 8px rgba(40,170,255,.7))" class="ico') + '<span>Eau chaude</span><span class="v">' + (dev('home.ecs').on ? '52°C' : 'Arrêt') + '</span><span class="s">' + (dev('home.ecs').on ? 'Normal' : 'Hors-gel') + '</span></button>' +
-      '<button class="tile etile" data-act="toggle" data-id="home.climg">' + ico('snow').replace('class="ico', 'style="color:#2fd8ff;filter:drop-shadow(0 0 8px rgba(40,200,255,.7))" class="ico') + '<span>Climatisation globale</span><span class="v">' + (dev('home.climg').on ? 'Auto' : 'Arrêt') + '</span><span class="s">' + ico('user') + clims + ' zone' + (clims > 1 ? 's' : '') + '</span></button>' +
-      '<button class="tile etile" data-act="goto" data-arg="multimedia">' + ico('plexBox').replace('class="ico', 'style="color:#ffd23f;filter:drop-shadow(0 0 8px rgba(255,210,63,.6))" class="ico') + '<span>Plex</span><span class="s">' + (S.plexPlaying ? 'En lecture' : 'En pause') + '</span></button>' +
-      '<button class="tile etile" data-act="musicToggle">' + ico('musicFill').replace('class="ico', 'style="color:#2fb6ff;filter:drop-shadow(0 0 8px rgba(40,170,255,.7))" class="ico') + '<span>Musique</span><span class="s">' + (Music.playing ? 'En lecture' : 'En pause') + '</span></button>' +
+      '<b>12,4 / 16 kWh</b><small>Batterie</small><div class="bar"><div><i style="width:76%"></i></div>76 %</div></div></div>' +
+      '<div class="epills">' +
+      pill('data-act="chauffage"', 'flame', '#ff6a2b', 'Chauffage', (ch.on ? (ch.mode || 'Auto') + ' · ' + String(ch.temp).replace('.', ',') + '°' : 'Arrêt')) +
+      pill('data-act="toggle" data-id="home.ecs"', 'hotWater', '#2fb0ff', 'Eau chaude', dev('home.ecs').on ? '52 °C' : 'Hors-gel') +
+      pill('data-act="toggle" data-id="home.climg"', 'snow', '#2fd8ff', 'Clim', dev('home.climg').on ? clims + ' pièce' + (clims > 1 ? 's' : '') : 'Arrêt') +
+      pill('data-act="goto" data-arg="plex"', 'plex', '#ffb020', 'Plex', S.plexPlaying ? 'En lecture' : 'En pause', S.plexPlaying ? '#2ed3ff' : '') +
+      pill('data-act="musicToggle"', 'musicFill', '#2fb6ff', 'Musique', Music.playing ? 'En lecture' : 'En pause', Music.playing ? '#2ed3ff' : '') +
       '</div></div></section>';
   };
-  RENDER.hmm = s => {
-    const cur = Music.cur(), tab = S.music.tab || 'plex';
-    const list = tab === 'radio' ? DATA.RADIOS.slice(0, 4).map(r => ({ id: r.id, name: r.name, cover: '', color: r.color })) : S.playlists.slice(0, 4);
-    return '<section class="card hcard abs" style="' + s.style + '"><div style="display:flex;align-items:center;gap:40px"><h2 class="h-title">Multimédia</h2>' +
-      '<div class="tabs">' + [['plex', 'Plex'], ['musique', 'Musique'], ['radio', 'Radio']].map(t => '<button class="' + (tab === t[0] ? 'on' : '') + '" data-act="mmTab" data-arg="' + t[0] + '">' + t[1] + '</button>').join('') + '</div></div>' +
-      '<div class="hmm"><div class="art">' + (cur.cover ? '<img src="' + cur.cover + '" alt="">' : radioArt(cur)) + '</div>' +
-      '<div class="info"><b>' + (Music.playing ? 'En lecture' : 'En pause') + '</b><span>' + esc(cur.name) + '</span>' + B.transport() + '</div>' +
-      '<div class="lists">' + list.map(p => '<button class="' + (S.music.src === p.id ? 'on' : '') + '" data-act="mPlay" data-arg="' + p.id + '">' + (p.cover ? '<img src="' + p.cover + '" alt="">' : radioArt(p, 115)) + esc(p.name) + '</button>').join('') + '</div>' +
-      T({ t: 'mprog', keys: ['mtime', 'music'] }) + '</div></section>';
+  /* Musique (accueil) : morceau en cours + favoris de l'utilisateur */
+  RENDER.hmusic = s => {
+    const i = B.curInfo(), tab = S.music.htab || 'radio';
+    const favs = Music.favs().map(id => Music.get(id)).filter(Boolean);
+    let list = tab === 'radio' ? favs.filter(x => x.kind === 'radio') : tab === 'yt' ? favs.filter(x => Music.kindOf(x) === 'yt') : favs.filter(x => Music.kindOf(x) === 'audio' || x.group === 'Ambiances');
+    const pool = tab === 'radio' ? DATA.RADIOS.map(r => Music.get(r.id)) : tab === 'yt' ? Music.sources().filter(x => Music.kindOf(x) === 'yt') : S.playlists.map(p => Music.get(p.id));
+    list = list.concat(pool.filter(x => !list.some(y => y.id === x.id)).map(x => Object.assign({ sug: true }, x))).slice(0, 6);
+    const fav = x => { const k = Music.kindOf(x), on = S.music.src === x.id; return '<button class="fav' + (on ? ' on' : '') + (x.sug ? ' sug' : '') + '" data-act="mPlay" data-arg="' + x.id + '" title="' + esc(x.name) + '">' + (k === 'radio' ? B.radioLogo(x, 46, true) : '<img src="' + (x.cover || 'assets/media/playlist-1.jpg') + '" alt="">') + (on && Music.playing ? '<span class="eq"><i></i><i></i><i></i></span>' : '') + '<span>' + esc(x.name) + '</span></button>'; };
+    return '<section class="card hcard hmus abs" style="' + s.style + '">' + B.whead('music', 'Musique', '<div class="tabs sm">' + [['radio', 'Radios'], ['yt', 'YouTube'], ['amb', 'Ambiances']].map(t => '<button class="' + (tab === t[0] ? 'on' : '') + '" data-act="hmTab" data-arg="' + t[0] + '">' + t[1] + '</button>').join('') + '</div><a href="#musique" class="wmore" aria-label="Page Musique">' + ico('chevR') + '</a>') +
+      '<div class="hmnow"><a href="#musique" class="cv">' + B.mcover(i, 84) + '</a><div class="nf">' + B.srcPill(i) + '<b>' + esc(i.title) + '</b><span>' + esc(i.artist) + '</span>' + B.transport() + '</div></div>' +
+      '<div class="favs">' + list.slice(0, 6).map(fav).join('') + '</div></section>';
   };
-  function radioArt(r, h) {
-    const R = DATA.RADIOS.find(x => x.id === r.id) || r;
-    return '<div style="width:100%;height:' + (h ? h + 'px' : '100%') + ';border-radius:6px;display:grid;place-items:center;text-align:center;padding:6px;font-weight:700;font-size:15px;background:radial-gradient(circle at 30% 20%,' + (R.color || '#2f7dff') + ',#0a1636 75%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)">' + ico('radio').replace('class="ico', 'style="font-size:30px;margin:0 auto 6px" class="ico') + esc(R.name) + '</div>';
-  }
-  B.radioArt = radioArt;
-  RENDER.mprog = () => {
-    const cur = Music.cur(), t = Music.time(), live = cur.kind === 'radio';
-    const mm = x => Math.floor(x / 60) + ':' + String(Math.floor(x % 60)).padStart(2, '0');
-    const p = live ? 100 : Music.playing || t ? (t % 272) / 272 * 100 : 49;
-    return '<div class="prog"><input type="range" class="range" min="0" max="100" value="' + p + '" style="--p:' + p + '%" aria-label="Progression" disabled><span>' + (live ? 'En direct' : (Music.playing || t ? mm(t % 272) : '2:14') + ' / 4:32') + '</span></div>';
+  B.act('hmTab', el => { S.music.htab = el.dataset.arg; B.save(); B.emit('music'); });
+  /* Plex (accueil) : film sélectionné + ajouts récents */
+  RENDER.hplex = s => {
+    const p = B.Plex.sel(), rec = B.Plex.list('recent').filter(x => x.id !== p.id).slice(0, 4);
+    return '<section class="card hcard hplex abs" style="' + s.style + '">' + B.whead('plex', 'Soirée ciné', '<a href="#plex" class="wmore" aria-label="Page Plex">' + ico('chevR') + '</a>') +
+      '<div class="hpx"><a href="#plex" class="pst"><img src="' + p.img + '" alt=""></a><div class="pi"><small>' + (S.plexPlaying ? 'En lecture sur la TV' : p.progress ? 'À reprendre' : 'À découvrir') + '</small><b>' + esc(p.title) + '</b><span>' + esc(p.kind) + ' · ' + p.year + ' · ' + esc(p.dur) + '</span>' +
+      (p.progress ? '<i class="pgbar"><b style="width:' + p.progress + '%"></b></i>' : '') +
+      '<div class="row"><button class="btn pri sm" data-act="plexPlay" data-toggle="1">' + ico(S.plexPlaying ? 'pause' : 'play') + (S.plexPlaying ? 'Pause' : p.progress ? 'Reprendre' : 'Regarder') + '</button>' + rec.slice(0, 3).map(x => B.poster(x, 'mini')).join('') + '</div></div></div></section>';
   };
-  RENDER.hnas = s => '<section class="card hcard abs" style="' + s.style + '"><h2 class="h-title" data-act="goto" data-arg="nas" role="button">NAS UGREEN</h2>' +
-    '<div class="nasbox tile" data-act="goto" data-arg="nas" role="button"><img src="' + A + 'devices/nas.jpg" alt=""><span class="l">Stockage total</span><span class="r">12.4 To / 16 To</span><div class="bar"><i style="width:78%"></i></div><span class="pct">78%</span></div>' +
+  RENDER.hnas = s => '<section class="card hcard hnas abs" style="' + s.style + '">' + B.whead('nas', 'Stockage', '<span class="tag2">En ligne</span>') +
+    '<div class="nasbox tile" data-act="goto" data-arg="nas" role="button"><img src="' + A + 'devices/nas.jpg" alt=""><span class="l">UGREEN</span><span class="r">12,4 / 16 To</span><div class="bar"><i style="width:78%"></i></div><span class="pct">78 %</span></div>' +
     '<div class="nasbtns">' + [['files', 'Fichiers'], ['photo', 'Photos'], ['video', 'Vidéos'], ['cloudUp', 'Sauvegarde']].map(b => '<button class="tile" data-act="nasOpen" data-arg="' + b[1] + '">' + ico(b[0]) + b[1] + '</button>').join('') + '</div>' +
-    '<div style="font-size:16px;margin:10px 0 6px">Services</div><div class="svc">' +
-    '<div><span class="si" style="background:#1f8bff">' + ico('cloud') + '</span>Nextcloud<small>En ligne</small></div>' +
-    '<div><span class="si" style="background:linear-gradient(135deg,#ff6fae,#5fb8ff)">' + ico('photo') + '</span>Photos AI<small>En ligne</small></div>' +
-    '<div><span class="si" style="color:#2fb6ff">' + ico('shield') + '</span>Surveillance<small class="w">' + Object.keys(DATA.CAMS).length + ' caméras</small></div>' +
-    '<div><span class="si" style="color:#2fe3a6">' + ico('download') + '</span>Télécharg.<small class="w">2 en cours</small></div></div></section>';
-  RENDER.hia = s => '<section class="card hcard hia abs" style="' + s.style + '"><div class="top">' + brainSVG() + '<div><h2>Bêta IA</h2><p>Bonjour ' + esc(B.user().name) + ',</p><p class="cy">Comment puis-je vous aider ?</p></div><a href="#ia" style="font-size:24px;color:#2fb6ff;padding:8px" aria-label="Ouvrir Bêta IA">' + ico('chevR') + '</a></div>' +
-    '<div class="sugg"><button data-act="iaAsk" data-arg="Contrôle la maison">' + ico('sparkle') + 'Contrôle la maison</button><button data-act="iaAsk" data-arg="Montre la météo">' + ico('music') + 'Montre la météo</button><button data-act="iaAsk" data-arg="Ouvre Plex">' + ico('sunGear') + 'Ouvre Plex</button><button data-act="iaAsk" data-arg="Lance ma playlist Japon">' + ico('refresh') + 'Lance ma playlist Japon</button></div>' +
-    '<form data-submit="iaHome"><button type="button" data-act="mic" aria-label="Dicter">' + ico('mic') + '</button><input name="q" placeholder="Posez une question ou demandez une action..." autocomplete="off" aria-label="Question"><button aria-label="Envoyer">' + ico('send') + '</button></form></section>';
+    '<div class="nasst">' + ico('download') + '2 téléchargements · sauvegarde OK cette nuit</div></section>';
+  RENDER.hia = s => '<section class="card hcard hia abs" style="' + s.style + '">' + B.whead('ia', 'Bêta IA', '<button class="wmore" data-act="iaOpen" aria-label="Ouvrir la conversation">' + ico('chevR') + '</button>') +
+    '<p class="hello">' + hello() + ' ' + esc(B.user().name) + ' 👋<span class="cy">Que puis-je faire pour vous ?</span></p>' +
+    '<div class="sugg"><button data-act="iaAsk" data-arg="Fais le point sur la maison">' + ico('sparkle') + 'Point maison</button><button data-act="iaAsk" data-arg="Quel temps fait-il ?">' + ico('cloudMoon') + 'Météo</button><button data-act="iaAsk" data-arg="Lance ma playlist Japon">' + ico('musicFill') + 'Playlist Japon</button></div>' +
+    '<form data-submit="iaHome"><button type="button" data-act="mic" aria-label="Dicter">' + ico('mic') + '</button><input name="q" placeholder="Écrivez ou dictez…" autocomplete="off" enterkeyhint="send" aria-label="Question"><button aria-label="Envoyer">' + ico('send') + '</button></form></section>';
 
   B.route('accueil', { title: 'Accueil', bg: A + 'bg/home.jpg', w: 1672, h: 941, render: () => {
     const C = [692, 375];
@@ -136,16 +134,16 @@
       T({ t: 'hcal', style: box([1077, 120, 1357, 362]), keys: ['events'] }) +
       T({ t: 'hmail', style: box([1366, 120, 1662, 362]), keys: ['mails'] }) +
       T({ t: 'henergy', style: box([105, 375, 684, 660]), keys: ['house', 'music', 'plex'] }) +
-      '<section class="card hcard abs" style="' + box([692, 375, 1662, 660]) + '"><h2 class="h-title" style="display:flex;align-items:center">Caméras extérieures<button class="more" data-act="allCams" style="margin-left:auto;color:#2fb6ff;font-size:22px" aria-label="Toutes">' + ico('chevR') + '</button></h2>' +
+      '<section class="card hcard abs hcams" style="' + box([692, 375, 1662, 660]) + '">' + B.whead('cam', 'Vidéosurveillance', '<button class="wmore" data-act="allCams" aria-label="Toutes les caméras">' + ico('chevR') + '</button>') +
       '<div class="camgrid">' + cams.map(c => T({ t: 'cam', cam: c[0], style: box(c[1], C), bottom: true, tile: true, short: true, det: DATA.CAMS[c[0]].det.slice(0, 3), keys: ['cam:' + c[0]] })).join('') + '</div></section>' +
-      T({ t: 'hmm', style: box([105, 683, 755, 912]), keys: ['music'] }) +
-      T({ t: 'hnas', style: box([763, 683, 1172, 912]) }) +
-      T({ t: 'hia', style: box([1180, 683, 1662, 912]), keys: ['users'] });
+      T({ t: 'hmusic', style: box([105, 683, 640, 912]), keys: ['music'] }) +
+      T({ t: 'hplex', style: box([652, 683, 1064, 912]), keys: ['plex'] }) +
+      T({ t: 'hnas', style: box([1077, 683, 1357, 912]) }) +
+      T({ t: 'hia', style: box([1366, 683, 1662, 912]), keys: ['users'] });
   } });
 
   /* ---------- actions accueil ---------- */
   B.act('goto', el => B.go(el.dataset.arg));
-  B.act('mmTab', el => { S.music.tab = el.dataset.arg; B.save(); if (el.dataset.arg === 'plex') { B.emit('music'); return; } B.emit('music'); });
   B.act('chauffage', el => {
     const d = dev('home.chauffage');
     B.popover(el, '<b style="font-weight:500">Chauffage maison</b><div class="row" style="justify-content:space-between;margin:14px 0"><button class="sq" data-act="clim" data-id="home.chauffage" data-arg="-0.5">' + ico('minus') + '</button><b style="font-size:26px;font-weight:400" id="chT">' + d.temp.toFixed(1) + '°C</b><button class="sq" data-act="clim" data-id="home.chauffage" data-arg="0.5">' + ico('plus') + '</button></div>' +
@@ -184,8 +182,14 @@
     const d = new Date(), tm = WX.tomorrow || WX.days[0];
     return '<div class="lk-clock glass abs" style="' + s.style + '"><div class="d">' + F.long(d) + '</div><div class="t">' + F.time(d) + '</div>' +
       '<div class="w">' + ico(B.wxIcon(WX.now.code, false) === 'sun' ? 'sun' : B.wxIcon(WX.now.code, false)) + '<span>' + B.wxText(WX.now.code) + '</span><b>' + WX.now.temp + '°C</b></div>' +
-      '<div class="w">' + ico('cloud', 'cl') + '<span>Demain : ' + tm.max + '°C / ' + tm.min + '°C</span></div></div>';
+      '<div class="w">' + ico('cloud', 'cl') + '<span>Demain : ' + tm.max + '°C / ' + tm.min + '°C</span></div>' + nextEv() + '</div>';
   };
+  function nextEv() {
+    const now = new Date(), nx = S.events.filter(e => new Date(e.date + 'T' + e.time) >= now).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
+    if (!nx) return '';
+    const tm = nx.date === F.ymd(now) ? '' : nx.date === F.ymd(new Date(Date.now() + 864e5)) ? 'demain ' : F.dayMonth(new Date(nx.date + 'T12:00')) + ', ';
+    return '<div class="nx" style="--c:' + nx.color + '"><i></i>' + tm + nx.time + ' · ' + esc(nx.title) + '</div>';
+  }
   RENDER.lkhouse = s => {
     const h = house(), b = dev('ext.borne'), m = dev('ext.tondeuse');
     const calm = !h.motion;
@@ -202,14 +206,15 @@
     ico(B.isNight() ? 'moon' : 'sun', 'moon') +
     '<div class="st"><div>' + ico('sunLine') + (WX.tomorrow ? WX.tomorrow.max : WX.days[0].max) + '°C<small>Demain</small></div><div>' + ico('dropFill', 'b') + WX.now.rain + '%<small>Pluie</small></div><div>' + ico('wind', 'b') + WX.now.wind + ' km/h<small>Vent</small></div><div>' + ico('uv', 'g') + 'UV ' + WX.now.uv + '<small>' + B.uvLabel(WX.now.uv) + '</small></div></div></div>';
   RENDER.lklinks = s => {
-    const un = B.unread(), tm = F.ymd(new Date(Date.now() + 864e5)), evs = S.events.filter(e => e.date === tm).length, cur = Music.cur();
+    const un = B.unread(), tm = F.ymd(new Date(Date.now() + 864e5)), evs = S.events.filter(e => e.date === tm).length;
     const L = (y, icon, title, sub, to, cls, c) => '<a class="lk-link glass abs" href="#" data-act="unlockTo" data-arg="' + to + '" style="' + px(1200, y, 305, 76) + '">' + ico(icon) + '<div><b>' + title + '</b><small class="' + (cls || '') + '">' + (c ? '<i style="--c:' + c + '"></i>' : '') + sub + '</small></div>' + ico('chevR', 'chev') + '</a>';
     return '<div class="abs" style="left:0;top:0">' +
       L(329, 'mail', 'Mails', un + ' nouveau' + (un > 1 ? 'x' : ''), 'mails', '', '#2f8bff') +
       L(413, 'calendar', 'Calendrier', evs + ' événement' + (evs > 1 ? 's' : '') + ' demain', 'calendrier') +
       L(497, 'nas', 'UGREEN NAS', 'En ligne', 'nas', 'g', '#22e3a4') +
-      L(581, 'musicFill', 'Musique', (Music.playing ? 'En lecture : ' : 'Prêt : ') + esc(cur.name), 'multimedia') +
-      L(665, 'plex', 'Plex', '1 film à reprendre', 'multimedia') + '</div>';
+      '<div class="lk-link lk-music glass abs" style="' + px(1200, 581, 305, 76) + '">' + '<button class="cvb" data-act="unlockTo" data-arg="musique" aria-label="Ouvrir la musique">' + B.mcover(B.curInfo(), 46) + '</button><div><b>' + esc(B.curInfo().title) + '</b><small>' + (Music.playing ? '♪ ' : '') + esc(B.curInfo().artist) + '</small></div>' +
+      '<button class="pp2" data-act="musicToggle" aria-label="Lecture/pause">' + ico(Music.playing ? 'pause' : 'play') + '</button></div>' +
+      L(665, 'plex', 'Plex', esc(B.Plex.sel().title) + (B.Plex.sel().progress ? ' · à reprendre' : ''), 'plex') + '</div>';
   };
   RENDER.lkusers = s => '<div class="lk-users glass abs" style="' + s.style + '">' +
     S.users.slice(0, 4).map(u => avatarBlock(u, (S.lockSel || S.user) === u.id ? ' sel' : '').replace('data-act="userCard"', 'data-act="lockUser"')).join('') +
@@ -237,11 +242,37 @@
       '<div class="lk-hint abs" style="' + px(568, 602, 400, 70) + '"><b>Touchez pour déverrouiller</b><span>ou sélectionnez votre profil</span></div>' +
       T({ t: 'lkusers', style: box([410, 722, 1135, 942]), keys: ['users'] }) +
       T({ t: 'lkwx', style: box([1135, 70, 1505, 310]), keys: ['weather'] }) +
-      T({ t: 'lklinks', keys: ['mails', 'music', 'events'] }) +
+      T({ t: 'lklinks', keys: ['mails', 'music', 'events', 'plex'] }) +
+      T({ t: 'lkalert', keys: ['cam:cam.sonnette', 'cam:cam.cour'] }) +
+      (S.settings.petals !== false ? '<div class="petals" aria-hidden="true">' + Array.from({ length: 16 }, (_, i) => '<i style="left:' + (Math.random() * 100).toFixed(1) + '%;animation-delay:-' + (Math.random() * 14).toFixed(1) + 's;animation-duration:' + (10 + Math.random() * 8).toFixed(1) + 's;--s:' + (.5 + Math.random() * .7).toFixed(2) + ';--d:' + (Math.random() * 160 - 80).toFixed(0) + 'px">' + ico('sakura') + '</i>').join('') + '</div>' : '') +
       '<div class="lk-quote abs" style="' + px(45, 915, 320, 85) + '"><b>家</b>Un foyer, plus qu’une maison,<br>un équilibre au quotidien.</div>' +
       '<div class="lk-quote r abs" style="' + px(1150, 935, 345, 60) + '"><b>日々、より良く</b>Chaque jour, un peu mieux.</div></div>';
   } });
+  RENDER.lkalert = () => {
+    const ids = ['cam.sonnette', 'cam.cour'].filter(id => B.camEv(id).dot);
+    if (!ids.length) return '<div class="lk-alert abs" hidden></div>';
+    const id = ids[0], e = B.camEv(id);
+    return '<button class="lk-alert glass abs" style="' + px(568, 24, 400, 46) + '" data-act="unlockTo" data-arg="exterieur"><span class="dot ' + e.dot + '"></span>' + ico(id === 'cam.sonnette' ? 'bellFill' : 'cctv') + '<b>' + esc(DATA.CAMS[id].name) + '</b><span>' + e.txt.replace(/<[^>]+>/g, '') + '</span></button>';
+  };
+  /* code à 4 chiffres (facultatif, réglé dans Paramètres › Profils) */
+  function askPin(u, done) {
+    let code = '';
+    const m = B.modal('<div class="pinpad"><img src="' + u.avatar + '" alt=""><b>' + esc(u.name) + '</b><span class="muted">Entrez votre code</span><div class="dots">' + '<i></i>'.repeat(4) + '</div><div class="keys">' +
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, '⌫'].map(k => k === '' ? '<span></span>' : '<button data-k="' + k + '">' + k + '</button>').join('') + '</div></div>', 'sm pin');
+    m.addEventListener('click', e => {
+      const b = e.target.closest('[data-k]'); if (!b) return;
+      const k = b.dataset.k; code = k === '⌫' ? code.slice(0, -1) : (code + k).slice(0, 4);
+      m.querySelectorAll('.dots i').forEach((d, i) => d.classList.toggle('on', i < code.length));
+      if (code.length === 4) {
+        if (code === u.pin) { B.closeModal(); done(); }
+        else { const p = m.querySelector('.pinpad'); p.classList.add('shake'); setTimeout(() => { p.classList.remove('shake'); code = ''; m.querySelectorAll('.dots i').forEach(d => d.classList.remove('on')); }, 450); }
+      }
+    });
+  }
   function unlock(to) {
+    const u = S.users.find(x => x.id === (S.lockSel || S.user));
+    if (u && u.pin && !unlock.ok) return askPin(u, () => { unlock.ok = true; unlock(to); });
+    unlock.ok = false;
     const fp = document.getElementById('fp');
     if (fp) fp.classList.add('scan');
     setTimeout(() => { if (fp) { fp.classList.remove('scan'); fp.classList.add('ok'); } }, 750);

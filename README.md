@@ -1,4 +1,4 @@
-# Bêta OS 5 — Maison intelligente
+# Bêta OS 5.1 — Maison intelligente
 
 Tableau de bord domotique au thème « Japon nocturne » (glassmorphism bleu néon), reproduit d'après les maquettes de référence :
 écran verrouillé, Accueil, Extérieur, RDC, Étage 1 — plus Étage 2, Énergie, Multimédia, NAS, Calendrier, Mails, Bêta IA et Paramètres.
@@ -40,3 +40,16 @@ js/components.js      barre latérale, en-têtes, tuiles d'appareils, caméras, 
 js/pages-*.js         pages
 assets/               fonds, photos des pièces, caméras, avatars, médias
 ```
+
+## Nouveautés 5.1
+
+- Accueil : widgets avec pastilles d’icônes et nouveaux noms, énergie lisible, Musique et Plex séparés (favoris de l’utilisateur, film à reprendre).
+- Musique : radios (logo + titre en direct quand la station le publie), liens YouTube (vidéo ou playlist) lus dans l’application via le lecteur officiel, fichiers audio du NAS par lien, ♥ favoris par profil, reprise à la même position.
+- Plex : page dédiée, sélection du film, écran de lecture, connexion optionnelle à votre serveur (adresse + X-Plex-Token).
+- Bêta IA : réponse en bulle au-dessus de la barre, conversation accessible partout (bouton cerveau en haut, bouton central sur mobile), liens YouTube collés directement.
+- Calendrier : ajout de fichiers .ics, agenda en ligne par lien, export ; les mails contenant un rendez-vous proposent « Ajouter à l’agenda ».
+- Étage 2 : 2 pièces (2 éclairages RGB, 2 volets, 1 clim). Les pièces peuvent être renommées et changer de photo (chevron › de la carte).
+- Verrouillage : prochain rendez-vous, alerte sonnette, mini-lecteur, pétales de sakura, code à 4 chiffres facultatif par profil.
+- Mobile : météo à côté du logo, dock avec bouton Bêta IA, panneaux en feuille glissante.
+
+Limites : la lecture YouTube en arrière-plan (écran éteint / application quittée) dépend d’iOS et de YouTube et n’est pas garantie ; la radio continue en général. Le titre en direct des radios n’est disponible que pour les stations qui le publient (Radio France).

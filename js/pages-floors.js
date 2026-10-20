@@ -7,9 +7,10 @@
 
   /* carte pièce : r = [x0,y0,x1,y1] ; ph = hauteur photo ; tiles = HTML */
   function room(r, o) {
-    return '<section class="card abs" style="' + box(r) + '"><div class="chead">' + ico(o.icon, 'ci') + '<h3>' + esc(o.title) + '</h3>' +
+    const ov = (S.rooms || {})[o.title] || {};
+    return '<section class="card abs room" style="' + box(r) + '"><div class="chead">' + ico(o.icon, 'ci') + '<h3>' + esc(ov.name || o.title) + '</h3>' +
       '<button class="more" data-act="roomInfo" data-arg="' + esc(o.title) + '" aria-label="Détails">' + ico('chevR') + '</button></div>' +
-      '<div class="photo" style="height:' + o.ph + 'px;margin:0 ' + (o.mx || 12) + 'px"><img src="' + o.img + '" alt="' + esc(o.title) + '" loading="lazy"></div>' +
+      '<div class="photo" style="height:' + o.ph + 'px;margin:0 ' + (o.mx || 12) + 'px"><img src="' + (ov.img || o.img) + '" alt="' + esc(ov.name || o.title) + '" loading="lazy"></div>' +
       (o.tiles ? '<div class="tiles" style="height:' + (o.th || 82) + 'px;padding:8px ' + (o.mx || 12) + 'px ' + (o.pb || 10) + 'px">' + o.tiles + '</div>' : '') +
       '</section>';
   }
@@ -43,16 +44,20 @@
       { t: 'Salle de bains', i: 'bath', img: A + 'rooms/e1-sdb.jpg', id: 'e1.sdb' },
       { t: 'WC', i: 'toilet', img: A + 'rooms/e1-wc.jpg', id: 'e1.wc' }
     ] }) });
-  B.route('etage2', { title: 'Étage 2', bg: A + 'bg/etage1.jpg', render: () => etage('etage2', {
-    k: 'e2', title: 'Étage 2', sub: 'Contrôlez et gérez votre 2e étage', plexWhere: 'Salle de jeux - TV',
-    r: [
-      { t: 'Bureau', i: 'monitor', img: A + 'rooms/e1-couloir.jpg', id: 'e2.bureau' },
-      { t: 'Chambre Léo', i: 'bedFill', img: A + 'rooms/e1-chambre2.jpg', id: 'e2.leo' },
-      { t: 'Chambre Emma', i: 'bedFill', img: A + 'rooms/e1-chambre1.jpg', id: 'e2.emma' },
-      { t: 'Salle de jeux', i: 'tv', img: A + 'rooms/e1-suite.jpg', id: 'e2.jeux' },
-      { t: "Salle d'eau", i: 'bath', img: A + 'rooms/e1-sdb.jpg', id: 'e2.sde' },
-      { t: 'Dressing', i: 'door', img: A + 'rooms/e1-wc.jpg', id: 'e2.dressing' }
-    ] }) });
+  /* Étage 2 : deux pièces (2 éclairages RGB, 2 volets, 1 climatisation) */
+  B.route('etage2', { title: 'Étage 2', bg: A + 'bg/etage1.jpg', render: () => B.side('etage2') +
+    B.header({ id: 'etage2', title: 'Étage 2', sub: 'Contrôlez et gérez votre 2e étage', icon: 'homeFill', quick: ['off:e2', 'cov:e2', 'soir:e2', 'jour:e2'] }) +
+    room([105, 235, 812, 790], { title: 'Chambre d’amis', icon: 'bedFill', img: A + 'rooms/e1-chambre2.jpg', ph: 405, mx: 14, th: 92, tiles:
+      tl({ t: 'light', id: 'e2.ch.light', rgb: true, f: 1.3 }) + tl({ t: 'cover', id: 'e2.ch.cover', label: 'Volets', f: 1 }) + tl({ t: 'clim', id: 'e2.ch.clim', power: true, f: 1.35 }) }) +
+    room([822, 235, 1522, 790], { title: 'Bureau', icon: 'monitor', img: A + 'rooms/e1-chambre1.jpg', ph: 405, mx: 14, th: 92, tiles:
+      tl({ t: 'light', id: 'e2.bureau.light', rgb: true, f: 1.3 }) + tl({ t: 'cover', id: 'e2.bureau.cover', label: 'Volets', f: 1 }) + T({ t: 'e2sum', f: 1.35, keys: ['house'] }) }) +
+    tl({ t: 'plex', style: box([105, 798, 792, 932]), keys: ['plex'], where: 'Salle de jeux - TV' }) +
+    tl({ t: 'music', style: box([800, 798, 1522, 932]), keys: ['music'] }) +
+    B.iabar(box([105, 944, 1522, 1012]), ['off:e2', 'cov:e2', 'soir:e2', 'jour:e2']) });
+  RENDER.e2sum = s => {
+    const ids = ['e2.ch.light', 'e2.bureau.light'], on = ids.filter(id => dev(id).on).length, c = dev('e2.ch.clim');
+    return '<div class="tile t-stat" style="flex:' + s.f + '"><div class="hd">' + ico('therm') + '<span>Étage 2</span></div><div class="st" style="color:#dfe9fa">' + on + '/2 lumières · clim ' + (c.on ? String(c.temp).replace('.', ',') + ' °C' : 'arrêtée') + '</div></div>';
+  };
 
   /* ===================== RDC ===================== */
   RENDER.vac = s => {
@@ -184,7 +189,8 @@
   function openRoom(name) {
     const list = Object.values(DATA.DEVICES).filter(d => d.room === name);
     if (!list.length) { B.toast(name + ' : aucun appareil supplémentaire', 'info'); return; }
-    const m = B.modal('<h2>' + ico('homeFill') + esc(name) + '</h2><div class="list">' + list.map(d => {
+    const ov = (S.rooms || {})[name] || {};
+    const m = B.modal('<h2>' + ico('homeFill') + esc(ov.name || name) + '</h2><div class="roomedit"><label class="field">Nom affiché<input value="' + esc(ov.name || name) + '" data-change="roomName" data-id="' + esc(name) + '"></label><label class="btn" style="cursor:pointer">' + ico('photo') + 'Changer la photo<input type="file" accept="image/*" data-change="roomPhoto" data-id="' + esc(name) + '" hidden></label>' + (ov.img ? '<button class="btn" data-act="roomPhotoReset" data-id="' + esc(name) + '">' + ico('refresh') + '</button>' : '') + '</div><div class="list">' + list.map(d => {
       const s = dev(d.id);
       const st = d.type === 'cover' ? s.pos + ' % ouvert' : d.type === 'clim' ? (s.on ? s.temp + ' °C' : 'Arrêt') : d.type === 'vacuum' ? ({ docked: 'En veille', cleaning: 'Nettoyage', returning: 'Retour base', zone: 'Nettoyage zone' }[s.status] || s.status) : d.type === 'mower' ? (s.status === 'mowing' ? 'En tonte' : 'En veille') : s.on ? 'Allumé' : 'Éteint';
       const ctl = d.type === 'cover' ? '<div class="row">' + ['up', 'stop', 'down'].map(a => '<button class="sq" data-act="cover" data-id="' + d.id + '" data-arg="' + a + '" aria-label="' + a + '">' + ico(a === 'up' ? 'chevU' : a === 'down' ? 'chevD' : 'stop') + '</button>').join('') + '</div>'
@@ -194,5 +200,18 @@
     m.addEventListener('click', e => { if (e.target.closest('[data-act="toggle"],[data-act="cover"]')) setTimeout(() => { if (document.body.contains(m)) openRoom(name); }, e.target.closest('[data-act="cover"]') ? 1900 : 60); });
   }
   B.openRoom = openRoom;
+  function roomSet(name, k, v) { S.rooms = S.rooms || {}; S.rooms[name] = Object.assign(S.rooms[name] || {}, { [k]: v }); if (v == null) delete S.rooms[name][k]; B.save(); B.show(); }
+  B.act('roomName', el => roomSet(el.dataset.id, 'name', el.value.trim() || null));
+  B.act('roomPhotoReset', el => { roomSet(el.dataset.id, 'img', null); B.closeModal(); });
+  B.act('roomPhoto', el => {
+    const f = el.files[0]; if (!f) return;
+    const img = new Image(); img.onload = () => {
+      const w = Math.min(1100, img.width), h = Math.round(img.height * w / img.width), c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      try { roomSet(el.dataset.id, 'img', c.toDataURL('image/jpeg', .8)); B.closeModal(); B.toast('Nouvelle photo pour ' + el.dataset.id, 'photo'); } catch (e) { B.toast('Photo trop lourde pour être gardée', 'info'); }
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(f);
+  });
   B.act('roomInfo', el => openRoom(el.dataset.arg));
 })();

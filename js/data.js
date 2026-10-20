@@ -53,20 +53,12 @@
   add('e1.suite.cover', 'cover', 'Volets', 'Suite parentale', { pos: 0 }, 'cover.suite_parentale');
   add('e1.sdb.light', 'light', 'Éclairage', 'Salle de bains', { on: true }, 'light.salle_de_bains');
   add('e1.wc.light', 'light', 'Éclairage', 'WC', { on: false }, 'light.wc_etage_1');
-  // 2e étage
+  // 2e étage : 2 volets, 2 éclairages RGB, 1 climatisation
+  add('e2.ch.light', 'light', 'Éclairage RGB', 'Chambre d’amis', { on: true, color: '#ffb35c', rgb: true }, 'light.chambre_amis');
+  add('e2.ch.cover', 'cover', 'Volets', 'Chambre d’amis', { pos: 0 }, 'cover.chambre_amis');
+  add('e2.ch.clim', 'clim', 'Climatisation', 'Chambre d’amis', { on: false, temp: 21 }, 'climate.chambre_amis');
   add('e2.bureau.light', 'light', 'Éclairage RGB', 'Bureau', { on: true, color: '#7aa8ff', rgb: true }, 'light.bureau');
-  add('e2.bureau.clim', 'clim', 'Climatisation', 'Bureau', { on: false, temp: 21 }, 'climate.bureau');
   add('e2.bureau.cover', 'cover', 'Volets', 'Bureau', { pos: 0 }, 'cover.bureau');
-  add('e2.leo.light', 'light', 'Éclairage RGB', 'Chambre Léo', { on: true, color: '#3d8bff', rgb: true }, 'light.chambre_leo');
-  add('e2.leo.cover', 'cover', 'Volets', 'Chambre Léo', { pos: 0 }, 'cover.chambre_leo');
-  add('e2.emma.light', 'light', 'Éclairage RGB', 'Chambre Emma', { on: false, color: '#ff6fae', rgb: true }, 'light.chambre_emma');
-  add('e2.emma.cover', 'cover', 'Volets', 'Chambre Emma', { pos: 0 }, 'cover.chambre_emma');
-  add('e2.jeux.light', 'light', 'Éclairage', 'Salle de jeux', { on: false }, 'light.salle_de_jeux');
-  add('e2.jeux.amb', 'light', 'Éclairage ambiance', 'Salle de jeux', { on: true }, 'light.salle_de_jeux_ambiance');
-  add('e2.jeux.clim', 'clim', 'Climatisation', 'Salle de jeux', { on: true, temp: 21.5 }, 'climate.salle_de_jeux');
-  add('e2.jeux.cover', 'cover', 'Volets', 'Salle de jeux', { pos: 0 }, 'cover.salle_de_jeux');
-  add('e2.sde.light', 'light', 'Éclairage', "Salle d'eau", { on: false }, 'light.salle_d_eau');
-  add('e2.dressing.light', 'light', 'Éclairage', 'Dressing', { on: false }, 'light.dressing');
   // RDC
   add('rdc.garage.light', 'light', 'Éclairage', 'Garage', { on: true }, 'light.garage');
   add('rdc.garage.door', 'cover', 'Porte garage', 'Garage', { pos: 0 }, 'cover.porte_garage');
@@ -134,11 +126,11 @@
     { id: 'r-fg', name: 'Radio FG', ref: 'https://stream.rcs.revma.com/wknqhm4yuchvv', site: 'radiofg.com', color: '#1f9bff' }
   ];
   const PLEX = [
-    { title: 'Neon Nights', img: A + 'media/plex-1.jpg', kind: 'Film', year: 2024, dur: '1h58', progress: 42 },
-    { title: 'Tokyo Drift Lights', img: A + 'media/plex-2.jpg', kind: 'Série', year: 2023, dur: 'S1 · E4', progress: 0 },
-    { title: 'Japan', img: A + 'media/plex-3.jpg', kind: 'Anime', year: 2025, dur: 'S2 · E7', progress: 68 },
-    { title: 'Sakura Dreams', img: A + 'media/plex-4.jpg', kind: 'Film', year: 2022, dur: '2h04', progress: 0 },
-    { title: 'Midnight City', img: A + 'media/plex-5.jpg', kind: 'Série', year: 2024, dur: 'S1 · E1', progress: 12 }
+    { id: 'p1', title: 'Neon Nights', img: A + 'media/plex-1.jpg', kind: 'Film', year: 2024, dur: '1 h 58', genre: 'Thriller, néo-noir', progress: 42, summary: 'Une nuit de pluie à Shinjuku, un chauffeur de taxi se retrouve mêlé à une course-poursuite entre deux clans rivaux.' },
+    { id: 'p2', title: 'Tokyo Drift Lights', img: A + 'media/plex-2.jpg', kind: 'Série', year: 2023, dur: 'S1 · É4', genre: 'Action', progress: 0, summary: 'Des pilotes de rue s’affrontent sur les autoroutes suspendues de Tokyo.' },
+    { id: 'p3', title: 'Japan', img: A + 'media/plex-3.jpg', kind: 'Anime', year: 2025, dur: 'S2 · É7', genre: 'Aventure, fantastique', progress: 68, summary: 'Un voyage initiatique à travers un Japon onirique, des temples de Kyoto aux néons d’Osaka.' },
+    { id: 'p4', title: 'Sakura Dreams', img: A + 'media/plex-4.jpg', kind: 'Film', year: 2022, dur: '2 h 04', genre: 'Romance', progress: 0, summary: 'Deux étudiants se retrouvent chaque printemps sous le même cerisier.' },
+    { id: 'p5', title: 'Midnight City', img: A + 'media/plex-5.jpg', kind: 'Série', year: 2024, dur: 'S1 · É1', genre: 'Science-fiction', progress: 12, summary: 'Dans une ville qui ne dort jamais, une détective androïde enquête sur des rêves volés.' }
   ];
   const OUTPUTS = [
     { id: 'tv', name: 'TV Salon', icon: 'group' },
@@ -152,7 +144,7 @@
     { id: 'm1', from: 'Ma Société', subj: 'Rapport modifié', time: '20:14', logo: 'M', bg: 'linear-gradient(135deg,#ff4b3e,#d4141f)', read: false, body: 'Bonjour Bastien,\n\nLe rapport trimestriel a été mis à jour avec les derniers chiffres. Merci de le relire avant la réunion d’équipe de demain 08:00.\n\nBonne soirée,\nL’équipe' },
     { id: 'm2', from: 'Amazon', subj: 'Votre commande', time: '12:11', logo: 'a', bg: 'linear-gradient(135deg,#7b7bff,#4f56d8)', read: false, body: 'Votre commande « Ampoules connectées RGB × 4 » a été expédiée.\nLivraison prévue demain avant 13:00.' },
     { id: 'm3', from: 'Banque', subj: 'Relevé mensuel', time: '11:32', logo: '€', bg: 'linear-gradient(135deg,#27a8ff,#1569d9)', read: false, body: 'Votre relevé de compte du mois est disponible dans votre espace client.' },
-    { id: 'm4', from: 'École', subj: 'Réunion parents', time: '10:45', logo: '✎', bg: 'linear-gradient(135deg,#1fb6ff,#1478e0)', read: false, body: 'Madame, Monsieur,\n\nLa réunion parents-professeurs de Léo aura lieu jeudi à 18:00 en salle B12.\n\nCordialement,\nLa vie scolaire' },
+    { id: 'm4', from: 'École', subj: 'Réunion parents', time: '10:45', logo: '✎', bg: 'linear-gradient(135deg,#1fb6ff,#1478e0)', read: false, body: 'Madame, Monsieur,\n\nLa réunion parents-professeurs de Léo aura lieu jeudi à 18:00 en salle B12 (durée : 1 h 30).\n\nCordialement,\nLa vie scolaire', invite: { title: 'Réunion parents – Léo', when: 'jeudi', time: '18:00', dur: 90, place: 'Salle B12' } },
     { id: 'm5', from: 'Plex', subj: 'Nouveaux ajouts cette semaine', time: '09:02', logo: '›', bg: 'linear-gradient(135deg,#ffc53a,#f08a12)', read: false, body: '3 nouveaux films et 2 épisodes ont été ajoutés à votre bibliothèque.' }
   ];
 
