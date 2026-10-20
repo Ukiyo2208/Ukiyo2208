@@ -22,10 +22,12 @@
     ['ia', 'Bêta IA', 'ai', 'ai'],
     ['routines', 'Routines', 'wand', 'wand'],
     ['pieces', 'Pièces', 'rooms', 'rooms', 'noside'],
+    ['journal', 'Journal', 'journal', 'journal', 'noside'],
+    ['connexions', 'Connexions', 'link', 'link', 'noside'],
     ['parametres', 'Paramètres', 'gear', 'gearFill']
   ];
   const GUEST_HIDE = ['nas', 'calendrier', 'mails', 'parametres'];
-  const navItems = () => NAV.filter(n => !(guest() && GUEST_HIDE.includes(n[0])));
+  const navItems = () => (B.navList ? B.navList(NAV) : NAV).filter(n => !(guest() && GUEST_HIDE.includes(n[0])));
   const unread = () => S.mails.filter(m => !m.read).length;
   const badgeHTML = id => id === 'mails' && unread() ? '<span class="badge">' + unread() + '</span>' : '';
 
@@ -78,7 +80,7 @@
     const q = o.quickBox || [1140, 120, 1520, 206];
     return logo(px(108, 14, 236, 66), true) +
       '<nav class="topnav glass abs" style="' + px(345, 20, 910, 50) + '">' +
-      nav.filter(n => !(guest() && GUEST_HIDE.includes(n))).map(id => { const n = NAV.find(x => x[0] === id); return '<a href="#' + id + '" class="' + (id === o.id ? 'on' : '') + '">' + ico(id === o.id ? n[3] : n[2]) + n[1] + '</a>'; }).join('') +
+      nav.filter(n => !(guest() && GUEST_HIDE.includes(n)) && !(B.navHidden && B.navHidden(n))).map(id => { const n = NAV.find(x => x[0] === id); return '<a href="#' + id + '" class="' + (id === o.id ? 'on' : '') + '">' + ico(id === o.id ? n[3] : n[2]) + n[1] + '</a>'; }).join('') +
       '</nav>' +
       T({ t: 'topicons', keys: ['mails', 'ha', 'music'] }) +
       T({ t: 'clockbox', keys: ['clock'] }) +
@@ -121,7 +123,7 @@
 
   /* ---------- scènes / actions groupées ---------- */
   const isType = (id, ...t) => DATA.DEVICES[id] && t.includes(DATA.DEVICES[id].type);
-  const ids = (prefix, ...types) => Object.keys(DATA.DEVICES).filter(id => id.startsWith(prefix) && isType(id, ...types));
+  const ids = (prefix, ...types) => Object.keys(DATA.DEVICES).filter(id => (prefix === '' || (B.floorOf ? B.floorOf(id) + '.' === prefix : id.startsWith(prefix))) && isType(id, ...types) && !(S.custom && S.custom.hidden[id]));
   const HOUSE_COVERS = () => ['e1.', 'e2.', 'rdc.'].flatMap(p => ids(p, 'cover')).filter(id => id !== 'rdc.garage.door');
   function lightsOff(prefix) { ids(prefix, 'light', 'group').forEach(id => setDev(id, { on: false })); }
   function covers(list, pos) { list.forEach(id => setDev(id, { pos })); }

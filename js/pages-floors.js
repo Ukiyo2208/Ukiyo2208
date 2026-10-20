@@ -47,9 +47,9 @@
   /* Étage 2 : deux pièces (2 éclairages RGB, 2 volets, 1 climatisation) */
   B.route('etage2', { title: 'Étage 2', bg: A + 'bg/etage1.jpg', render: () => B.side('etage2') +
     B.header({ id: 'etage2', title: 'Étage 2', sub: 'Contrôlez et gérez votre 2e étage', icon: 'homeFill', quick: ['off:e2', 'cov:e2', 'soir:e2', 'jour:e2'] }) +
-    room([105, 235, 812, 790], { title: 'Chambre d’amis', icon: 'bedFill', img: A + 'rooms/e1-chambre2.jpg', ph: 405, mx: 14, th: 92, tiles:
+    room([105, 235, 812, 790], { title: 'Chambre d’amis', icon: 'bedFill', img: A + 'rooms/e2-amis.jpg', ph: 405, mx: 14, th: 92, tiles:
       tl({ t: 'light', id: 'e2.ch.light', rgb: true, f: 1.3 }) + tl({ t: 'cover', id: 'e2.ch.cover', label: 'Volets', f: 1 }) + tl({ t: 'clim', id: 'e2.ch.clim', power: true, f: 1.35 }) }) +
-    room([822, 235, 1522, 790], { title: 'Bureau', icon: 'monitor', img: A + 'rooms/e1-chambre1.jpg', ph: 405, mx: 14, th: 92, tiles:
+    room([822, 235, 1522, 790], { title: 'Bureau', icon: 'monitor', img: A + 'rooms/e2-jeux.jpg', ph: 405, mx: 14, th: 92, tiles:
       tl({ t: 'light', id: 'e2.bureau.light', rgb: true, f: 1.3 }) + tl({ t: 'cover', id: 'e2.bureau.cover', label: 'Volets', f: 1 }) + T({ t: 'e2sum', f: 1.35, keys: ['house'] }) }) +
     tl({ t: 'plex', style: box([105, 798, 792, 932]), keys: ['plex'], where: 'Salle de jeux - TV' }) +
     tl({ t: 'music', style: box([800, 798, 1522, 932]), keys: ['music'] }) +

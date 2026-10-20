@@ -1,4 +1,4 @@
-# Bêta OS 5.3 — Maison intelligente
+# Bêta OS 6 — Maison intelligente
 
 Tableau de bord domotique au thème « Japon nocturne » (glassmorphism bleu néon), reproduit d'après les maquettes de référence :
 écran verrouillé, Accueil, Extérieur, RDC, Étage 1 — plus Étage 2, Énergie, Multimédia, NAS, Calendrier, Mails, Bêta IA et Paramètres.
@@ -72,3 +72,13 @@ Limites : la lecture YouTube en arrière-plan (écran éteint / application quit
 - Photos des pièces, caméras, médias et fonds d’écran agrandis ×2 et affinés.
 - YouTube : connexion du compte Google (playlists YouTube / YouTube Music, titres aimés, recherche) — nécessite un ID client OAuth gratuit (assistant dans Musique › YouTube › Connecter) et une adresse https.
 - Musique › Enceintes : pilotage des lecteurs Home Assistant ; avec Music Assistant + YouTube Music Premium, recherche et lecture sur les enceintes de la maison.
+
+## Nouveautés 6
+
+- **Nouvelles photos** des pièces et de l’extérieur (agrandies ×4).
+- **Niveaux, pièces, appareils** (administrateurs) : créer/supprimer des étages et des pièces, ajouter tous les types d’appareils Home Assistant (éclairage, RGB, prise, volet, store, garage, clim, TV, enceinte, ordinateur, ventilateur, vanne, serrure, alarme Verisure, chauffe-eau, robots, électroménager, capteurs, scènes). Import depuis Home Assistant (zones = pièces). Pages d’étage automatiques avec **mode édition** (ordre, largeur, photo, icône).
+- **Bouton « ⋯ » sur chaque tuile** : panneau flottant déplaçable avec tous les réglages du type (luminosité, couleur, blanc, effets, position, lames, modes de clim, sources, volume, minuterie…), graphique 24 h des capteurs et **historique du jour** (actions, durée, kWh estimés).
+- **Droits par utilisateur** : par défaut, seuls les administrateurs commandent la porte du garage ; réglable appareil par appareil (Paramètres › Profils › Droits).
+- **Journal** : chaque action avec utilisateur, date, heure, météo, température, saison et origine ; filtres, export CSV/JSON ; **habitudes repérées** → automatisme en un geste.
+- **Connexions** : Home Assistant, serveur Bêta, NAS UGREEN, Nextcloud, mails, Plex, Google, météo, adresses IP — avec boutons « Tester ».
+- **Serveur Bêta** (dossier `server/`, Docker) : sauvegardes nocturnes, journal partagé, relais Nextcloud/NAS, test mail. Voir `server/README.md`.

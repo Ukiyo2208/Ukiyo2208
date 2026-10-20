@@ -8,20 +8,7 @@
   B.on = (n, fn) => (BUS[n] = BUS[n] || []).push(fn);
   B.fire = (n, d) => (BUS[n] || []).forEach(fn => { try { fn(d); } catch (e) { console.error(e); } });
 
-  /* ---------- pièces & appareils personnalisés (ajoutés par un administrateur) ---------- */
   if (!S.custom) S.custom = { rooms: [], devices: [], hidden: {} };
-  const TYPE_DEF = { light: { on: false }, rgb: { on: false, color: '#ffb35c', rgb: true }, cover: { pos: 0 }, clim: { on: false, temp: 21 }, power: { on: false }, app: { on: false, prog: 'Normal' } };
-  function registerCustom() {
-    Object.keys(DATA.DEVICES).forEach(id => { if (DATA.DEVICES[id].custom) delete DATA.DEVICES[id]; });
-    S.custom.devices.forEach(d => { DATA.DEVICES[d.id] = { id: d.id, type: d.type === 'rgb' ? 'light' : d.type, name: d.name, room: d.room, def: Object.assign({}, TYPE_DEF[d.type] || { on: false }), ha: d.ha || '', custom: true }; });
-  }
-  registerCustom();
-  B.registerCustom = registerCustom;
-  B.isHidden = id => !!S.custom.hidden[id];
-  ['light', 'clim', 'cover', 'power', 'app', 'xlight'].forEach(t => {
-    const orig = B.RENDER[t];
-    if (orig) B.RENDER[t] = s => (s.id && S.custom.hidden[s.id]) ? '<span hidden></span>' : orig(s);
-  });
 
   /* ---------- états & application aux appareils ---------- */
   HA.states = {};
@@ -38,7 +25,7 @@
       p.on = ['on', 'playing', 'heat', 'open', 'charging', 'cool', 'auto', 'heat_cool'].includes(s.state);
       if (d.type === 'light' && s.attributes.rgb_color && cur.rgb) p.color = '#' + s.attributes.rgb_color.map(v => ('0' + v.toString(16)).slice(-2)).join('');
     }
-    if (Object.keys(p).some(k => cur[k] !== p[k])) setDev(id, p, { silent: true });
+    if (Object.keys(p).some(k => cur[k] !== p[k])) { B.src = 'ha'; setDev(id, p, { silent: true }); B.src = null; }
   };
   HA.camUrl = function (cid, stream) {
     const e = camEntity(cid), s = this.states[e]; if (!s) return '';

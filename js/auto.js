@@ -39,6 +39,7 @@
   }
   function runRoutine(id, quiet) {
     const r = S.routines.find(x => x.id === id); if (!r) return;
+    const src0 = B.src; B.src = B.src || 'routine'; setTimeout(() => { B.src = src0; }, 0);
     const a = r.a;
     if (a.lights === 'off') all('light', 'group').filter(i => !i.startsWith('ext.')).forEach(i => setDev(i, { on: false }));
     if (a.lights === 'accueil') ['rdc.entree.light', 'rdc.salon.light', 'rdc.cuisine.applique'].forEach(i => DATA.DEVICES[i] && setDev(i, { on: true }));
@@ -61,16 +62,20 @@
 
   /* ---------- automatismes ---------- */
   const TRIG = { time: 'À une heure précise', sunset: 'Au coucher du soleil', sunrise: 'Au lever du soleil', doorbell: 'Quand on sonne', motion: 'Mouvement détecté par une caméra', rain: 'Pluie annoncée pendant l’arrosage' };
-  const ACTS = { routine: 'Lancer une routine', ext: 'Éclairage extérieur', light: 'Allumer une lumière', camera: 'Afficher une caméra', arroOff: 'Couper l’arrosage', notify: 'M’envoyer une notification', scene: 'Action rapide' };
+  const ACTS = { device: 'Commander un appareil', routine: 'Lancer une routine', ext: 'Éclairage extérieur', light: 'Allumer une lumière', camera: 'Afficher une caméra', arroOff: 'Couper l’arrosage', notify: 'M’envoyer une notification', scene: 'Action rapide' };
   const sentence = a => {
     const t = a.trig, c = a.act;
     const when = t.type === 'time' ? 'À ' + t.v : t.type === 'sunset' ? 'Au coucher du soleil' + (t.v ? ' (' + (t.v > 0 ? '+' : '') + t.v + ' min)' : '') : t.type === 'sunrise' ? 'Au lever du soleil' + (t.v ? ' (' + (t.v > 0 ? '+' : '') + t.v + ' min)' : '') : t.type === 'doorbell' ? 'Quand on sonne' : t.type === 'motion' ? 'Mouvement « ' + ((DATA.CAMS[t.v] || {}).name || 'caméra') + ' »' + (t.night ? ' la nuit' : '') : 'S’il va pleuvoir (≥ ' + t.v + ' %)';
     const what = c.type === 'routine' ? 'routine « ' + ((S.routines.find(r => r.id === c.v) || {}).name || '?') + ' »' : c.type === 'ext' ? (c.v === 'on' ? 'allumer' : 'éteindre') + ' l’extérieur' : c.type === 'light' ? 'allumer « ' + ((DATA.DEVICES[c.v] || {}).room || '') + ' · ' + ((DATA.DEVICES[c.v] || {}).name || '?') + ' »' : c.type === 'camera' ? 'afficher « ' + ((DATA.CAMS[c.v] || {}).name || 'caméra') + ' »' : c.type === 'arroOff' ? 'couper l’arrosage' : c.type === 'scene' ? ((B.SCENES[c.v] || {}).label || 'action').toLowerCase() : 'notification « ' + (c.v || '') + ' »';
-    return when + ' → ' + what;
+    const dv = DATA.DEVICES[c.v] || {}, DA = { on: 'allumer', off: 'éteindre', open: 'ouvrir', close: 'fermer', lock: 'verrouiller', unlock: 'déverrouiller', status: 'lancer' };
+    const what2 = c.type === 'device' ? (DA[c.a] || c.a) + ' « ' + (dv.room ? dv.room + ' · ' : '') + (dv.name || '?') + ' »' : what;
+    const dd = t.days && t.days.length && t.days.length < 7 ? (t.days.join() === '1,2,3,4,5' ? ' en semaine' : t.days.join() === '0,6' ? ' le week-end' : '') : '';
+    return when + dd + ' → ' + what2 + (a.note ? ' (' + a.note + ')' : '');
   };
   function doAct(a) {
-    const c = a.act;
-    if (c.type === 'routine') runRoutine(c.v, true);
+    const c = a.act, src0 = B.src; B.src = 'auto'; setTimeout(() => { B.src = src0; }, 0);
+    if (c.type === 'device' && DATA.DEVICES[c.v]) { const P = { on: { on: true }, off: { on: false }, open: { pos: 100 }, close: { pos: 0 }, lock: { locked: true }, unlock: { locked: false }, status: { status: DATA.DEVICES[c.v].type === 'mower' ? 'mowing' : 'cleaning' } }[c.a]; if (P) setDev(c.v, P); }
+    else if (c.type === 'routine') runRoutine(c.v, true);
     else if (c.type === 'ext') all('light', 'group').filter(i => i.startsWith('ext.')).forEach(i => setDev(i, { on: c.v === 'on' }));
     else if (c.type === 'light') setDev(c.v, { on: true });
     else if (c.type === 'camera') { const el = document.createElement('i'); el.dataset.id = c.v; B.ACT.cam(el); }
@@ -89,7 +94,7 @@
       if (!a.on) return;
       const tr = a.trig;
       let target = null;
-      if (tr.type === 'time') target = tr.v;
+      if (tr.type === 'time' && (!tr.days || !tr.days.length || tr.days.includes(day))) target = tr.v;
       if (tr.type === 'sunset' && WX.sun) target = hm(new Date(+WX.sun.set + (tr.v || 0) * 6e4));
       if (tr.type === 'sunrise' && WX.sun) target = hm(new Date(+WX.sun.rise + (tr.v || 0) * 6e4));
       if (target && target === t && S.autoRuns[a.id + ':d'] !== today()) { S.autoRuns[a.id + ':d'] = today(); doAct(a); }
@@ -166,6 +171,8 @@
       '<label class="field" data-show2="light">Lumière<select name="light">' + all('light', 'group').map(k => '<option value="' + k + '"' + (a.act.v === k ? ' selected' : '') + '>' + esc(DATA.DEVICES[k].room + ' · ' + DATA.DEVICES[k].name) + '</option>').join('') + '</select></label>' +
       '<label class="field" data-show2="camera">Caméra<select name="camera">' + Object.keys(DATA.CAMS).map(k => '<option value="' + k + '"' + (a.act.v === k ? ' selected' : '') + '>' + esc(DATA.CAMS[k].name) + '</option>').join('') + '</select></label>' +
       '<label class="field" data-show2="scene">Action<select name="scene">' + Object.keys(B.SCENES).map(k => '<option value="' + k + '"' + (a.act.v === k ? ' selected' : '') + '>' + esc(B.SCENES[k].label) + '</option>').join('') + '</select></label>' +
+      '<label class="field" data-show2="device">Appareil<select name="device">' + Object.values(DATA.DEVICES).filter(d => !['sensor', 'binary'].includes(d.type)).map(d => '<option value="' + d.id + '"' + (a.act.v === d.id ? ' selected' : '') + '>' + esc(d.room + ' · ' + d.name) + '</option>').join('') + '</select></label>' +
+      '<label class="field" data-show2="device">Action<select name="dact">' + [['on', 'Allumer'], ['off', 'Éteindre'], ['open', 'Ouvrir'], ['close', 'Fermer'], ['lock', 'Verrouiller'], ['unlock', 'Déverrouiller'], ['status', 'Démarrer (robot)']].map(o => '<option value="' + o[0] + '"' + (a.act.a === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></label>' +
       '<label class="field" data-show2="notify">Message<input name="msg" value="' + esc(a.act.type === 'notify' ? a.act.v : '') + '" placeholder="Pensez à sortir les poubelles"></label></div>' +
       '<div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-act="closeModal">Annuler</button><button class="btn pri">' + ico('check') + 'Enregistrer</button></div></form>');
     autoForm(document.querySelector('[data-submit="autoSave"]'));
@@ -180,8 +187,10 @@
     const f = new FormData(el), tt = f.get('tt'), at = f.get('at');
     const trig = { type: tt, v: tt === 'time' ? f.get('time') : /sun/.test(tt) ? +f.get('off') || 0 : tt === 'motion' ? f.get('cam') : tt === 'rain' ? +f.get('prob') || 60 : '' };
     if (tt === 'motion') trig.night = !!f.get('night');
-    const act = { type: at, v: at === 'routine' ? f.get('routine') : at === 'ext' ? f.get('ext') : at === 'light' ? f.get('light') : at === 'camera' ? f.get('camera') : at === 'scene' ? f.get('scene') : at === 'notify' ? f.get('msg') : '' };
-    const i = S.autos.findIndex(x => x.id === el.dataset.arg), a = { id: el.dataset.arg, on: true, trig, act };
+    const old = S.autos.find(x => x.id === el.dataset.arg);
+    if (tt === 'time' && old && old.trig.days) trig.days = old.trig.days;
+    const act = { type: at, a: at === 'device' ? f.get('dact') : undefined, v: at === 'device' ? f.get('device') : at === 'routine' ? f.get('routine') : at === 'ext' ? f.get('ext') : at === 'light' ? f.get('light') : at === 'camera' ? f.get('camera') : at === 'scene' ? f.get('scene') : at === 'notify' ? f.get('msg') : '' };
+    const i = S.autos.findIndex(x => x.id === el.dataset.arg), a = { id: el.dataset.arg, on: true, trig, act, note: old && old.note };
     if (i >= 0) S.autos[i] = a; else S.autos.push(a);
     B.save(); B.closeModal(); B.emit('autos'); B.toast('Automatisme enregistré', 'sparkle');
   });

@@ -71,7 +71,7 @@
     emit('dev:' + id);
     emit('house');
     if (!(opts && opts.silent)) HA.push(id, patch);
-    if (window.BOS && window.BOS.fire) window.BOS.fire('dev', { id, patch });
+    if (window.BOS && window.BOS.fire) window.BOS.fire('dev', { id, patch, silent: !!(opts && opts.silent) });
   }
   function user(id) {
     const k = id || S.user;
@@ -352,5 +352,5 @@
   };
   setInterval(() => HA.sync(), 15000);
 
-  window.BOS = { S, DATA, $, $$, esc, F, save, dev, setDev, user, T, RENDER, emit, act, ACT, route, go, show, fit, wxAlerts, rainSoon, toast, notify, modal, closeModal, popover, WX, wxIcon, wxText, isNight, uvLabel, loadWeather, HA, ymd, get current() { return current; } };
+  window.BOS = { S, DATA, $, $$, esc, F, save, dev, setDev, user, T, RENDER, emit, act, ACT, route, ROUTES, go, show, fit, wxAlerts, rainSoon, toast, notify, modal, closeModal, popover, WX, wxIcon, wxText, isNight, uvLabel, loadWeather, HA, ymd, get current() { return current; } };
 })();
