@@ -198,8 +198,7 @@
     const d = new Date(), tm = WX.tomorrow || WX.days[0];
     const who = S.users.find(x => x.id === (S.lockSel || S.user));
     return '<div class="lk-clock glass abs" style="' + s.style + '"><div class="d">' + F.long(d) + '</div><div class="t">' + F.time(d) + '<small>' + B.hello() + (who ? ' ' + esc(who.name) : '') + '</small></div>' +
-      '<div class="w">' + ico(B.wxIcon(WX.now.code, false) === 'sun' ? 'sun' : B.wxIcon(WX.now.code, false)) + '<span>' + B.wxText(WX.now.code) + '</span><b>' + WX.now.temp + '°C</b></div>' +
-      '<div class="w">' + ico('cloud', 'cl') + '<span>Demain : ' + tm.max + '°C / ' + tm.min + '°C</span></div>' + nextEv() + '</div>';
+      '<div class="w">' + ico(B.wxIcon(WX.now.code, false) === 'sun' ? 'sun' : B.wxIcon(WX.now.code, false)) + '<span>' + B.wxText(WX.now.code) + ' <em>· demain ' + tm.max + '° / ' + tm.min + '°</em></span><b>' + WX.now.temp + '°C</b></div>' + nextEv() + '</div>';
   };
   function nextEv() {
     const now = new Date(), nx = S.events.filter(e => new Date(e.date + 'T' + e.time) >= now).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
@@ -256,13 +255,12 @@
       T({ t: 'lkclock', style: box([75, 125, 400, 322]), keys: ['clock', 'weather'] }) +
       T({ t: 'lkhouse', style: box([75, 340, 400, 675]), keys: ['house'] }) +
       fingerprint() +
-      '<div class="lk-hint abs" style="' + px(568, 602, 400, 70) + '"><b>Touchez pour déverrouiller</b><span>ou choisissez votre profil</span></div>' +
+      '<div class="lk-hint abs" style="' + px(568, 602, 400, 70) + '"><b>Touchez l’empreinte pour déverrouiller</b><span>Choisissez d’abord votre profil si besoin</span></div>' +
       T({ t: 'lkusers', style: box([410, 722, 1135, 942]), keys: ['users'] }) +
       T({ t: 'lkwx', style: box([1135, 70, 1505, 310]), keys: ['weather'] }) +
       T({ t: 'lklinks', keys: ['mails', 'music', 'events', 'plex'] }) +
       T({ t: 'lkalert', keys: ['cam:cam.sonnette', 'cam:cam.cour'] }) +
       '<div class="lk-routines abs" style="' + px(548, 672, 440, 42) + '">' + (S.routines || []).slice(0, 3).map(r => '<button class="glass" data-act="lockRoutine" data-arg="' + r.id + '">' + ico(r.icon) + esc(r.name) + '</button>').join('') + '</div>' +
-      '<div class="swipe show-touch abs" style="' + px(668, 975, 200, 40) + '">' + ico('chevU') + '<span>Glissez vers le haut</span></div>' +
       '<div class="lk-quote abs" style="' + px(45, 915, 320, 85) + '"><b>家</b>Un foyer, plus qu’une maison,<br>un équilibre au quotidien.</div>' +
       '<div class="lk-quote r abs" style="' + px(1150, 935, 345, 60) + '"><b>日々、より良く</b>Chaque jour, un peu mieux.</div></div>';
   } });
@@ -308,11 +306,16 @@
     }, 1050);
   }
   B.act('lockRoutine', el => { B.runRoutine(el.dataset.arg); B.emit('house'); });
-  /* glisser vers le haut pour déverrouiller (écrans tactiles) */
-  let y0 = null;
-  document.addEventListener('touchstart', e => { if (B.current === 'verrou' && !e.target.closest('button,a,input,.modal')) y0 = e.touches[0].clientY; }, { passive: true });
-  document.addEventListener('touchend', e => { if (y0 != null && B.current === 'verrou' && y0 - e.changedTouches[0].clientY > 90) unlock(); y0 = null; }, { passive: true });
-  B.act('unlock', () => unlock());
-  B.act('unlockTo', el => unlock(el.dataset.arg));
-  B.act('lockUser', el => { S.lockSel = el.dataset.arg; B.emit('users'); unlock(); });
+  /* Seule l'empreinte déverrouille. Un raccourci (Mails, Musique…) ou un profil ne fait que
+     préparer l'ouverture : on touche ensuite l'empreinte. */
+  const NAMES = { mails: 'vos mails', calendrier: 'le calendrier', nas: 'le NAS', musique: 'la musique', plex: 'Plex', exterieur: 'les caméras' };
+  function pending(txt) {
+    const h = document.querySelector('.lk-hint');
+    if (h) h.innerHTML = '<b>Touchez l’empreinte</b><span>' + txt + '</span>';
+    const fp = document.getElementById('fp');
+    if (fp) { fp.classList.remove('nudge'); void fp.offsetWidth; fp.classList.add('nudge'); }
+  }
+  B.act('unlock', () => { const to = S.lockTo; delete S.lockTo; unlock(to); });
+  B.act('unlockTo', el => { S.lockTo = el.dataset.arg; pending('pour ouvrir ' + (NAMES[el.dataset.arg] || 'la page')); });
+  B.act('lockUser', el => { S.lockSel = el.dataset.arg; B.emit('users'); const u = S.users.find(x => x.id === el.dataset.arg); pending(u ? 'Profil choisi : ' + u.name : 'Profil Invité'); });
 })();

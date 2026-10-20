@@ -5,6 +5,7 @@
     plexOutline: '<path d="M6.6 3h5.6l5.6 9-5.6 9H6.6l5.6-9z"/>',
     grid9: '<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>',
     cloudMoon: '<path d="M14.2 3.2a5.6 5.6 0 0 0 6.6 6.9 5.6 5.6 0 0 1-3.4 3" fill="none"/><path d="M6.4 20h9.2a3.5 3.5 0 0 0 .4-7 5.2 5.2 0 0 0-10 1.4A2.9 2.9 0 0 0 6.4 20z" fill="currentColor" stroke="none"/>',
+    search2: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.3-4.3"/>',
     link: '<path d="M10 14a4.2 4.2 0 0 0 6 0l3.2-3.2a4.2 4.2 0 0 0-6-6L11.6 6.4"/><path d="M14 10a4.2 4.2 0 0 0-6 0l-3.2 3.2a4.2 4.2 0 0 0 6 6l1.6-1.6"/>',
     film: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 8h4M3 12h4M3 16h4M17 8h4M17 12h4M17 16h4"/>',
     chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',

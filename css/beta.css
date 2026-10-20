@@ -1258,5 +1258,48 @@ html.fluid .wzgrid { grid-template-columns: 1fr; } html.fluid .wzgrid h4 { grid-
 html.fluid .lk-routines { flex-wrap: wrap; }
 html.fluid .pieces { grid-template-columns: 1fr; }
 .wxal { flex: 0 0 auto; min-width: 270px; }
+
+/* =========================================================
+   v5.3 — transparence réglable du verre, verrouillage
+   ========================================================= */
+:root { --ga: .63; --gb: 8px; }
+.card { background: linear-gradient(180deg, rgba(11, 25, 58, var(--ga)), rgba(6, 15, 38, calc(var(--ga) + .03))); -webkit-backdrop-filter: blur(var(--gb)) saturate(1.15); backdrop-filter: blur(var(--gb)) saturate(1.15); }
+.glass { background: rgba(7, 19, 46, calc(var(--ga) - .14)); -webkit-backdrop-filter: blur(calc(var(--gb) + 4px)) saturate(1.15); backdrop-filter: blur(calc(var(--gb) + 4px)) saturate(1.15); }
+.tile { background: linear-gradient(180deg, rgba(18, 38, 80, calc(var(--ga) - .2)), rgba(11, 25, 56, calc(var(--ga) - .2))); }
+html.a-jour .card { background: linear-gradient(180deg, rgba(22, 50, 104, calc(var(--ga) - .06)), rgba(15, 36, 82, calc(var(--ga) - .04))); }
+html.a-jour .glass { background: rgba(20, 46, 100, calc(var(--ga) - .18)); }
+.card, .glass { text-shadow: 0 1px 3px rgba(0, 0, 0, .45); }
+/* verrouillage : carte horloge compacte et lisible, empreinte mise en avant */
+.lk-clock { padding: 16px 22px 14px; display: flex; flex-direction: column; }
+.lk-clock .w { margin-top: 8px; padding-top: 8px; }
+.lk-clock .w span em { font-style: normal; color: var(--soft); font-size: 14px; }
+.lk-clock .nx { margin-top: 6px; }
+html.fluid .lk-clock { height: auto !important; }
+html.fluid .lk-clock .nx { white-space: normal; }
+.fp.nudge .core { animation: nudge 1.2s ease-in-out 2; }
+@keyframes nudge { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); box-shadow: 0 0 50px rgba(40, 200, 255, .9), inset 0 0 20px rgba(40, 160, 255, .5); } }
+.lk-hint b { transition: color .3s; }
+.tw { display: contents; }
+.lk-clock .w span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lk-clock .w span em { font-size: 12.5px; }
+html.fluid .lk-clock .w span { white-space: normal; }
+/* compte YouTube, résultats, enceintes Home Assistant */
+.ytacc { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 8px 10px; border-radius: 10px; font-size: 12.5px; color: var(--soft); background: rgba(255, 40, 40, .08); border: 1px solid rgba(255, 80, 80, .25); }
+.ytacc > .ico { font-size: 20px; color: #ff4b4b; flex: none; }
+.ytacc span { flex: 1; line-height: 1.35; }
+.ytres { display: flex; flex-direction: column; gap: 6px; max-height: 46%; min-height: 120px; margin-bottom: 8px; padding: 8px; border-radius: 10px; background: rgba(6, 16, 40, .55); border: 1px solid rgba(90, 160, 255, .25); }
+.ytres .list { flex: 1; min-height: 0; }
+.haplayer { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 14px; padding: 12px; margin-top: 10px; }
+.haplayer img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; }
+.haplayer .nf { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.haplayer .nf b { font-size: 16px; font-weight: 500; }
+.haplayer .nf small { color: var(--muted); }
+.haplayer .transport { justify-content: flex-start; gap: 16px; }
+.haplayer .transport .pp { width: 42px; height: 42px; font-size: 19px; }
+.hint2 { display: flex; gap: 14px; padding: 14px; border-radius: 12px; background: rgba(12, 28, 64, .45); border: 1px dashed rgba(90, 160, 255, .35); font-size: 13.5px; line-height: 1.5; }
+.hint2 > .ico { font-size: 30px; color: var(--cyan); flex: none; }
+.hint2 p { margin: 0; }
+.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; line-height: 1.45; }
+.steps code, .modal code { font-size: 12px; padding: 1px 5px; border-radius: 4px; background: rgba(40, 80, 160, .35); word-break: break-all; }
 html.fluid .rcard { flex-wrap: wrap; } html.fluid .rcard .rt { flex: 1 1 60%; } html.fluid .rcard > .row { margin-left: auto; }
 html.fluid .li.prow { grid-template-columns: 64px 1fr 1fr !important; } html.fluid .li.prow > .field:nth-child(n+3) { grid-column: auto; }

@@ -85,7 +85,10 @@
   const RENDER = {};
   function keysOf(spec) { return spec.keys || (spec.id ? ['dev:' + spec.id] : []); }
   function paint(spec, id) {
-    const html = RENDER[spec.t](spec).trim();
+    let html = RENDER[spec.t](spec).trim();
+    // une tuile doit avoir un seul élément racine pour pouvoir être redessinée : sinon on l'enveloppe
+    const tpl = document.createElement('template'); tpl.innerHTML = html;
+    if (tpl.content.childNodes.length !== 1 || tpl.content.firstChild.nodeType !== 1) html = '<div class="tw">' + html + '</div>';
     return html.replace(/^<([a-zA-Z0-9]+)/, '<$1 data-tile="' + id + '" data-keys="' + keysOf(spec).join(' ') + '"');
   }
   function T(spec) { const id = 't' + (++uid); REG.set(id, spec); return paint(spec, id); }

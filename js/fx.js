@@ -45,7 +45,13 @@
     const se = season(), am = ambiance(), cl = document.documentElement.classList;
     Object.keys(SEASONS).forEach(k => cl.toggle('s-' + k, k === se));
     cl.toggle('a-jour', am === 'jour'); cl.toggle('a-nuit', am !== 'jour');
-    particles();
+    particles(); glass();
+  }
+  /* transparence du verre : 0 % = très opaque, 100 % = très transparent */
+  function glass() {
+    const t = (S.settings.glass == null ? 45 : S.settings.glass) / 100, r = document.documentElement.style;
+    r.setProperty('--ga', (.9 - t * .6).toFixed(3));
+    r.setProperty('--gb', Math.round(12 - t * 8) + 'px');
   }
   setInterval(apply, 60000);
   window.addEventListener('hashchange', () => setTimeout(apply, 30));
@@ -86,6 +92,6 @@
   const n0 = B.notify;
   B.notify = o => { sound('notify'); return n0(o); };
 
-  B.fx = { season, ambiance, apply, particles, sound, SEASONS };
+  B.fx = { season, ambiance, apply, particles, sound, glass, SEASONS };
   apply();
 })();

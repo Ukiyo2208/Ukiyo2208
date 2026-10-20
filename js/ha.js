@@ -90,6 +90,7 @@
   HA.onChange = function (eid, old, s) {
     if (!s) return;
     this.states[eid] = s;
+    B.fire('state', { eid, s, old });
     for (const id in DATA.DEVICES) if (this.entity(id) === eid) this.applyDev(id, s);
     for (const cid in DATA.CAMS) if (camEntity(cid) === eid) { B.camState(cid).live = this.camUrl(cid); B.emit('cam:' + cid); }
     const st = S.settings;

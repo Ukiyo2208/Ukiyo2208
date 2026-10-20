@@ -1,4 +1,4 @@
-# Bêta OS 5.2 — Maison intelligente
+# Bêta OS 5.3 — Maison intelligente
 
 Tableau de bord domotique au thème « Japon nocturne » (glassmorphism bleu néon), reproduit d'après les maquettes de référence :
 écran verrouillé, Accueil, Extérieur, RDC, Étage 1 — plus Étage 2, Énergie, Multimédia, NAS, Calendrier, Mails, Bêta IA et Paramètres.
@@ -64,3 +64,11 @@ Limites : la lecture YouTube en arrière-plan (écran éteint / application quit
 - Ambiances jour/nuit et saisons (pétales, lucioles, feuilles, neige) — choix manuel dans Paramètres › Ambiance & saisons ; sons et vibrations discrets.
 - Météo : pluie et température heure par heure, alertes, arrosage annulé automatiquement s’il va pleuvoir.
 - Écran verrouillé : salutation, routines en un geste, alerte météo/sonnette, glisser vers le haut, animation de déverrouillage.
+
+## Nouveautés 5.3
+
+- Écran verrouillé : seule l’empreinte déverrouille ; profils et raccourcis préparent l’ouverture. Carte horloge lisible sur iPhone.
+- Transparence du verre réglable (Paramètres › Ambiance & saisons), plus transparente par défaut.
+- Photos des pièces, caméras, médias et fonds d’écran agrandis ×2 et affinés.
+- YouTube : connexion du compte Google (playlists YouTube / YouTube Music, titres aimés, recherche) — nécessite un ID client OAuth gratuit (assistant dans Musique › YouTube › Connecter) et une adresse https.
+- Musique › Enceintes : pilotage des lecteurs Home Assistant ; avec Music Assistant + YouTube Music Premium, recherche et lecture sur les enceintes de la maison.

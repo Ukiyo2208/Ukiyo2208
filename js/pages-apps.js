@@ -105,9 +105,11 @@
   };
   RENDER.mlib = () => {
     const tab = S.music.ltab || 'yt';
+    const tabs = '<div class="tabs sm" style="align-self:flex-start;margin:12px 0 8px">' + [['yt', 'YouTube'], ['nas', 'NAS'], ['amb', 'Ambiances'], ['ha', 'Enceintes']].map(t => '<button class="' + (tab === t[0] ? 'on' : '') + '" data-act="mlTab" data-arg="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
+    if (tab === 'ha') return tabs + B.YTM.haPanel();
     const list = tab === 'yt' ? Music.sources().filter(x => x.group === 'YouTube') : tab === 'nas' ? Music.sources().filter(x => x.group === 'NAS') : S.playlists.map(p => Music.get(p.id));
-    return '<form class="addlink" data-submit="mAdd">' + ico('link') + '<input name="url" placeholder="Collez un lien YouTube (vidéo ou playlist) ou l’adresse d’un fichier audio du NAS" autocomplete="off" inputmode="url" aria-label="Lien à ajouter"><button class="btn pri">' + ico('play') + 'Lire</button></form>' +
-      '<div class="tabs sm" style="align-self:flex-start;margin:12px 0 8px">' + [['yt', 'YouTube'], ['nas', 'NAS'], ['amb', 'Ambiances']].map(t => '<button class="' + (tab === t[0] ? 'on' : '') + '" data-act="mlTab" data-arg="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>' +
+    return (tab === 'yt' ? B.YTM.bar() : '<form class="addlink" data-submit="mAdd">' + ico('link') + '<input name="url" placeholder="Collez un lien YouTube (vidéo ou playlist) ou l’adresse d’un fichier audio du NAS" autocomplete="off" inputmode="url" aria-label="Lien à ajouter"><button class="btn pri">' + ico('play') + 'Lire</button></form>') +
+      tabs + (tab === 'yt' ? B.YTM.results() : '') +
       '<div class="list scroll" style="flex:1">' + (list.length ? list.map(libRow).join('') : '<p class="muted" style="font-size:13.5px;line-height:1.5">' + (tab === 'yt' ? 'Aucun lien pour l’instant. Collez ci-dessus l’adresse d’une vidéo ou d’une playlist YouTube : elle sera lue ici et gardée dans votre bibliothèque.' : 'Collez l’adresse d’un fichier audio partagé par votre NAS (ex. http://192.168.1.20:5000/musique/titre.mp3) ou d’une webradio.') + '</p>') + '</div>';
   };
   RENDER.mradios = () => '<div class="rgrid scroll">' + DATA.RADIOS.map(r => {
@@ -506,10 +508,12 @@
       '<label class="field">Saison<select data-change="fxSet" data-arg="season">' + o([['auto', 'Automatique (selon la date) · ' + B.fx.SEASONS[B.fx.season()]], ['printemps', '🌸 Printemps — sakura'], ['ete', '✨ Été — lucioles'], ['automne', '🍁 Automne — érables'], ['hiver', '❄️ Hiver — neige']], s.season) + '</select></label>' +
       '<label class="field">Ambiance<select data-change="fxSet" data-arg="ambiance">' + o([['auto', 'Automatique (lever / coucher du soleil)'], ['nuit', 'Nuit'], ['jour', 'Jour']], s.ambiance) + '</select></label>' +
       '<label class="field">Effets animés<select data-change="fxSet" data-arg="fx">' + o([['lock', 'Sur l’écran verrouillé'], ['all', 'Partout (discret)'], ['off', 'Aucun']], s.fx) + '</select></label>' +
+      '<label class="field">Transparence des panneaux · <span id="glassv">' + (s.glass == null ? 45 : s.glass) + ' %</span><input type="range" class="range thin" min="0" max="100" value="' + (s.glass == null ? 45 : s.glass) + '" style="--p:' + (s.glass == null ? 45 : s.glass) + '%" data-input="fxGlass" aria-label="Transparence"></label>' +
       '<label class="row" style="font-size:14px;gap:10px"><button type="button" class="sw sm' + (s.sound ? ' on' : '') + '" data-act="fxSound" aria-label="Sons"></button>Sons et vibrations discrets</label>' +
       '<div class="row" style="margin-top:auto;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="fxTest" data-arg="chime">' + ico('volume') + 'Essayer</button><button class="btn sm" data-act="fxTest" data-arg="dingdong">' + ico('bellFill') + 'Sonnette</button></div></div>';
   };
   B.act('fxSet', el => { S.settings[el.dataset.arg] = el.value; B.save(); B.fx.particles(true); B.fx.apply(); B.emit('sfx'); });
+  B.act('fxGlass', el => { S.settings.glass = +el.value; el.style.setProperty('--p', el.value + '%'); const v = document.getElementById('glassv'); if (v) v.textContent = el.value + ' %'; B.fx.glass(); B.save(); });
   B.act('fxSound', el => { S.settings.sound = !S.settings.sound; B.save(); el.classList.toggle('on', S.settings.sound); if (S.settings.sound) B.fx.sound('on'); });
   B.act('fxTest', el => B.fx.sound(el.dataset.arg));
   B.act('genSave', el => { const f = new FormData(el); const s = S.settings; s.city = String(f.get('city')).trim() || s.city; s.lat = parseFloat(f.get('lat')) || s.lat; s.lon = parseFloat(f.get('lon')) || s.lon; s.nasUrl = String(f.get('nasUrl')).trim(); B.save(); B.loadWeather(); B.toast('C’est enregistré', 'check'); });
