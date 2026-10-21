@@ -1570,3 +1570,7 @@ html.fluid .abscams { grid-template-columns: 1fr 1fr; grid-auto-rows: 150px; }
 .abscams > *, .abscams .cam { min-width: 0; overflow: hidden; }
 html.fluid .abscams .cam .det { display: none; }
 html.fluid .pcard .list.scroll { max-height: 440px; }
+/* fond d'écran dédié au téléphone : image verticale nette, sans flou (plus fluide sur iPhone) */
+html.fluid .backdrop { inset: 0 auto auto 0; width: 100%; height: 100vh; height: 100lvh; background: #050c20 var(--mbg, url("../assets/bg/mobile.jpg")) center top / cover no-repeat; filter: none; transform: translateZ(0); transition: none; }
+html.fluid .backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(3, 8, 22, .12), rgba(3, 8, 22, .28) 60%, rgba(3, 8, 22, .45)); }
+html.fluid.a-jour .backdrop { filter: brightness(1.12) saturate(1.05); }

@@ -113,8 +113,22 @@
   B.act('nightSave', el => { const f = new FormData(el); Object.assign(N(), { on: !!f.get('on'), from: f.get('from') || '23:00', to: f.get('to') || '06:30', idle: Math.max(10, +f.get('idle') || 60), dim: +f.get('dim') || 75, mute: !!f.get('mute') }); B.save(); B.closeModal(); arm(); document.documentElement.classList.toggle('nightmode', nightNow()); B.toast(N().on ? 'Mode nuit de ' + N().from + ' à ' + N().to : 'Mode nuit désactivé', 'moon'); });
   B.act('nightTry', () => { B.closeModal(); forced = true; setTimeout(sleep, 300); });
   B.nightSleep = () => { forced = true; sleep(); };
+  /* fond d'écran du téléphone : celui de Bêta OS ou une photo à soi */
+  const mbg = () => { if (S.settings.mbg) document.documentElement.style.setProperty('--mbg', 'url("' + S.settings.mbg + '")'); else document.documentElement.style.removeProperty('--mbg'); };
+  mbg();
+  B.act('mbgPick', el => {
+    const f = el.files && el.files[0]; el.value = ''; if (!f) return;
+    const img = new Image(), url = URL.createObjectURL(f);
+    img.onload = () => {
+      const k = Math.min(1, 1290 / img.width), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      S.settings.mbg = c.toDataURL('image/jpeg', .84); B.save(); mbg(); B.emit('sfx'); B.toast('Fond d’écran du téléphone changé', 'photo');
+    };
+    img.src = url;
+  });
+  B.act('mbgReset', () => { delete S.settings.mbg; B.save(); mbg(); B.emit('sfx'); B.toast('Fond d’écran Bêta OS rétabli', 'photo'); });
   const sfx0 = RENDER.sfx;
-  RENDER.sfx = s => sfx0(s).replace('<div class="row" style="margin-top:auto;gap:8px;flex-wrap:wrap">', '<div class="row" style="margin-top:auto;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="nightCfg">' + ico('moon') + 'Mode nuit' + (N().on ? ' · ' + N().from + '–' + N().to : ' · off') + '</button>');
+  RENDER.sfx = s => sfx0(s).replace('<div class="row" style="margin-top:auto;gap:8px;flex-wrap:wrap">', '<div class="row" style="margin-top:auto;gap:8px;flex-wrap:wrap"><label class="btn sm" style="cursor:pointer" title="Fond d’écran sur téléphone">' + ico('photo') + 'Fond tél.<input type="file" accept="image/*" data-change="mbgPick" hidden></label>' + (S.settings.mbg ? '<button class="btn sm" data-act="mbgReset" title="Fond Bêta OS">' + ico('refresh') + '</button>' : '') + '<button class="btn sm" data-act="nightCfg">' + ico('moon') + 'Mode nuit' + (N().on ? ' · ' + N().from + '–' + N().to : ' · off') + '</button>');
 
   /* ======================= BÊTA IA PLUS FUTÉE ======================= */
   const VERB = /^(?:et\s+)?(allume|eteins|eteint|eteindre|ferme|fermer|ouvre|ouvrir|baisse|monte|leve|descend|mets|met|regle|lance|joue|coupe|active|desactive|arrete|stop|demarre|passe|augmente|diminue)\b/;
