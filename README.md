@@ -82,3 +82,13 @@ Limites : la lecture YouTube en arrière-plan (écran éteint / application quit
 - **Journal** : chaque action avec utilisateur, date, heure, météo, température, saison et origine ; filtres, export CSV/JSON ; **habitudes repérées** → automatisme en un geste.
 - **Connexions** : Home Assistant, serveur Bêta, NAS UGREEN, Nextcloud, mails, Plex, Google, météo, adresses IP — avec boutons « Tester ».
 - **Serveur Bêta** (dossier `server/`, Docker) : sauvegardes nocturnes, journal partagé, relais Nextcloud/NAS, test mail. Voir `server/README.md`.
+
+## Nouveautés 6.1
+
+- **Pièces** : les « … » sont sur les pièces (plus sur chaque appareil). Ils ouvrent un panneau avec tous les réglages de la pièce, comme dans Home Assistant : cadran de thermostat qu'on fait glisser, modes (Chaud, Froid, Sec, Ventilation…), préréglages, ventilation, oscillation, humidité ; pour les lumières, luminosité, roue de couleurs, blanc chaud/froid, couleurs favorites et effets ; pour les volets, une fenêtre qu'on fait glisser et l'inclinaison.
+- **Google Agenda** : synchronisation dans les deux sens, avec le même compte Google que YouTube. Il faut activer *Google Calendar API* dans Google Cloud. Vous pouvez toujours importer et exporter des fichiers .ics.
+- **Visite guidée** : elle s'ouvre au premier lancement de chaque profil existant (pas pour l'invité). On peut la revoir depuis Paramètres › Général.
+- **Recherche globale** : loupe dans la barre latérale ou en haut sur mobile, ou `Ctrl K` / `/`. Elle trouve les appareils (avec interrupteur), les pièces, les pages, les routines, les radios, les playlists, les films, les mails et l'agenda.
+- **Mode nuit automatique** : l'écran s'assombrit après un moment sans toucher et les sons sont coupés (sauf la sonnette). Le premier toucher rallume l'écran. Réglages dans Paramètres › Ambiance › Mode nuit.
+- **Bêta IA** : elle comprend plusieurs ordres à la suite (« éteins le salon et ferme les volets, puis lance FIP ») et garde le contexte (« et dans la cuisine ? »). Elle répond aussi aux questions sur le journal (« qui a ouvert le garage hier ? », « quand a été allumée la cuisine ? ») et sur la température d'une pièce.
+- **Absence & sécurité** : nouvelle page (menu Plus et recherche) avec les caméras, l'alarme, les serrures, la porte du garage, les ouvertures, les mouvements, qui est à la maison, ce qui est encore allumé (avec « Tout éteindre »), le bouton « Je pars » et une simulation de présence.

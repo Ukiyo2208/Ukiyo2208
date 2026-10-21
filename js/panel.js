@@ -5,7 +5,9 @@
   const fmt = v => typeof v === 'number' ? String(Math.round(v * 10) / 10).replace('.', ',') : (v == null ? '—' : v);
 
   /* ---------- Home Assistant : commandes et états des réglages avancés ---------- */
-  const HVAC = { Auto: 'auto', Chaud: 'heat', Froid: 'cool', Sec: 'dry', Ventilation: 'fan_only' }, HVACR = Object.fromEntries(Object.entries(HVAC).map(([a, b]) => [b, a]));
+  const HVAC = { Arrêt: 'off', Auto: 'auto', 'Chaud/froid': 'heat_cool', Chaud: 'heat', Froid: 'cool', Sec: 'dry', Ventilation: 'fan_only' }, HVACR = Object.fromEntries(Object.entries(HVAC).map(([a, b]) => [b, a]));
+  const PRESET = { Aucun: 'none', Éco: 'eco', Confort: 'comfort', Absent: 'away', Boost: 'boost', Sommeil: 'sleep', Activité: 'activity', Maison: 'home' }, PRESETR = Object.fromEntries(Object.entries(PRESET).map(([a, b]) => [b, a]));
+  B.HVAC = HVAC; B.PRESET = PRESET;
   const ALARMSVC = { away: 'alarm_arm_away', night: 'alarm_arm_night', home: 'alarm_arm_home', disarmed: 'alarm_disarm' };
   const push0 = HA.push.bind(HA);
   HA.push = function (id, patch) {
@@ -16,6 +18,8 @@
     if (d.type === 'cover' && 'tilt' in patch) return c('cover.set_cover_tilt_position', { tilt_position: patch.tilt });
     if (d.type === 'clim') {
       if ('hvac' in patch) return c('climate.set_hvac_mode', { hvac_mode: HVAC[patch.hvac] || 'auto' });
+      if ('preset' in patch) return c('climate.set_preset_mode', { preset_mode: PRESET[patch.preset] || String(patch.preset).toLowerCase() });
+      if ('hum' in patch) return c('climate.set_humidity', { humidity: patch.hum });
       if ('fanm' in patch) return c('climate.set_fan_mode', { fan_mode: String(patch.fanm).toLowerCase() });
       if ('swing' in patch) return c('climate.set_swing_mode', { swing_mode: patch.swing ? 'on' : 'off' });
       if (patch.on === false) return c('climate.turn_off');
@@ -45,7 +49,7 @@
     }
     if (d.type === 'scene' && patch.run) return c(dom === 'script' ? 'script.turn_on' : 'scene.turn_on');
     if (['sensor', 'binary'].includes(d.type)) return;
-    if (Object.keys(patch).every(k => ['offAt', 'min', 'prog', 'amps', 'cmode', 'fav', 'code', 'trans', 'dir', 'mop'].includes(k))) return;
+    if (Object.keys(patch).every(k => ['offAt', 'min', 'prog', 'amps', 'cmode', 'fav', 'code', 'trans', 'dir', 'mop', 'favs'].includes(k))) return;
     return push0(id, patch);
   };
   const apply0 = HA.applyDev.bind(HA);
@@ -66,7 +70,14 @@
         apply0(id, s);
         if (d.type === 'light') { if (a.brightness != null) p.bri = Math.round(a.brightness / 2.55); if (a.color_temp_kelvin) p.ct = a.color_temp_kelvin; if (a.effect) p.effect = a.effect; }
         if (d.type === 'cover' && a.current_tilt_position != null) p.tilt = a.current_tilt_position;
-        if (d.type === 'clim') { if (HVACR[s.state]) p.hvac = HVACR[s.state]; if (a.fan_mode) p.fanm = a.fan_mode; if (a.current_temperature != null) p.cur = a.current_temperature; }
+        if (d.type === 'clim') {
+          if (HVACR[s.state]) p.hvac = HVACR[s.state]; if (a.fan_mode) p.fanm = a.fan_mode; if (a.current_temperature != null) p.cur = a.current_temperature;
+          if (a.hvac_modes) p.modes = a.hvac_modes.map(m => HVACR[m]).filter(Boolean); if (a.preset_modes) p.presets = a.preset_modes.map(m => PRESETR[m] || m); if (a.preset_mode) p.preset = PRESETR[a.preset_mode] || a.preset_mode;
+          if (a.fan_modes) p.fanms = a.fan_modes; if (a.swing_modes) p.swings = a.swing_modes; if (a.hvac_action) p.action = a.hvac_action;
+          if (a.min_temp != null) p.min = a.min_temp; if (a.max_temp != null) p.max = a.max_temp; if (a.target_temp_step) p.step = a.target_temp_step;
+          if (a.current_humidity != null) p.curhum = a.current_humidity; if (a.humidity != null) p.hum = a.humidity;
+        }
+        if (d.type === 'light') { if (a.effect_list) p.effects = a.effect_list; if (a.min_color_temp_kelvin) p.kmin = a.min_color_temp_kelvin; if (a.max_color_temp_kelvin) p.kmax = a.max_color_temp_kelvin; if (a.supported_color_modes) p.cmodes = a.supported_color_modes; }
     }
     if (Object.keys(p).some(k => JSON.stringify(cur[k]) !== JSON.stringify(p[k]))) { B.src = 'ha'; setDev(id, p, { silent: true }); B.src = null; }
   };
@@ -205,7 +216,7 @@
     h.addEventListener('pointerup', () => { on = false; });
     p.addEventListener('pointerdown', () => { p.style.zIndex = ++z; });
   }
-  B.panel = { open: openPanel, close, refresh };
+  B.panel = { open: openPanel, close, refresh, drag, controls, history, range, bump: () => ++z };
   B.act('panel', (el, e) => { e.stopPropagation(); openPanel(el.dataset.id); });
   B.act('pclose', el => close(el.closest('.fpanel').dataset.pid));
   B.act('pmin', el => el.closest('.fpanel').classList.toggle('min'));

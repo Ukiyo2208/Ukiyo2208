@@ -29,11 +29,12 @@
     if ('vol' in p) return ['vol', 'volume ' + p.vol + ' %'];
     if ('src' in p) return ['src', 'source ' + p.src];
     if ('hvac' in p) return ['hvac', 'mode ' + p.hvac];
+    if ('preset' in p) return ['preset', 'préréglage ' + p.preset];
     if (p.run) return ['run', 'lancée'];
     if (p.cmd) return ['cmd', p.cmd.replace('media_', '').replace(/_/g, ' ')];
     return null;
   }
-  const IGNORE = new Set(['moving', 'bat', 'lit', 'cur', 'title', 'srcs', 'unit', 'val', 'offAt', 'code', 'kw', 'car']);
+  const IGNORE = new Set(['moving', 'bat', 'lit', 'cur', 'title', 'srcs', 'unit', 'val', 'offAt', 'code', 'kw', 'car', 'modes', 'presets', 'fanms', 'swings', 'action', 'min', 'max', 'step', 'curhum', 'effects', 'kmin', 'kmax', 'cmodes', 'favs']);
   function add(e) {
     S.journal.unshift(e);
     if (S.journal.length > MAX) S.journal.length = MAX;

@@ -35,7 +35,7 @@
     return '<aside class="side">' +
       '<button class="burger" data-act="lock" title="Verrouiller">' + ico('menu') + '</button><nav>' +
       navItems().filter(n => !n[4]).map(n => '<a href="#' + n[0] + '" class="' + (n[0] === active ? 'on' : '') + '">' + ico(n[0] === active ? n[3] : n[2]) + '<span>' + n[1] + '</span>' + badgeHTML(n[0]) + '</a>').join('') +
-      '</nav><div class="seal">' + toriiSVG('', true) + '<b>家</b><b>夜</b></div></aside>' + dock(active) + fluidTop();
+      '</nav><button class="sside" data-act="search" title="Rechercher (Ctrl + K)">' + ico('search2') + '<span>Chercher</span></button><div class="seal">' + toriiSVG('', true) + '<b>家</b><b>夜</b></div></aside>' + dock(active) + fluidTop();
   }
   /* dock mobile : raccourcis essentiels + bouton Bêta IA central */
   function dock(active) {
@@ -54,7 +54,7 @@
   /* en-tête mobile : logo + météo + accès IA */
   function fluidTop() {
     return '<div class="ftop">' + '<a href="#accueil" class="logo">' + toriiSVG('torii') + '<span class="word"><span class="name">Bêta <span>OS</span></span></span></a>' +
-      T({ t: 'wxchip', keys: ['weather', 'clock'] }) + '</div>';
+      '<div class="fright"><button class="fsearch" data-act="search" aria-label="Rechercher">' + ico('search2') + '</button>' + T({ t: 'wxchip', keys: ['weather', 'clock'] }) + '</div></div>';
   }
   RENDER.wxchip = () => '<button class="wxchip" data-act="weather" aria-label="Météo">' + ico(B.wxIcon(WX.now.code, B.isNight())) + '<b>' + WX.now.temp + '°</b>' + (B.wxAlerts().length || (B.haAlert && B.haAlert()) ? ico('alert', 'wa') : '') + '<span>' + F.time(new Date()) + '</span></button>';
 

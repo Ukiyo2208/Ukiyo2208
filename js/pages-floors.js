@@ -9,7 +9,7 @@
   function room(r, o) {
     const ov = (S.rooms || {})[o.title] || {};
     return '<section class="card abs room" style="' + box(r) + '"><div class="chead">' + ico(o.icon, 'ci') + '<h3>' + esc(ov.name || o.title) + '</h3>' +
-      '<button class="more" data-act="roomInfo" data-arg="' + esc(o.title) + '" aria-label="Détails">' + ico('chevR') + '</button></div>' +
+      '<button class="more" data-act="roomInfo" data-arg="' + esc(o.title) + '" aria-label="Toutes les commandes de la pièce">' + ico('dots') + '</button></div>' +
       '<div class="photo" style="height:' + o.ph + 'px;margin:0 ' + (o.mx || 12) + 'px"><img src="' + (ov.img || o.img) + '" alt="' + esc(ov.name || o.title) + '" loading="lazy"></div>' +
       (o.tiles ? '<div class="tiles" style="height:' + (o.th || 82) + 'px;padding:8px ' + (o.mx || 12) + 'px ' + (o.pb || 10) + 'px">' + o.tiles + '</div>' : '') +
       '</section>';
@@ -62,7 +62,7 @@
   /* ===================== RDC ===================== */
   RENDER.vac = s => {
     const d = dev('rdc.robot'), st = { docked: 'En veille', cleaning: 'Nettoyage…', returning: 'Retour base…', zone: 'Nettoyage zone' }[d.status] || 'En veille';
-    return '<section class="card abs vac" style="' + s.style + '"><div class="chead">' + ico('robotFill', 'ci') + '<h3>Aspirateur robot</h3><button class="more" data-act="roomInfo" data-arg="Aspirateur robot">' + ico('chevR') + '</button></div>' +
+    return '<section class="card abs vac" style="' + s.style + '"><div class="chead">' + ico('robotFill', 'ci') + '<h3>Aspirateur robot</h3><button class="more" data-act="roomInfo" data-arg="Aspirateur robot">' + ico('dots') + '</button></div>' +
       '<div class="img"><img src="' + A + 'rooms/rdc-robot.jpg" alt="">' +
       '<span class="pill" style="left:6px">' + ico('target') + st + '</span><span class="pill" style="right:8px">' + ico('batteryV') + d.bat + '%</span></div>' +
       '<div class="btns"><button class="tile' + (d.status === 'cleaning' ? ' on' : '') + '" data-act="vac" data-arg="cleaning">' + ico('playCircle') + 'Démarrer</button>' +
@@ -102,7 +102,7 @@
       room([687, 440, 860, 637], { title: 'WC', icon: 'toilet', img: A + 'rooms/rdc-wc.jpg', ph: 80, mx: 10, th: 66, pb: 8, tiles: tl({ t: 'light', id: 'rdc.wc.light', f: 1 }) }) +
       room([866, 440, 1167, 637], { title: 'Entrée', icon: 'door', img: A + 'rooms/rdc-entree.jpg', ph: 80, mx: 10, th: 66, pb: 8, tiles:
         tl({ t: 'light', id: 'rdc.entree.light', f: 1 }) + tl({ t: 'camstat', cam: 'cam.rdc-entree', label: 'Caméra entrée', f: 1.25, keys: ['cam:cam.rdc-entree'] }) }) +
-      '<section class="card abs" style="' + box([1173, 440, 1522, 637]) + '"><div class="chead">' + ico('utensils', 'ci') + '<h3>Cuisine</h3><button class="more" data-act="roomInfo" data-arg="Cuisine">' + ico('chevR') + '</button></div>' +
+      '<section class="card abs" style="' + box([1173, 440, 1522, 637]) + '"><div class="chead">' + ico('utensils', 'ci') + '<h3>Cuisine</h3><button class="more" data-act="roomInfo" data-arg="Cuisine">' + ico('dots') + '</button></div>' +
       '<div class="photo" style="height:63px;margin:0 10px"><img src="' + A + 'rooms/rdc-cuisine.jpg" alt="Cuisine"></div>' +
       tl({ t: 'kitchen', style: 'padding:6px 10px 8px', keys: ['dev:rdc.cuisine.applique', 'dev:rdc.cuisine.centrale', 'dev:rdc.cuisine.dish', 'dev:rdc.cuisine.cover'] }) + '</section>' +
       room([105, 645, 785, 842], { title: 'Salon', icon: 'sofaFill', img: A + 'rooms/rdc-salon.jpg', ph: 77, mx: 12, th: 72, pb: 8, tiles:
@@ -158,16 +158,16 @@
     return B.side('exterieur') + B.header({ id: 'exterieur', title: 'Extérieur', sub: 'Contrôlez et surveillez vos espaces extérieurs', icon: 'treeFill', titleBox: [105, 105, 497, 200], wxBox: [588, 92, 1000, 222], quickBox: [1075, 150, 1522, 232], quick: ['off:ext', 'cov:all', 'arro:off', 'tond:off'] }) +
       '<section class="card abs" style="' + box([105, 240, 1522, 527]) + '"><div class="chead" style="height:48px">' + ico('camera', 'ci') + '<h3 style="font-size:19px">Caméras extérieures</h3><button class="more" data-act="allCams">' + ico('chevR') + '</button></div>' +
       '<div class="camgrid">' + cams.map(c => cam({ cam: c[0], style: box(c[1], C), bottom: true, tile: true })).join('') + '</div></section>' +
-      '<section class="card abs" style="' + box([105, 545, 575, 930]) + '"><div class="chead" style="height:50px">' + ico('carFill', 'ci') + '<h3 style="font-size:19px">Cour</h3><button class="more" data-act="roomInfo" data-arg="Cour">' + ico('chevR') + '</button></div><div class="xgrid">' +
+      '<section class="card abs" style="' + box([105, 545, 575, 930]) + '"><div class="chead" style="height:50px">' + ico('carFill', 'ci') + '<h3 style="font-size:19px">Cour</h3><button class="more" data-act="roomInfo" data-arg="Cour">' + ico('dots') + '</button></div><div class="xgrid">' +
       tl({ t: 'borne', style: box([120, 595, 345, 915], Co), keys: ['dev:ext.borne'] }) +
       tl({ t: 'xlight', id: 'ext.parking', img: A + 'devices/eclairage-parking.jpg', style: box([355, 595, 562, 748], Co) }) +
       tl({ t: 'xlight', id: 'ext.cour', img: A + 'devices/eclairage-cour.jpg', style: box([355, 758, 562, 915], Co) }) + '</div></section>' +
-      '<section class="card abs" style="' + box([585, 545, 1075, 930]) + '"><div class="chead" style="height:50px">' + ico('leafFill', 'ci').replace('ci"', 'ci" style="color:#2fe3a6"') + '<h3 style="font-size:19px">Jardin</h3><button class="more" data-act="roomInfo" data-arg="Jardin">' + ico('chevR') + '</button></div><div class="xgrid">' +
+      '<section class="card abs" style="' + box([585, 545, 1075, 930]) + '"><div class="chead" style="height:50px">' + ico('leafFill', 'ci').replace('ci"', 'ci" style="color:#2fe3a6"') + '<h3 style="font-size:19px">Jardin</h3><button class="more" data-act="roomInfo" data-arg="Jardin">' + ico('dots') + '</button></div><div class="xgrid">' +
       tl({ t: 'jcam', style: box([597, 595, 812, 752], J), keys: ['cam:cam.ext-jardin'] }) +
       tl({ t: 'arro', style: box([822, 595, 1062, 752], J), keys: ['dev:ext.arrosage'] }) +
       tl({ t: 'mower', style: box([597, 762, 812, 915], J), keys: ['dev:ext.tondeuse'] }) +
       tl({ t: 'xlight', id: 'ext.jardin', icon: 'bellFill', img: A + 'devices/eclairage-jardin.jpg', style: box([860, 762, 1062, 915], J) }) + '</div></section>' +
-      '<section class="card abs" style="' + box([1085, 545, 1522, 930]) + '"><div class="chead" style="height:50px">' + ico('umbrella', 'ci') + '<h3 style="font-size:19px">Terrasse</h3><button class="more" data-act="roomInfo" data-arg="Terrasse">' + ico('chevR') + '</button></div><div class="xgrid">' +
+      '<section class="card abs" style="' + box([1085, 545, 1522, 930]) + '"><div class="chead" style="height:50px">' + ico('umbrella', 'ci') + '<h3 style="font-size:19px">Terrasse</h3><button class="more" data-act="roomInfo" data-arg="Terrasse">' + ico('dots') + '</button></div><div class="xgrid">' +
       tl({ t: 'store', style: box([1097, 595, 1322, 765], Te), keys: ['dev:ext.store'] }) +
       tl({ t: 'storectl', style: box([1332, 595, 1510, 765], Te), keys: ['dev:ext.store'] }) +
       tl({ t: 'xlight', id: 'ext.ambiance', img: A + 'devices/eclairage-ambiance.jpg', style: box([1097, 778, 1300, 915], Te) }) +

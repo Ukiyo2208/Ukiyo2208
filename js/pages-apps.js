@@ -225,6 +225,7 @@
     return n;
   }
   B.parseICS = parseICS; B.addEvents = addEvents;
+  B.calGoto = k => { calSel = k; const d = new Date(k + 'T12:00'); calView = new Date(d.getFullYear(), d.getMonth(), 1); B.current === 'calendrier' ? B.emit('cal') : B.go('calendrier'); };
   RENDER.calgrid = () => {
     const y = calView.getFullYear(), m = calView.getMonth(), first = new Date(y, m, 1), start = new Date(first);
     start.setDate(1 - ((first.getDay() + 6) % 7));
@@ -400,7 +401,7 @@
   B.ia = ia;
   function askIA(text) {
     if (!text || !text.trim()) return '';
-    const reply = ia(text.trim());
+    const reply = (B.iaX || ia)(text.trim());
     S.chat.push({ me: true, t: text.trim() }, { me: false, t: reply });
     S.chat = S.chat.slice(-60); B.save(); B.emit('chat');
     return reply;

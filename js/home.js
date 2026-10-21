@@ -186,7 +186,7 @@
   }
   B.deviceTile = deviceTile;
 
-  /* bouton « ⋯ » sur chaque tuile + masquage + cadenas */
+  /* masquage des appareils + cadenas si l'utilisateur n'a pas le droit */
   const IDOF = { vac: () => 'rdc.robot', borne: () => 'ext.borne', arro: () => 'ext.arrosage', mower: () => 'ext.tondeuse', store: () => 'ext.store' };
   ['light', 'clim', 'cover', 'power', 'app', 'xlight', 'gstat', 'dtile', 'vac', 'borne', 'arro', 'mower', 'store'].forEach(t => {
     const orig = RENDER[t]; if (!orig) return;
@@ -194,8 +194,8 @@
       const id = IDOF[t] ? IDOF[t]() : s.id;
       if (id && C.hidden[id] && !IDOF[t]) return '<span hidden></span>';
       const html = orig(s); if (!id || !DATA.DEVICES[id]) return html;
-      const lk = !canUse(id);
-      return html.replace(/^(\s*<[a-z]+[^>]*>)/i, '$1<button class="tmore' + (lk ? ' lk' : '') + '" data-act="panel" data-id="' + id + '" aria-label="Tous les réglages">' + ico(lk ? 'lock' : 'dots') + '</button>');
+      if (canUse(id)) return html;
+      return html.replace(/^(\s*<[a-z]+[^>]*>)/i, '$1<span class="tlock" title="Accès réservé">' + ico('lock') + '</span>');
     };
   });
 
@@ -214,7 +214,7 @@
     const ed = editing && isAdmin();
     return '<div class="tile froom' + (C.wide[r.key] ? ' wide' : '') + '"><div class="chead">' + ico(r.icon, 'ci') + '<h3>' + esc(r.label) + '</h3>' +
       (ed ? '<div class="redit"><button data-act="roomMove" data-arg="' + esc(r.key) + '" data-v="-1" aria-label="Avancer">' + ico('chevL') + '</button><button data-act="roomMove" data-arg="' + esc(r.key) + '" data-v="1" aria-label="Reculer">' + ico('chevR') + '</button><button data-act="roomWide" data-arg="' + esc(r.key) + '" aria-label="Largeur">' + ico('expand') + '</button><button data-act="roomEdit" data-arg="' + esc(r.key) + '" aria-label="Modifier">' + ico('edit') + '</button></div>'
-        : '<button class="more" data-act="roomInfo" data-arg="' + esc(r.name) + '" aria-label="Détails">' + ico('chevR') + '</button>') + '</div>' +
+        : '<button class="more" data-act="roomInfo" data-arg="' + esc(r.name) + '" data-floor="' + r.floor + '" aria-label="Toutes les commandes de la pièce">' + ico('dots') + '</button>') + '</div>' +
       '<div class="photo">' + (r.img ? '<img src="' + r.img + '" alt="" loading="lazy">' : '<span class="nophoto">' + ico(r.icon) + '</span>') + '</div>' +
       '<div class="tiles wrap">' + tiles + (ed ? '<button class="tile addtile" data-act="devAddIn" data-arg="' + esc(r.key) + '">' + ico('plus') + 'Appareil</button>' : (tiles ? '' : '<p class="muted" style="margin:6px 4px;font-size:13px">Aucun appareil pour l’instant.</p>')) + '</div></div>';
   }
@@ -411,7 +411,7 @@
     const fl = S.piecesFloor || 'rdc', fs = floors().concat([{ id: 'home', name: 'Maison' }]);
     const list = fl === 'home' ? [{ key: 'home|Maison', label: 'Maison', icon: 'homeFill', img: '', devs: Object.values(DATA.DEVICES).filter(d => d.id.startsWith('home.')) }] : rooms(fl);
     return '<div class="row" style="gap:8px;margin-bottom:12px;flex-wrap:wrap">' + fs.map(f => '<button class="cat' + (fl === f.id ? ' on' : '') + '" style="padding:0 16px" data-act="piecesFloor" data-arg="' + f.id + '">' + esc(f.name) + '</button>').join('') + (isAdmin() ? '<span style="flex:1"></span><button class="btn sm pri" data-act="roomsManager">' + ico('edit') + 'Gérer</button>' : '') + '</div>' +
-      '<div class="pieces scroll">' + list.map(r => '<div class="tile proom"><div class="chead">' + ico(r.icon, 'ci') + '<h3>' + esc(r.label) + '</h3></div>' + (r.img ? '<div class="photo" style="height:96px"><img src="' + r.img + '" alt="" loading="lazy"></div>' : '') +
+      '<div class="pieces scroll">' + list.map(r => '<div class="tile proom"><div class="chead">' + ico(r.icon, 'ci') + '<h3>' + esc(r.label) + '</h3>' + (r.floor ? '<button class="more" data-act="roomInfo" data-arg="' + esc(r.name) + '" data-floor="' + r.floor + '" aria-label="Commandes de la pièce">' + ico('dots') + '</button>' : '') + '</div>' + (r.img ? '<div class="photo" style="height:96px"><img src="' + r.img + '" alt="" loading="lazy"></div>' : '') +
         '<div class="tiles wrap">' + (r.devs.map(deviceTile).join('') || '<p class="muted" style="margin:6px 4px;font-size:13px">Aucun appareil.</p>') + '</div></div>').join('') + '</div>';
   };
   B.act('piecesFloor', el => { S.piecesFloor = el.dataset.arg; B.emit('pieces'); });

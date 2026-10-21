@@ -3,12 +3,13 @@
 (function () {
   const B = window.BOS, { S, esc } = B;
   const Music = B.Music;
-  const SCOPE = 'https://www.googleapis.com/auth/youtube.readonly';
+  // un seul compte Google pour YouTube et l'agenda (lecture/écriture des événements)
+  const SCOPE = 'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/calendar.events';
 
   const Y = {
     token: null, exp: 0, res: null, busy: false,
     connected() { return !!(this.token && Date.now() < this.exp); },
-    restore() { try { const t = JSON.parse(localStorage.getItem('betaos.yt') || 'null'); if (t && t.exp > Date.now()) { this.token = t.token; this.exp = t.exp; } } catch (e) { } },
+    restore() { try { const t = JSON.parse(localStorage.getItem('betaos.yt') || 'null'); if (t && t.exp > Date.now()) { this.token = t.token; this.exp = t.exp; this.scope = t.scope || ""; } } catch (e) { } },
     gsi() {
       if (window.google && google.accounts && google.accounts.oauth2) return Promise.resolve();
       return this._g || (this._g = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.onload = res; s.onerror = () => { this._g = null; rej(new Error('Google inaccessible')); }; document.head.appendChild(s); }));
@@ -33,11 +34,12 @@
       if (!/(^|&)(access_token|error)=/.test(h)) return;
       const p = new URLSearchParams(h), st = p.get('state') || '';
       const back = st.startsWith('yt:') ? st.slice(3) : 'musique';
+      this.back = back;
       sessionStorage.setItem('betaos.unlocked', '1');
       history.replaceState(null, '', location.pathname + location.search + '#' + back);
       if (p.get('error')) { this.pending = 'err:' + p.get('error'); return; }
-      this.token = p.get('access_token'); this.exp = Date.now() + (+p.get('expires_in') || 3600) * 1000;
-      localStorage.setItem('betaos.yt', JSON.stringify({ token: this.token, exp: this.exp }));
+      this.token = p.get('access_token'); this.scope = p.get('scope') || ''; this.exp = Date.now() + (+p.get('expires_in') || 3600) * 1000;
+      localStorage.setItem('betaos.yt', JSON.stringify({ token: this.token, exp: this.exp, scope: p.get('scope') || '' }));
       this.pending = 'ok';
     },
     async api(path) {
@@ -77,7 +79,7 @@
     setupModal() {
       B.modal('<h2>' + ico('youtube') + 'Connecter mon compte YouTube</h2>' +
         '<p style="font-size:14px;line-height:1.55;margin:0 0 12px">Bêta OS peut lire <b>vos playlists</b> (YouTube et YouTube Music), <b>vos titres aimés</b> et faire des <b>recherches</b>. Google demande pour cela un identifiant gratuit, à créer une seule fois :</p>' +
-        '<ol class="steps"><li>Ouvrez <b>console.cloud.google.com</b>, créez un projet « Bêta OS ».</li><li>« API et services » › Bibliothèque › activez <b>YouTube Data API v3</b>.</li><li>« Écran de consentement OAuth » : type Externe, ajoutez votre adresse Gmail comme utilisateur test.</li><li>« Identifiants » › Créer › <b>ID client OAuth</b> › Application Web. Dans « Origines JavaScript autorisées » : <code>' + esc(location.origin && location.origin !== 'null' ? location.origin : 'https://…') + '</code><br>Dans « <b>URI de redirection autorisés</b> » : <code>' + esc(Y.redirectUri()) + '</code></li><li>Copiez l’ID client (se termine par <code>.apps.googleusercontent.com</code>) ci-dessous.</li></ol>' +
+        '<ol class="steps"><li>Ouvrez <b>console.cloud.google.com</b>, créez un projet « Bêta OS ».</li><li>« API et services » › Bibliothèque › activez <b>YouTube Data API v3</b> (et <b>Google Calendar API</b> pour l’agenda).</li><li>« Écran de consentement OAuth » : type Externe, ajoutez votre adresse Gmail comme utilisateur test.</li><li>« Identifiants » › Créer › <b>ID client OAuth</b> › Application Web. Dans « Origines JavaScript autorisées » : <code>' + esc(location.origin && location.origin !== 'null' ? location.origin : 'https://…') + '</code><br>Dans « <b>URI de redirection autorisés</b> » : <code>' + esc(Y.redirectUri()) + '</code></li><li>Copiez l’ID client (se termine par <code>.apps.googleusercontent.com</code>) ci-dessous.</li></ol>' +
         '<form data-submit="ytClientSave" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><input class="search" name="cid" required placeholder="123456-abc.apps.googleusercontent.com" value="' + esc(S.settings.ytClient || '') + '"><button class="btn pri">' + ico('check') + 'Connecter</button></form>' +
         '<p class="muted" style="font-size:12.5px;line-height:1.5;margin:12px 0 0">Google exige une adresse en https (ou http://localhost) : ouvrez Bêta OS depuis votre NAS en https. Votre mot de passe n’est jamais vu par Bêta OS. La lecture se fait avec le lecteur officiel YouTube : sur iPhone, la lecture écran éteint reste réservée à YouTube Premium dans l’app YouTube ; pour écouter YouTube Music en continu avec votre abonnement, utilisez l’onglet <b>Enceintes</b> (Music Assistant).</p>', 'sm');
     },
@@ -114,7 +116,8 @@
   Y.restore();
   Y.fromRedirect();
   if (Y.pending) setTimeout(() => {
-    if (Y.pending === 'ok') { S.music.ltab = 'yt'; B.save(); B.toast('Compte YouTube connecté — import de vos playlists…', 'youtube'); Y.importAll(); }
+    if (Y.pending === 'ok' && Y.back === 'calendrier') { B.toast('Compte Google connecté — synchronisation de l’agenda…', 'calendar'); if (B.gcal) B.gcal.sync(true); }
+    else if (Y.pending === 'ok') { S.music.ltab = 'yt'; B.save(); B.toast('Compte YouTube connecté — import de vos playlists…', 'youtube'); Y.importAll(); if (B.gcal) B.gcal.sync(); }
     else B.toast(Y.pending === 'err:access_denied' ? 'Connexion YouTube annulée ou refusée' : 'Connexion YouTube : ' + Y.pending.slice(4), 'info');
     Y.pending = null;
   }, 600);
