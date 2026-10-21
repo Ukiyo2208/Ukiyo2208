@@ -363,8 +363,8 @@
   /* ======================= MENU iPHONE PAR SECTIONS ======================= */
   const GROUPS = [
     ['Pièces', 'rooms', id => /^(accueil|exterieur|rdc|etage1|etage2|pieces)$/.test(id) || /^niveau-/.test(id)],
-    ['Domotique', 'homeFill', id => /^(energie|voiture|routines|absence|journal)$/.test(id)],
-    ['Outils', 'grid9', id => /^(musique|plex|nas|calendrier|mails|ia)$/.test(id)],
+    ['Domotique', 'homeFill', id => /^(ia|energie|voiture|routines|absence|journal)$/.test(id)],
+    ['Outils', 'grid9', id => /^(musique|plex|nas|calendrier|mails)$/.test(id)],
     ['Réglages', 'gearFill', id => /^(connexions|parametres)$/.test(id)]
   ];
   B.act('moreNav', () => {
@@ -372,7 +372,7 @@
     const unread = B.unread ? B.unread() : 0;
     const tile = n => '<a href="#' + n[0] + '" class="tile' + (n[0] === B.current ? ' on' : '') + '" data-act="closeModalNav">' + ico(n[3]) + '<span>' + n[1] + '</span>' + (n[0] === 'mails' && unread ? '<span class="badge">' + unread + '</span>' : '') + '</a>';
     const sec = g => { const l = items.filter(n => g[2](n[0])); return l.length || g[0] === 'Réglages' ? '<section class="navsec"><h4>' + ico(g[1]) + g[0] + '</h4><div class="navgrid">' + l.map(tile).join('') +
-      (g[0] === 'Outils' ? '<button class="tile" data-act="search">' + ico('search2') + '<span>Chercher</span></button>' : '') +
+      (g[0] === 'Domotique' ? '<button class="tile" data-act="search">' + ico('search2') + '<span>Chercher</span></button>' : '') +
       (g[0] === 'Réglages' ? '<button class="tile lockt" data-act="lock">' + ico('lock') + '<span>Verrouiller</span></button>' : '') + '</div></section>' : ''; };
     B.modal('<h2>' + ico('grid9') + 'Menu</h2><div class="navsecs">' + GROUPS.map(sec).join('') + '</div>', 'sm sheet');
   });
