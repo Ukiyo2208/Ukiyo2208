@@ -1760,3 +1760,85 @@ html.fluid .carhero .cimg { height: 150px; }
 .vmode .vset { width: 100%; display: flex; flex-direction: column; gap: 10px; text-align: left; padding: 12px; border-radius: 12px; background: rgba(10, 24, 56, .7); border: 1px solid rgba(90, 160, 255, .25); }
 .vmode .vset select { width: 100%; }
 html.fluid .modal .box.voice { min-height: 70vh; }
+html.fluid .fx { z-index: 0; }
+/* ===== v6.7 — écran verrouillé sur iPhone : plus compact, dans l'ordre utile ===== */
+html.fluid .lk { gap: 12px; padding-top: 6px; }
+html.fluid .lk .lk-clock { order: 1; } html.fluid .lk .lk-alert { order: 2; } html.fluid .lk .fp { order: 3; } html.fluid .lk .lk-hint { order: 4; }
+html.fluid .lk .lk-users { order: 5; } html.fluid .lk .lk-routines { order: 6; } html.fluid .lk .lk-house { order: 7; } html.fluid .lk .lk-wx { order: 8; } html.fluid .lk .lk-links { order: 9; }
+html.fluid .lk-clock { background: none !important; border: 0 !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; text-align: center; padding: 6px 0 0 !important; }
+html.fluid .lk-clock .d { font-size: 17px; text-shadow: 0 2px 10px #000; }
+html.fluid .lk-clock .t { font-size: 84px; font-weight: 200; letter-spacing: -2px; text-shadow: 0 4px 24px rgba(0, 0, 0, .7); }
+html.fluid .lk-clock .t small { display: block; font-size: 15px; letter-spacing: 0; }
+html.fluid .lk-clock .nx { justify-content: center; margin-top: 6px !important; padding: 0 !important; border: 0 !important; font-size: 14px; text-shadow: 0 2px 8px #000; }
+html.fluid .lk .fp { height: 200px !important; transform: scale(.78); margin: -22px 0 -26px; }
+html.fluid .lk-hint b { font-size: 19px; }
+html.fluid .lk-hint span { font-size: 13px; margin-top: 4px; }
+html.fluid .lk-users { flex-wrap: nowrap !important; overflow-x: auto; justify-content: flex-start !important; gap: 4px !important; padding: 12px 8px !important; scrollbar-width: none; }
+html.fluid .lk-users .u { flex: 0 0 74px; }
+html.fluid .lk-users .u .av { width: 58px !important; height: 58px !important; padding: 2px !important; margin-bottom: 4px; }
+html.fluid .lk-users .u .nm { font-size: 13px; }
+html.fluid .lk-users .u .bat { display: none; }
+html.fluid .lk-users .u .loc { font-size: 10.5px; white-space: nowrap; }
+html.fluid .lk-users .u .loc .ico { font-size: 12px; }
+html.fluid .lk-routines { justify-content: center; gap: 8px !important; }
+html.fluid .lk-links { display: grid !important; grid-template-columns: 1fr 1fr; gap: 10px; position: static !important; }
+html.fluid .lk-links .lk-link { min-height: 64px !important; padding: 10px 12px !important; gap: 10px !important; }
+html.fluid .lk-links .lk-link > .ico:first-child { font-size: 26px; }
+html.fluid .lk-links .lk-link b { font-size: 15px; }
+html.fluid .lk-links .lk-link small { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+html.fluid .lk-links .lk-link .chev { display: none; }
+html.fluid .lk-links .lk-music { grid-column: 1 / -1; }
+html.fluid .lk-house, html.fluid .lkw2, html.fluid .lk-users, html.fluid .lk-link { background-color: rgba(8, 18, 44, .78) !important; }
+html.fluid .lkw2 .hrs .ico { font-size: 18px; }
+html.fluid .lk-links .lk-link { width: auto !important; height: auto !important; min-width: 0; left: auto !important; top: auto !important; position: relative !important; }
+html.fluid .lk-links .lk-link > div { min-width: 0; flex: 1; overflow: hidden; } html.fluid .lk { overflow-x: hidden; }
+html.fluid .lk-links .lk-link { grid-template-columns: 34px minmax(0, 1fr) !important; }
+html.fluid .lk-links .lk-music { grid-template-columns: 48px minmax(0, 1fr) auto !important; }
+html.fluid .lk-links .lk-link small { display: flex; }
+html.fluid .lk-links > .lk-link { order: 1; } html.fluid .lk-links > .lk-music { order: 2; }
+/* ===== v6.7 — diffusion, widget musique des étages, radios, Plex, Paramètres ===== */
+.castbtn { display: inline-flex; align-items: center; gap: 6px; max-width: 190px; height: 28px; padding: 0 10px; border-radius: 14px; font-size: 12.5px; color: #cfe8ff; background: rgba(20, 60, 140, .45); border: 1px solid rgba(90, 170, 255, .4); }
+.castbtn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.castbtn .ico { font-size: 15px; flex: none; color: #2fd3ff; }
+.hmus .hmnow { position: relative; }
+.hmus .hmnow > .castbtn { position: absolute; right: 0; top: 0; z-index: 1; max-width: 46%; }
+.castlist { margin-top: 8px; max-height: 60vh; overflow: auto; min-width: 250px; }
+.castlist h5 { margin: 10px 4px 4px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #7fb6ff; }
+.castlist .castopt { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px; width: 100%; text-align: left; min-height: 42px; }
+.castlist .castopt > .ico:first-child { font-size: 19px; color: #8fd8ff; }
+.castlist .castopt b { display: block; font-weight: 500; font-size: 14px; }
+.castlist .castopt small { color: var(--soft); font-size: 11.5px; }
+.castlist .castopt.on { background: rgba(30, 110, 230, .3); }
+.castlist .castopt.on > .ico:last-child { color: #2ff0b0; }
+.fmus { display: grid; grid-template-columns: auto minmax(110px, 1fr) auto minmax(0, auto) auto; align-items: center; gap: 14px; padding: 10px 14px; }
+.fmus .cv { width: 80px; height: 80px; border-radius: 10px; overflow: hidden; flex: none; box-shadow: 0 6px 16px rgba(0, 0, 0, .5); }
+.fmus .cv img, .fmus .cv .rlogo { width: 80px !important; height: 80px !important; }
+.fmus .nf { display: flex; flex-direction: column; gap: 3px; min-width: 0; align-items: flex-start; }
+.fmus .nf b { font-size: 16px; font-weight: 500; max-width: 100%; }
+.fmus .nf > span:not(.spill) { font-size: 13px; color: var(--muted); max-width: 100%; }
+.fmus .transport { gap: 12px; }
+.fmus .transport .pp { width: 40px; height: 40px; }
+.fmus .favs { gap: 6px; overflow: hidden; flex-wrap: nowrap; min-width: 0; }
+.fmus .favs .fav { flex: 0 0 52px; max-width: 52px; }
+.fmus .favs .fav > img, .fmus .favs .fav > .rlogo { width: 40px !important; height: 40px !important; }
+.fmus .favs .fav > span:last-child { font-size: 10px; }
+.fmus .fcast { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.fmus .fcast .wmore { font-size: 18px; }
+@media (max-width: 1300px) { .fmus .favs .fav:nth-child(n+4) { display: none; } }
+html.fluid .fmus { grid-template-columns: 80px minmax(0, 1fr); gap: 10px 12px; }
+html.fluid .fmus .transport { grid-column: 1 / -1; justify-content: center; }
+html.fluid .fmus .favs { grid-column: 1 / -1; justify-content: space-between; }
+html.fluid .fmus .fcast { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
+.fav.more .rlogo { background: rgba(30, 70, 150, .55) !important; font-size: 20px; color: #cfe3ff; }
+.rtile.rmore { display: flex; align-items: center; gap: 12px; padding: 10px 14px; text-align: left; border-style: dashed; }
+.rtile.rmore > .ico { font-size: 26px; color: #8fd8ff; width: 46px; text-align: center; }
+.rtile.rmore b { display: block; font-weight: 500; } .rtile.rmore small { color: var(--soft); font-size: 12px; }
+.list .li.pcrow { grid-template-columns: 54px minmax(0, 1fr) 30px; width: 100%; text-align: left; min-height: 74px; }
+.pcrow img { width: 50px; height: 70px; object-fit: cover; border-radius: 6px; }
+.pcrow b { display: block; font-weight: 500; } .pcrow small { display: block; color: var(--soft); font-size: 12px; margin: 2px 0 6px; }
+.pcrow > .ico { font-size: 20px; color: #2fd3ff; }
+.pclink { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.sconn .li { grid-template-columns: 40px minmax(0, 1fr) 14px; color: inherit; text-decoration: none; }
+.sconn .li b { font-weight: 500; display: block; } .sconn .li small { color: var(--soft); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.dotst { width: 10px; height: 10px; border-radius: 50%; background: #5f7398; }
+.dotst.g { background: #22e3a4; box-shadow: 0 0 8px #22e3a4; } .dotst.y { background: #ffc43d; box-shadow: 0 0 8px #ffc43d; } .dotst.r { background: #ff5a6a; box-shadow: 0 0 8px #ff5a6a; }

@@ -200,5 +200,5 @@
     return [{ icon: 'sparkle', v: S.routines.length, l: 'Routines', cls: 'c' }, { icon: 'calendar', v: nx || '—', l: 'Programmée' }, { icon: 'shieldCheck', v: S.autos.filter(a => a.on).length + '/' + S.autos.length, l: 'Automatismes', cls: 'g' }, { icon: 'moon', v: WX.sun ? F.time(WX.sun.set) : '—', l: 'Coucher du soleil', cls: 'y' }];
   } } }) +
     '<section class="card pcard abs" style="' + box([105, 235, 760, 1012]) + '">' + B.whead('power', 'Routines') + T({ t: 'rlist', keys: ['autos'] }) + '</section>' +
-    '<section class="card pcard abs" style="' + box([770, 235, 1522, 1012]) + '">' + B.whead('edit', 'Automatismes « Quand… alors… »') + T({ t: 'alist', keys: ['autos'] }) + '</section>' });
+    '<section class="card pcard abs" style="' + box([770, 235, 1522, 1012]) + '">' + B.whead('edit', 'Automatisations') + T({ t: 'alist', keys: ['autos'] }) + '</section>' });
 })();

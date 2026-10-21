@@ -124,7 +124,7 @@
   const pct = v => v == null ? '—' : Math.round(v) + ' %';
   RENDER.carhero = () => {
     const s = state(), lvl = s.bat != null ? s.bat : s.fuel, ev = s.bat != null;
-    return '<div class="carhero"><div class="cimg"><img src="assets/rooms/ext-parking.jpg" alt=""><span class="cname">' + esc(C.name) + (s.demo ? ' <small class="tag2 wait">démo</small>' : '') + '</span></div>' +
+    return '<div class="carhero"><div class="cimg"><img src="assets/car.jpg" alt=""><span class="cname">' + esc(C.name) + (s.demo ? ' <small class="tag2 wait">démo</small>' : '') + '</span></div>' +
       '<div class="cbig"><div class="cgauge" style="--p:' + (lvl || 0) + '%;--c:' + (lvl > 50 ? '#22e3a4' : lvl > 20 ? '#ffd23f' : '#ff5a6a') + '"><b>' + pct(lvl) + '</b><small>' + (ev ? 'Batterie' : 'Carburant') + '</small></div>' +
       '<div class="cfacts"><div><b>' + (s.range != null ? Math.round(s.range) + ' km' : '—') + '</b><small>Autonomie</small></div>' +
       '<div><b>' + (s.charging ? 'En charge' : s.plug ? 'Branchée' : ev ? 'Débranchée' : '—') + '</b><small>' + (s.charging && s.endAt ? 'fin vers ' + esc(/^\d\d:\d\d$/.test(s.endAt) ? s.endAt : isNaN(new Date(s.endAt)) ? String(s.endAt) : F.time(new Date(s.endAt))) : 'Recharge') + '</small></div>' +

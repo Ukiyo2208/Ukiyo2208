@@ -31,7 +31,7 @@
       room([1240, 512, 1522, 792], { title: cfg.r[5].t, icon: cfg.r[5].i, img: cfg.r[5].img, ph: 153, mx: 12, th: 74, tiles:
         tl({ t: 'light', id: cfg.r[5].id + '.light', f: 1 }) }) +
       tl({ t: 'plex', style: box([105, 798, 792, 932]), keys: ['plex'], where: cfg.plexWhere }) +
-      tl({ t: 'music', style: box([800, 798, 1522, 932]), keys: ['music'], zone: cfg.zone }) +
+      tl({ t: 'fmusic', floor: cfg.k, style: box([800, 798, 1522, 932]), keys: ['music'] }) +
       B.iabar(box([105, 944, 1522, 1012]), ['off:' + cfg.k, 'cov:' + cfg.k, 'soir:' + cfg.k, 'jour:' + cfg.k]);
   }
   B.route('etage1', { title: 'Étage 1', bg: A + 'bg/etage1.jpg', render: () => etage('etage1', {
@@ -44,15 +44,13 @@
       { t: 'Salle de bains', i: 'bath', img: A + 'rooms/e1-sdb.jpg', id: 'e1.sdb' },
       { t: 'WC', i: 'toilet', img: A + 'rooms/e1-wc.jpg', id: 'e1.wc' }
     ] }) });
-  /* Étage 2 : deux pièces (2 éclairages RGB, 2 volets, 1 climatisation) */
+  /* Étage 2 : deux greniers (2 éclairages RGB, 2 volets, 1 climatisation), sans Plex ni musique */
   B.route('etage2', { title: 'Étage 2', bg: A + 'bg/etage1.jpg', render: () => B.side('etage2') +
     B.header({ id: 'etage2', title: 'Étage 2', sub: 'Contrôlez et gérez votre 2e étage', icon: 'homeFill', quick: ['off:e2', 'cov:e2', 'soir:e2', 'jour:e2'] }) +
-    room([105, 235, 812, 790], { title: 'Chambre d’amis', icon: 'bedFill', img: A + 'rooms/e2-amis.jpg', ph: 405, mx: 14, th: 92, tiles:
+    room([105, 235, 812, 932], { title: 'Grenier 1', icon: 'home', img: A + 'rooms/e2-amis.jpg', ph: 540, mx: 14, th: 96, tiles:
       tl({ t: 'light', id: 'e2.ch.light', rgb: true, f: 1.3 }) + tl({ t: 'cover', id: 'e2.ch.cover', label: 'Volets', f: 1 }) + tl({ t: 'clim', id: 'e2.ch.clim', power: true, f: 1.35 }) }) +
-    room([822, 235, 1522, 790], { title: 'Bureau', icon: 'monitor', img: A + 'rooms/e2-jeux.jpg', ph: 405, mx: 14, th: 92, tiles:
+    room([822, 235, 1522, 932], { title: 'Grenier 2', icon: 'home', img: A + 'rooms/e2-jeux.jpg', ph: 540, mx: 14, th: 96, tiles:
       tl({ t: 'light', id: 'e2.bureau.light', rgb: true, f: 1.3 }) + tl({ t: 'cover', id: 'e2.bureau.cover', label: 'Volets', f: 1 }) + T({ t: 'e2sum', f: 1.35, keys: ['house'] }) }) +
-    tl({ t: 'plex', style: box([105, 798, 792, 932]), keys: ['plex'], where: 'Salle de jeux - TV' }) +
-    tl({ t: 'music', style: box([800, 798, 1522, 932]), keys: ['music'] }) +
     B.iabar(box([105, 944, 1522, 1012]), ['off:e2', 'cov:e2', 'soir:e2', 'jour:e2']) });
   RENDER.e2sum = s => {
     const ids = ['e2.ch.light', 'e2.bureau.light'], on = ids.filter(id => dev(id).on).length, c = dev('e2.ch.clim');
@@ -112,7 +110,7 @@
         tl({ t: 'light', id: 'rdc.sejour.light', f: 104 }) + tl({ t: 'camstat', cam: 'cam.rdc-sejour', label: 'Caméra séjour', f: 155, keys: ['cam:cam.rdc-sejour'] }) + tl({ t: 'cover', id: 'rdc.sejour.cover', f: 123 }) }) +
       tl({ t: 'vac', style: box([1210, 645, 1522, 842]), keys: ['dev:rdc.robot'] }) +
       tl({ t: 'plex', v: 'rdc', style: box([105, 848, 722, 957]), keys: ['plex'] }) +
-      tl({ t: 'music', v: 'rdc', style: box([728, 848, 1522, 957]), keys: ['music'] }) +
+      tl({ t: 'fmusic', floor: 'rdc', style: box([728, 848, 1522, 957]), keys: ['music'] }) +
       B.iabar(box([100, 963, 1522, 1015]), ['off:rdc', 'cov:rdc', 'soir:rdc', 'vac:start']);
   } });
 

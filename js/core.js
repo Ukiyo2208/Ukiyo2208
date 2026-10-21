@@ -73,6 +73,7 @@
     if (!(opts && opts.silent)) HA.push(id, patch);
     if (window.BOS && window.BOS.fire) window.BOS.fire('dev', { id, patch, silent: !!(opts && opts.silent) });
   }
+  const hasAlarm = () => Object.values(DATA.DEVICES).some(d => d.type === 'alarm' && !(S.custom && S.custom.hidden && S.custom.hidden[d.id]));
   function user(id) {
     const k = id || S.user;
     if (k === 'guest') return { id: 'guest', name: 'Invité', avatar: '', ring: '#93a8cc', bat: 100, place: 'home' };
@@ -353,5 +354,5 @@
   };
   setInterval(() => HA.sync(), 15000);
 
-  window.BOS = { S, DATA, $, $$, esc, F, save, dev, setDev, user, T, RENDER, emit, act, ACT, route, ROUTES, go, show, fit, wxAlerts, rainSoon, toast, notify, modal, closeModal, popover, WX, wxIcon, wxText, isNight, uvLabel, loadWeather, HA, ymd, get current() { return current; } };
+  window.BOS = { hasAlarm, S, DATA, $, $$, esc, F, save, dev, setDev, user, T, RENDER, emit, act, ACT, route, ROUTES, go, show, fit, wxAlerts, rainSoon, toast, notify, modal, closeModal, popover, WX, wxIcon, wxText, isNight, uvLabel, loadWeather, HA, ymd, get current() { return current; } };
 })();

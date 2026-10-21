@@ -218,7 +218,7 @@
     const row = (icon, title, sub, cls, btn) => '<div class="li absrow"><span class="aico ' + (cls || '') + '">' + ico(icon) + '</span><div><b>' + title + '</b><small>' + sub + '</small></div>' + (btn || '') + '</div>';
     const alarmOn = al.length ? al.some(d => dev(d.id).mode && dev(d.id).mode !== 'disarmed') : !!S.alarm;
     return '<div class="list scroll" style="flex:1">' +
-      row('shieldCheck', 'Alarme' + (al.length ? ' (' + esc(al[0].name) + ')' : ''), alarmOn ? 'Activée — la maison est sous surveillance' : 'Désactivée', alarmOn ? 'g' : 'w', '<button class="sw' + (alarmOn ? ' on' : '') + '" data-act="absAlarm" aria-label="Alarme"></button>') +
+      (!B.hasAlarm() ? '' : row('shieldCheck', 'Alarme' + (al.length ? ' (' + esc(al[0].name) + ')' : ''), alarmOn ? 'Activée — la maison est sous surveillance' : 'Désactivée', alarmOn ? 'g' : 'w', '<button class="sw' + (alarmOn ? ' on' : '') + '" data-act="absAlarm" aria-label="Alarme"></button>')) +
       lk.map(d => row('lock', esc(d.name), esc(d.room) + ' · ' + (dev(d.id).locked === false ? 'déverrouillée' : 'verrouillée'), dev(d.id).locked === false ? 'w' : 'g', '<button class="btn sm" data-act="absLock" data-arg="' + d.id + '">' + (dev(d.id).locked === false ? 'Verrouiller' : 'Ouvrir') + '</button>')).join('') +
       (garage ? row('garage', 'Porte du garage', dev(garage.id).pos > 0 ? 'Ouverte à ' + dev(garage.id).pos + ' %' : 'Fermée', dev(garage.id).pos > 0 ? 'w' : 'g', dev(garage.id).pos > 0 ? '<button class="btn sm" data-act="absClose" data-arg="' + garage.id + '">Fermer</button>' : '') : '') +
       row('blinds', 'Ouvertures', op.length ? op.filter(d => d.id !== 'rdc.garage.door').map(d => esc(d.room + ' · ' + d.name)).join(', ') || 'Tout est fermé' : 'Tout est fermé', op.filter(d => d.id !== 'rdc.garage.door').length ? 'w' : 'g', op.some(d => d.type === 'cover' && d.id !== 'rdc.garage.door') ? '<button class="btn sm" data-act="absCovers">Tout fermer</button>' : '') +
@@ -258,10 +258,10 @@
     stillOn().filter(d => ['light', 'group', 'power', 'app', 'fan', 'media'].includes(d.type) && !/frigo|congel|box|nas/i.test(d.name)).forEach(d => setDev(d.id, { on: false }));
     if (DATA.DEVICES['rdc.garage.door'] && dev('rdc.garage.door').pos > 0 && (!B.canUse || B.canUse('rdc.garage.door'))) setDev('rdc.garage.door', { pos: 0 });
     byType('lock').forEach(d => { if (!B.canUse || B.canUse(d.id)) setDev(d.id, { locked: true }); });
-    const al = byType('alarm'); if (al.length) { if (!B.canUse || B.canUse(al[0].id)) al.forEach(d => setDev(d.id, { mode: 'armed_away' })); } else S.alarm = true;
+    const al = byType('alarm'); if (al.length) { if (!B.canUse || B.canUse(al[0].id)) al.forEach(d => setDev(d.id, { mode: 'armed_away' })); }
     const u = S.users.find(x => x.id === B.user().id); if (u) u.place = 'away';
     B.src = null; B.save(); B.emit('house'); B.emit('abs'); B.emit('users');
-    B.toast('Maison sécurisée : lumières éteintes, garage fermé, alarme activée. À bientôt !', 'shieldCheck');
+    B.toast('Maison sécurisée : lumières éteintes, garage fermé' + (B.hasAlarm() ? ', alarme activée' : '') + '. À bientôt !', 'shieldCheck');
     (B.awayLock || awayLock)();
   });
   /* mode absent : l'écran passe sur la page de verrouillage (empreinte) */
@@ -298,7 +298,8 @@
   }, 8 * 6e4);
   B.route('absence', { title: 'Absence', bg: BG, render: () => B.side('absence') + B.header({ id: 'absence', title: 'Absence', sub: 'Sécurité : tout vérifier avant de partir', icon: 'shieldCheck', info: { t: 'infobox', keys: ['house', 'abs', 'users'], items: () => {
     const al = byType('alarm'), on = al.length ? al.some(d => dev(d.id).mode && dev(d.id).mode !== 'disarmed') : !!S.alarm;
-    return [{ icon: 'shieldCheck', v: on ? 'Activée' : 'Off', l: 'Alarme', cls: on ? 'g' : 'p' }, { icon: 'bulb', v: stillOn().length, l: 'Encore allumés' }, { icon: 'blinds', v: openings().length, l: 'Ouvertures' }, { icon: 'family', v: home().length, l: 'À la maison', cls: 'c' }];
+    const gar = DATA.DEVICES['rdc.garage.door'] && dev('rdc.garage.door').pos > 0;
+    return [B.hasAlarm() ? { icon: 'shieldCheck', v: on ? 'Activée' : 'Off', l: 'Alarme', cls: on ? 'g' : 'p' } : { icon: 'garage', v: gar ? 'Ouvert' : 'Fermé', l: 'Garage', cls: gar ? 'p' : 'g' }, { icon: 'bulb', v: stillOn().length, l: 'Encore allumés' }, { icon: 'blinds', v: openings().length, l: 'Ouvertures' }, { icon: 'family', v: home().length, l: 'À la maison', cls: 'c' }];
   } } }) +
     '<section class="card pcard abs" style="' + box([105, 235, 830, 640]) + '">' + B.whead('shield', 'Caméras') + T({ t: 'abscams' }) + '</section>' +
     '<section class="card pcard abs" style="' + box([840, 235, 1522, 640]) + '">' + B.whead('shield', 'Sécurité') + T({ t: 'abssec', keys: ['house', 'abs'] }) + '</section>' +

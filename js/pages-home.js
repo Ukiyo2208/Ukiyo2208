@@ -54,15 +54,15 @@
       '<button data-act="iaOpen" class="iatop" title="Parler à Bêta IA">' + brainSVG() + '</button>' +
       '<a href="#parametres" class="gearb" title="Paramètres">' + ico('gearFill') + '</a></div>';
   };
-  RENDER.husers = s => '<section class="card hcard abs" style="' + s.style + '">' + B.whead('users', 'La famille', '<a href="#parametres" class="wmore" aria-label="Gérer les profils">' + ico('chevR') + '</a>') + '<div class="users">' +
+  RENDER.husers = s => '<section class="card hcard abs" style="' + s.style + '">' + B.whead('users', 'Utilisateurs', '<a href="#parametres" class="wmore" aria-label="Gérer les profils">' + ico('chevR') + '</a>') + '<div class="users">' +
     S.users.slice(0, 4).map(u => avatarBlock(u)).join('') + '</div></section>';
-  RENDER.hmeteo = s => '<section class="card hcard abs" style="' + s.style + '" data-act="weather" role="button">' + B.whead('weather', 'Météo du moment', '<span class="wsub">' + esc(S.settings.city) + '</span>') + '<div class="hwx">' +
+  RENDER.hmeteo = s => '<section class="card hcard abs" style="' + s.style + '" data-act="weather" role="button">' + B.whead('weather', 'Météo', '<span class="wsub">' + esc(S.settings.city) + '</span>') + '<div class="hwx">' +
     '<div class="now">' + ico(B.wxIcon(WX.now.code, B.isNight()), 'big') + '<span class="temp">' + WX.now.temp + '°C</span><span class="cond">' + B.wxText(WX.now.code) + '</span></div>' +
     '<div class="days">' + B.wxDays(3) + '</div>' +
     '<div class="stats"><div>' + ico('drop') + '<span>' + WX.now.rain + ' %</span><small>Pluie</small></div><div>' + ico('wind') + '<span>' + WX.now.wind + ' km/h</span><small>Vent</small></div><div>' + ico('uv', 'g') + '<span>UV ' + WX.now.uv + '</span><small>' + B.uvLabel(WX.now.uv) + '</small></div></div></div></section>';
   RENDER.hcal = s => {
     const t = new Date(), evs = S.events.filter(e => e.date === F.ymd(t)).sort((a, b) => a.time.localeCompare(b.time)).slice(0, 4);
-    return '<section class="card hcard hcal abs" style="' + s.style + '" data-act="goto" data-arg="calendrier" role="button">' + B.whead('cal', 'Au programme') + '<div class="today">Aujourd\'hui, ' + F.dayMonth(t) + '</div>' +
+    return '<section class="card hcard hcal abs" style="' + s.style + '" data-act="goto" data-arg="calendrier" role="button">' + B.whead('cal', 'Calendrier') + '<div class="today">Aujourd\'hui, ' + F.dayMonth(t) + '</div>' +
       (evs.length ? evs.map(e => '<div class="ev" style="--c:' + e.color + '"><i></i><span>' + e.time + '</span><span class="tt">' + esc(e.title) + '</span><span class="d">' + (e.dur >= 60 ? Math.round(e.dur / 60 * 10) / 10 + ' h' : e.dur + ' min') + '</span></div>').join('') : '<p class="muted">Rien de prévu aujourd’hui. Profitez !</p>') + '</section>';
   };
   RENDER.hmail = s => {
@@ -100,7 +100,9 @@
       pill('data-act="toggle" data-id="home.ecs"', 'hotWater', '#2fb0ff', 'Eau chaude', dev('home.ecs').on ? '52 °C' : 'Hors-gel') +
       pill('data-act="toggle" data-id="home.climg"', 'snow', '#2fd8ff', 'Clim', dev('home.climg').on ? clims + ' pièce' + (clims > 1 ? 's' : '') : 'Arrêt') +
       pill('data-act="goto" data-arg="pieces"', 'bulbFill', '#ffd23f', 'Lumières', h.on ? h.on + ' allumée' + (h.on > 1 ? 's' : '') : 'Éteintes', h.on ? '#ffd23f' : '') +
-      pill('data-act="goto" data-arg="absence"', 'shieldCheck', S.alarm ? '#22e3a4' : '#ff9a4a', 'Alarme', S.alarm ? 'Activée' : 'Désactivée', S.alarm ? '#2ff0b0' : '') +
+      (B.hasAlarm() ? pill('data-act="goto" data-arg="absence"', 'shieldCheck', S.alarm ? '#22e3a4' : '#ff9a4a', 'Alarme', S.alarm ? 'Activée' : 'Désactivée', S.alarm ? '#2ff0b0' : '')
+        : B.car ? (c => pill('data-act="goto" data-arg="voiture"', 'carFill', '#2fb6ff', 'Voiture', (c.bat != null ? Math.round(c.bat) + ' %' : c.fuel != null ? Math.round(c.fuel) + ' %' : '—') + (c.range != null ? ' · ' + Math.round(c.range) + ' km' : ''), c.charging ? '#2ff0b0' : ''))(B.car.state())
+        : pill('data-act="goto" data-arg="absence"', 'blindsWin', '#8fd8ff', 'Ouvertures', h.open ? h.open + ' ouvert' + (h.open > 1 ? 's' : '') : 'Tout fermé')) +
       '</div></div></section>';
   };
   /* Musique (accueil) : morceau en cours + favoris de l'utilisateur */
@@ -108,18 +110,18 @@
     const i = B.curInfo(), tab = S.music.htab || 'radio';
     const favs = Music.favs().map(id => Music.get(id)).filter(Boolean);
     let list = tab === 'radio' ? favs.filter(x => x.kind === 'radio') : tab === 'yt' ? favs.filter(x => Music.kindOf(x) === 'yt') : favs.filter(x => Music.kindOf(x) === 'audio' || x.group === 'Ambiances');
-    const pool = tab === 'radio' ? DATA.RADIOS.map(r => Music.get(r.id)) : tab === 'yt' ? Music.sources().filter(x => Music.kindOf(x) === 'yt') : S.playlists.map(p => Music.get(p.id));
+    const pool = tab === 'radio' ? ['r-nrj', 'r-fg', 'r-info'].map(id => Music.get(id)).filter(Boolean) : tab === 'yt' ? Music.sources().filter(x => Music.kindOf(x) === 'yt') : S.playlists.map(p => Music.get(p.id));
     list = list.concat(pool.filter(x => !list.some(y => y.id === x.id)).map(x => Object.assign({ sug: true }, x))).slice(0, 6);
     const fav = x => { const k = Music.kindOf(x), on = S.music.src === x.id; return '<button class="fav' + (on ? ' on' : '') + (x.sug ? ' sug' : '') + '" data-act="mPlay" data-arg="' + x.id + '" title="' + esc(x.name) + '">' + (k === 'radio' ? B.radioLogo(x, 46, true) : '<img src="' + (x.cover || 'assets/media/playlist-1.jpg') + '" alt="">') + (on && Music.playing ? '<span class="eq"><i></i><i></i><i></i></span>' : '') + '<span>' + esc(k === 'radio' ? x.name.replace(/^France (?=\w)/, '') : x.name) + '</span></button>'; };
     return '<section class="card hcard hmus abs" style="' + s.style + '">' + B.whead('music', 'Musique', '<div class="tabs sm">' + [['radio', 'Radios'], ['yt', 'YouTube'], ['amb', 'Ambiances']].map(t => '<button class="' + (tab === t[0] ? 'on' : '') + '" data-act="hmTab" data-arg="' + t[0] + '">' + t[1] + '</button>').join('') + '</div><a href="#musique" class="wmore" aria-label="Page Musique">' + ico('chevR') + '</a>') +
       '<div class="hmnow"><a href="#musique" class="cv">' + B.mcover(i, 84) + '</a><div class="nf">' + B.srcPill(i) + '<b>' + esc(i.title) + '</b><span>' + esc(i.artist) + '</span>' + B.transport() + '</div></div>' +
-      '<div class="favs">' + list.slice(0, 6).map(fav).join('') + '</div></section>';
+      '<div class="favs">' + list.slice(0, tab === 'radio' ? 5 : 6).map(fav).join('') + (tab === 'radio' ? '<button class="fav more" data-act="radiosAll" title="Toutes les radios"><span class="rlogo" style="width:46px;height:46px;border-radius:50%">' + ico('dots') + '</span><span>Autres</span></button>' : '') + '</div></section>';
   };
   B.act('hmTab', el => { S.music.htab = el.dataset.arg; B.save(); B.emit('music'); });
   /* Plex (accueil) : film sélectionné + ajouts récents */
   RENDER.hplex = s => {
     const p = B.Plex.sel(), rec = B.Plex.list('recent').filter(x => x.id !== p.id).slice(0, 4);
-    return '<section class="card hcard hplex abs" style="' + s.style + '">' + B.whead('plex', 'Soirée ciné', '<a href="#plex" class="wmore" aria-label="Page Plex">' + ico('chevR') + '</a>') +
+    return '<section class="card hcard hplex abs" style="' + s.style + '">' + B.whead('plex', 'Plex', '<a href="#plex" class="wmore" aria-label="Page Plex">' + ico('chevR') + '</a>') +
       '<div class="hpx"><a href="#plex" class="pst"><img src="' + p.img + '" alt=""></a><div class="pi"><small>' + (S.plexPlaying ? 'En lecture sur la TV' : p.progress ? 'À reprendre' : 'À découvrir') + '</small><b>' + esc(p.title) + '</b><span>' + esc(p.kind) + ' · ' + p.year + ' · ' + esc(p.dur) + '</span>' +
       (p.progress ? '<i class="pgbar"><b style="width:' + p.progress + '%"></b></i>' : '') +
       '<div class="row"><button class="btn pri sm" data-act="plexPlay" data-toggle="1">' + ico(S.plexPlaying ? 'pause' : 'play') + (S.plexPlaying ? 'Pause' : p.progress ? 'Reprendre' : 'Regarder') + '</button>' + rec.slice(0, 3).map(x => B.poster(x, 'mini')).join('') + '</div></div></div></section>';
@@ -159,7 +161,8 @@
       '<div class="row" style="gap:6px">' + ['Auto', 'Confort', 'Éco', 'Hors-gel'].map(m => '<button class="cat' + (d.mode === m ? ' on' : '') + '" style="flex:1;font-size:12px" data-act="chMode" data-arg="' + m + '">' + m + '</button>').join('') + '</div>');
   });
   B.act('chMode', el => { B.setDev('home.chauffage', { mode: el.dataset.arg, on: true }); B.$$('.pop .cat').forEach(b => b.classList.toggle('on', b === el)); });
-  B.act('nasOpen', el => { if (S.settings.nasUrl) window.open(S.settings.nasUrl, '_blank'); else B.go('nas'); });
+  B.nasUrl = () => { const u = (S.conn && S.conn.ugreen) || {}; return u.url || (u.ip ? 'http://' + u.ip + ':9999' : '') || S.settings.nasUrl || ''; };
+  B.act('nasOpen', el => { if (B.nasUrl()) window.open(B.nasUrl(), '_blank'); else B.go('nas'); });
   B.act('notifs', el => {
     const h = house();
     const items = [];
@@ -231,7 +234,7 @@
   RENDER.lklinks = s => {
     const un = B.unread(), tm = F.ymd(new Date(Date.now() + 864e5)), evs = S.events.filter(e => e.date === tm).length;
     const L = (y, icon, title, sub, to, cls, c) => '<a class="lk-link glass abs" href="#" data-act="unlockTo" data-arg="' + to + '" style="' + px(1200, y, 305, 76) + '">' + ico(icon) + '<div><b>' + title + '</b><small class="' + (cls || '') + '">' + (c ? '<i style="--c:' + c + '"></i>' : '') + sub + '</small></div>' + ico('chevR', 'chev') + '</a>';
-    return '<div class="abs" style="left:0;top:0">' +
+    return '<div class="abs lk-links" style="left:0;top:0">' +
       L(413, 'mail', 'Mails', un + ' nouveau' + (un > 1 ? 'x' : ''), 'mails', '', '#2f8bff') +
       L(497, 'calendar', 'Calendrier', evs + ' événement' + (evs > 1 ? 's' : '') + ' demain', 'calendrier') +
       L(581, 'nas', 'UGREEN NAS', 'En ligne', 'nas', 'g', '#22e3a4') +

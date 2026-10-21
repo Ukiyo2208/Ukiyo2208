@@ -54,11 +54,11 @@
   add('e1.sdb.light', 'light', 'Éclairage', 'Salle de bains', { on: true }, 'light.salle_de_bains');
   add('e1.wc.light', 'light', 'Éclairage', 'WC', { on: false }, 'light.wc_etage_1');
   // 2e étage : 2 volets, 2 éclairages RGB, 1 climatisation
-  add('e2.ch.light', 'light', 'Éclairage RGB', 'Chambre d’amis', { on: true, color: '#ffb35c', rgb: true }, 'light.chambre_amis');
-  add('e2.ch.cover', 'cover', 'Volets', 'Chambre d’amis', { pos: 0 }, 'cover.chambre_amis');
-  add('e2.ch.clim', 'clim', 'Climatisation', 'Chambre d’amis', { on: false, temp: 21 }, 'climate.chambre_amis');
-  add('e2.bureau.light', 'light', 'Éclairage RGB', 'Bureau', { on: true, color: '#7aa8ff', rgb: true }, 'light.bureau');
-  add('e2.bureau.cover', 'cover', 'Volets', 'Bureau', { pos: 0 }, 'cover.bureau');
+  add('e2.ch.light', 'light', 'Éclairage RGB', 'Grenier 1', { on: true, color: '#ffb35c', rgb: true }, 'light.chambre_amis');
+  add('e2.ch.cover', 'cover', 'Volets', 'Grenier 1', { pos: 0 }, 'cover.chambre_amis');
+  add('e2.ch.clim', 'clim', 'Climatisation', 'Grenier 1', { on: false, temp: 21 }, 'climate.chambre_amis');
+  add('e2.bureau.light', 'light', 'Éclairage RGB', 'Grenier 2', { on: true, color: '#7aa8ff', rgb: true }, 'light.bureau');
+  add('e2.bureau.cover', 'cover', 'Volets', 'Grenier 2', { pos: 0 }, 'cover.bureau');
   // RDC
   add('rdc.garage.light', 'light', 'Éclairage', 'Garage', { on: true }, 'light.garage');
   add('rdc.garage.door', 'cover', 'Porte garage', 'Garage', { pos: 0 }, 'cover.porte_garage');

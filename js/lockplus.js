@@ -63,7 +63,7 @@
     // le reste, seulement s'il reste de la place
     add({ lvl: 0, icon: 'blindsWin', l: 'Ouvertures', v: H.open ? H.open + ' volet' + (H.open > 1 ? 's' : '') + ' ouvert' + (H.open > 1 ? 's' : '') : 'Tout est fermé', go: 'rdc', ok: !H.open });
     add({ lvl: 0, icon: 'bulb', l: 'Éclairages', v: H.on ? H.on + ' allumé' + (H.on > 1 ? 's' : '') : 'Tout est éteint', go: 'pieces' });
-    add({ lvl: 0, icon: 'shieldCheck', l: 'Alarme', v: S.alarm ? 'Activée' : 'Désactivée', go: 'absence', ok: !!S.alarm });
+    if (B.hasAlarm()) add({ lvl: 0, icon: 'shieldCheck', l: 'Alarme', v: S.alarm ? 'Activée' : 'Désactivée', go: 'absence', ok: !!S.alarm });
     if (B.car && B.car.row) add(B.car.row());
     else if (has('ext.borne')) { const b = dev('ext.borne'); add({ lvl: 0, icon: 'charger', l: 'Voiture', v: b.on ? 'En charge' + (b.car ? ' · ' + b.car + ' %' : '') : 'Borne disponible', go: 'exterieur' }); }
     if (has('ext.tondeuse')) add({ lvl: 0, icon: 'mowerRobot', l: 'Robot tondeuse', v: dev('ext.tondeuse').status === 'mowing' ? 'En tonte' : 'En charge', go: 'exterieur' });

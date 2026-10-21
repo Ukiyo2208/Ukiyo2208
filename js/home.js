@@ -81,7 +81,7 @@
     'Cour': ['carFill', 'ext-cour'], 'Jardin': ['leafFill', 'ext-jardin'], 'Terrasse': ['umbrella', 'ext-terrasse'],
     'Garage': ['carFill', 'rdc-garage'], 'Buanderie': ['washer', 'rdc-buanderie'], 'Entrée': ['door', 'rdc-entree'], 'Cuisine': ['utensils', 'rdc-cuisine'], 'Salon': ['sofaFill', 'rdc-salon'], 'Séjour': ['umbrella', 'rdc-sejour'], 'Aspirateur robot': ['robotFill', 'rdc-robot'],
     'Escalier & Couloir': ['stairs', 'e1-couloir'], 'Chambre 1': ['bedFill', 'e1-chambre1'], 'Chambre 2': ['bedFill', 'e1-chambre2'], 'Suite parentale': ['bedFill', 'e1-suite'], 'Salle de bains': ['bath', 'e1-sdb'],
-    'Chambre d’amis': ['bedFill', 'e2-amis'], 'Bureau': ['monitor', 'e2-jeux']
+    'Grenier 1': ['home', 'e2-amis'], 'Grenier 2': ['home', 'e2-jeux'], 'Chambre d’amis': ['bedFill', 'e2-amis'], 'Bureau': ['monitor', 'e2-jeux']
   };
   const WCIMG = { rdc: 'rdc-wc', e1: 'e1-wc' };
   function floorOf(id) {

@@ -84,7 +84,7 @@
     card([105, 235, 760, 600], 'Panneaux solaires', 'solar', T({ t: 'esolar', keys: ['energy'] })) +
     card([770, 235, 1522, 600], 'Production et consommation', 'chart', T({ t: 'echart', keys: ['energy'] })) +
     card([105, 612, 560, 1012], 'Batterie & réseau', 'battery', T({ t: 'ebatt', keys: ['dev:ext.borne', 'house', 'energy'] })) +
-    card([570, 612, 1040, 1012], 'Qui consomme ?', 'home', T({ t: 'erooms', keys: ['house'] })) +
+    card([570, 612, 1040, 1012], 'Consommation de la maison', 'home', T({ t: 'erooms', keys: ['house'] })) +
     card([1050, 612, 1522, 1012], 'Allumés en ce moment', 'power', T({ t: 'eactive', keys: ['house'] })) });
 
   /* ======================= MUSIQUE ======================= */
@@ -112,10 +112,13 @@
       tabs + (tab === 'yt' ? B.YTM.results() : '') +
       '<div class="list scroll" style="flex:1">' + (list.length ? list.map(libRow).join('') : '<p class="muted" style="font-size:13.5px;line-height:1.5">' + (tab === 'yt' ? 'Aucun lien pour l’instant. Collez ci-dessus l’adresse d’une vidéo ou d’une playlist YouTube : elle sera lue ici et gardée dans votre bibliothèque.' : 'Collez l’adresse d’un fichier audio partagé par votre NAS (ex. http://192.168.1.20:5000/musique/titre.mp3) ou d’une webradio.') + '</p>') + '</div>';
   };
-  RENDER.mradios = () => '<div class="rgrid scroll">' + DATA.RADIOS.map(r => {
+  RENDER.mradios = () => '<div class="rgrid scroll">' + DATA.RADIOS.filter(r => S.music.radAll || ['r-nrj', 'r-fg', 'r-info'].includes(r.id) || Music.isFav(r.id) || S.music.src === r.id).sort((a, b) => { const k = r => { const i = ['r-nrj', 'r-fg', 'r-info'].indexOf(r.id); return i < 0 ? 9 : i; }; return k(a) - k(b); }).map(r => {
     const on = S.music.src === r.id;
-    return '<div class="tile rtile' + (on ? ' cur' : '') + '"><button data-act="mPlay" data-arg="' + r.id + '" class="rb">' + B.radioLogo(r, 46) + '<span><b>' + esc(r.name) + '</b><small>' + (on && Music.playing ? '♪ En écoute' : 'En direct') + '</small></span></button><button class="like' + (Music.isFav(r.id) ? ' on' : '') + '" data-act="mLike" data-arg="' + r.id + '" aria-label="Favori">' + ico(Music.isFav(r.id) ? 'heartFill' : 'heart') + '</button></div>';
-  }).join('') + '</div>';
+    return '<div class="tile rtile' + (on ? ' cur' : '') + '"><button data-act="mPlay" data-arg="' + r.id + '" class="rb">' + B.radioLogo(r, 46) + '<span><b>' + esc(r.name) + '</b><small>' + (on && Music.playing ? '♪ À l’écoute' : 'En direct') + '</small></span></button><button class="like' + (Music.isFav(r.id) ? ' on' : '') + '" data-act="mLike" data-arg="' + r.id + '" aria-label="Favori">' + ico(Music.isFav(r.id) ? 'heartFill' : 'heart') + '</button></div>';
+  }).join('') + '<button class="tile rtile rmore" data-act="radMore">' + ico('dots') + '<span><b>' + (S.music.radAll ? 'Moins de radios' : 'Autres radios') + '</b><small>' + (S.music.radAll ? 'Revenir aux principales' : DATA.RADIOS.length + ' radios en direct') + '</small></span></button></div>';
+  B.act('radMore', () => { S.music.radAll = !S.music.radAll; B.save(); B.emit('music'); });
+  B.act('radiosAll', () => B.modal('<h2>' + ico('radio') + 'Radios en direct</h2><div class="rgrid">' + DATA.RADIOS.map(r => '<div class="tile rtile' + (S.music.src === r.id ? ' cur' : '') + '"><button data-act="radPlay" data-arg="' + r.id + '" class="rb">' + B.radioLogo(r, 46) + '<span><b>' + esc(r.name) + '</b><small>En direct</small></span></button><button class="like' + (Music.isFav(r.id) ? ' on' : '') + '" data-act="mLike" data-arg="' + r.id + '" aria-label="Favori">' + ico(Music.isFav(r.id) ? 'heartFill' : 'heart') + '</button></div>').join('') + '</div>', 'sm'));
+  B.act('radPlay', el => { B.closeModal(); Music.play(el.dataset.arg); });
   RENDER.mfavs = () => {
     const f = Music.favs().map(id => Music.get(id)).filter(Boolean);
     return f.length ? '<div class="list scroll" style="flex:1">' + f.map(libRow).join('') + '</div>' : '<p class="muted" style="font-size:14px;line-height:1.5">Touchez ♡ sur une radio, une vidéo YouTube ou une ambiance pour la retrouver ici et sur l’accueil.</p>';
@@ -142,7 +145,7 @@
     const i = Music.info();
     return [{ icon: Music.playing ? 'pause' : 'play', v: Music.playing ? 'En lecture' : 'En pause', l: ({ radio: 'Radio', yt: 'YouTube', audio: 'NAS' })[i.kind], cls: 'c' }, { icon: 'speaker', v: esc(B.zoneName()), l: 'Pièce' }, { icon: 'volume', v: S.music.vol + ' %', l: 'Volume' }, { icon: 'heartFill', v: Music.favs().length, l: 'Favoris', cls: 'p' }];
   }, ['music']) +
-    card([105, 235, 760, 640], 'En écoute', 'music', T({ t: 'mnow', keys: ['music'] })) +
+    card([105, 235, 760, 640], 'À l’écoute', 'music', T({ t: 'mnow', keys: ['music'] })) +
     card([770, 235, 1522, 640], 'Ma bibliothèque', 'link', T({ t: 'mlib', keys: ['music'] })) +
     card([105, 652, 760, 1012], 'Radios en direct', 'radio', T({ t: 'mradios', keys: ['music'] })) +
     card([770, 652, 1522, 1012], 'Favoris de ' + esc(B.user().name), 'heart', T({ t: 'mfavs', keys: ['music'] })) });
@@ -165,6 +168,11 @@
       '<input class="search" placeholder="Rechercher un titre…" value="' + esc(S.plexQ || '') + '" data-change="plexQ" aria-label="Rechercher"></div>' +
       '<div class="pgrid2 scroll">' + (list.length ? list.map(p => '<div class="pcell">' + B.poster(p) + '<span class="ell">' + esc(p.title) + '</span><small>' + esc(p.kind) + ' · ' + p.year + '</small></div>').join('') : '<p class="muted">Aucun titre ne correspond.</p>') + '</div>';
   };
+  RENDER.pcont = () => {
+    const l = B.Plex.all().filter(p => p.progress > 0 && p.progress < 98).slice(0, 4), st = B.Plex.real ? 'Serveur Plex relié · ' + B.Plex.real.length + ' titres' : B.Plex.error ? 'Plex : ' + B.Plex.error : 'Bibliothèque de démonstration';
+    return '<div style="display:flex;flex-direction:column;gap:8px;flex:1;min-height:0"><div class="list scroll" style="flex:1">' + (l.length ? l.map(p => '<button class="li pcrow" data-act="plexSel" data-arg="' + p.id + '"><img src="' + esc(p.img) + '" alt=""><div><b class="ell">' + esc(p.title) + '</b><small>' + esc(p.kind) + ' · ' + esc(p.dur) + '</small><i class="pgbar"><b style="width:' + p.progress + '%"></b></i></div>' + ico('play') + '</button>').join('') : '<p class="muted" style="margin:10px 4px">Rien en cours. Choisissez un titre dans la bibliothèque.</p>') + '</div>' +
+      '<a href="#connexions" class="muted pclink">' + ico('gear') + esc(st) + ' · réglages dans Connexions</a></div>';
+  };
   RENDER.pserver = () => {
     const s = S.settings, st = B.Plex.real ? ['', 'Connecté · ' + B.Plex.real.length + ' titres'] : B.Plex.error ? ['off', 'Erreur : ' + B.Plex.error] : ['wait', 'Bibliothèque de démonstration'];
     return '<form data-submit="plexSave" style="display:flex;flex-direction:column;gap:10px;flex:1" title="Avec l’adresse et le jeton, Bêta OS affiche votre vraie bibliothèque. Le jeton reste sur cet appareil."><span class="tag2 ' + st[0] + '" style="align-self:flex-start">' + esc(st[1]) + '</span>' +
@@ -181,7 +189,7 @@
   }, ['plex']) +
     card([105, 235, 760, 700], 'Sélection', 'film', T({ t: 'psel', keys: ['plex'] })) +
     card([770, 235, 1522, 1012], 'Bibliothèque', 'plex', T({ t: 'plib', keys: ['plex'] })) +
-    card([105, 712, 760, 1012], 'Serveur Plex', 'gear', T({ t: 'pserver', keys: ['plex'] })),
+    card([105, 712, 760, 1012], 'Continuer à regarder', 'film', T({ t: 'pcont', keys: ['plex'] })),
     after: () => B.Plex.load() });
 
   /* ======================= NAS ======================= */
@@ -196,7 +204,7 @@
       '<div class="li"><span class="ic">' + ico('cloudUp') + '</span><div><b>Sauvegarde complète</b><small>Terminée cette nuit à 03:00 · 182 Go</small></div><span class="tag2">OK</span></div>' +
       '<div class="li"><span class="ic">' + ico('shieldCheck') + '</span><div><b>Contrôle des disques</b><small>Aucune erreur détectée</small></div><span class="tag2">Sain</span></div></div>') +
     card([770, 612, 1522, 1012], 'Accès rapide', 'folder', '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">' + [['files', 'Fichiers'], ['photo', 'Photos'], ['video', 'Vidéos'], ['cloudUp', 'Sauvegarde']].map(b => '<button class="tile" data-act="nasOpen" data-arg="' + b[1] + '" style="height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-size:15px">' + ico(b[0]).replace('class="ico', 'style="font-size:40px;color:#2fb6ff;filter:drop-shadow(0 0 8px rgba(40,170,255,.6))" class="ico') + b[1] + '</button>').join('') + '</div>' +
-      '<p class="muted" style="font-size:13px;margin:16px 0 10px">' + (S.settings.nasUrl ? 'Interface : ' + esc(S.settings.nasUrl) : 'Ajoutez l’adresse de votre NAS (ex. http://192.168.1.20:9999) dans Paramètres pour ouvrir UGOS Pro d’un geste.') + '</p>' +
+      '<p class="muted" style="font-size:13px;margin:16px 0 10px">' + (B.nasUrl() ? 'Interface : ' + esc(B.nasUrl()) : 'Ajoutez l’adresse de votre NAS (ex. http://192.168.1.20:9999) dans Paramètres pour ouvrir UGOS Pro d’un geste.') + '</p>' +
       '<div class="row" style="margin-top:auto"><button class="btn pri" data-act="nasOpen">' + ico('nas') + 'Ouvrir UGOS Pro</button><a class="btn" href="#musique">' + ico('musicFill') + 'Écouter la musique du NAS</a></div>') });
 
   /* ======================= CALENDRIER ======================= */
@@ -451,7 +459,7 @@
     '<section class="card pcard abs" style="' + box([105, 235, 1100, 1012]) + '">' + B.whead('ia', 'Conversation', '<button class="btn sm" data-act="chatClear">' + ico('trash') + 'Effacer</button>') +
     T({ t: 'chat', keys: ['chat'] }) +
     '<form data-submit="iaPage" class="iainput"><button type="button" class="mic" data-act="mic" aria-label="Dicter">' + ico('mic') + '</button><input name="q" placeholder="Écrivez ou dictez votre demande…" autocomplete="off" enterkeyhint="send" aria-label="Message"><button class="btn pri" aria-label="Envoyer">' + ico('send') + '</button></form></section>' +
-    card([1110, 235, 1522, 1012], 'Idées de demandes', 'edit', '<div class="list scroll">' + SUGG.map(s => '<button class="li" style="grid-template-columns:30px 1fr;width:100%;text-align:left" data-act="iaChip" data-arg="' + esc(s) + '"><span class="ic" style="width:28px;height:28px;font-size:15px">' + ico('chat') + '</span><span>' + esc(s) + '</span></button>').join('') + '</div>') });
+    card([1110, 235, 1522, 1012], 'Suggestions', 'edit', '<div class="list scroll">' + SUGG.map(s => '<button class="li" style="grid-template-columns:30px 1fr;width:100%;text-align:left" data-act="iaChip" data-arg="' + esc(s) + '"><span class="ic" style="width:28px;height:28px;font-size:15px">' + ico('chat') + '</span><span>' + esc(s) + '</span></button>').join('') + '</div>') });
 
   /* ======================= PARAMÈTRES ======================= */
   const isAdmin = () => !!(B.user() && B.user().admin);
@@ -495,12 +503,25 @@
   });
   B.act('haMapSave', el => { const f = new FormData(el); const map = Object.assign({}, S.settings.haMap); for (const [k, v] of f.entries()) map[k] = String(v).trim() || '-'; S.settings.haMap = map; B.save(); B.closeModal(); B.toast('Appareils reliés', 'check'); B.HA.wsOk ? B.HA.applyAll() : B.HA.sync(); });
   RENDER.sgen = () => {
-    const s = S.settings;
-    return '<form data-submit="genSave" style="display:flex;flex-direction:column;gap:12px;flex:1"><div class="grid2"><label class="field">Ville (météo)<input name="city" value="' + esc(s.city) + '"></label><div class="field">&nbsp;<button type="button" class="btn" data-act="geo">' + ico('pin') + 'Trouver</button></div></div>' +
-      '<div class="grid2"><label class="field">Latitude<input name="lat" value="' + s.lat + '"></label><label class="field">Longitude<input name="lon" value="' + s.lon + '"></label></div>' +
-      '<label class="field">Adresse du NAS (UGOS Pro)<input name="nasUrl" placeholder="http://192.168.1.20:9999" value="' + esc(s.nasUrl) + '"></label>' +
-      '<label class="row" style="font-size:14px;gap:10px"><button type="button" class="sw sm' + (s.skipLock ? ' on' : '') + '" data-act="setFlag" data-arg="skipLock" aria-label="Sans verrouillage"></button>Ouvrir directement l’accueil</label>' +
-      '<div class="row" style="margin-top:auto"><button class="btn pri">' + ico('check') + 'Enregistrer</button></div></form>';
+    const s = S.settings, sw = (k, label, sub) => '<label class="row" style="font-size:14px;gap:10px;align-items:flex-start"><button type="button" class="sw sm' + (s[k] ? ' on' : '') + '" data-act="setFlag" data-arg="' + k + '" aria-label="' + esc(label) + '"></button><span>' + label + (sub ? '<br><small class="muted">' + sub + '</small>' : '') + '</span></label>';
+    return '<div style="display:flex;flex-direction:column;gap:12px;flex:1">' +
+      sw('skipLock', 'Ouvrir directement l’accueil', 'Sans passer par l’écran verrouillé') +
+      sw('guest', 'Profil invité sur l’écran verrouillé', 'Accès limité, sans garage ni réglages') +
+      '<div class="row" style="flex-wrap:wrap;gap:8px;margin-top:auto"><button type="button" class="btn sm" data-act="obStart">' + ico('sparkle') + 'Revoir la visite</button><button type="button" class="btn sm" data-act="voice">' + ico('mic') + 'Mode vocal</button><button type="button" class="btn sm" data-act="nfOpen">' + ico('bellFill') + 'Notifications</button></div></div>';
+  };
+  /* résumé de toutes les connexions (elles se règlent dans la page Connexions) */
+  RENDER.sconn = () => {
+    const K = S.conn || { status: {} }, stv = k => { const v = (K.status || {})[k] || ''; return v === 'ok' ? 'g' : v.startsWith('err') ? 'r' : ''; };
+    const rows = [['homeFill', 'Home Assistant', B.HA.enabled() ? (B.HA.wsOk ? 'Temps réel' : B.HA.online ? 'Relié' : 'Configuré') : 'Mode démo', B.HA.online ? 'g' : B.HA.enabled() ? '' : 'y'],
+      ['server', 'Serveur Bêta (NAS)', B.Server && B.Server.ok() ? 'En ligne' : 'À installer', B.Server && B.Server.ok() ? 'g' : 'y'],
+      ['nas', 'NAS UGREEN', K.ugreen && (K.ugreen.url || K.ugreen.ip) ? (K.ugreen.url || K.ugreen.ip) : 'Adresse à saisir', stv('ugreen')],
+      ['plex', 'Plex', S.settings.plexServer ? (B.Plex.real ? 'Relié' : 'Configuré') : 'Démo', B.Plex.real ? 'g' : ''],
+      ['youtube', 'Google (YouTube, Agenda)', B.YTM && B.YTM.connected() ? 'Connecté' : S.settings.ytClient ? 'À connecter' : 'Non configuré', B.YTM && B.YTM.connected() ? 'g' : ''],
+      ['mail', 'Messagerie', K.mail && K.mail.user ? K.mail.user : 'Non configurée', stv('mail')],
+      ['carFill', 'Voiture (FordPass)', S.car && Object.values(S.car.ent || {}).some(Boolean) ? 'Reliée' : 'Démo', S.car && Object.values(S.car.ent || {}).some(Boolean) ? 'g' : ''],
+      ['weather', 'Météo', esc(S.settings.city), B.WX.ok ? 'g' : '']];
+    return '<div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0"><div class="list scroll sconn" style="flex:1">' + rows.map(r => '<a class="li" href="#connexions"><span class="aico">' + ico(r[0]) + '</span><div><b>' + r[1] + '</b><small>' + r[2] + '</small></div><i class="dotst ' + r[3] + '"></i></a>').join('') + '</div>' +
+      '<a class="btn pri" href="#connexions" style="align-self:flex-start">' + ico('link') + 'Gérer les connexions</a></div>';
   };
   /* ambiance, saisons, effets, sons */
   RENDER.sfx = () => {
@@ -537,13 +558,13 @@
     '<div class="tile" style="padding:12px 14px;display:flex;align-items:center;gap:12px">' + B.badge('home') + '<div style="flex:1"><b style="font-weight:500">Pièces & appareils</b><div class="muted" style="font-size:12.5px">' + (isAdmin() ? 'Ajouter, retirer ou masquer' : 'Réservé aux administrateurs') + '</div></div>' + (isAdmin() ? '<button class="btn sm pri" data-act="roomsManager">' + ico('edit') + 'Gérer</button>' : ico('lock').replace('class="ico', 'style="font-size:20px;color:#93a8cc" class="ico')) + '</div>' +
     '<a class="tile" href="#pieces" style="padding:12px 14px;display:flex;align-items:center;gap:12px">' + B.badge('folder') + '<div style="flex:1"><b style="font-weight:500">Toutes les pièces</b><div class="muted" style="font-size:12.5px">Vue d’ensemble, pièces ajoutées comprises</div></div>' + ico('chevR') + '</a>' +
     '<div class="row" style="flex-wrap:wrap;margin-top:auto"><button class="btn sm" data-act="exportCfg">' + ico('download') + 'Exporter</button><label class="btn sm" style="cursor:pointer">' + ico('upload') + 'Importer<input type="file" accept="application/json" data-change="importCfg" hidden></label><button class="btn sm dan" data-act="resetCfg">' + ico('refresh') + 'Réinitialiser</button></div>' +
-    '<span class="muted" style="font-size:12px">Bêta OS 5.2 · réglages gardés sur cet appareil</span></div>';
+    '<span class="muted" style="font-size:12px">Bêta OS 6.7 · réglages gardés sur cet appareil</span></div>';
   B.act('exportCfg', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' })); a.download = 'beta-os-sauvegarde.json'; a.click(); });
   B.act('importCfg', el => { const f = el.files[0]; if (!f) return; f.text().then(t => { try { const j = JSON.parse(t); if (j.v !== 5) throw 0; localStorage.setItem('betaos.v5', JSON.stringify(j)); location.reload(); } catch (e) { B.toast('Ce fichier n’est pas une sauvegarde Bêta OS', 'info'); } }); });
   B.act('resetCfg', () => { if (confirm('Remettre Bêta OS à zéro ? Vos réglages, favoris et agenda seront effacés.')) { localStorage.removeItem('betaos.v5'); location.reload(); } });
-  B.route('parametres', { title: 'Paramètres', bg: BG, render: () => head('parametres', 'Paramètres', 'Profils, connexions et préférences', 'gearFill', () => [{ icon: 'homeFill', v: B.HA.enabled() ? (B.HA.wsOk ? 'Temps réel' : B.HA.online ? 'Relié' : 'Erreur') : 'Démo', l: 'Home Assistant', cls: 'c' }, { icon: 'family', v: S.users.length, l: 'Profils' }, { icon: 'wand', v: S.routines.length, l: 'Routines', go: 'routines' }, { icon: 'info', v: '5.2', l: 'Version' }], ['ha', 'users']) +
+  B.route('parametres', { title: 'Paramètres', bg: BG, render: () => head('parametres', 'Paramètres', 'Profils, connexions et préférences', 'gearFill', () => [{ icon: 'homeFill', v: B.HA.enabled() ? (B.HA.wsOk ? 'Temps réel' : B.HA.online ? 'Relié' : 'Erreur') : 'Démo', l: 'Home Assistant', cls: 'c' }, { icon: 'family', v: S.users.length, l: 'Profils' }, { icon: 'wand', v: S.routines.length, l: 'Routines', go: 'routines' }, { icon: 'info', v: '6.7', l: 'Version' }], ['ha', 'users']) +
     card([105, 235, 760, 640], 'Profils (4 maximum)', 'users', T({ t: 'sprof', keys: ['sprof'] })) +
-    card([770, 235, 1522, 640], 'Home Assistant', 'home', T({ t: 'sha', keys: ['ha'] })) +
+    card([770, 235, 1522, 640], 'Connexions', 'link', T({ t: 'sconn', keys: ['ha', 'conn', 'plex'] })) +
     card([105, 650, 560, 1012], 'Général', 'gear', T({ t: 'sgen' })) +
     card([570, 650, 1040, 1012], 'Ambiance & saisons', 'weather', T({ t: 'sfx', keys: ['sfx'] })) +
     card([1050, 650, 1522, 1012], 'Maison & sauvegarde', 'nas', T({ t: 'sdata', keys: ['sprof'] })) });
