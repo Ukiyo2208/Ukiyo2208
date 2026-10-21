@@ -109,3 +109,8 @@ Page **Voiture** (menu › Domotique) : batterie ou carburant, autonomie, rechar
 - **Départs automatiques** : pour chaque rendez-vous avec un **lieu** (nouveau champ dans le calendrier), Bêta OS calcule le trajet (OpenStreetMap), l'heure de départ (trajet + marge) et, quelques minutes avant, lance le préchauffage (froid) ou la clim (chaud) si la voiture est à la maison.
 - Une notification Home Assistant part avec un bouton **Itinéraire** (Plans, Google Maps ou Waze) qui s'affiche dans CarPlay / Android Auto.
 - Réglable par rendez-vous : Auto / Toujours / Jamais.
+
+## Mode vocal (6.6)
+
+Touchez un micro (barre IA, page Bêta IA, conversation) ou faites un appui long sur le bouton Bêta IA du dock. Vous parlez, Bêta IA répond à voix haute puis réécoute (conversation continue). Dites « merci » pour terminer.
+Réglages (roue dentée) : choix de la voix française, vitesse, et lecture des réponses écrites. Sans reconnaissance vocale (certaines applis), le mode vocal propose la dictée du clavier.

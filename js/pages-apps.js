@@ -415,18 +415,18 @@
     b.hidden = false; clearTimeout(b._t); b._t = setTimeout(() => { b.hidden = true; }, 9000);
   }
   B.act('iaBubbleClose', el => { el.closest('.iareply').hidden = true; });
-  B.act('ia', el => { const i = el.querySelector('input'); const r = askIA(i.value); i.value = ''; if (r) bubble(el.closest('.iabar'), r); });
-  B.act('iaHome', el => { const i = el.querySelector('input'); const r = askIA(i.value); i.value = ''; if (r) iaSheet(); });
-  B.act('iaAsk', el => { askIA(el.dataset.arg); iaSheet(); });
-  B.act('iaPage', el => { const i = el.querySelector('input'); askIA(i.value); i.value = ''; i.focus(); });
-  B.act('iaSheetSend', el => { const i = el.querySelector('input'); askIA(i.value); i.value = ''; i.focus(); });
-  B.act('iaChip', el => askIA(el.dataset.arg));
+  B.act('ia', el => { const i = el.querySelector('input'); const r = B.askIA(i.value); i.value = ''; if (r) bubble(el.closest('.iabar'), r); });
+  B.act('iaHome', el => { const i = el.querySelector('input'); const r = B.askIA(i.value); i.value = ''; if (r) iaSheet(); });
+  B.act('iaAsk', el => { B.askIA(el.dataset.arg); iaSheet(); });
+  B.act('iaPage', el => { const i = el.querySelector('input'); B.askIA(i.value); i.value = ''; i.focus(); });
+  B.act('iaSheetSend', el => { const i = el.querySelector('input'); B.askIA(i.value); i.value = ''; i.focus(); });
+  B.act('iaChip', el => B.askIA(el.dataset.arg));
   B.act('chatClear', () => { S.chat = []; B.save(); B.emit('chat'); });
   const SUGG = ['Fais le point sur la maison', 'Je pars', 'Bonne nuit', 'Éteins tout au RDC', 'Ferme les volets de l’étage 1', 'Mets 21 degrés dans la suite parentale', 'Démarre l’arrosage 15 min', 'Lance la playlist Gaming', 'Mets la radio FIP', 'Quel temps fait-il ?', 'Qu’est-ce que j’ai aujourd’hui ?', 'Ai-je des mails ?', 'Combien je consomme ?', 'Mode soirée'];
   /* conversation dans un panneau, accessible depuis toutes les pages */
   function iaSheet() {
     if (document.querySelector('.modal .iasheet')) return;
-    const m = B.modal('<div class="iasheet"><h2>' + brainSVG().replace('<svg', '<svg style="width:34px;height:34px"') + 'Bêta IA<span style="flex:1"></span><button class="btn sm" data-act="chatClear">' + ico('trash') + 'Effacer</button></h2>' +
+    const m = B.modal('<div class="iasheet"><h2>' + brainSVG().replace('<svg', '<svg style="width:34px;height:34px"') + 'Bêta IA<span style="flex:1"></span><button class="btn sm pri" data-act="voice">' + ico('mic') + 'Mode vocal</button><button class="btn sm" data-act="chatClear">' + ico('trash') + 'Effacer</button></h2>' +
       T({ t: 'chat', keys: ['chat'] }) +
       '<div class="sugg2">' + SUGG.slice(0, 6).map(s => '<button data-act="iaChip" data-arg="' + esc(s) + '">' + esc(s) + '</button>').join('') + '</div>' +
       '<form data-submit="iaSheetSend" class="iainput"><button type="button" class="mic" data-act="mic" aria-label="Dicter">' + ico('mic') + '</button><input name="q" placeholder="Écrivez ou dictez votre demande…" autocomplete="off" enterkeyhint="send" aria-label="Message"><button class="btn pri" aria-label="Envoyer">' + ico('send') + '</button></form></div>', 'sheet ia');
