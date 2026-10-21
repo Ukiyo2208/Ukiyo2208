@@ -363,7 +363,7 @@
   /* ======================= MENU iPHONE PAR SECTIONS ======================= */
   const GROUPS = [
     ['Pièces', 'rooms', id => /^(accueil|exterieur|rdc|etage1|etage2|pieces)$/.test(id) || /^niveau-/.test(id)],
-    ['Domotique', 'homeFill', id => /^(energie|routines|absence|journal)$/.test(id)],
+    ['Domotique', 'homeFill', id => /^(energie|voiture|routines|absence|journal)$/.test(id)],
     ['Outils', 'grid9', id => /^(musique|plex|nas|calendrier|mails|ia)$/.test(id)],
     ['Réglages', 'gearFill', id => /^(connexions|parametres)$/.test(id)]
   ];

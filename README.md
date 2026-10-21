@@ -101,3 +101,11 @@ Connexions › « Notifications sur les téléphones » › Configurer :
 - choisir les alertes : sonnette (avec photo), personne détectée en absence, garage resté ouvert, fuite d'eau et alarme (critiques), poubelles la veille au soir, machine terminée, alerte météo, mode absent ;
 - **recommandé** : « Créer les automatisations » génère le YAML à coller dans Home Assistant. Ces alertes tournent alors 24 h/24, même si aucun écran n'est allumé ;
 - les poubelles et la météo sont envoyées par l'écran choisi comme « émetteur » (une tablette toujours allumée).
+
+## Voiture (6.5)
+
+Page **Voiture** (menu › Domotique) : batterie ou carburant, autonomie, recharge, verrouillage, position, portes, fenêtres, pneus, batterie 12 V, kilométrage, et les commandes verrouiller, ouvrir, préchauffer/clim et actualiser.
+- Données réelles via l'intégration **FordPass** (HACS) de Home Assistant : Voiture › Réglages › « Relier FordPass » détecte les entités. Sans elle, la page est en mode démo.
+- **Départs automatiques** : pour chaque rendez-vous avec un **lieu** (nouveau champ dans le calendrier), Bêta OS calcule le trajet (OpenStreetMap), l'heure de départ (trajet + marge) et, quelques minutes avant, lance le préchauffage (froid) ou la clim (chaud) si la voiture est à la maison.
+- Une notification Home Assistant part avec un bouton **Itinéraire** (Plans, Google Maps ou Waze) qui s'affiche dans CarPlay / Android Auto.
+- Réglable par rendez-vous : Auto / Toujours / Jamais.

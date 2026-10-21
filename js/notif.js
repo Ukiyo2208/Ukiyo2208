@@ -29,6 +29,8 @@
     const users = S.users.filter(u => svcOf(u) && (r.who !== 'admins' || u.admin));
     const data = { url: site() + '#' + (o.go || 'accueil'), clickAction: site() + '#' + (o.go || 'accueil'), group: 'beta-' + rule, tag: o.tag || 'beta-' + rule };
     if (o.image) data.image = o.image;
+    if (o.url) data.url = data.clickAction = o.url;
+    if (o.actions) data.actions = o.actions;
     if (o.critical) data.push = { sound: { name: 'default', critical: 1, volume: 1 }, 'interruption-level': 'critical' }, data.ttl = 0, data.priority = 'high', data.channel = 'Alertes Bêta OS';
     else if (o.urgent) data.push = { 'interruption-level': 'time-sensitive' };
     let n = 0;
