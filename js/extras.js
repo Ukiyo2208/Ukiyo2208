@@ -238,6 +238,7 @@
     return '<div style="display:flex;flex-direction:column;gap:12px;flex:1">' +
       '<div class="absbig">' + ico('bolt') + '<div><b>' + h.kw.toFixed(1).replace('.', ',') + ' kW</b><small>consommation · solaire ' + B.solarNow().toFixed(1).replace('.', ',') + ' kW</small></div></div>' +
       '<label class="row absrow2"><button type="button" class="sw sm' + (sim ? ' on' : '') + '" data-act="absSim" aria-label="Simulation de présence"></button><span><b>Simulation de présence</b><small>Allume quelques lumières le soir quand personne n’est là</small></span></label>' +
+      '<label class="row absrow2"><button type="button" class="sw sm' + (S.settings.awayLock ? ' on' : '') + '" data-act="awayLockSet" aria-label="Verrouiller en partant"></button><span><b>Verrouiller l’écran en partant</b><small>Retour à la page avec l’empreinte dès que le mode absent est activé</small></span></label>' +
       '<div class="row" style="margin-top:auto;flex-wrap:wrap;gap:8px"><button class="btn pri" data-act="absLeave">' + ico('walk') + 'Je pars : tout sécuriser</button><button class="btn" data-act="absBack">' + ico('homeFill') + 'Je rentre</button></div></div>';
   };
   B.act('absAlarm', () => {
@@ -261,8 +262,28 @@
     const u = S.users.find(x => x.id === B.user().id); if (u) u.place = 'away';
     B.src = null; B.save(); B.emit('house'); B.emit('abs'); B.emit('users');
     B.toast('Maison sécurisée : lumières éteintes, garage fermé, alarme activée. À bientôt !', 'shieldCheck');
+    awayLock();
   });
-  B.act('absBack', () => {
+  /* mode absent : l'écran passe sur la page de verrouillage (empreinte) */
+  if (S.settings.awayLock == null) S.settings.awayLock = true;
+  function awayLock() {
+    S.away = Date.now(); B.save();
+    if (!S.settings.awayLock) return;
+    setTimeout(() => { if (B.current === 'verrou') return B.show(); B.closeModal(); document.querySelectorAll('.fpanel').forEach(p => p.remove()); sessionStorage.removeItem('betaos.unlocked'); B.go('verrou'); }, 1500);
+  }
+  B.awayLock = awayLock;
+  if (B.runRoutine) { const rr = B.runRoutine; B.runRoutine = (id, q) => { const r = rr(id, q); if (id === 'depart') awayLock(); else if (id === 'retour') { S.away = 0; B.save(); } return r; }; }
+  const lockR = B.ROUTES.verrou;
+  if (lockR) { const r0 = lockR.render; lockR.render = () => { const h = r0(); return S.away ? h.replace('<b>Touchez l’empreinte pour déverrouiller</b><span>Choisissez d’abord votre profil si besoin</span>', '<b>' + ico('shieldCheck') + ' Mode absent activé</b><span>Maison sécurisée · touchez l’empreinte à votre retour</span>') : h; }; }
+  // au déverrouillage, on propose de quitter le mode absent
+  window.addEventListener('hashchange', () => {
+    if (!S.away || B.current === 'verrou' || !sessionStorage.getItem('betaos.unlocked') || document.querySelector('.notify[data-away]')) return;
+    const n = B.notify({ badge: 'shield', title: 'Bon retour ' + B.user().name + ' !', text: 'Le mode absent est toujours activé (alarme en marche).', actions: [['Je rentre', 'absBack', '', 'pri'], ['Rester en absent', 'notifyClose', '']], ttl: 60000 });
+    if (n) n.dataset.away = '1';
+  });
+  B.act('awayLockSet', el => { S.settings.awayLock = !S.settings.awayLock; B.save(); el.classList.toggle('on', S.settings.awayLock); });
+  B.act('absBack', el => {
+    S.away = 0; const nt = el && el.closest && el.closest('.notify'); if (nt) nt.remove();
     const al = byType('alarm'); if (al.length) al.forEach(d => setDev(d.id, { mode: 'disarmed' })); else S.alarm = false;
     const u = S.users.find(x => x.id === B.user().id); if (u) u.place = 'home';
     const r = (S.routines || []).find(x => x.id === 'retour'); if (r) B.runRoutine('retour', true);
