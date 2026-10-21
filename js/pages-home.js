@@ -232,12 +232,12 @@
     const un = B.unread(), tm = F.ymd(new Date(Date.now() + 864e5)), evs = S.events.filter(e => e.date === tm).length;
     const L = (y, icon, title, sub, to, cls, c) => '<a class="lk-link glass abs" href="#" data-act="unlockTo" data-arg="' + to + '" style="' + px(1200, y, 305, 76) + '">' + ico(icon) + '<div><b>' + title + '</b><small class="' + (cls || '') + '">' + (c ? '<i style="--c:' + c + '"></i>' : '') + sub + '</small></div>' + ico('chevR', 'chev') + '</a>';
     return '<div class="abs" style="left:0;top:0">' +
-      L(329, 'mail', 'Mails', un + ' nouveau' + (un > 1 ? 'x' : ''), 'mails', '', '#2f8bff') +
-      L(413, 'calendar', 'Calendrier', evs + ' événement' + (evs > 1 ? 's' : '') + ' demain', 'calendrier') +
-      L(497, 'nas', 'UGREEN NAS', 'En ligne', 'nas', 'g', '#22e3a4') +
-      '<div class="lk-link lk-music glass abs" style="' + px(1200, 581, 305, 76) + '">' + '<button class="cvb" data-act="unlockTo" data-arg="musique" aria-label="Ouvrir la musique">' + B.mcover(B.curInfo(), 46) + '</button><div><b>' + esc(B.curInfo().title) + '</b><small>' + (Music.playing ? '♪ ' : '') + esc(B.curInfo().artist) + '</small></div>' +
+      L(413, 'mail', 'Mails', un + ' nouveau' + (un > 1 ? 'x' : ''), 'mails', '', '#2f8bff') +
+      L(497, 'calendar', 'Calendrier', evs + ' événement' + (evs > 1 ? 's' : '') + ' demain', 'calendrier') +
+      L(581, 'nas', 'UGREEN NAS', 'En ligne', 'nas', 'g', '#22e3a4') +
+      '<div class="lk-link lk-music glass abs" style="' + px(1200, 665, 305, 76) + '">' + '<button class="cvb" data-act="unlockTo" data-arg="musique" aria-label="Ouvrir la musique">' + B.mcover(B.curInfo(), 46) + '</button><div><b>' + esc(B.curInfo().title) + '</b><small>' + (Music.playing ? '♪ ' : '') + esc(B.curInfo().artist) + '</small></div>' +
       '<button class="pp2" data-act="musicToggle" aria-label="Lecture/pause">' + ico(Music.playing ? 'pause' : 'play') + '</button></div>' +
-      L(665, 'plex', 'Plex', esc(B.Plex.sel().title) + (B.Plex.sel().progress ? ' · à reprendre' : ''), 'plex') + '</div>';
+      L(749, 'plex', 'Plex', esc(B.Plex.sel().title) + (B.Plex.sel().progress ? ' · à reprendre' : ''), 'plex') + '</div>';
   };
   RENDER.lkusers = s => '<div class="lk-users glass abs" style="' + s.style + '">' +
     S.users.slice(0, 4).map(u => avatarBlock(u, (S.lockSel || S.user) === u.id ? ' sel' : '').replace('data-act="userCard"', 'data-act="lockUser"')).join('') +
@@ -260,11 +260,11 @@
       '<div class="logo lk-logo abs hide-fluid" style="' + px(52, 24, 330, 84) + '">' + toriiSVG('torii') + '<span class="word"><span class="name">Bêta <span>os</span></span><span class="tag">MAISON INTELLIGENTE</span></span></div>' +
       '<div class="lk-kata abs" style="' + px(36, 128, 30, 180) + '">スマートホーム</div>' +
       T({ t: 'lkclock', style: box([75, 125, 400, 322]), keys: ['clock', 'weather'] }) +
-      T({ t: 'lkhouse', style: box([75, 340, 400, 675]), keys: ['house'] }) +
+      T({ t: 'lkhouse', style: box([75, 340, 400, 675]), keys: ['house', 'events', 'clock'] }) +
       fingerprint() +
       '<div class="lk-hint abs" style="' + px(468, 600, 600, 66) + '"><b>Touchez l’empreinte pour déverrouiller</b><span>Choisissez d’abord votre profil si besoin</span></div>' +
       T({ t: 'lkusers', style: box([410, 722, 1135, 942]), keys: ['users'] }) +
-      T({ t: 'lkwx', style: box([1135, 70, 1505, 310]), keys: ['weather'] }) +
+      T({ t: 'lkwx', style: box([1135, 70, 1505, 396]), keys: ['weather', 'clock'] }) +
       T({ t: 'lklinks', keys: ['mails', 'music', 'events', 'plex'] }) +
       T({ t: 'lkalert', keys: ['cam:cam.sonnette', 'cam:cam.cour'] }) +
       '<div class="lk-routines abs" style="' + px(548, 672, 440, 42) + '">' + (S.routines || []).slice(0, 3).map(r => '<button class="glass" data-act="lockRoutine" data-arg="' + r.id + '">' + ico(r.icon) + esc(r.name) + '</button>').join('') + '</div>' +

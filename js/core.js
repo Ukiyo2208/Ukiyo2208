@@ -227,7 +227,7 @@
   /* ---------- météo (Open-Meteo, sans clé) ---------- */
   const WX = {
     ok: false,
-    now: { temp: 12, code: 0, day: 0, wind: 28, rain: 0, uv: 0 },
+    now: { temp: 12, code: 0, day: 0, wind: 28, rain: 0, uv: 0, feel: 9 },
     days: [{ max: 16, min: 7, code: 0 }, { max: 18, min: 8, code: 0 }, { max: 17, min: 9, code: 0 }, { max: 16, min: 8, code: 2 }],
     t0: new Date(),
     hours: Array.from({ length: 24 }, (_, i) => ({ t: new Date(Date.now() + i * 36e5), temp: 12 - Math.sin(i / 4) * 3, prob: i > 14 && i < 19 ? 40 + i : 5, mm: i > 15 && i < 18 ? .6 : 0, gust: 30, code: 0 })),
@@ -266,7 +266,7 @@
   async function loadWeather() {
     const s = S.settings;
     const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + s.lat + '&longitude=' + s.lon +
-      '&timezone=auto&current=temperature_2m,weather_code,is_day,wind_speed_10m,precipitation_probability,uv_index' +
+      '&timezone=auto&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,precipitation_probability,uv_index' +
       '&hourly=temperature_2m,precipitation_probability,precipitation,wind_gusts_10m,weather_code&forecast_hours=36' +
       '&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum&forecast_days=5';
     try {
@@ -274,9 +274,10 @@
       if (!r.ok) throw 0;
       const j = await r.json();
       const c = j.current;
-      WX.now = { temp: Math.round(c.temperature_2m), code: c.weather_code, day: c.is_day, wind: Math.round(c.wind_speed_10m), rain: Math.round(c.precipitation_probability || 0), uv: Math.round(c.uv_index || 0) };
+      WX.now = { temp: Math.round(c.temperature_2m), code: c.weather_code, day: c.is_day, wind: Math.round(c.wind_speed_10m), rain: Math.round(c.precipitation_probability || 0), uv: Math.round(c.uv_index || 0), feel: Math.round(c.apparent_temperature) };
+      WX.at = Date.now();
       WX.days = j.daily.time.slice(1, 5).map((t, i) => ({ max: Math.round(j.daily.temperature_2m_max[i + 1]), min: Math.round(j.daily.temperature_2m_min[i + 1]), code: j.daily.weather_code[i + 1] }));
-      WX.tomorrow = { max: Math.round(j.daily.temperature_2m_max[1]), min: Math.round(j.daily.temperature_2m_min[1]) };
+      WX.tomorrow = { max: Math.round(j.daily.temperature_2m_max[1]), min: Math.round(j.daily.temperature_2m_min[1]), code: j.daily.weather_code[1] };
       const h = j.hourly, now = Date.now();
       WX.hours = h.time.map((t, i) => ({ t: new Date(t), temp: h.temperature_2m[i], prob: h.precipitation_probability[i] || 0, mm: h.precipitation[i] || 0, gust: h.wind_gusts_10m[i] || 0, code: h.weather_code[i] })).filter(x => +x.t > now - 36e5).slice(0, 24);
       WX.sun = { rise: new Date(j.daily.sunrise[0]), set: new Date(j.daily.sunset[0]) };
