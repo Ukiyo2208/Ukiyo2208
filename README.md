@@ -92,3 +92,12 @@ Limites : la lecture YouTube en arrière-plan (écran éteint / application quit
 - **Mode nuit automatique** : l'écran s'assombrit après un moment sans toucher et les sons sont coupés (sauf la sonnette). Le premier toucher rallume l'écran. Réglages dans Paramètres › Ambiance › Mode nuit.
 - **Bêta IA** : elle comprend plusieurs ordres à la suite (« éteins le salon et ferme les volets, puis lance FIP ») et garde le contexte (« et dans la cuisine ? »). Elle répond aussi aux questions sur le journal (« qui a ouvert le garage hier ? », « quand a été allumée la cuisine ? ») et sur la température d'une pièce.
 - **Absence & sécurité** : nouvelle page (menu Plus et recherche) avec les caméras, l'alarme, les serrures, la porte du garage, les ouvertures, les mouvements, qui est à la maison, ce qui est encore allumé (avec « Tout éteindre »), le bouton « Je pars » et une simulation de présence.
+
+## Notifications (6.4)
+
+Les notifications passent par l'application **Home Assistant** installée sur les téléphones (service `notify.mobile_app_…`).
+Connexions › « Notifications sur les téléphones » › Configurer :
+- choisir qui reçoit (un service par personne) et tester ;
+- choisir les alertes : sonnette (avec photo), personne détectée en absence, garage resté ouvert, fuite d'eau et alarme (critiques), poubelles la veille au soir, machine terminée, alerte météo, mode absent ;
+- **recommandé** : « Créer les automatisations » génère le YAML à coller dans Home Assistant. Ces alertes tournent alors 24 h/24, même si aucun écran n'est allumé ;
+- les poubelles et la météo sont envoyées par l'écran choisi comme « émetteur » (une tablette toujours allumée).

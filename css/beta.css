@@ -1683,3 +1683,23 @@ html.fluid .lkw2 .now > b { font-size: 56px; }
 html.fluid .lkh2 .r { height: 46px; }
 
 .lkw2 .wal.tm { color: #c9d8f2; background: rgba(120, 160, 230, .1); border-color: rgba(140, 180, 255, .2); }
+/* notifications via Home Assistant */
+.nfgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 18px; }
+.nfgrid section.wide { grid-column: 1 / -1; }
+.nfgrid h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 12.5px; letter-spacing: 1.2px; text-transform: uppercase; color: #7fb6ff; }
+.nfgrid h4 .ico { font-size: 17px; color: #2fd3ff; }
+.nfgrid .list .li.nfu { grid-template-columns: 40px minmax(0, 1fr) auto; }
+.nfu img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
+.nfu b { display: flex; align-items: center; gap: 6px; font-weight: 500; margin-bottom: 4px; }
+.nfu select, .nfu input, .nfr select { width: 100%; min-width: 0; height: 32px; padding: 0 8px; border-radius: 8px; background: rgba(6, 16, 40, .8); border: 1px solid rgba(90, 160, 255, .3); color: #fff; font-size: 13px; }
+.nfgrid .list .li.nfr { grid-template-columns: 40px minmax(0, 1fr) 118px auto; }
+.nfr small { display: block; color: var(--soft); font-size: 12px; }
+.nfr b { font-weight: 500; }
+.nfrec { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(34, 227, 164, .08); border: 1px solid rgba(34, 227, 164, .3); font-size: 13.5px; line-height: 1.45; }
+.nfrec > .ico { font-size: 22px; color: #2ff0b0; flex: none; }
+.nfrec .btn { flex: none; }
+textarea.yaml { width: 100%; height: 46vh; margin-top: 10px; padding: 12px; border-radius: 10px; background: #050b1c; border: 1px solid rgba(90, 160, 255, .3); color: #bfe6ff; font: 12.5px/1.5 ui-monospace, Menlo, Consolas, monospace; resize: vertical; }
+html.fluid .nfgrid { grid-template-columns: 1fr; }
+html.fluid .nfgrid .list .li.nfr { grid-template-columns: 36px minmax(0, 1fr) auto; }
+html.fluid .nfr select { grid-column: 2 / 4; grid-row: 2; margin-top: 4px; }
+html.fluid .nfrec { flex-direction: column; align-items: flex-start; }

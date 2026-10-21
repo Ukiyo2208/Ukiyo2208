@@ -262,7 +262,7 @@
     const u = S.users.find(x => x.id === B.user().id); if (u) u.place = 'away';
     B.src = null; B.save(); B.emit('house'); B.emit('abs'); B.emit('users');
     B.toast('Maison sécurisée : lumières éteintes, garage fermé, alarme activée. À bientôt !', 'shieldCheck');
-    awayLock();
+    (B.awayLock || awayLock)();
   });
   /* mode absent : l'écran passe sur la page de verrouillage (empreinte) */
   if (S.settings.awayLock == null) S.settings.awayLock = true;
@@ -272,7 +272,7 @@
     setTimeout(() => { if (B.current === 'verrou') return B.show(); B.closeModal(); document.querySelectorAll('.fpanel').forEach(p => p.remove()); sessionStorage.removeItem('betaos.unlocked'); B.go('verrou'); }, 1500);
   }
   B.awayLock = awayLock;
-  if (B.runRoutine) { const rr = B.runRoutine; B.runRoutine = (id, q) => { const r = rr(id, q); if (id === 'depart') awayLock(); else if (id === 'retour') { S.away = 0; B.save(); } return r; }; }
+  if (B.runRoutine) { const rr = B.runRoutine; B.runRoutine = (id, q) => { const r = rr(id, q); if (id === 'depart') (B.awayLock || awayLock)(); else if (id === 'retour') { S.away = 0; B.save(); } return r; }; }
   const lockR = B.ROUTES.verrou;
   if (lockR) { const r0 = lockR.render; lockR.render = () => { const h = r0(); return S.away ? h.replace('<b>Touchez l’empreinte pour déverrouiller</b><span>Choisissez d’abord votre profil si besoin</span>', '<b>' + ico('shieldCheck') + ' Mode absent activé</b><span>Maison sécurisée · touchez l’empreinte à votre retour</span>') : h; }; }
   // au déverrouillage, on propose de quitter le mode absent
