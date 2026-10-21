@@ -1627,3 +1627,4 @@ html.noscroll, html.noscroll body { overflow: hidden !important; overscroll-beha
 .rpanel .fpb > *, .fpanel .fpb > * { flex-shrink: 0; }
 html.fluid .energy .epills { grid-column: 1 / -1; }
 html.fluid .energy .gauge.g2 { grid-column: 1 / -1; width: 100%; }
+.lk-clock .t + .nx { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(140, 180, 255, .18); }

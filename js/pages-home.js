@@ -204,16 +204,14 @@
 
   /* ======================= VERROUILLAGE ======================= */
   RENDER.lkclock = s => {
-    const d = new Date(), tm = WX.tomorrow || WX.days[0];
+    const d = new Date();
     const who = S.users.find(x => x.id === (S.lockSel || S.user));
     return '<div class="lk-clock glass abs" style="' + s.style + '"><div class="d">' + F.long(d) + '</div><div class="t">' + F.time(d) + '<small>' + B.hello() + (who ? ' ' + esc(who.name) : '') + '</small></div>' +
-      '<div class="w">' + ico(B.wxIcon(WX.now.code, false) === 'sun' ? 'sun' : B.wxIcon(WX.now.code, false)) + '<span>' + B.wxText(WX.now.code) + ' <em>· demain ' + tm.max + '° / ' + tm.min + '°</em></span><b>' + WX.now.temp + '°C</b></div>' + nextEv() + '</div>';
+      nextEv() + '</div>';
   };
   function nextEv() {
-    const now = new Date(), nx = S.events.filter(e => new Date(e.date + 'T' + e.time) >= now).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
-    if (!nx) return '';
-    const tm = nx.date === F.ymd(now) ? '' : nx.date === F.ymd(new Date(Date.now() + 864e5)) ? 'demain ' : F.dayMonth(new Date(nx.date + 'T12:00')) + ', ';
-    return '<div class="nx" style="--c:' + nx.color + '"><i></i>' + tm + nx.time + ' · ' + esc(nx.title) + '</div>';
+    const now = new Date(), l = S.events.filter(e => new Date(e.date + 'T' + e.time) >= now).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).slice(0, 2);
+    return l.map(nx => { const tm = nx.date === F.ymd(now) ? '' : nx.date === F.ymd(new Date(Date.now() + 864e5)) ? 'demain ' : F.dayMonth(new Date(nx.date + 'T12:00')) + ', '; return '<div class="nx" style="--c:' + nx.color + '"><i></i>' + tm + nx.time + ' · ' + esc(nx.title) + '</div>'; }).join('');
   }
   RENDER.lkhouse = s => {
     const h = house(), b = dev('ext.borne'), m = dev('ext.tondeuse');
@@ -264,7 +262,7 @@
       T({ t: 'lkclock', style: box([75, 125, 400, 322]), keys: ['clock', 'weather'] }) +
       T({ t: 'lkhouse', style: box([75, 340, 400, 675]), keys: ['house'] }) +
       fingerprint() +
-      '<div class="lk-hint abs" style="' + px(568, 602, 400, 70) + '"><b>Touchez l’empreinte pour déverrouiller</b><span>Choisissez d’abord votre profil si besoin</span></div>' +
+      '<div class="lk-hint abs" style="' + px(468, 600, 600, 66) + '"><b>Touchez l’empreinte pour déverrouiller</b><span>Choisissez d’abord votre profil si besoin</span></div>' +
       T({ t: 'lkusers', style: box([410, 722, 1135, 942]), keys: ['users'] }) +
       T({ t: 'lkwx', style: box([1135, 70, 1505, 310]), keys: ['weather'] }) +
       T({ t: 'lklinks', keys: ['mails', 'music', 'events', 'plex'] }) +
