@@ -204,8 +204,8 @@
     return '<div class="tile t-stat"' + flex(s) + ' data-act="cam" data-id="' + s.cam + '" role="button" tabindex="0"><div class="hd">' + ico('camHouse') + '<span>' + esc(s.label) + '</span></div><div class="st"><span class="dot ' + c.dot + '"></span><span' + (c.dot ? ' style="color:#fff"' : '') + '>' + c.txt + '</span></div></div>';
   };
   RENDER.media = s => '<div class="tile" style="flex:' + (s.f || 2) + ';display:grid;grid-template-columns:1fr 1.3fr;grid-template-rows:1fr 1fr;gap:6px;padding:8px 10px">' +
-    '<button class="tile" style="display:flex;align-items:center;gap:12px;padding:0 10px;font-size:14px" data-act="goto" data-arg="plex">' + plexLogo('') .replace('<svg', '<svg style="width:22px;height:22px"') + 'Plex</button>' +
-    '<button class="tile" style="display:flex;align-items:center;gap:12px;padding:0 12px;font-size:14px" data-act="musicToggle">' + ico('musicFill', 'cy').replace('class="ico', 'style="font-size:22px;color:#2ed3ff" class="ico') + (Music.playing ? 'En lecture' : 'Musique') + '</button>' +
+    (s.noplex ? '' : '<button class="tile" style="display:flex;align-items:center;gap:12px;padding:0 10px;font-size:14px" data-act="goto" data-arg="plex">' + plexLogo('') .replace('<svg', '<svg style="width:22px;height:22px"') + 'Plex</button>') +
+    '<button class="tile" style="display:flex;align-items:center;gap:12px;padding:0 12px;font-size:14px' + (s.noplex ? ';grid-column:1/3;justify-content:center' : '') + '" data-act="musicToggle">' + ico('musicFill', 'cy').replace('class="ico', 'style="font-size:22px;color:#2ed3ff" class="ico') + (Music.playing ? 'En lecture' : 'Musique') + '</button>' +
     '<div style="grid-column:1/3;display:flex;align-items:center;gap:12px;font-size:15px">' + ico('volume').replace('class="ico', 'style="font-size:22px;color:#cfe3ff" class="ico') +
     '<input type="range" class="range thin" min="0" max="100" value="' + S.music.vol + '" style="--p:' + S.music.vol + '%" data-input="vol" aria-label="Volume"><span class="pct">' + S.music.vol + '%</span></div></div>';
 

@@ -338,4 +338,41 @@
   setTimeout(obCheck, 1200);
   const sgen0 = RENDER.sgen;
   RENDER.sgen = s => sgen0(s).replace('<div class="row" style="margin-top:auto"><button class="btn pri">', '<div class="row" style="margin-top:auto;flex-wrap:wrap"><button type="button" class="btn" data-act="obStart">' + ico('sparkle') + 'Revoir la visite</button><button class="btn pri">');
+
+  /* ======================= MENU iPHONE PAR SECTIONS ======================= */
+  const GROUPS = [
+    ['Pièces', 'rooms', id => /^(accueil|exterieur|rdc|etage1|etage2|pieces)$/.test(id) || /^niveau-/.test(id)],
+    ['Domotique', 'homeFill', id => /^(energie|routines|absence|journal)$/.test(id)],
+    ['Outils', 'grid9', id => /^(musique|plex|nas|calendrier|mails|ia)$/.test(id)],
+    ['Réglages', 'gearFill', id => /^(connexions|parametres)$/.test(id)]
+  ];
+  B.act('moreNav', () => {
+    const items = PAGES().filter((n, i, a) => a.findIndex(x => x[0] === n[0]) === i && !(B.guest && B.guest() && /^(nas|calendrier|mails|parametres|connexions|journal)$/.test(n[0])));
+    const unread = B.unread ? B.unread() : 0;
+    const tile = n => '<a href="#' + n[0] + '" class="tile' + (n[0] === B.current ? ' on' : '') + '" data-act="closeModalNav">' + ico(n[3]) + '<span>' + n[1] + '</span>' + (n[0] === 'mails' && unread ? '<span class="badge">' + unread + '</span>' : '') + '</a>';
+    const sec = g => { const l = items.filter(n => g[2](n[0])); return l.length || g[0] === 'Réglages' ? '<section class="navsec"><h4>' + ico(g[1]) + g[0] + '</h4><div class="navgrid">' + l.map(tile).join('') +
+      (g[0] === 'Outils' ? '<button class="tile" data-act="search">' + ico('search2') + '<span>Chercher</span></button>' : '') +
+      (g[0] === 'Réglages' ? '<button class="tile lockt" data-act="lock">' + ico('lock') + '<span>Verrouiller</span></button>' : '') + '</div></section>' : ''; };
+    B.modal('<h2>' + ico('grid9') + 'Menu</h2><div class="navsecs">' + GROUPS.map(sec).join('') + '</div>', 'sm sheet');
+  });
+
+  /* ======================= PAS DE ZOOM SUR iOS ======================= */
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
+  document.addEventListener('touchmove', e => { if (e.scale !== undefined && e.scale !== 1) e.preventDefault(); }, { passive: false });
+
+  /* ======================= MENUS AU PREMIER PLAN ======================= */
+  // Quand un panneau de pièce (…) ou un panneau d'appareil sur téléphone est ouvert, un voile
+  // bloque le site derrière (un toucher sur le voile ferme le panneau) et la page ne défile plus.
+  const fluid = () => document.documentElement.classList.contains('fluid');
+  const blocking = () => Array.from(document.querySelectorAll('.rpanel, .fpanel')).filter(p => p.classList.contains('rpanel') || fluid());
+  let pveil = null;
+  function guard() {
+    const ps = blocking(), modal = !!document.querySelector('.modal');
+    if (ps.length) {
+      if (!pveil) { pveil = document.createElement('div'); pveil.className = 'pveil'; pveil.addEventListener('click', () => { blocking().forEach(p => p.remove()); guard(); }); document.body.appendChild(pveil); }
+      pveil.style.zIndex = Math.min(...ps.map(p => +p.style.zIndex || 90)) - 1;
+    } else if (pveil) { pveil.remove(); pveil = null; }
+    document.documentElement.classList.toggle('noscroll', !!(modal || ps.length));
+  }
+  new MutationObserver(guard).observe(document.body, { childList: true });
 })();

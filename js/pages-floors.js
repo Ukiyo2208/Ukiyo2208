@@ -27,7 +27,7 @@
       room([105, 512, 792, 790], { title: cfg.r[3].t, icon: cfg.r[3].i, img: cfg.r[3].img, ph: 143, mx: 14, th: 80, tiles:
         tl({ t: 'light', id: cfg.r[3].id + '.light', f: 118 }) + tl({ t: 'light', id: cfg.r[3].id + '.amb', f: 140 }) + tl({ t: 'clim', id: cfg.r[3].id + '.clim', power: true, f: 230 }) + tl({ t: 'cover', id: cfg.r[3].id + '.cover', label: 'Volets', f: 150 }) }) +
       room([800, 512, 1232, 792], { title: cfg.r[4].t, icon: cfg.r[4].i, img: cfg.r[4].img, ph: 139, mx: 12, th: 86, tiles:
-        tl({ t: 'light', id: cfg.r[4].id + '.light', f: 1 }) + tl({ t: 'media', f: 2.1, keys: ['music'] }) }) +
+        tl({ t: 'light', id: cfg.r[4].id + '.light', f: 1 }) + tl({ t: 'media', f: 2.1, keys: ['music'], noplex: /bain/i.test(cfg.r[4].t) }) }) +
       room([1240, 512, 1522, 792], { title: cfg.r[5].t, icon: cfg.r[5].i, img: cfg.r[5].img, ph: 153, mx: 12, th: 74, tiles:
         tl({ t: 'light', id: cfg.r[5].id + '.light', f: 1 }) }) +
       tl({ t: 'plex', style: box([105, 798, 792, 932]), keys: ['plex'], where: cfg.plexWhere }) +

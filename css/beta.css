@@ -1574,3 +1574,56 @@ html.fluid .pcard .list.scroll { max-height: 440px; }
 html.fluid .backdrop { inset: 0 auto auto 0; width: 100%; height: 100vh; height: 100lvh; background: #050c20 var(--mbg, url("../assets/bg/mobile.jpg")) center top / cover no-repeat; filter: none; transform: translateZ(0); transition: none; }
 html.fluid .backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(3, 8, 22, .12), rgba(3, 8, 22, .28) 60%, rgba(3, 8, 22, .45)); }
 html.fluid.a-jour .backdrop { filter: brightness(1.12) saturate(1.05); }
+/* v6.2 — jauge « Informations de la maison » */
+.gauge.g2 { --gs: 112px; position: relative; display: block; cursor: pointer; }
+.gauge.g2 > svg, .gauge.g2 .in { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: var(--gs); height: var(--gs); inset: 0 auto auto 50%; }
+.gauge.g2 .in { display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; }
+.gauge.g2 .in .ico { font-size: 17px; margin: 0 0 2px; color: #2ff0b0; }
+.gauge.g2 .in b { font-size: 25px; letter-spacing: -.5px; }
+.gauge.g2 .in b small { font-size: 12px; color: var(--soft); }
+.gauge.g2 .in span { font-size: 10.5px; color: #8fd8ff; margin-top: 2px; letter-spacing: .2px; }
+.gauge.g2 .evs { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 3px; margin: 0 auto; width: max-content; padding: 2px 9px 2px 6px; border-radius: 10px; font: 500 11.5px Lato, sans-serif; font-style: normal; }
+.gauge.g2 .evs.down { color: #2ff0b0; background: rgba(34, 227, 164, .12); border: 1px solid rgba(34, 227, 164, .3); }
+.gauge.g2 .evs.up { color: #ffb35c; background: rgba(255, 160, 60, .12); border: 1px solid rgba(255, 160, 60, .3); }
+.gauge.g2 .evs .ico { font-size: 12px; }
+html.fluid .gauge.g2 { --gs: 150px; height: 174px; }
+html.fluid .gauge.g2 .in b { font-size: 32px; }
+/* logos des radios + favoris alignés */
+.rlogo.has img { inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0; background: none; }
+.favs { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+.favs .fav { flex: 1 1 0; max-width: 72px; min-width: 0; padding: 0; margin: 0; border: 0; background: none; box-shadow: none; height: auto; align-self: flex-start; }
+.favs .fav > img, .favs .fav > .rlogo { width: 46px !important; height: 46px !important; border-radius: 50% !important; flex: none; }
+.favs .fav > span:last-child { display: block; max-width: 100%; height: 14px; line-height: 14px; font-size: 10.5px; text-align: center; }
+.favs .fav .eq { position: absolute; top: 30px; right: calc(50% - 26px); bottom: auto; }
+.fav.sug { opacity: .62; }
+.fav.sug:hover { opacity: 1; }
+html.fluid .favs .fav > img, html.fluid .favs .fav > .rlogo { width: 52px !important; height: 52px !important; }
+html.fluid .favs .fav > span:last-child { font-size: 11.5px; }
+html.fluid .hmus .whead { flex-wrap: wrap; row-gap: 8px; }
+html.fluid .hmus .whead h2 { flex: 1 1 auto; }
+html.fluid .hmus .whead .tabs { order: 3; flex: 1 1 100%; justify-content: space-between; }
+/* pas de zoom (double-toucher, champs de saisie) sur iOS */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; }
+* { touch-action: manipulation; }
+.tdial, .lbar, .lwheel, .lct, .cwin { touch-action: none !important; }
+html.fluid input, html.fluid select, html.fluid textarea { font-size: 16px !important; }
+/* voile derrière les panneaux : le site derrière n'est plus touchable */
+.pveil { position: fixed; inset: 0; background: rgba(2, 6, 18, .5); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); animation: fadeIn .2s both; }
+html.noscroll, html.noscroll body { overflow: hidden !important; overscroll-behavior: none; }
+.fpb, .modal .box { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+/* menu par sections */
+.navsecs { display: flex; flex-direction: column; gap: 14px; }
+.navsec h4 { display: flex; align-items: center; gap: 8px; margin: 0 2px 8px; font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; color: #7fb6ff; font-weight: 600; }
+.navsec h4 .ico { font-size: 16px; color: #2fd3ff; }
+.navsec + .navsec { padding-top: 12px; border-top: 1px solid rgba(90, 150, 240, .18); }
+.navsec .tile.on { border-color: rgba(47, 182, 255, .8); box-shadow: 0 0 12px rgba(40, 150, 255, .35); }
+.navsec .lockt .ico { color: #ff7a8a; }
+.hcard .favs .fav, .favs button.fav { display: flex !important; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; height: auto !important; width: auto; }
+.hmus .cv, .hmus .cv .rlogo, .hmus .cv img { width: 76px !important; height: 76px !important; }
+.hmus .hmnow { grid-template-columns: 76px minmax(0, 1fr); }
+.hmus .nf .transport .pp { width: 38px; height: 38px; }
+.hmus .favs { padding-top: 2px; }
+.gauge.g2 .in span { font-size: 9.5px; }
+.rpanel .fpb > *, .fpanel .fpb > * { flex-shrink: 0; }
+html.fluid .energy .epills { grid-column: 1 / -1; }
+html.fluid .energy .gauge.g2 { grid-column: 1 / -1; width: 100%; }

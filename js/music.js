@@ -22,13 +22,45 @@
   function hash(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h).toString(36); }
   function fmt(t) { t = Math.max(0, Math.floor(t || 0)); const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0'); }
 
-  /* logo de radio : favicon du site officiel, sinon pastille colorée */
+  /* logos des radios : le vrai logo (trouvé en ligne via radio-browser.info, gardé en mémoire),
+     sinon un logo dessiné aux couleurs de la station */
+  const W = (bg, body) => 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="' + bg + '"/>' + body + '</svg>');
+  const T = (y, size, txt, col, w, extra) => '<text x="50" y="' + y + '" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="' + (w || 700) + '" font-size="' + size + '" fill="' + (col || '#fff') + '" ' + (extra || '') + '>' + txt + '</text>';
+  const RFX = (bg, name, size) => W(bg, T(42, 15, 'france', '#fff', 400, 'letter-spacing="-.3"') + T(66, size || 25, name, '#fff', 700, 'letter-spacing="-1"'));
+  const LOGOS = {
+    'r-inter': RFX('#e20134', 'inter', 30),
+    'r-info': W('#161b4e', T(58, 19.5, 'franceinfo', '#fff', 700, 'letter-spacing="-.8"') + '<circle cx="88" cy="47" r="2.6" fill="#ff3a3a"/><circle cx="88" cy="56" r="2.6" fill="#ff3a3a"/>'),
+    'r-fip': W('#e2007a', T(66, 46, 'fip', '#fff', 800, 'letter-spacing="-2"')),
+    'r-musique': RFX('#7b2dff', 'musique', 23),
+    'r-culture': RFX('#8b1cff', 'culture', 24),
+    'r-mouv': W('#111', T(64, 36, 'mouv’', '#fff', 800, 'letter-spacing="-2"') + '<rect x="18" y="72" width="64" height="5" rx="2.5" fill="#ff2d55"/>'),
+    'r-nrj': W('#fff', T(66, 42, 'NRJ', '#e30613', 900, 'font-style="italic" stroke="#111" stroke-width="2.4" paint-order="stroke" letter-spacing="-2"')),
+    'r-fg': W('#0b0b0b', T(68, 50, 'FG', '#fff', 900, 'letter-spacing="-3"') + '<circle cx="82" cy="64" r="5" fill="#1f9bff"/>')
+  };
+  if (!S.radioLogos) S.radioLogos = {};
   function radioLogo(r, size, round) {
     const R = DATA.RADIOS.find(x => x.id === r.id) || r, sz = size || 44;
+    const src = S.radioLogos[R.id] || LOGOS[R.id];
+    const shape = 'width:' + sz + 'px;height:' + sz + 'px;border-radius:' + (round ? '50%' : Math.round(sz / 4.5) + 'px');
+    if (src) return '<span class="rlogo has" style="' + shape + ';background:' + (R.color || '#0a1636') + '"><img src="' + esc(src) + '" alt="' + esc(R.name || '') + '" loading="lazy" onerror="this.remove()"></span>';
     const ini = (R.name || '?').replace(/^France ?/i, 'F').slice(0, 3);
-    return '<span class="rlogo" style="width:' + sz + 'px;height:' + sz + 'px;border-radius:' + (round ? '50%' : Math.round(sz / 4.5) + 'px') + ';background:radial-gradient(circle at 30% 20%,' + (R.color || '#2f7dff') + ',#0a1636 85%);font-size:' + Math.round(sz / 3.2) + 'px">' + esc(ini) +
-      (R.site ? '<img src="https://www.google.com/s2/favicons?domain=' + R.site + '&sz=128" alt="" loading="lazy" onerror="this.remove()">' : '') + '</span>';
+    return '<span class="rlogo" style="' + shape + ';background:radial-gradient(circle at 30% 20%,' + (R.color || '#2f7dff') + ',#0a1636 85%);font-size:' + Math.round(sz / 3.2) + 'px">' + esc(ini) + '</span>';
   }
+  /* recherche du vrai logo (une fois par semaine au plus), uniquement s'il est assez grand */
+  function findLogos() {
+    if (S.radioLogosAt && Date.now() - S.radioLogosAt < 7 * 864e5) return;
+    S.radioLogosAt = Date.now();
+    const api = 'https://de1.api.radio-browser.info/json/stations/';
+    const test = url => new Promise(ok => { if (!url || !/^https:/.test(url)) return ok(false); const i = new Image(); i.onload = () => ok(i.naturalWidth >= 96 && Math.abs(i.naturalWidth / i.naturalHeight - 1) < .5); i.onerror = () => ok(false); i.src = url; });
+    DATA.RADIOS.forEach(async r => {
+      try {
+        let l = await (await fetch(api + 'byurl?url=' + encodeURIComponent(r.ref))).json();
+        if (!l.some(x => x.favicon)) l = await (await fetch(api + 'search?countrycode=FR&order=votes&reverse=true&limit=5&name=' + encodeURIComponent(r.name))).json();
+        for (const st of l.filter(x => x.favicon)) if (await test(st.favicon)) { S.radioLogos[r.id] = st.favicon; B.save(); B.emit('music'); break; }
+      } catch (e) { }
+    });
+  }
+  setTimeout(findLogos, 3000);
 
   const M = {
     state: 'idle', playing: false, meta: {}, t: 0, dur: 0, yt: null, ytReady: false, ytWant: null, audio: null, liveT: null,
