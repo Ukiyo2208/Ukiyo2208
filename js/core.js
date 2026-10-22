@@ -51,6 +51,7 @@
   }
   let S;
   try { S = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { S = null; }
+  const fresh = !S; // tout premier démarrage sur cet appareil
   if (!S || S.v !== 5) S = defaults();
   const base = defaults();
   for (const k in base) if (!(k in S)) S[k] = base[k];
@@ -354,5 +355,5 @@
   };
   setInterval(() => HA.sync(), 15000);
 
-  window.BOS = { hasAlarm, S, DATA, $, $$, esc, F, save, dev, setDev, user, T, RENDER, emit, act, ACT, route, ROUTES, go, show, fit, wxAlerts, rainSoon, toast, notify, modal, closeModal, popover, WX, wxIcon, wxText, isNight, uvLabel, loadWeather, HA, ymd, get current() { return current; } };
+  window.BOS = { fresh, hasAlarm, S, DATA, $, $$, esc, F, save, dev, setDev, user, T, RENDER, emit, act, ACT, route, ROUTES, go, show, fit, wxAlerts, rainSoon, toast, notify, modal, closeModal, popover, WX, wxIcon, wxText, isNight, uvLabel, loadWeather, HA, ymd, get current() { return current; } };
 })();

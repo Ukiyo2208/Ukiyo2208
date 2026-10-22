@@ -39,9 +39,10 @@
   }
   /* dock mobile : raccourcis essentiels + bouton Bêta IA central */
   function dock(active) {
-    const main = ['accueil', 'rdc', 'etage1', 'musique'], more = navItems().filter(n => !main.includes(n[0]) && n[0] !== 'ia');
-    const it = n => '<a href="#' + n[0] + '" class="' + (n[0] === active ? 'on' : '') + '">' + ico(n[0] === active ? n[3] : n[2]) + '<span>' + n[1] + '</span>' + badgeHTML(n[0]) + '</a>';
-    const m = main.map(id => NAV.find(n => n[0] === id));
+    // boutons épinglés : réglables par appareil (menu › Personnaliser)
+    const all = navItems(), main = (B.dockItems ? B.dockItems() : ['accueil', 'rdc', 'etage1']).filter(id => all.some(n => n[0] === id)).slice(0, 3), more = all.filter(n => !main.includes(n[0]) && n[0] !== 'ia');
+    const it = n => n ? '<a href="#' + n[0] + '" class="' + (n[0] === active ? 'on' : '') + '">' + ico(n[0] === active ? n[3] : n[2]) + '<span>' + n[1] + '</span>' + badgeHTML(n[0]) + '</a>' : '';
+    const m = main.map(id => all.find(n => n[0] === id));
     return '<nav class="dock">' + it(m[0]) + it(m[1]) + '<button class="iafab" data-act="iaOpen" aria-label="Parler à Bêta IA">' + brainSVG() + '</button>' + it(m[2]) +
       '<button data-act="moreNav" class="' + (more.some(n => n[0] === active) ? 'on' : '') + '">' + ico('grid9') + '<span>Plus</span>' + (unread() ? '<span class="badge">' + unread() + '</span>' : '') + '</button></nav>';
   }

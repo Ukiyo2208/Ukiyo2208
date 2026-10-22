@@ -15,7 +15,7 @@
 
   /* ---------- statistiques maison ---------- */
   function house() {
-    const D = DATA.DEVICES;
+    const D = {}; Object.keys(DATA.DEVICES).forEach(id => { if (!(B.isHidden && B.isHidden(id))) D[id] = DATA.DEVICES[id]; });
     const lights = Object.keys(D).filter(id => D[id].type === 'light' && !id.startsWith('ext.'));
     const on = lights.filter(id => dev(id).on).length;
     const covers = Object.keys(D).filter(id => D[id].type === 'cover' && id !== 'ext.store' && id !== 'rdc.garage.door');
@@ -312,7 +312,7 @@
       S.user = S.lockSel || S.user; delete S.lockSel; B.save();
       sessionStorage.setItem('betaos.unlocked', '1');
       document.body.classList.add('unlocking');
-      setTimeout(() => { document.body.classList.remove('unlocking'); B.go(to || 'accueil'); }, 520);
+      setTimeout(() => { document.body.classList.remove('unlocking'); B.go(to || (B.startPage ? B.startPage() : 'accueil')); }, 520);
     }, 1050);
   }
   B.act('lockRoutine', el => { B.runRoutine(el.dataset.arg); B.emit('house'); });

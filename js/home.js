@@ -242,6 +242,7 @@
   });
   function registerFloorRoutes() { C.floors.forEach(f => B.route('niveau-' + f.id, { title: f.name, bg: BG, render: () => autoFloor(floor(f.id)) })); }
   registerFloorRoutes();
+  B.registerFloorRoutes = registerFloorRoutes; B.custom = C;
   B.act('floorEdit', () => { editing = !editing; B.emit('fgrid'); B.show(); });
   B.act('floorLayout', el => { const id = el.dataset.arg; C.layout[id] = C.layout[id] === 'auto' ? 'maquette' : 'auto'; editing = false; B.save(); B.show(); });
   B.act('floorMenu', el => {
@@ -366,6 +367,7 @@
     if (dom === 'binary_sensor') return ['door', 'window', 'opening', 'garage_door'].includes(dc) ? 'door' : ['motion', 'occupancy', 'presence'].includes(dc) ? 'motion' : dc === 'moisture' ? 'leak' : null;
     return DOMKIND[dom] || null;
   }
+  B.guessKind = guessKind;
   async function loadImport() {
     if (!B.HA.enabled()) { imp = { err: 'Reliez d’abord Home Assistant (Paramètres › Connexions).' }; return manager(); }
     imp = { loading: true }; manager();

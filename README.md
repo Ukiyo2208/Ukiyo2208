@@ -114,3 +114,15 @@ Page **Voiture** (menu › Domotique) : batterie ou carburant, autonomie, rechar
 
 Touchez un micro (barre IA, page Bêta IA, conversation) ou faites un appui long sur le bouton Bêta IA du dock. Vous parlez, Bêta IA répond à voix haute puis réécoute (conversation continue). Dites « merci » pour terminer.
 Réglages (roue dentée) : choix de la voix française, vitesse, et lecture des réponses écrites. Sans reconnaissance vocale (certaines applis), le mode vocal propose la dictée du clavier.
+
+## Installation pour votre maison (7.0)
+
+Au tout premier démarrage, un assistant propose 4 façons de commencer :
+- **Démo** : la maison d'exemple ;
+- **Manuel** : vous choisissez vos niveaux, puis créez les pièces (modèle, image, appareils à cocher avec leur nombre) ;
+- **Assisté** : Bêta OS lit Home Assistant (étages, zones, appareils, caméras) et propose un placement que vous vérifiez ;
+- **Automatique** : tout est repris tel quel de Home Assistant.
+
+Les profils (prénom, avatar, administrateur, code) sont créés dans l'assistant.
+**Paramètres › Maison & sauvegarde › Réinitialiser** relance l'assistant, en gardant ou non les connexions.
+**Cet écran** (menu du téléphone › Personnaliser, ou Paramètres › Général) : page de départ et boutons épinglés, propres à chaque appareil.
