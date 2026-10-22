@@ -1,6 +1,6 @@
-# YouTube → NAS
+# Vidéos → NAS
 
-Page web : tu colles un lien YouTube (vidéo ou playlist), le NAS le télécharge
+Page web : tu colles un lien YouTube — ou de n'importe quel site supporté par yt-dlp (Vimeo, TikTok, X, Instagram, SoundCloud, Twitch, Dailymotion…) —, le NAS le télécharge
 en **meilleure qualité disponible** (jusqu'à 4K/8K, HDR, meilleur audio) avec
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) + ffmpeg, directement dans ton dossier partagé.
 
