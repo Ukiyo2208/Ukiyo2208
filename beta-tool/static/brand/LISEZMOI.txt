@@ -1,4 +1,6 @@
-Dépose ici :
-  icon.png    -> icône (carrée, 512x512 conseillé) : onglet du navigateur, raccourci écran d'accueil, en-tête
-  banner.png  -> bannière (large, ex. 1600x300) affichée tout en haut du site
-Tant qu'ils sont absents, le site affiche simplement le nom « Bêta Tool ».
+Identité visuelle de Bêta Tool :
+  banner.jpg            -> bannière de la page d'accueil (1720 px de large)
+  icon.png              -> icône 512x512
+  apple-touch-icon.png  -> icône recadrée (en-tête + raccourci écran d'accueil iPhone)
+  favicon.ico           -> icône de l'onglet du navigateur
+Pour les changer, remplace les fichiers en gardant les mêmes noms puis recharge la page.

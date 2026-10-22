@@ -1,9 +1,13 @@
 :root {
-  --bg:#f5f5f7; --card:#fff; --text:#1d1d1f; --muted:#6e6e73; --border:#d9d9de;
-  --accent:#5b5bd6; --accent-text:#fff; --ok:#1a8f3c; --err:#c62828; --soft:#ececf1;
+  /* Couleurs reprises du logo Bêta Tool (bleu électrique / cyan) */
+  --bg:#f3f6fc; --card:#fff; --text:#0b1530; --muted:#5d6b88; --border:#d6deef;
+  --accent:#1f6bff; --accent-2:#13b6f5; --accent-text:#fff; --ok:#14935a; --err:#d02f3a; --soft:#e6edfa;
+  --glow:0 6px 20px rgb(31 107 255 / .25);
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg:#111113; --card:#1c1c1f; --text:#f2f2f2; --muted:#9a9aa0; --border:#333338; --soft:#26262b; --accent:#7b7bf0; }
+  :root { --bg:#040a1a; --card:#0a1530; --text:#eaf1ff; --muted:#8a9bc2; --border:#1a2b55; --soft:#0f1d40;
+          --accent:#2f86ff; --accent-2:#2fd0ff; --ok:#23c27a; --err:#ff5a64; --glow:0 0 22px rgb(47 134 255 / .45); }
+  body { background:radial-gradient(1200px 500px at 50% -10%, #0c2a6b 0%, transparent 70%) var(--bg) no-repeat; }
 }
 * { box-sizing:border-box; }
 body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -11,12 +15,12 @@ main { max-width:860px; margin:0 auto; padding:0 16px 48px; }
 [hidden] { display:none !important; }
 
 /* En-tête */
-.banner { display:block; width:100%; max-height:220px; object-fit:cover; }
+.banner { display:block; width:100%; height:auto; aspect-ratio:1720/573; border-radius:16px; margin-top:16px; box-shadow:var(--glow); background:#030a22; }
 .topbar { max-width:860px; margin:0 auto; padding:20px 16px 8px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; margin-right:auto; }
-.brand img { width:40px; height:40px; border-radius:10px; }
+.brand img { width:40px; height:40px; border-radius:10px; box-shadow:var(--glow); }
 .brand strong { font-size:1.4rem; letter-spacing:-.01em; }
-.badge { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; background:var(--accent); color:var(--accent-text); padding:2px 8px; border-radius:99px; }
+.badge { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; background:linear-gradient(90deg, var(--accent), var(--accent-2)); color:var(--accent-text); padding:2px 8px; border-radius:99px; }
 nav { display:flex; gap:4px; background:var(--soft); padding:4px; border-radius:12px; }
 nav a { padding:8px 14px; border-radius:9px; color:var(--muted); text-decoration:none; font-weight:500; }
 nav a.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgb(0 0 0 / .08); }
@@ -29,7 +33,7 @@ h2 { margin:0 0 10px; font-size:1.1rem; }
 /* Accueil */
 .tools { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:16px; }
 .tool { display:block; text-decoration:none; color:inherit; margin:0; transition:transform .15s, border-color .15s; }
-.tool:hover { transform:translateY(-2px); border-color:var(--accent); }
+.tool:hover { transform:translateY(-2px); border-color:var(--accent); box-shadow:var(--glow); }
 .tool .ico { font-size:1.8rem; }
 .tool h2 { margin:8px 0 4px; }
 .tool p { margin:0; color:var(--muted); font-size:.95rem; }
@@ -47,11 +51,11 @@ select { width:auto; padding:8px 10px; }
 .seg label:has(input:checked) { background:var(--accent); color:var(--accent-text); }
 .check { display:flex; align-items:center; gap:8px; cursor:pointer; }
 .check input { width:18px; height:18px; accent-color:var(--accent); }
-button, .btn { display:inline-block; padding:14px; border:0; border-radius:10px; background:var(--accent); color:var(--accent-text); font:inherit; font-weight:600; cursor:pointer; text-decoration:none; text-align:center; }
+button, .btn { display:inline-block; padding:14px; border:0; border-radius:10px; background:linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow:var(--glow); color:var(--accent-text); font:inherit; font-weight:600; cursor:pointer; text-decoration:none; text-align:center; }
 button.wide { width:100%; }
 button:disabled { opacity:.5; cursor:default; }
 .btn.small { padding:6px 12px; font-size:.9rem; }
-.link { background:none; color:var(--muted); padding:4px 8px; font-weight:500; }
+.link { background:none; box-shadow:none; color:var(--muted); padding:4px 8px; font-weight:500; }
 .msg { margin-top:10px; color:var(--err); min-height:1.5em; }
 
 /* Zone de dépôt */
@@ -72,7 +76,7 @@ button:disabled { opacity:.5; cursor:default; }
 .title { font-weight:600; word-break:break-word; flex:1; }
 .meta { color:var(--muted); font-size:.9rem; }
 .bar { height:6px; background:var(--border); border-radius:3px; margin-top:6px; overflow:hidden; }
-.bar div { height:100%; background:var(--accent); transition:width .4s; }
+.bar div { height:100%; background:linear-gradient(90deg, var(--accent), var(--accent-2)); transition:width .4s; }
 .bar.indeterminate div { width:30% !important; animation:slide 1.2s infinite ease-in-out; }
 @keyframes slide { from { transform:translateX(-100%); } to { transform:translateX(340%); } }
 .done .bar div { background:var(--ok); }

@@ -41,10 +41,9 @@ Les réglages visent la qualité : vidéo H.264 CRF 18, MP3 V0, JPEG 92, MKV en 
 
 ## Icône et bannière
 
-Dépose `icon.png` (carré, 512×512) et `banner.png` (large, ex. 1600×300) dans `static/brand/`.
-Ce dossier est monté dans le conteneur : il suffit de recharger la page, pas besoin de reconstruire.
-Sans ces fichiers, le site affiche simplement le nom « Bêta Tool ».
-La couleur principale se change avec `--accent` en haut de `static/style.css`.
+L'identité visuelle est dans `static/brand/` (`banner.jpg`, `icon.png`, `apple-touch-icon.png`, `favicon.ico`).
+Ce dossier est monté dans le conteneur : pour changer une image, remplace le fichier en gardant son nom et recharge la page.
+Les couleurs (`--accent`, `--accent-2`) sont en haut de `static/style.css`.
 
 ## Mise à jour
 
