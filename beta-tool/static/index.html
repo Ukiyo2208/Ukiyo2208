@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bêta Tool</title>
+<link rel="icon" href="brand/icon.png">
+<link rel="apple-touch-icon" href="brand/icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- Bannière et icône : dépose banner.png et icon.png dans static/brand/ -->
+<img class="banner" src="brand/banner.png" alt="" onerror="this.remove()">
+<header class="topbar">
+  <a class="brand" href="#/">
+    <img src="brand/icon.png" alt="" onerror="this.remove()">
+    <strong>Bêta Tool</strong><span class="badge">bêta</span>
+  </a>
+  <nav>
+    <a href="#/" data-view="home">Accueil</a>
+    <a href="#/telecharger" data-view="telecharger">Téléchargeur</a>
+    <a href="#/convertir" data-view="convertir">Convertisseur</a>
+  </nav>
+</header>
+
+<main>
+  <!-- Accueil -->
+  <section id="view-home">
+    <h1>Tes outils</h1>
+    <p class="sub">Tout se fait sur ton NAS : rien ne part sur un service externe.</p>
+    <div class="tools">
+      <a class="card tool" href="#/telecharger">
+        <div class="ico">⬇️</div>
+        <h2>Téléchargeur</h2>
+        <p>YouTube, Vimeo, TikTok, X, Instagram, SoundCloud… en meilleure qualité, direct sur le NAS.</p>
+      </a>
+      <a class="card tool" href="#/convertir">
+        <div class="ico">🔄</div>
+        <h2>Convertisseur</h2>
+        <p>Vidéo, audio, image, PDF, Word, Excel, PowerPoint, Markdown, e-books… plus de 60 formats.</p>
+      </a>
+      <div class="card tool soon">
+        <div class="ico">🧰</div>
+        <h2>Bientôt…</h2>
+        <p>D'autres outils arriveront ici.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Téléchargeur -->
+  <section id="view-telecharger" hidden>
+    <h1>Téléchargeur</h1>
+    <p class="sub">Colle un ou plusieurs liens (YouTube, Vimeo, TikTok, X, Instagram, SoundCloud, Twitch… vidéo ou playlist). Téléchargement en meilleure qualité disponible, directement sur le NAS.</p>
+    <form class="card" id="dl-form">
+      <textarea id="dl-url" placeholder="https://…  (un lien par ligne)" required></textarea>
+      <div class="row">
+        <div class="seg">
+          <label><input type="radio" name="dl-mode" value="video" checked> Vidéo</label>
+          <label><input type="radio" name="dl-mode" value="audio"> Audio seul</label>
+        </div>
+        <input type="text" id="dl-subfolder" placeholder="Sous-dossier (optionnel)">
+      </div>
+      <button class="wide" id="dl-go">Télécharger sur le NAS</button>
+      <div class="msg" id="dl-msg"></div>
+    </form>
+    <div class="card">
+      <h2>Téléchargements</h2>
+      <div id="dl-jobs"><div class="empty">Aucun téléchargement pour l’instant.</div></div>
+    </div>
+  </section>
+
+  <!-- Convertisseur -->
+  <section id="view-convertir" hidden>
+    <h1>Convertisseur</h1>
+    <p class="sub">Dépose tes fichiers, choisis le format de sortie, récupère le résultat ici ou directement sur le NAS.</p>
+    <div class="card">
+      <label class="drop" id="cv-drop">
+        <input type="file" id="cv-input" multiple hidden>
+        <strong>Glisse tes fichiers ici</strong><br>ou clique pour choisir
+      </label>
+      <div id="cv-pending" hidden>
+        <div class="row" style="justify-content:space-between">
+          <h2 style="margin:0">Fichiers à convertir</h2>
+          <label>Tout convertir en <select id="cv-all"></select></label>
+        </div>
+        <div class="files" id="cv-files"></div>
+        <div class="row">
+          <label class="check"><input type="checkbox" id="cv-nas" checked> Enregistrer aussi sur le NAS</label>
+          <input type="text" id="cv-subfolder" placeholder="Sous-dossier (optionnel)">
+        </div>
+        <button class="wide" id="cv-go">Convertir</button>
+      </div>
+      <div class="msg" id="cv-msg"></div>
+      <details class="formats">
+        <summary>Formats pris en charge</summary>
+        <dl id="cv-formats"></dl>
+      </details>
+    </div>
+    <div class="card">
+      <h2>Conversions</h2>
+      <div id="cv-jobs"><div class="empty">Aucune conversion pour l’instant.</div></div>
+    </div>
+  </section>
+</main>
+<footer>Bêta Tool · version bêta</footer>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+yt-dlp[default]
+flask>=3.0
+waitress>=3.0
+pillow>=11.3
+pillow-heif>=0.22

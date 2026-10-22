@@ -1,0 +1,21 @@
+services:
+  beta-tool:
+    build: .
+    container_name: beta-tool
+    ports:
+      - "8080:8080"
+    volumes:
+      # Remplace les chemins de gauche par les dossiers partagés de ton NAS
+      # (Synology : /volume1/... — QNAP : /share/...)
+      - /volume1/video/YouTube:/downloads     # Téléchargeur
+      - /volume1/documents/Conversions:/converted  # Convertisseur
+      - ./static/brand:/app/static/brand      # Icône et bannière (icon.png, banner.png)
+      # Optionnel : fichiers temporaires sur le disque du NAS plutôt que dans le conteneur
+      # - /volume1/docker/beta-tool/work:/work
+    environment:
+      - WORKERS=2           # téléchargements en parallèle
+      - CONVERT_WORKERS=2   # conversions en parallèle
+      - MAX_UPLOAD_GB=20    # taille max d'un fichier envoyé
+      - JOB_TTL_HOURS=24    # durée de conservation des résultats téléchargeables
+    # user: "1026:100"      # optionnel : propriétaire des fichiers (voir `id` sur le NAS)
+    restart: unless-stopped

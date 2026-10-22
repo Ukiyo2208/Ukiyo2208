@@ -1,0 +1,4 @@
+Dépose ici :
+  icon.png    -> icône (carrée, 512x512 conseillé) : onglet du navigateur, raccourci écran d'accueil, en-tête
+  banner.png  -> bannière (large, ex. 1600x300) affichée tout en haut du site
+Tant qu'ils sont absents, le site affiche simplement le nom « Bêta Tool ».

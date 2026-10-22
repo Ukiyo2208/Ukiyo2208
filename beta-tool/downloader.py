@@ -1,19 +1,15 @@
-"""Petit serveur web : colle un lien YouTube, il est téléchargé en meilleure
-qualité (via yt-dlp) directement dans le dossier du NAS."""
+"""Outil « Téléchargeur » : récupère une vidéo/playlist (YouTube et ~1800 autres
+sites) en meilleure qualité via yt-dlp, directement dans le dossier du NAS."""
 
-import json
 import os
 import threading
 import uuid
 from collections import OrderedDict
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from queue import Queue
 
 import yt_dlp
 
 DOWNLOAD_DIR = os.environ.get("DOWNLOAD_DIR", "/downloads")
-PORT = int(os.environ.get("PORT", "8080"))
-STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
 jobs = OrderedDict()
 jobs_lock = threading.Lock()
@@ -23,6 +19,12 @@ queue = Queue()
 def update(job_id, **fields):
     with jobs_lock:
         jobs[job_id].update(fields)
+
+
+def safe_subfolder(value):
+    """Empêche de sortir du dossier de téléchargement (../, chemins absolus)."""
+    parts = [p for p in str(value or "").replace("\\", "/").split("/") if p not in ("", ".", "..")]
+    return os.path.join(*parts) if parts else ""
 
 
 def build_options(job_id, mode, subfolder):
@@ -44,7 +46,6 @@ def build_options(job_id, mode, subfolder):
         "progress_hooks": [hook],
         "noplaylist": False,
         "ignoreerrors": True,
-        "restrictfilenames": False,
         "windowsfilenames": True,  # noms compatibles SMB/Windows
         "writethumbnail": True,
         "quiet": True,
@@ -84,57 +85,30 @@ def worker():
         queue.task_done()
 
 
-class Handler(SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=STATIC_DIR, **kwargs)
-
-    def send_json(self, data, code=200):
-        body = json.dumps(data).encode()
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def do_GET(self):
-        if self.path == "/api/jobs":
-            with jobs_lock:
-                return self.send_json(list(reversed(jobs.values())))
-        return super().do_GET()
-
-    def do_POST(self):
-        if self.path != "/api/download":
-            return self.send_json({"error": "not found"}, 404)
-        try:
-            payload = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
-        except ValueError:
-            return self.send_json({"error": "JSON invalide"}, 400)
-        urls = [u.strip() for u in str(payload.get("url", "")).split() if u.strip()]
-        if not urls or not all(u.startswith(("http://", "https://")) for u in urls):
-            return self.send_json({"error": "Lien invalide"}, 400)
-        mode = "audio" if payload.get("mode") == "audio" else "video"
-        # Empêche de sortir du dossier de téléchargement
-        subfolder = os.path.normpath(str(payload.get("subfolder", "")).strip()).lstrip("./\\")
-        if subfolder.startswith("..") or subfolder == ".":
-            subfolder = ""
-        created = []
-        for url in urls:
-            job_id = uuid.uuid4().hex[:8]
-            with jobs_lock:
-                jobs[job_id] = {"id": job_id, "url": url, "mode": mode, "subfolder": subfolder,
-                                "title": url, "status": "queued", "progress": 0,
-                                "speed": "", "eta": "", "error": None}
-            queue.put(job_id)
-            created.append(job_id)
-        return self.send_json({"ids": created})
-
-    def log_message(self, *args):
-        pass
+def submit(text, mode, subfolder):
+    urls = [u.strip() for u in str(text or "").split() if u.strip()]
+    if not urls or not all(u.startswith(("http://", "https://")) for u in urls):
+        raise ValueError("Lien invalide")
+    mode = "audio" if mode == "audio" else "video"
+    subfolder = safe_subfolder(subfolder)
+    created = []
+    for url in urls:
+        job_id = uuid.uuid4().hex[:8]
+        with jobs_lock:
+            jobs[job_id] = {"id": job_id, "url": url, "mode": mode, "subfolder": subfolder,
+                            "title": url, "status": "queued", "progress": 0,
+                            "speed": "", "eta": "", "error": None}
+        queue.put(job_id)
+        created.append(job_id)
+    return created
 
 
-if __name__ == "__main__":
+def list_jobs():
+    with jobs_lock:
+        return list(reversed(jobs.values()))
+
+
+def start(workers):
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-    for _ in range(int(os.environ.get("WORKERS", "2"))):
+    for _ in range(workers):
         threading.Thread(target=worker, daemon=True).start()
-    print(f"Serveur prêt sur http://0.0.0.0:{PORT} — fichiers dans {DOWNLOAD_DIR}")
-    ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
