@@ -98,12 +98,13 @@ def ocr(upload, language, force):
         return ws.result("ocr") + ({},)
 
 
-def save_to_nas(upload, subfolder):
-    folder = os.path.join(PDF_DIR, safe_subfolder(subfolder))
+def save_to_nas(upload, subfolder, base=None):
+    base = base or PDF_DIR
+    folder = os.path.join(base, safe_subfolder(subfolder))
     os.makedirs(folder, exist_ok=True)
     dest = unique_path(folder, sanitize_name(upload.filename))
     upload.save(dest)
-    return os.path.relpath(dest, PDF_DIR)
+    return os.path.relpath(dest, base)
 
 
 def start():

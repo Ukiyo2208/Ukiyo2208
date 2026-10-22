@@ -4,6 +4,8 @@ import { HELP } from "./help.js";
 import * as downloader from "./downloader.js";
 import * as converter from "./converter.js";
 import * as pdf from "./pdf/hub.js";
+import * as archive from "./archive.js";
+import * as work from "./work.js";
 
 hydrateIcons();
 
@@ -28,7 +30,7 @@ function parseRoute() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   const top = parts[0] || "home";
   if (top === "pdf" && parts[1]) return { view: "pdf-tool", help: "pdf/" + parts[1], top, parts };
-  if (["home", "telecharger", "convertir", "pdf", "suggestions"].includes(top)) return { view: top, help: top, top, parts };
+  if (["home", "telecharger", "convertir", "pdf", "decompresser", "work", "suggestions"].includes(top)) return { view: top, help: top, top, parts };
   return { view: "home", help: "home", top: "home", parts: [] };
 }
 
@@ -43,7 +45,10 @@ function route() {
   if (current.view === "pdf") pdf.showHub($("#pdf-hub"));
   if (current.view === "pdf-tool") pdf.showTool(current.parts[1], $("#pdf-tool"));
   if (current.view === "suggestions") loadSuggestions();
-  $("#suggest-tool").value = { telecharger: "telecharger", convertir: "convertir", pdf: "pdf" }[current.top] || "general";
+  if (current.view === "decompresser" && !$("#arc-root").children.length) archive.init();
+  if (current.view === "work") current.parts[1] ? work.showEditor(current.parts[1]) : work.showHome();
+  else work.closeEditor();
+  $("#suggest-tool").value = ["telecharger", "convertir", "pdf", "decompresser", "work"].includes(current.top) ? current.top : "general";
   showIntro();
 }
 addEventListener("hashchange", route);
@@ -115,7 +120,7 @@ $("#suggest-form").addEventListener("submit", async e => {
 });
 
 const KIND = { idee: ["💡", "Idée d'outil"], amelioration: ["✨", "Amélioration"], bug: ["🐞", "Problème"] };
-const TOOL = { general: "Général", telecharger: "Téléchargeur", convertir: "Convertisseur", pdf: "Studio PDF" };
+const TOOL = { general: "Général", telecharger: "Téléchargeur", convertir: "Convertisseur", pdf: "Studio PDF", decompresser: "Décompresseur", work: "Bêta Work" };
 async function loadSuggestions() {
   const list = await (await fetch("/api/suggestions")).json().catch(() => []);
   $("#sugg-list").innerHTML = list.length ? list.map(s => `
@@ -133,6 +138,27 @@ async function loadSuggestions() {
 // --- Accueil ----------------------------------------------------------------
 const h = new Date().getHours();
 $("#greeting").textContent = (h < 5 || h >= 18 ? "Bonsoir" : "Bonjour") + " 👋";
+
+// --- Configuration du serveur ------------------------------------------------
+// Sans NAS (PC, mini-PC, serveur…), STORAGE_NAME remplace le mot « NAS » partout dans l'interface.
+let storage = "NAS";
+const swapStorage = node => {
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+  for (let n; (n = walker.nextNode());) if (n.nodeValue.includes("NAS")) n.nodeValue = n.nodeValue.replace(/\bNAS\b/g, storage);
+  if (node.querySelectorAll) node.querySelectorAll("[placeholder*=NAS],[title*=NAS]").forEach(el => {
+    ["placeholder", "title"].forEach(a => el.getAttribute(a) && el.setAttribute(a, el.getAttribute(a).replace(/\bNAS\b/g, storage)));
+  });
+};
+fetch("/api/config").then(r => r.json()).then(cfg => {
+  $("#logout").hidden = !cfg.auth;
+  if (!cfg.storage || cfg.storage === "NAS") return;
+  storage = cfg.storage;
+  swapStorage(document.body);
+  new MutationObserver(list => list.forEach(m => m.addedNodes.forEach(n => {
+    if (n.nodeType === 1) swapStorage(n);
+    else if (n.nodeType === 3 && n.nodeValue.includes("NAS")) n.nodeValue = n.nodeValue.replace(/\bNAS\b/g, storage);
+  }))).observe(document.body, { childList: true, subtree: true });
+}).catch(() => {});
 
 downloader.init();
 converter.init();

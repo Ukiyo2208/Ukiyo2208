@@ -59,6 +59,15 @@ const P = {
   right: '<path d="m9 18 6-6-6-6"/>',
   file: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>',
   filePlus: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/>',
+  archive: '<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/>',
+  unzip: '<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M12 11v7M9 15l3 3 3-3"/>',
+  folder: '<path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M2 13h20"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+  sheet: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>',
+  slides: '<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  doc: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h8M8 9h2"/>',
+  more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
   eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
 };
 export const icon = (name, cls = "") => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[name] || ""}</svg>`;
@@ -129,18 +138,18 @@ export function downloadBlob(blob, name) {
   setTimeout(() => URL.revokeObjectURL(a.href), 60000);
 }
 
-export async function saveToNas(blob, name, subfolder = "") {
+export async function saveToNas(blob, name, subfolder = "", tool = "pdf") {
   const form = new FormData();
   form.append("file", blob, name);
   form.append("subfolder", subfolder);
-  const r = await fetch("/api/pdf/save", { method: "POST", body: form });
+  const r = await fetch(`/api/save?tool=${tool}`, { method: "POST", body: form });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || "Échec de l'enregistrement");
   return data.saved;
 }
 
 /** Carte « résultat prêt » avec Télécharger / Enregistrer sur le NAS / Ouvrir dans l'éditeur. */
-export function resultCard(container, blob, name, { info = "", editable = name.toLowerCase().endsWith(".pdf") } = {}) {
+export function resultCard(container, blob, name, { info = "", editable = name.toLowerCase().endsWith(".pdf"), tool = "pdf" } = {}) {
   container.innerHTML = `<div class="result">
     <span class="tile">${icon("check")}</span>
     <div class="body"><b>${esc(name)}</b><span class="meta">${esc(sizeStr(blob.size))}${info ? " · " + esc(info) : ""}</span></div>
@@ -152,7 +161,7 @@ export function resultCard(container, blob, name, { info = "", editable = name.t
   container.querySelector("[data-a=dl]").onclick = () => downloadBlob(blob, name);
   container.querySelector("[data-a=nas]").onclick = async e => {
     e.currentTarget.disabled = true;
-    try { toast("Enregistré sur le NAS : " + await saveToNas(blob, name)); }
+    try { toast("Enregistré sur le NAS : " + await saveToNas(blob, name, "", tool)); }
     catch (err) { toast(err.message, "err"); e.currentTarget.disabled = false; }
   };
   const edit = container.querySelector("[data-a=edit]");

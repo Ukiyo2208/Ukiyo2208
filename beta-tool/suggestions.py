@@ -9,7 +9,7 @@ import time
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
 FILE = os.path.join(DATA_DIR, "suggestions.jsonl")
 KINDS = {"idee": "Idée d'outil", "amelioration": "Amélioration", "bug": "Problème"}
-TOOLS = {"general", "telecharger", "convertir", "pdf"}
+TOOLS = {"general", "telecharger", "convertir", "pdf", "decompresser", "work"}
 lock = threading.Lock()
 
 

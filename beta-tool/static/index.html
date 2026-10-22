@@ -29,6 +29,9 @@
     <a href="#/telecharger" data-route="telecharger"><i data-icon="download"></i>Téléchargeur</a>
     <a href="#/convertir" data-route="convertir"><i data-icon="convert"></i>Convertisseur</a>
     <a href="#/pdf" data-route="pdf"><i data-icon="pdf"></i>Studio PDF</a>
+    <a href="#/decompresser" data-route="decompresser"><i data-icon="archive"></i>Décompresseur</a>
+    <div class="nav-label">Bureautique</div>
+    <a href="#/work" data-route="work"><i data-icon="briefcase"></i>Bêta Work</a>
     <div class="nav-label">Communauté</div>
     <a href="#/suggestions" data-route="suggestions"><i data-icon="lightbulb"></i>Suggestions</a>
   </nav>
@@ -43,6 +46,7 @@
     <button data-theme-set="light" title="Clair"><i data-icon="sun"></i></button>
     <button data-theme-set="dark" title="Sombre"><i data-icon="moon"></i></button>
   </div>
+  <form method="post" action="/logout" id="logout" hidden><button class="btn small ghost wide" style="margin-top:8px"><i data-icon="logout"></i>Se déconnecter</button></form>
 </aside>
 
 <div class="content">
@@ -89,6 +93,20 @@
           <div class="chips"><span class="chip">Signer</span><span class="chip">Fusionner</span><span class="chip">Compresser</span><span class="chip">OCR</span></div>
           <span class="go">Ouvrir <i data-icon="arrow"></i></span>
         </a>
+        <a class="card tool" href="#/work">
+          <span class="tile bleu-vert"><i data-icon="briefcase"></i></span>
+          <h2>Bêta Work</h2>
+          <p>Ta suite bureautique : documents, tableurs et présentations, compatibles Word, Excel et PowerPoint.</p>
+          <div class="chips"><span class="chip">Traitement de texte</span><span class="chip">Tableur</span><span class="chip">Présentations</span></div>
+          <span class="go">Ouvrir <i data-icon="arrow"></i></span>
+        </a>
+        <a class="card tool" href="#/decompresser">
+          <span class="tile vert"><i data-icon="archive"></i></span>
+          <h2>Décompresseur</h2>
+          <p>Ouvre un ZIP, RAR ou 7Z, choisis les fichiers et extrais-les sur le NAS ou ton appareil.</p>
+          <div class="chips"><span class="chip">ZIP</span><span class="chip">RAR</span><span class="chip">7Z</span><span class="chip">TAR.GZ</span></div>
+          <span class="go">Ouvrir <i data-icon="arrow"></i></span>
+        </a>
       </div>
       <div class="steps-mini">
         <div class="card"><span class="num">1</span><div><b>Choisis un outil</b><p>Dans le menu ou ci-dessus.</p></div></div>
@@ -114,7 +132,11 @@
           </div>
           <input type="text" class="grow" id="dl-subfolder" placeholder="Sous-dossier (optionnel)">
         </div>
-        <button class="btn wide" id="dl-go"><i data-icon="download"></i>Télécharger sur le NAS</button>
+        <div class="row" style="margin-top:0">
+          <label class="check"><input type="checkbox" id="dl-keep" checked> Garder une copie sur le NAS</label>
+          <span class="hint" style="margin:0">Décoché : le fichier est seulement à récupérer sur ton appareil (effacé du serveur après 24 h).</span>
+        </div>
+        <button class="btn wide" id="dl-go"><i data-icon="download"></i>Télécharger</button>
         <div class="msg" id="dl-msg"></div>
       </form>
       <div class="card">
@@ -175,6 +197,26 @@
       <div id="pdf-tool"></div>
     </section>
 
+    <!-- ================= Décompresseur ================= -->
+    <section data-view="decompresser" hidden>
+      <div class="page-head">
+        <span class="tile vert"><i data-icon="archive"></i></span>
+        <div class="grow"><h1>Décompresseur</h1><p>ZIP, RAR, 7Z, TAR.GZ… : choisis les fichiers et extrais-les où tu veux.</p></div>
+        <button class="btn ghost" data-help><i data-icon="help"></i>Aide</button>
+      </div>
+      <div id="arc-root"></div>
+    </section>
+
+    <!-- ================= Bêta Work ================= -->
+    <section data-view="work" hidden>
+      <div class="page-head">
+        <span class="tile bleu-vert"><i data-icon="briefcase"></i></span>
+        <div class="grow"><h1>Bêta Work</h1><p>Documents, tableurs et présentations, directement dans ton navigateur.</p></div>
+        <button class="btn ghost" data-help><i data-icon="help"></i>Aide</button>
+      </div>
+      <div id="work-root"></div>
+    </section>
+
     <!-- ================= Suggestions ================= -->
     <section data-view="suggestions" hidden>
       <div class="page-head">
@@ -188,12 +230,16 @@
   <footer>Bêta Tool · version bêta · <a href="#/suggestions">Suggestions</a></footer>
 </div>
 
+<!-- Éditeur Bêta Work (plein écran) -->
+<div class="work-editor" id="work-editor" hidden></div>
+
 <!-- Onglets (mobile) -->
 <nav class="tabbar" id="tabbar">
   <a href="#/" data-route="home"><i data-icon="home"></i>Accueil</a>
   <a href="#/telecharger" data-route="telecharger"><i data-icon="download"></i>Télécharger</a>
   <a href="#/convertir" data-route="convertir"><i data-icon="convert"></i>Convertir</a>
   <a href="#/pdf" data-route="pdf"><i data-icon="pdf"></i>PDF</a>
+  <a href="#/work" data-route="work"><i data-icon="briefcase"></i>Work</a>
 </nav>
 
 <button class="fab" data-suggest title="Envoyer une suggestion"><i data-icon="lightbulb"></i><span class="lbl">Suggestion</span></button>
@@ -228,6 +274,8 @@
       <option value="telecharger">Téléchargeur</option>
       <option value="convertir">Convertisseur</option>
       <option value="pdf">Studio PDF</option>
+      <option value="decompresser">Décompresseur</option>
+      <option value="work">Bêta Work</option>
     </select>
     <label class="field" for="suggest-msg">Ton message</label>
     <textarea id="suggest-msg" placeholder="Ex. : ce serait top de pouvoir compresser des vidéos…" required></textarea>

@@ -6,7 +6,7 @@ export const HELP = {
     title: "Bienvenue sur Bêta Tool", icon: "home", tile: "",
     lead: "Bêta Tool regroupe plusieurs outils dans un seul site, hébergé sur ton NAS.",
     steps: [
-      ["Choisis un outil", "Dans le menu à gauche (ou en bas sur téléphone) : Téléchargeur, Convertisseur ou Studio PDF."],
+      ["Choisis un outil", "Dans le menu à gauche (ou en bas sur téléphone) : Téléchargeur, Convertisseur, Studio PDF, Décompresseur ou Bêta Work."],
       ["Ouvre son tuto", "Chaque page a un bouton « Aide » qui explique l'outil étape par étape."],
       ["Récupère tes fichiers", "Les résultats se téléchargent depuis la page et/ou arrivent directement dans les dossiers du NAS."],
       ["Propose tes idées", "Le bouton violet « Suggestion » envoie une idée ou signale un problème."],
@@ -28,7 +28,8 @@ export const HELP = {
       ["Colle-le dans le champ", "En cliquant dans le champ, le lien copié est collé tout seul. Tu peux en mettre plusieurs, un par ligne."],
       ["Choisis Vidéo ou Audio seul", "Vidéo = image + son en qualité maximale (4K/8K, HDR). Audio seul = uniquement la meilleure piste son."],
       ["Indique un sous-dossier (optionnel)", "Par exemple « Musique » ou « Clips » pour ranger tes fichiers."],
-      ["Clique sur « Télécharger sur le NAS »", "La progression s'affiche en bas : vitesse, pourcentage, temps restant."],
+      ["Choisis où le garder", "« Garder une copie sur le NAS » coché : le fichier reste sur le NAS. Décoché : il est juste à récupérer sur ton appareil."],
+      ["Clique sur « Télécharger »", "La progression s'affiche en bas. Une fois terminé, le bouton « Récupérer » l'enregistre sur ton téléphone ou ton ordinateur."],
     ],
     tips: [
       "Une playlist entière ? Colle simplement le lien de la playlist : elle sera rangée dans un dossier à son nom.",
@@ -208,6 +209,46 @@ export const HELP = {
     ],
     tips: ["Les pages qui contiennent déjà du texte sont laissées telles quelles, sauf si tu coches « Refaire l'OCR partout »."],
     faq: [],
+  },
+  decompresser: {
+    title: "Tuto · Décompresseur", icon: "archive", tile: "vert",
+    lead: "Ouvre une archive compressée et récupère son contenu, en entier ou seulement certains fichiers.",
+    steps: [
+      ["Glisse ton archive", "ZIP, RAR, 7Z, TAR.GZ, ISO… Si elle est protégée, le mot de passe est demandé."],
+      ["Choisis les fichiers", "Tout est coché par défaut. Décoche ce dont tu n'as pas besoin ; un dossier coche ou décoche tout son contenu. La recherche aide dans les grosses archives."],
+      ["Choisis la destination", "Sur le NAS (dans le dossier des fichiers décompressés) ou Sur mon appareil (un seul fichier tel quel, plusieurs fichiers regroupés en .zip)."],
+      ["Clique sur « Extraire »", "Le résultat s'affiche en dessous."],
+    ],
+    tips: [
+      "Le dossier de destination porte par défaut le nom de l'archive ; tu peux en indiquer un autre.",
+      "En bas de la page, « Créer une archive ZIP » fait l'inverse : regrouper plusieurs fichiers dans un .zip.",
+      "Les archives piégées (fichiers qui sortent du dossier, liens, archives qui « explosent ») sont bloquées.",
+    ],
+    faq: [
+      ["Mon RAR ne s'ouvre pas", "Certains RAR très récents ou chiffrés ne sont pas pris en charge par les outils libres. Convertis-le en ZIP sur l'ordinateur d'origine si possible."],
+      ["Y a-t-il une taille maximale ?", "50 Go une fois décompressé par défaut (réglable avec MAX_EXTRACT_GB)."],
+    ],
+  },
+  work: {
+    title: "Tuto · Bêta Work", icon: "briefcase", tile: "bleu-vert",
+    lead: "Ta suite bureautique dans le navigateur : traitement de texte, tableur et présentations, compatibles Word, Excel et PowerPoint.",
+    steps: [
+      ["Crée ou importe un document", "Les grandes cartes créent un document, un tableur ou une présentation vierge. « Importer » ajoute tes fichiers Word, Excel, PowerPoint ou PDF."],
+      ["Ouvre-le", "Clique sur son nom : l'éditeur s'ouvre en plein écran."],
+      ["Travaille normalement", "Mise en forme, tableaux, formules, graphiques, commentaires, suivi des modifications… comme dans Office."],
+      ["C'est enregistré tout seul", "Chaque modification est sauvegardée sur le NAS. La flèche en haut à gauche ramène à la liste."],
+    ],
+    tips: [
+      "Vous pouvez être plusieurs sur le même document en même temps : chacun voit le curseur des autres, avec son prénom.",
+      "Les fichiers sont de vrais .docx / .xlsx / .pptx : tu peux les ouvrir ensuite avec Word, Excel ou LibreOffice.",
+      "Supprimer un document le met dans le dossier « .corbeille » : rien n'est perdu par erreur.",
+      "Pour un PDF à remplir ou à signer, le Studio PDF est souvent plus pratique.",
+    ],
+    faq: [
+      ["L'éditeur ne s'affiche pas", "Le service ONLYOFFICE met 1 à 2 minutes à démarrer après un redémarrage du NAS. S'il ne vient jamais, vérifie qu'il est activé (README, « Bêta Work »)."],
+      ["Qu'est-ce qu'ONLYOFFICE ?", "L'éditeur open source (licence AGPL v3) qui fait tourner Bêta Work. Il fonctionne sur ton NAS : tes documents ne partent nulle part."],
+      ["Les anciens formats .doc / .xls / .ppt ?", "Ils s'ouvrent en lecture ; pour les modifier, enregistre-les au format moderne depuis l'éditeur (Fichier → Télécharger en .docx…)."],
+    ],
   },
   suggestions: {
     title: "Tuto · Suggestions", icon: "lightbulb", tile: "ambre",

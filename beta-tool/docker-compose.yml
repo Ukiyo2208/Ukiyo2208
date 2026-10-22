@@ -1,3 +1,5 @@
+# Bêta Tool + Bêta Work (ONLYOFFICE Docs)
+# Réglages dans le fichier .env (mot de passe, secret, activation de Bêta Work…)
 services:
   beta-tool:
     build: .
@@ -5,19 +7,41 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # Remplace les chemins de gauche par les dossiers partagés de ton NAS
-      # (Synology : /volume1/... — QNAP : /share/...)
-      - /volume1/video/YouTube:/downloads     # Téléchargeur
+      # Remplace les chemins de gauche par tes dossiers (Synology : /volume1/… — QNAP : /share/…
+      # — sans NAS, n'importe quel dossier de l'ordinateur, ex. ./donnees/videos)
+      - /volume1/video/YouTube:/downloads          # Téléchargeur
       - /volume1/documents/Conversions:/converted  # Convertisseur
-      - /volume1/documents/PDF:/pdf           # Studio PDF (bouton « Sur le NAS »)
-      - /volume1/docker/beta-tool/data:/data  # Suggestions
-      - ./static/brand:/app/static/brand      # Icône et bannière (icon.png, banner.png)
-      # Optionnel : fichiers temporaires sur le disque du NAS plutôt que dans le conteneur
+      - /volume1/documents/PDF:/pdf                # Studio PDF (bouton « Sur le NAS »)
+      - /volume1/documents/Decompresses:/extracted   # Décompresseur
+      - /volume1/documents/BetaWork:/documents       # Bêta Work
+      - /volume1/docker/beta-tool/data:/data       # Suggestions, clé de session
+      - ./static/brand:/app/static/brand           # Icône et bannière
+      # Optionnel : fichiers temporaires sur le disque plutôt que dans le conteneur
       # - /volume1/docker/beta-tool/work:/work
     environment:
-      - WORKERS=2           # téléchargements en parallèle
-      - CONVERT_WORKERS=2   # conversions en parallèle
-      - MAX_UPLOAD_GB=20    # taille max d'un fichier envoyé
-      - JOB_TTL_HOURS=24    # durée de conservation des résultats téléchargeables
-    # user: "1026:100"      # optionnel : propriétaire des fichiers (voir `id` sur le NAS)
+      - WORKERS=2                 # téléchargements en parallèle
+      - CONVERT_WORKERS=2         # conversions en parallèle
+      - MAX_UPLOAD_GB=20          # taille max d'un fichier envoyé
+      - MAX_EXTRACT_GB=50         # taille max d'une archive une fois décompressée
+      - JOB_TTL_HOURS=24          # durée de conservation des résultats temporaires
+      - APP_PASSWORD=${APP_PASSWORD:-}
+      - STORAGE_NAME=${STORAGE_NAME:-NAS}
+      - ONLYOFFICE_JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-}
+      - ONLYOFFICE_URL=${ONLYOFFICE_URL:-}
+    # user: "1026:100"            # optionnel : propriétaire des fichiers (voir `id` sur le NAS)
+    restart: unless-stopped
+
+  # Bêta Work : éditeur ONLYOFFICE Docs (≈ 2 à 4 Go de RAM). Activé par COMPOSE_PROFILES=work dans .env
+  onlyoffice:
+    image: onlyoffice/documentserver:8.3.3
+    container_name: beta-work
+    profiles: ["work"]
+    ports:
+      - "8081:80"
+    environment:
+      - JWT_ENABLED=true
+      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-}
+      - ALLOW_PRIVATE_IP_ADDRESS=true   # autorise ONLYOFFICE à joindre Bêta Tool sur le réseau local
+    volumes:
+      - /volume1/docker/beta-tool/onlyoffice:/var/www/onlyoffice/Data
     restart: unless-stopped

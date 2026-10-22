@@ -1,8 +1,12 @@
 """Outil « Téléchargeur » : récupère une vidéo/playlist (YouTube et ~1800 autres
-sites) en meilleure qualité via yt-dlp, directement dans le dossier du NAS."""
+sites) en meilleure qualité via yt-dlp, dans le dossier du NAS ou seulement le
+temps de la récupérer sur son appareil."""
 
 import os
+import shutil
+import tempfile
 import threading
+import time
 import uuid
 from collections import OrderedDict
 from queue import Queue
@@ -10,6 +14,9 @@ from queue import Queue
 import yt_dlp
 
 DOWNLOAD_DIR = os.environ.get("DOWNLOAD_DIR", "/downloads")
+# Téléchargements « appareil seulement » : gardés temporairement puis effacés
+TMP_DIR = os.path.join(os.environ.get("WORK_DIR", os.path.join(tempfile.gettempdir(), "beta-tool")), "telechargements")
+JOB_TTL = float(os.environ.get("JOB_TTL_HOURS", "24")) * 3600
 
 jobs = OrderedDict()
 jobs_lock = threading.Lock()
@@ -27,8 +34,7 @@ def safe_subfolder(value):
     return os.path.join(*parts) if parts else ""
 
 
-def build_options(job_id, mode, subfolder):
-    target = os.path.join(DOWNLOAD_DIR, subfolder) if subfolder else DOWNLOAD_DIR
+def build_options(job_id, mode, target):
 
     def hook(d):
         if d["status"] == "downloading":
@@ -41,9 +47,18 @@ def build_options(job_id, mode, subfolder):
         elif d["status"] == "finished":
             update(job_id, status="processing", progress=100)
 
+    def moved(d):
+        # MoveFiles est la dernière étape : le chemin final du fichier est connu
+        if d["status"] == "finished" and d.get("postprocessor") == "MoveFiles":
+            path = (d.get("info_dict") or {}).get("filepath")
+            if path:
+                with jobs_lock:
+                    jobs[job_id]["paths"].append(path)
+
     opts = {
         "outtmpl": os.path.join(target, "%(playlist_title|)s", "%(title)s [%(id)s].%(ext)s"),
         "progress_hooks": [hook],
+        "postprocessor_hooks": [moved],
         "noplaylist": False,
         "ignoreerrors": True,
         "windowsfilenames": True,  # noms compatibles SMB/Windows
@@ -76,16 +91,17 @@ def worker():
         job = jobs[job_id]
         update(job_id, status="starting")
         try:
-            with yt_dlp.YoutubeDL(build_options(job_id, job["mode"], job["subfolder"])) as ydl:
+            with yt_dlp.YoutubeDL(build_options(job_id, job["mode"], job["target"])) as ydl:
                 code = ydl.download([job["url"]])
             update(job_id, status="done" if code == 0 else "error",
                    error=None if code == 0 else "Certains éléments ont échoué")
         except Exception as e:  # noqa: BLE001
             update(job_id, status="error", error=str(e))
+        update(job_id, finished=time.time())
         queue.task_done()
 
 
-def submit(text, mode, subfolder):
+def submit(text, mode, subfolder, keep=True):
     urls = [u.strip() for u in str(text or "").split() if u.strip()]
     if not urls or not all(u.startswith(("http://", "https://")) for u in urls):
         raise ValueError("Lien invalide")
@@ -94,8 +110,11 @@ def submit(text, mode, subfolder):
     created = []
     for url in urls:
         job_id = uuid.uuid4().hex[:8]
+        target = (os.path.join(DOWNLOAD_DIR, subfolder) if subfolder else DOWNLOAD_DIR) if keep \
+            else os.path.join(TMP_DIR, job_id)
         with jobs_lock:
-            jobs[job_id] = {"id": job_id, "url": url, "mode": mode, "subfolder": subfolder,
+            jobs[job_id] = {"id": job_id, "url": url, "mode": mode, "subfolder": subfolder if keep else "",
+                            "keep": keep, "target": target, "paths": [],
                             "title": url, "status": "queued", "progress": 0,
                             "speed": "", "eta": "", "error": None}
         queue.put(job_id)
@@ -105,10 +124,35 @@ def submit(text, mode, subfolder):
 
 def list_jobs():
     with jobs_lock:
-        return list(reversed(jobs.values()))
+        return [{**{k: v for k, v in j.items() if k not in ("paths", "target")},
+                 "files": [os.path.basename(p) for p in j["paths"]]} for j in reversed(jobs.values())]
+
+
+def file_path(job_id, index):
+    with jobs_lock:
+        job = jobs.get(job_id)
+        paths = list(job["paths"]) if job else []
+    if not 0 <= index < len(paths) or not os.path.isfile(paths[index]):
+        return None
+    return paths[index]
+
+
+def janitor():
+    """Oublie les tâches anciennes et efface les fichiers « appareil seulement »."""
+    while True:
+        time.sleep(1800)
+        now = time.time()
+        with jobs_lock:
+            old = [j for j in jobs.values() if j.get("finished") and now - j["finished"] > JOB_TTL]
+            for j in old:
+                del jobs[j["id"]]
+        for j in old:
+            if not j["keep"]:
+                shutil.rmtree(j["target"], ignore_errors=True)
 
 
 def start(workers):
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+    threading.Thread(target=janitor, daemon=True).start()
     for _ in range(workers):
         threading.Thread(target=worker, daemon=True).start()
