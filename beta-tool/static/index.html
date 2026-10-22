@@ -2,108 +2,248 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Bêta Tool</title>
+<meta name="description" content="Boîte à outils auto-hébergée : téléchargeur, convertisseur et studio PDF.">
 <link rel="icon" href="brand/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="brand/icon.png">
 <link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
-<meta name="theme-color" content="#040a1a">
+<meta name="theme-color" content="#030816">
+<script>
+  // Thème choisi (auto / clair / sombre), appliqué avant l'affichage pour éviter un flash
+  try { const t = localStorage.getItem("bt-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}
+</script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="topbar">
+
+<!-- Barre latérale (ordinateur) -->
+<aside class="sidebar">
   <a class="brand" href="#/">
-    <img src="brand/apple-touch-icon.png" alt="" onerror="this.remove()">
-    <strong>Bêta Tool</strong><span class="badge">bêta</span>
+    <img src="brand/apple-touch-icon.png" alt="">
+    <span><strong>Bêta Tool<span class="badge">bêta</span></strong><small>Ta boîte à outils NAS</small></span>
   </a>
-  <nav>
-    <a href="#/" data-view="home">Accueil</a>
-    <a href="#/telecharger" data-view="telecharger">Téléchargeur</a>
-    <a href="#/convertir" data-view="convertir">Convertisseur</a>
+  <nav class="nav" id="nav">
+    <a href="#/" data-route="home"><i data-icon="home"></i>Accueil</a>
+    <div class="nav-label">Outils</div>
+    <a href="#/telecharger" data-route="telecharger"><i data-icon="download"></i>Téléchargeur</a>
+    <a href="#/convertir" data-route="convertir"><i data-icon="convert"></i>Convertisseur</a>
+    <a href="#/pdf" data-route="pdf"><i data-icon="pdf"></i>Studio PDF</a>
+    <div class="nav-label">Communauté</div>
+    <a href="#/suggestions" data-route="suggestions"><i data-icon="lightbulb"></i>Suggestions</a>
   </nav>
-</header>
+  <div class="spacer"></div>
+  <div class="side-card">
+    <b>Besoin d'aide ?</b>
+    <p>Chaque outil a son tuto pas à pas.</p>
+    <button class="btn small ghost" data-help><i data-icon="help"></i>Ouvrir le tuto</button>
+  </div>
+  <div class="theme-switch" role="group" aria-label="Thème">
+    <button data-theme-set="auto" title="Automatique"><i data-icon="monitor"></i></button>
+    <button data-theme-set="light" title="Clair"><i data-icon="sun"></i></button>
+    <button data-theme-set="dark" title="Sombre"><i data-icon="moon"></i></button>
+  </div>
+</aside>
 
-<main>
-  <!-- Accueil -->
-  <section id="view-home">
-    <img class="banner" src="brand/banner.jpg" alt="Bêta Tool — Build · Automate · Accelerate" onerror="this.remove()">
-    <h1>Tes outils</h1>
-    <p class="sub">Tout se fait sur ton NAS : rien ne part sur un service externe.</p>
-    <div class="tools">
-      <a class="card tool" href="#/telecharger">
-        <div class="ico">⬇️</div>
-        <h2>Téléchargeur</h2>
-        <p>YouTube, Vimeo, TikTok, X, Instagram, SoundCloud… en meilleure qualité, direct sur le NAS.</p>
-      </a>
-      <a class="card tool" href="#/convertir">
-        <div class="ico">🔄</div>
-        <h2>Convertisseur</h2>
-        <p>Vidéo, audio, image, PDF, Word, Excel, PowerPoint, Markdown, e-books… plus de 60 formats.</p>
-      </a>
-      <div class="card tool soon">
-        <div class="ico">🧰</div>
-        <h2>Bientôt…</h2>
-        <p>D'autres outils arriveront ici.</p>
-      </div>
-    </div>
-  </section>
+<div class="content">
+  <!-- Barre du haut (mobile) -->
+  <header class="topbar">
+    <a class="brand" href="#/">
+      <img src="brand/apple-touch-icon.png" alt="">
+      <strong>Bêta Tool<span class="badge">bêta</span></strong>
+    </a>
+    <button class="icon-btn" data-theme-cycle title="Changer de thème"><i data-icon="moon"></i></button>
+    <button class="icon-btn" data-help title="Aide"><i data-icon="help"></i></button>
+  </header>
 
-  <!-- Téléchargeur -->
-  <section id="view-telecharger" hidden>
-    <h1>Téléchargeur</h1>
-    <p class="sub">Colle un ou plusieurs liens (YouTube, Vimeo, TikTok, X, Instagram, SoundCloud, Twitch… vidéo ou playlist). Téléchargement en meilleure qualité disponible, directement sur le NAS.</p>
-    <form class="card" id="dl-form">
-      <textarea id="dl-url" placeholder="https://…  (un lien par ligne)" required></textarea>
-      <div class="row">
-        <div class="seg">
-          <label><input type="radio" name="dl-mode" value="video" checked> Vidéo</label>
-          <label><input type="radio" name="dl-mode" value="audio"> Audio seul</label>
+  <main>
+    <!-- ================= Accueil ================= -->
+    <section data-view="home">
+      <div class="hero"><img src="brand/banner.jpg" alt="Bêta Tool — Build · Automate · Accelerate"></div>
+      <div class="hello">
+        <div>
+          <h1 id="greeting">Bonjour 👋</h1>
+          <p>Choisis un outil. Tout se passe sur ton NAS, rien ne part sur Internet.</p>
         </div>
-        <input type="text" id="dl-subfolder" placeholder="Sous-dossier (optionnel)">
+        <span class="pill"><span class="dot"></span>Serveur en ligne</span>
       </div>
-      <button class="wide" id="dl-go">Télécharger sur le NAS</button>
-      <div class="msg" id="dl-msg"></div>
-    </form>
-    <div class="card">
-      <h2>Téléchargements</h2>
-      <div id="dl-jobs"><div class="empty">Aucun téléchargement pour l’instant.</div></div>
-    </div>
-  </section>
+      <div class="tools">
+        <a class="card tool" href="#/telecharger">
+          <span class="tile"><i data-icon="download"></i></span>
+          <h2>Téléchargeur</h2>
+          <p>Colle un lien, récupère la vidéo ou la musique en meilleure qualité, directement sur le NAS.</p>
+          <div class="chips"><span class="chip">YouTube</span><span class="chip">TikTok</span><span class="chip">Instagram</span><span class="chip">+1800 sites</span></div>
+          <span class="go">Ouvrir <i data-icon="arrow"></i></span>
+        </a>
+        <a class="card tool" href="#/convertir">
+          <span class="tile violet"><i data-icon="convert"></i></span>
+          <h2>Convertisseur</h2>
+          <p>Transforme n'importe quel fichier : vidéo, audio, image, document, e-book… plus de 60 formats.</p>
+          <div class="chips"><span class="chip">MP4 → MP3</span><span class="chip">HEIC → JPG</span><span class="chip">Word → PDF</span></div>
+          <span class="go">Ouvrir <i data-icon="arrow"></i></span>
+        </a>
+        <a class="card tool" href="#/pdf">
+          <span class="tile rose"><i data-icon="pdf"></i></span>
+          <h2>Studio PDF</h2>
+          <p>Modifie, signe, remplis, organise, fusionne, compresse et protège tes PDF.</p>
+          <div class="chips"><span class="chip">Signer</span><span class="chip">Fusionner</span><span class="chip">Compresser</span><span class="chip">OCR</span></div>
+          <span class="go">Ouvrir <i data-icon="arrow"></i></span>
+        </a>
+      </div>
+      <div class="steps-mini">
+        <div class="card"><span class="num">1</span><div><b>Choisis un outil</b><p>Dans le menu ou ci-dessus.</p></div></div>
+        <div class="card"><span class="num">2</span><div><b>Suis le tuto</b><p>Le bouton « Aide » explique chaque étape.</p></div></div>
+        <div class="card"><span class="num">3</span><div><b>Une idée ?</b><p>Le bouton « Suggestion » est là pour ça.</p></div></div>
+      </div>
+    </section>
 
-  <!-- Convertisseur -->
-  <section id="view-convertir" hidden>
-    <h1>Convertisseur</h1>
-    <p class="sub">Dépose tes fichiers, choisis le format de sortie, récupère le résultat ici ou directement sur le NAS.</p>
-    <div class="card">
-      <label class="drop" id="cv-drop">
-        <input type="file" id="cv-input" multiple hidden>
-        <strong>Glisse tes fichiers ici</strong><br>ou clique pour choisir
-      </label>
-      <div id="cv-pending" hidden>
-        <div class="row" style="justify-content:space-between">
-          <h2 style="margin:0">Fichiers à convertir</h2>
-          <label>Tout convertir en <select id="cv-all"></select></label>
-        </div>
-        <div class="files" id="cv-files"></div>
+    <!-- ================= Téléchargeur ================= -->
+    <section data-view="telecharger" hidden>
+      <div class="page-head">
+        <span class="tile"><i data-icon="download"></i></span>
+        <div class="grow"><h1>Téléchargeur</h1><p>Vidéos et musiques en meilleure qualité, directement sur le NAS.</p></div>
+        <button class="btn ghost" data-help><i data-icon="help"></i>Aide</button>
+      </div>
+      <form class="card" id="dl-form">
+        <label class="field" for="dl-url">Liens (un par ligne)</label>
+        <textarea id="dl-url" placeholder="https://www.youtube.com/watch?v=…" required></textarea>
         <div class="row">
-          <label class="check"><input type="checkbox" id="cv-nas" checked> Enregistrer aussi sur le NAS</label>
-          <input type="text" id="cv-subfolder" placeholder="Sous-dossier (optionnel)">
+          <div class="seg">
+            <label><input type="radio" name="dl-mode" value="video" checked><i data-icon="video"></i>Vidéo</label>
+            <label><input type="radio" name="dl-mode" value="audio"><i data-icon="music"></i>Audio seul</label>
+          </div>
+          <input type="text" class="grow" id="dl-subfolder" placeholder="Sous-dossier (optionnel)">
         </div>
-        <button class="wide" id="cv-go">Convertir</button>
+        <button class="btn wide" id="dl-go"><i data-icon="download"></i>Télécharger sur le NAS</button>
+        <div class="msg" id="dl-msg"></div>
+      </form>
+      <div class="card">
+        <div class="card-title">Téléchargements</div>
+        <div id="dl-jobs"></div>
       </div>
-      <div class="msg" id="cv-msg"></div>
-      <details class="formats">
-        <summary>Formats pris en charge</summary>
-        <dl id="cv-formats"></dl>
-      </details>
+    </section>
+
+    <!-- ================= Convertisseur ================= -->
+    <section data-view="convertir" hidden>
+      <div class="page-head">
+        <span class="tile violet"><i data-icon="convert"></i></span>
+        <div class="grow"><h1>Convertisseur</h1><p>Plus de 60 formats : vidéo, audio, image, PDF, bureautique, e-books.</p></div>
+        <button class="btn ghost" data-help><i data-icon="help"></i>Aide</button>
+      </div>
+      <div class="card">
+        <label class="drop" id="cv-drop">
+          <input type="file" id="cv-input" multiple hidden>
+          <span class="tile violet"><i data-icon="upload"></i></span>
+          <strong>Glisse tes fichiers ici</strong>
+          <small>ou clique pour les choisir · plusieurs fichiers possibles</small>
+        </label>
+        <div id="cv-pending" hidden>
+          <div class="row" style="justify-content:space-between;margin-top:20px">
+            <div class="card-title" style="margin:0">Fichiers à convertir</div>
+            <label class="check">Tout convertir en <select id="cv-all"></select></label>
+          </div>
+          <div class="files" id="cv-files"></div>
+          <div class="row">
+            <label class="check"><input type="checkbox" id="cv-nas" checked> Enregistrer aussi sur le NAS</label>
+            <input type="text" class="grow" id="cv-subfolder" placeholder="Sous-dossier (optionnel)">
+          </div>
+          <button class="btn wide" id="cv-go"><i data-icon="convert"></i>Convertir</button>
+        </div>
+        <div class="msg" id="cv-msg"></div>
+        <details class="formats">
+          <summary>Formats pris en charge</summary>
+          <dl id="cv-formats"></dl>
+        </details>
+      </div>
+      <div class="card">
+        <div class="card-title">Conversions</div>
+        <div id="cv-jobs"></div>
+      </div>
+    </section>
+
+    <!-- ================= Studio PDF ================= -->
+    <section data-view="pdf" hidden>
+      <div class="page-head">
+        <span class="tile rose"><i data-icon="pdf"></i></span>
+        <div class="grow"><h1>Studio PDF</h1><p>Tout pour lire, modifier, signer et transformer tes PDF.</p></div>
+        <button class="btn ghost" data-help><i data-icon="help"></i>Aide</button>
+      </div>
+      <div id="pdf-hub"></div>
+    </section>
+    <section data-view="pdf-tool" hidden>
+      <a class="back" href="#/pdf"><i data-icon="back"></i>Studio PDF</a>
+      <div id="pdf-tool"></div>
+    </section>
+
+    <!-- ================= Suggestions ================= -->
+    <section data-view="suggestions" hidden>
+      <div class="page-head">
+        <span class="tile ambre"><i data-icon="lightbulb"></i></span>
+        <div class="grow"><h1>Suggestions</h1><p>Les idées et retours envoyés depuis le site.</p></div>
+        <button class="btn" data-suggest><i data-icon="plus"></i>Nouvelle suggestion</button>
+      </div>
+      <div class="card"><div id="sugg-list"></div></div>
+    </section>
+  </main>
+  <footer>Bêta Tool · version bêta · <a href="#/suggestions">Suggestions</a></footer>
+</div>
+
+<!-- Onglets (mobile) -->
+<nav class="tabbar" id="tabbar">
+  <a href="#/" data-route="home"><i data-icon="home"></i>Accueil</a>
+  <a href="#/telecharger" data-route="telecharger"><i data-icon="download"></i>Télécharger</a>
+  <a href="#/convertir" data-route="convertir"><i data-icon="convert"></i>Convertir</a>
+  <a href="#/pdf" data-route="pdf"><i data-icon="pdf"></i>PDF</a>
+</nav>
+
+<button class="fab" data-suggest title="Envoyer une suggestion"><i data-icon="lightbulb"></i><span class="lbl">Suggestion</span></button>
+
+<!-- Panneau d'aide -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="help" aria-label="Aide">
+  <div class="drawer-head">
+    <span class="tile" id="help-tile"><i data-icon="help"></i></span>
+    <h2 id="help-title">Aide</h2>
+    <button class="icon-btn plain" data-close title="Fermer"><i data-icon="x"></i></button>
+  </div>
+  <div id="help-body"></div>
+</aside>
+
+<!-- Suggestion -->
+<div class="modal" id="suggest" role="dialog" aria-modal="true" aria-labelledby="suggest-title">
+  <div class="modal-head">
+    <span class="tile ambre"><i data-icon="lightbulb"></i></span>
+    <h2 id="suggest-title">Une idée, un souci ?</h2>
+    <button class="icon-btn plain" data-close title="Fermer"><i data-icon="x"></i></button>
+  </div>
+  <form id="suggest-form">
+    <div class="seg" style="margin-bottom:14px">
+      <label><input type="radio" name="kind" value="idee" checked>💡 Idée d'outil</label>
+      <label><input type="radio" name="kind" value="amelioration">✨ Amélioration</label>
+      <label><input type="radio" name="kind" value="bug">🐞 Problème</label>
     </div>
-    <div class="card">
-      <h2>Conversions</h2>
-      <div id="cv-jobs"><div class="empty">Aucune conversion pour l’instant.</div></div>
+    <label class="field" for="suggest-tool">Concerne</label>
+    <select id="suggest-tool" style="width:100%;margin-bottom:14px">
+      <option value="general">Le site en général</option>
+      <option value="telecharger">Téléchargeur</option>
+      <option value="convertir">Convertisseur</option>
+      <option value="pdf">Studio PDF</option>
+    </select>
+    <label class="field" for="suggest-msg">Ton message</label>
+    <textarea id="suggest-msg" placeholder="Ex. : ce serait top de pouvoir compresser des vidéos…" required></textarea>
+    <label class="field" for="suggest-name" style="margin-top:14px">Ton prénom (optionnel)</label>
+    <input type="text" id="suggest-name" maxlength="80">
+    <div class="modal-foot">
+      <a class="btn ghost" href="#/suggestions" data-close>Voir les suggestions</a>
+      <button class="btn"><i data-icon="send"></i>Envoyer</button>
     </div>
-  </section>
-</main>
-<footer>Bêta Tool · version bêta</footer>
-<script src="app.js"></script>
+  </form>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="vendor/pdf-lib.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>

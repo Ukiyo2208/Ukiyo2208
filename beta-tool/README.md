@@ -7,6 +7,24 @@ fichier n'est envoyé à un service externe.
 | --- | --- |
 | **Téléchargeur** | Colle un lien YouTube ou d'un autre site pris en charge par [yt-dlp](https://github.com/yt-dlp/yt-dlp) (Vimeo, TikTok, X, Instagram, SoundCloud, Twitch, Dailymotion…) : vidéo ou playlist téléchargée en **meilleure qualité** (jusqu'à 4K/8K, HDR) directement dans un dossier du NAS. |
 | **Convertisseur** | Glisse-dépose des fichiers et choisis le format de sortie (dans l'esprit de ConvertX). Le résultat se télécharge depuis la page et/ou s'enregistre sur le NAS. |
+| **Studio PDF** | Dans l'esprit d'Acrobat / BentoPDF : éditer et signer, remplir un formulaire, filigrane, numérotation, organiser les pages, fusionner, découper, compresser, protéger, déverrouiller, OCR. |
+
+Chaque outil a un bouton **Aide** (tuto pas à pas, astuces, FAQ) et le site a un bouton **Suggestion**
+pour envoyer une idée ou signaler un problème ; les suggestions sont listées sur la page « Suggestions »
+et gardées dans `/data/suggestions.jsonl`.
+
+## Studio PDF
+
+| Outil | Où c'est traité |
+| --- | --- |
+| Éditer & signer (texte, signature dessinée/tapée/importée, image, surlignage, cadre, masque blanc, dessin), formulaires | Navigateur (pdf.js + pdf-lib) |
+| Organiser (réordonner, pivoter, supprimer, insérer), fusionner, découper, filigrane, numérotation | Navigateur |
+| Compresser | NAS (Ghostscript) |
+| Protéger / déverrouiller (AES-256) | NAS (pikepdf) |
+| OCR français/anglais | NAS (OCRmyPDF + Tesseract) |
+
+Les traitements « navigateur » ne font jamais sortir le fichier de l'appareil. Les bibliothèques sont
+incluses dans `static/vendor/` : le site fonctionne sans accès à Internet.
 
 ## Formats du convertisseur
 
@@ -30,13 +48,15 @@ Les réglages visent la qualité : vidéo H.264 CRF 18, MP3 V0, JPEG 92, MKV en 
 1. Copie le dossier `beta-tool` sur le NAS.
 2. Dans `docker-compose.yml`, adapte les chemins de gauche :
    - `/downloads` : où arrivent les vidéos téléchargées ;
-   - `/converted` : où arrivent les fichiers convertis.
+   - `/converted` : où arrivent les fichiers convertis ;
+   - `/pdf` : où le Studio PDF enregistre (bouton « Sur le NAS ») ;
+   - `/data` : les suggestions.
 3. Lance :
    ```sh
    docker compose up -d --build
    ```
    (Synology : *Container Manager → Projet → Créer*. QNAP : *Container Station → Applications → Créer*.)
-   L'image pèse environ 1,5 Go à cause de LibreOffice et Calibre ; la première construction prend quelques minutes.
+   L'image pèse environ 1,7 Go à cause de LibreOffice, Calibre et Tesseract ; la première construction prend quelques minutes.
 4. Ouvre `http://IP-DU-NAS:8080`.
 
 ## Icône et bannière
@@ -54,8 +74,9 @@ docker compose build --no-cache && docker compose up -d
 
 ## Ajouter un outil
 
-Chaque outil est un module Python (`downloader.py`, `converter.py`) branché sur des routes `/api/...` dans `app.py`,
-plus une section `view-…` dans `static/index.html` et une carte sur l'accueil.
+Côté serveur, chaque outil est un module Python (`downloader.py`, `converter.py`, `pdftools.py`) branché sur des
+routes `/api/...` dans `app.py`. Côté page, chaque outil est un module dans `static/js/` (une section `data-view`
+dans `static/index.html`, une entrée de menu, une carte sur l'accueil) et son tuto se trouve dans `static/js/help.js`.
 
 ## Notes
 

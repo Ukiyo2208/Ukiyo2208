@@ -9,6 +9,8 @@ services:
       # (Synology : /volume1/... — QNAP : /share/...)
       - /volume1/video/YouTube:/downloads     # Téléchargeur
       - /volume1/documents/Conversions:/converted  # Convertisseur
+      - /volume1/documents/PDF:/pdf           # Studio PDF (bouton « Sur le NAS »)
+      - /volume1/docker/beta-tool/data:/data  # Suggestions
       - ./static/brand:/app/static/brand      # Icône et bannière (icon.png, banner.png)
       # Optionnel : fichiers temporaires sur le disque du NAS plutôt que dans le conteneur
       # - /volume1/docker/beta-tool/work:/work

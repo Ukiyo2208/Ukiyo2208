@@ -3,3 +3,5 @@ flask>=3.0
 waitress>=3.0
 pillow>=11.3
 pillow-heif>=0.22
+pikepdf>=9.0
+ocrmypdf>=16.0
