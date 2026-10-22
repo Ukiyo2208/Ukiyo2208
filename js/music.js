@@ -38,6 +38,7 @@
     'r-fg': W('#0b0b0b', T(68, 50, 'FG', '#fff', 900, 'letter-spacing="-3"') + '<circle cx="82" cy="64" r="5" fill="#1f9bff"/>')
   };
   if (!S.radioLogos) S.radioLogos = {};
+
   function radioLogo(r, size, round) {
     const R = DATA.RADIOS.find(x => x.id === r.id) || r, sz = size || 44;
     const src = S.radioLogos[R.id] || LOGOS[R.id];
@@ -327,8 +328,10 @@
     session() {
       if (!('mediaSession' in navigator)) return;
       const i = this.info();
+      // logo Bêta OS carré sur l'écran verrouillé, le Centre de contrôle et CarPlay
+      const icon = new URL('assets/icon-512.png', location.href).href;
+      try { navigator.mediaSession.metadata = new MediaMetadata({ title: i.title, artist: i.artist, album: i.live ? i.station : 'Bêta OS', artwork: [{ src: icon, sizes: '512x512', type: 'image/png' }] }); } catch (e) { }
       try {
-        navigator.mediaSession.metadata = new MediaMetadata({ title: i.title, artist: i.artist, album: i.live ? i.station : 'Bêta OS', artwork: i.cover ? [{ src: new URL(i.cover, location.href).href, sizes: '480x360' }] : [] });
         navigator.mediaSession.setActionHandler('play', () => this.resume());
         navigator.mediaSession.setActionHandler('pause', () => this.pause());
         navigator.mediaSession.setActionHandler('previoustrack', () => this.step(-1));
