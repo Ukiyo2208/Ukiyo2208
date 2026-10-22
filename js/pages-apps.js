@@ -436,7 +436,7 @@
     if (document.querySelector('.modal .iasheet')) return;
     const m = B.modal('<div class="iasheet"><h2>' + brainSVG().replace('<svg', '<svg style="width:34px;height:34px"') + 'Bêta IA<span style="flex:1"></span><button class="btn sm pri" data-act="voice">' + ico('mic') + 'Mode vocal</button><button class="btn sm" data-act="chatClear">' + ico('trash') + 'Effacer</button></h2>' +
       T({ t: 'chat', keys: ['chat'] }) +
-      '<div class="sugg2">' + SUGG.slice(0, 6).map(s => '<button data-act="iaChip" data-arg="' + esc(s) + '">' + esc(s) + '</button>').join('') + '</div>' +
+      '<div class="sugg2">' + (B.iaSugg ? B.iaSugg() : SUGG).slice(0, 6).map(s => '<button data-act="iaChip" data-arg="' + esc(s) + '">' + esc(s) + '</button>').join('') + '</div>' +
       '<form data-submit="iaSheetSend" class="iainput"><button type="button" class="mic" data-act="mic" aria-label="Dicter">' + ico('mic') + '</button><input name="q" placeholder="Écrivez ou dictez votre demande…" autocomplete="off" enterkeyhint="send" aria-label="Message"><button class="btn pri" aria-label="Envoyer">' + ico('send') + '</button></form></div>', 'sheet ia');
     setTimeout(() => { const i = m.querySelector('input'); if (i && window.innerWidth > 760) i.focus(); const c = m.querySelector('.chat'); if (c) c.scrollTop = c.scrollHeight; }, 50);
   }
@@ -459,7 +459,7 @@
     '<section class="card pcard abs" style="' + box([105, 235, 1100, 1012]) + '">' + B.whead('ia', 'Conversation', '<button class="btn sm" data-act="chatClear">' + ico('trash') + 'Effacer</button>') +
     T({ t: 'chat', keys: ['chat'] }) +
     '<form data-submit="iaPage" class="iainput"><button type="button" class="mic" data-act="mic" aria-label="Dicter">' + ico('mic') + '</button><input name="q" placeholder="Écrivez ou dictez votre demande…" autocomplete="off" enterkeyhint="send" aria-label="Message"><button class="btn pri" aria-label="Envoyer">' + ico('send') + '</button></form></section>' +
-    card([1110, 235, 1522, 1012], 'Suggestions', 'edit', '<div class="list scroll">' + SUGG.map(s => '<button class="li" style="grid-template-columns:30px 1fr;width:100%;text-align:left" data-act="iaChip" data-arg="' + esc(s) + '"><span class="ic" style="width:28px;height:28px;font-size:15px">' + ico('chat') + '</span><span>' + esc(s) + '</span></button>').join('') + '</div>') });
+    card([1110, 235, 1522, 1012], 'Suggestions', 'edit', '<div class="list scroll">' + (B.iaSugg ? B.iaSugg() : SUGG).map(s => '<button class="li" style="grid-template-columns:30px 1fr;width:100%;text-align:left" data-act="iaChip" data-arg="' + esc(s) + '"><span class="ic" style="width:28px;height:28px;font-size:15px">' + ico('chat') + '</span><span>' + esc(s) + '</span></button>').join('') + '</div>') });
 
   /* ======================= PARAMÈTRES ======================= */
   const isAdmin = () => !!(B.user() && B.user().admin);
