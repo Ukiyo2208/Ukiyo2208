@@ -1,0 +1,73 @@
+# Bêta IA : toute la partie technique, sur le NAS.
+# La tablette n'envoie que l'audio de la commande + le nom de la personne reconnue.
+
+services:
+  # Domotique, automatisations, musique (via Music Assistant)
+  # Si tu as déjà Home Assistant ailleurs, supprime ce bloc et mets son adresse dans HA_URL (.env).
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    network_mode: host # nécessaire pour découvrir les appareils du réseau
+    volumes:
+      - ./data/homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=${TZ:-Europe/Paris}
+    restart: unless-stopped
+
+  # Parole -> texte
+  whisper:
+    image: rhasspy/wyoming-whisper:latest
+    container_name: beta-whisper
+    command: --model ${WHISPER_MODEL:-small-int8} --language fr
+    ports:
+      - "127.0.0.1:10300:10300" # accessible seulement depuis le NAS (Home Assistant inclus)
+    volumes:
+      - ./data/whisper:/data
+    restart: unless-stopped
+
+  # Texte -> voix
+  piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: beta-piper
+    command: --voice ${PIPER_VOICE:-fr_FR-siwis-medium}
+    ports:
+      - "127.0.0.1:10200:10200"
+    volumes:
+      - ./data/piper:/data
+    restart: unless-stopped
+
+  # Petit LLM local (tri des demandes que Home Assistant ne comprend pas)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: beta-ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ./data/ollama:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_NUM_PARALLEL=1
+    restart: unless-stopped
+
+  # Le cerveau : reçoit les demandes de la tablette et choisit qui les traite
+  beta:
+    build: ./beta
+    container_name: beta
+    env_file: .env
+    environment:
+      - BETA_CONFIG=/config/config.yaml
+      - WHISPER_HOST=whisper
+      - PIPER_HOST=piper
+      - OLLAMA_URL=http://ollama:11434
+    ports:
+      - "8800:8800" # la tablette appelle http://IP_DU_NAS:8800
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # pour joindre Home Assistant (réseau host)
+    volumes:
+      - ./config:/config:ro
+    depends_on:
+      - whisper
+      - piper
+      - ollama
+    restart: unless-stopped

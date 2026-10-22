@@ -1,0 +1,41 @@
+# Copie ce fichier en « config.yaml » (même dossier) et adapte-le.
+
+# En dessous de cette confiance de reconnaissance du visage, la personne est traitée comme inconnue.
+seuil_confiance: 0.6
+
+# Les noms doivent être identiques à ceux envoyés par la tablette.
+personnes:
+  bastien:
+    role: admin
+    mail:
+      serveur: imap.gmail.com
+      utilisateur: ton.adresse@gmail.com
+      mot_de_passe_env: MAIL_BASTIEN_PASSWORD # nom de la variable dans .env
+  # invite:
+  #   role: adulte
+
+# Ce que chaque rôle peut faire : domotique, mails, questions, automatisations
+roles:
+  admin: [domotique, mails, questions, automatisations]
+  adulte: [domotique, mails, questions]
+  enfant: [domotique, questions]
+  inconnu: [] # mets [domotique] si un inconnu doit pouvoir allumer la lumière
+
+# Types d'appareils que Bêta peut lister et utiliser dans les automatisations
+domaines_exposes:
+  - light
+  - switch
+  - cover
+  - climate
+  - fan
+  - media_player
+  - lock
+  - scene
+  - sensor
+  - binary_sensor
+  - input_boolean
+  - vacuum
+
+# true : l'IA web reçoit aussi le nom des appareils (« Lampe chevet »), plus précis.
+# false : seulement le type et la pièce.
+envoyer_noms_appareils: true
