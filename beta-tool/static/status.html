@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>État des services</title>
+<link rel="icon" href="/brand/favicon.ico" sizes="any">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .pub { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 16px; }
+  .pub .card { width: min(720px, 100%); }
+  .pub-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; color: var(--muted); text-decoration: none; }
+  .pub-brand img { width: 34px; height: 34px; border-radius: 10px; }
+  .st-head { display: flex; align-items: center; gap: 14px; }
+  .st-head h1 { margin: 0; font-size: 1.4rem; }
+  .st-row { padding: 16px 0; border-top: 1px solid var(--border); }
+  .st-row:first-of-type { border-top: 0; }
+  .st-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .st-top b { flex: 1; }
+  .st-bars { display: flex; gap: 2px; height: 30px; }
+  .st-bars span { flex: 1; border-radius: 2px; background: var(--ok); }
+  .st-bars span.ko { background: #ef4444; }
+  .st-bars span.none { background: var(--surface-2); }
+  .pub-foot { margin-top: 22px; color: var(--muted); font-size: .82rem; }
+</style>
+</head>
+<body>
+<div class="pub">
+  <a class="pub-brand" href="/" rel="nofollow"><img src="/brand/apple-touch-icon.png" alt=""><b id="site">Bêta Tool</b></a>
+  <div class="card" id="box"><div class="loading"><span class="spinner"></span>Chargement…</div></div>
+  <p class="pub-foot">Mis à jour automatiquement toutes les minutes · Bêta Tool Surveillance</p>
+</div>
+<script>
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+async function load() {
+  const d = await fetch("/api/public/status").then(r => r.json()).catch(() => null);
+  const box = document.getElementById("box");
+  if (!d || !d.monitors) { box.innerHTML = "<p>Page de statut indisponible.</p>"; return; }
+  document.getElementById("site").textContent = d.site;
+  const down = d.monitors.filter(m => m.state === "down").length;
+  box.innerHTML = `<div class="st-head"><span class="mo-dot big ${down ? "down" : "up"}"></span><h1>${down ? `${down} service${down > 1 ? "s" : ""} en panne` : "Tous les services fonctionnent"}</h1></div>
+    <div style="margin-top:18px">${d.monitors.map(m => {
+      const pts = m.spark.slice(-90);
+      const pad = Array(Math.max(0, 90 - pts.length)).fill(null);
+      return `<div class="st-row"><div class="st-top"><span class="mo-dot ${m.state === "down" ? "down" : m.state === "up" ? "up" : "wait"}"></span><b>${esc(m.name)}</b>
+        <span class="meta">${m.uptime["24h"] == null ? "" : m.uptime["24h"] + " % sur 24 h"}</span></div>
+        <div class="st-bars">${[...pad, ...pts].map(p => `<span class="${p == null ? "none" : p[1] ? "" : "ko"}"></span>`).join("")}</div></div>`;
+    }).join("") || "<p class='meta'>Aucun service public.</p>"}</div>`;
+}
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>

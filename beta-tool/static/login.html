@@ -13,6 +13,7 @@
   .login h1 { margin: 16px 0 4px; font-size: 1.5rem; }
   .login p { color: var(--muted); margin: 0 0 22px; }
   .login input { margin-bottom: 14px; text-align: center; }
+  .login .code-input { font-size: 1.6rem; letter-spacing: .25em; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -26,12 +27,29 @@
     <button class="btn wide">Se connecter</button>
     <p class="msg" id="err" style="margin:12px 0 0"></p>
   </form>
+  <form class="card" method="post" action="/login/code" id="code-form" hidden>
+    <img src="brand/apple-touch-icon.png" alt="">
+    <h1>Code de sécurité</h1>
+    <p>Ouvre ton appli d'authentification et tape le code à 6 chiffres.</p>
+    <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" placeholder="123 456" maxlength="11" required class="code-input">
+    <button class="btn wide">Valider</button>
+    <p class="msg" id="code-err" style="margin:12px 0 0"></p>
+    <p class="hint" style="margin:14px 0 0">Téléphone perdu ? Tape un de tes <b>codes de secours</b> (ex. 1a2b-3c4d).</p>
+  </form>
 </div>
 <script>
-  if (location.search.includes("erreur")) document.getElementById("err").textContent = "Identifiant ou mot de passe incorrect";
+  const q = new URLSearchParams(location.search);
+  if (q.get("etape") === "code") {
+    document.querySelector("form").hidden = true;
+    document.getElementById("code-form").hidden = false;
+    document.querySelector(".code-input").focus();
+    if (q.has("erreur")) document.getElementById("code-err").textContent = "Code incorrect, réessaie";
+  } else if (q.get("erreur") === "expire") document.getElementById("err").textContent = "Délai dépassé : reconnecte-toi";
+  else if (q.has("erreur")) document.getElementById("err").textContent = "Identifiant ou mot de passe incorrect";
   fetch("/api/auth/mode").then(r => r.json()).then(m => {
     if (m.mode === "open") return location.replace("/");
     const user = document.getElementById("username");
+    if (q.get("etape") === "code") return;
     if (m.mode === "accounts") { user.hidden = false; user.required = true; user.focus(); }
     else { document.getElementById("lead").textContent = "Entre le mot de passe pour accéder à tes outils."; document.querySelector("[name=password]").focus(); }
     if (m.site) document.querySelector("h1").firstChild.textContent = m.site;

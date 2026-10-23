@@ -17,6 +17,8 @@ export const TOOLS = [
     desc: "Recadre, retouche, redimensionne en lot, retire l'arrière-plan.", chips: ["Retouche", "Lot", "Détourage"] },
   { id: "transcription", name: "Transcription", icon: "mic", tile: "vert", cat: "medias", load: () => import("./tools/transcribe.js"),
     desc: "Transforme une vidéo ou un audio en texte et en sous-titres.", chips: ["Texte", "SRT", "VTT"] },
+  { id: "abonnements", name: "Abonnements", icon: "rss", tile: "rose", cat: "medias", load: () => import("./tools/subs.js"),
+    desc: "Suis tes youtubeurs : notification à chaque vidéo, téléchargement automatique.", chips: ["YouTube", "Podcasts", "Auto"] },
   { id: "medias", name: "Médiathèque", icon: "play", tile: "", cat: "medias", load: () => import("./tools/media.js"),
     desc: "Regarde tes vidéos et écoute ta musique, même sur téléphone.", chips: ["Vidéos", "Musique", "Playlist"] },
   { id: "photos", name: "Album photo", icon: "camera", tile: "ambre", cat: "medias", load: () => import("./tools/photos.js"),
@@ -42,10 +44,14 @@ export const TOOLS = [
   { id: "sauvegardes", name: "Sauvegardes", icon: "shield", tile: "bleu-vert", cat: "fichiers", load: () => import("./tools/backup.js"), admin: true,
     desc: "Copie automatique de tes dossiers chaque nuit, avec historique.", chips: ["Planifié", "Incrémental", "Rapport"] },
 
+  { id: "presse-papier", name: "Presse-papier", icon: "clipboard", tile: "bleu-vert", cat: "utilitaires", load: () => import("./tools/clipboard.js"),
+    desc: "Copie sur ton téléphone, colle sur ton PC (et l'inverse), en un instant.", chips: ["Texte", "Images", "Fichiers"] },
   { id: "qr", name: "QR codes", icon: "qr", tile: "violet", cat: "utilitaires", load: () => import("./tools/qr.js"),
     desc: "Crée un QR code (lien, Wi-Fi, contact) ou lis-en un.", chips: ["Wi-Fi", "Contact", "Lecture"] },
   { id: "liens", name: "Liens courts", icon: "link", tile: "", cat: "utilitaires", load: () => import("./tools/links.js"),
     desc: "Raccourcis un long lien et compte les clics.", chips: ["Lien court", "Statistiques"] },
+  { id: "surveillance", name: "Surveillance", icon: "pulse", tile: "vert", cat: "utilitaires", load: () => import("./tools/monitor.js"), admin: true,
+    desc: "Sois prévenu si un site, un service ou le NAS ne répond plus.", chips: ["Sites", "Services", "Disque"] },
   { id: "coffre", name: "Coffre", icon: "key", tile: "rose", cat: "utilitaires", load: () => import("./tools/vault.js"),
     desc: "Gestionnaire de mots de passe compatible Bitwarden.", chips: ["Vaultwarden", "Applis", "Extensions"] },
 ];

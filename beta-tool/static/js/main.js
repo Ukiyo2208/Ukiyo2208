@@ -8,6 +8,7 @@ import * as converter from "./converter.js";
 import * as pdf from "./pdf/hub.js";
 import * as archive from "./archive.js";
 import * as work from "./work.js";
+import * as push from "./push.js";
 
 hydrateIcons();
 
@@ -83,7 +84,7 @@ async function loadDashboard() {
         <p class="meta">${sizeStr(k.free)} libres sur ${sizeStr(k.total)}</p>
         <p class="hint" style="margin:0">${k.roots.map(esc).join(" · ")}</p></div>`;
     }).join("");
-    const labels = { documents: ["Documents", "briefcase", "#/work"], notes: ["Notes", "notebook", "#/notes"], partages: ["Partages actifs", "send", "#/drop"],
+    const labels = { abonnements: ["Chaînes suivies", "rss", "#/abonnements"], documents: ["Documents", "briefcase", "#/work"], notes: ["Notes", "notebook", "#/notes"], partages: ["Partages actifs", "send", "#/drop"],
                      questionnaires: ["Questionnaires", "form", "#/questionnaires"], liens: ["Liens courts", "link", "#/liens"] };
     const counts = Object.entries(d.counts).filter(([k, v]) => v != null && labels[k]).map(([k, v]) =>
       `<a class="stat" href="${labels[k][2]}">${icon(labels[k][1])}<b>${v}</b><span>${labels[k][0]}</span></a>`).join("");
@@ -249,8 +250,8 @@ $("#palette-q").addEventListener("input", e => {
     } catch {}
   }, 220);
 });
-const TYPE_ICON = { document: "doc", note: "notebook", file: "file", folder: "folder", form: "form", share: "send", link: "link", photo: "image", media: "play" };
-const TYPE_LABEL = { tool: "Outils", document: "Documents", note: "Notes", file: "Fichiers", folder: "Fichiers", form: "Questionnaires", share: "Partages", link: "Liens", photo: "Photos", media: "Médias" };
+const TYPE_ICON = { sub: "rss", clip: "clipboard", document: "doc", note: "notebook", file: "file", folder: "folder", form: "form", share: "send", link: "link", photo: "image", media: "play" };
+const TYPE_LABEL = { sub: "Abonnements", clip: "Presse-papier", tool: "Outils", document: "Documents", note: "Notes", file: "Fichiers", folder: "Fichiers", form: "Questionnaires", share: "Partages", link: "Liens", photo: "Photos", media: "Médias" };
 function palette(q, remote = []) {
   const n = q.toLowerCase();
   const tools = [...TOOLS.filter(visible), ...SYSTEM].filter(t => !n || t.name.toLowerCase().includes(n) || (t.desc || "").toLowerCase().includes(n))
@@ -286,7 +287,7 @@ async function pollActivity(first = false) {
     notifs = [...fresh, ...notifs].slice(0, 60);
     if (!first) fresh.forEach(a => {
       toast(a.text, a.kind === "err" ? "err" : "ok");
-      if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+      if ("Notification" in window && Notification.permission === "granted" && document.hidden && !push.active()) {
         new Notification("Bêta Tool", { body: a.text, icon: "/brand/apple-touch-icon.png", tag: String(a.id) });
       }
     });
@@ -299,10 +300,16 @@ function paintBell() {
   $$(".bell .dotcount").forEach(d => { d.hidden = !unread; d.textContent = unread > 9 ? "9+" : unread; });
 }
 function openNotifs() {
-  $("#notifs-perm").innerHTML = "Notification" in window && Notification.permission === "default"
-    ? `<div class="intro"><span class="tile">${icon("bell")}</span><p>Être prévenu même quand l'onglet est en arrière-plan ?</p>
+  const canPush = !push.unsupported();
+  $("#notifs-perm").innerHTML = (canPush ? !push.active() : "Notification" in window && Notification.permission === "default")
+    ? `<div class="intro"><span class="tile">${icon("bell")}</span><p>${canPush ? "Recevoir les notifications sur cet appareil, même quand Bêta Tool est fermé ?"
+        : "Être prévenu même quand l'onglet est en arrière-plan ?"}</p>
        <button class="btn small" id="notif-allow">Activer</button></div>` : "";
-  $("#notif-allow")?.addEventListener("click", async () => { await Notification.requestPermission(); openNotifs(); });
+  $("#notif-allow")?.addEventListener("click", async () => {
+    if (canPush) { try { await push.enable(); toast("Notifications activées sur cet appareil"); } catch (err) { toast(err.message, "err"); } }
+    else await Notification.requestPermission();
+    openNotifs();
+  });
   $("#notifs-list").innerHTML = notifs.length ? `<div class="acts">${notifs.map(activityRow).join("")}</div>`
     : `<div class="empty">${icon("bell")}Aucune notification pour l'instant.</div>`;
   try { localStorage.setItem("bt-notif-seen", String(lastId)); } catch {}

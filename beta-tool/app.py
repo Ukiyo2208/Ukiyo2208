@@ -15,6 +15,7 @@ import activity
 import archives
 import auth
 import backup
+import clipboard
 import converter
 import downloader
 import drop
@@ -23,15 +24,18 @@ import forms
 import imagetool
 import links
 import media
+import monitor
 import notes
 import photos
 import transcribe
 import vault
 import videotool
 import pdftools
+import push
 import roots
 import settings
 import store
+import subscriptions
 import suggestions
 import updater
 import work
@@ -70,6 +74,11 @@ def brand(name):
     return send_from_directory(BRAND_DIR, name)
 
 
+@app.get("/statut")
+def status_page():
+    return app.send_static_file("status.html")
+
+
 @app.get("/share")
 def share_target():
     """Cible de partage de l'appli installée : « Partager → Bêta Tool » depuis YouTube…"""
@@ -82,8 +91,8 @@ def share_target():
 
 # Accessibles sans être connecté : page de connexion, ressources de la page, pages publiques
 # (partages /d/, questionnaires /f/, liens courts /s/) et leurs API publiques.
-PUBLIC = ("/login", "/style.css", "/vendor/fonts/", "/brand/", "/manifest.webmanifest", "/sw.js", "/api/auth/mode",
-          "/d/", "/f/", "/s/", "/public/", "/api/public/")
+PUBLIC = ("/login", "/login/code", "/style.css", "/vendor/fonts/", "/brand/", "/manifest.webmanifest", "/sw.js", "/api/auth/mode",
+          "/d/", "/f/", "/s/", "/public/", "/api/public/", "/statut")
 
 
 def admin_only(fn):
@@ -124,9 +133,21 @@ def auth_mode():
 
 @app.post("/login")
 def login():
-    if auth.login(request.form.get("username", ""), request.form.get("password", "")):
-        return redirect("/")
-    return redirect("/login?erreur=1")
+    result = auth.login(request.form.get("username", ""), request.form.get("password", ""))
+    if result == "code":
+        return redirect("/login?etape=code")
+    return redirect("/" if result else "/login?erreur=1")
+
+
+@app.post("/login/code")
+def login_code():
+    left = auth.login_code(request.form.get("code", ""))
+    if left is False:
+        return redirect("/login?etape=code&erreur=1" if session.get("pending") else "/login?erreur=expire")
+    if left is not True:  # un code de secours vient d'être utilisé
+        activity.log(session["user"], "reglages",
+                     f"Code de secours utilisé : il t'en reste {left}", "#/reglages/comptes", "err")
+    return redirect("/")
 
 
 @app.post("/logout")
@@ -197,9 +218,45 @@ def my_password():
     if auth.mode() != "accounts":
         raise ValueError("Pas de compte à modifier (crée d'abord des comptes dans Réglages)")
     d = request.get_json(silent=True) or {}
-    if not auth.login(g.user["name"], d.get("old", "")):
+    if not auth.check_password(g.user["name"], d.get("old", "")):
         raise ValueError("Mot de passe actuel incorrect")
     auth.set_password(g.user["name"], d.get("new", ""))
+    return jsonify(ok=True)
+
+
+@app.get("/api/me/2fa")
+def my_2fa():
+    return jsonify(auth.twofa_status(g.user["name"]) if auth.mode() == "accounts" else {"enabled": False, "unavailable": True})
+
+
+@app.post("/api/me/2fa/setup")
+def my_2fa_setup():
+    if auth.mode() != "accounts":
+        raise ValueError("La double authentification demande des comptes (Réglages → Comptes)")
+    if not auth.check_password(g.user["name"], (request.get_json(silent=True) or {}).get("password", "")):
+        raise ValueError("Mot de passe incorrect")
+    return jsonify(auth.twofa_setup(g.user["name"], settings.get()["site_name"] or "Bêta Tool"))
+
+
+@app.post("/api/me/2fa/enable")
+def my_2fa_enable():
+    codes = auth.twofa_enable(g.user["name"], (request.get_json(silent=True) or {}).get("code"))
+    activity.log(g.user["name"], "reglages", "Double authentification activée", "#/reglages/comptes")
+    return jsonify(codes=codes)
+
+
+@app.post("/api/me/2fa/disable")
+def my_2fa_disable():
+    if not auth.check_password(g.user["name"], (request.get_json(silent=True) or {}).get("password", "")):
+        raise ValueError("Mot de passe incorrect")
+    auth.twofa_disable(g.user["name"])
+    return jsonify(ok=True)
+
+
+@app.delete("/api/users/<name>/2fa")
+@admin_only
+def users_reset_2fa(name):
+    auth.twofa_disable(name)
     return jsonify(ok=True)
 
 
@@ -270,7 +327,10 @@ def dashboard():
         d = disks.setdefault(st.st_dev, {"total": usage.total, "used": usage.used, "free": usage.free, "roots": []})
         d["roots"].append(r["label"])
     counts = {"documents": len(work.list_docs()) if settings.enabled("work") else None}
+    tools = settings.get()["tools"]
     for name, fn in COUNTERS.items():
+        if not tools.get({"partages": "drop"}.get(name, name), True):
+            continue
         try:
             counts[name] = fn(g.user["name"])
         except Exception:
@@ -514,11 +574,12 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
-                 liens=links.search)
-COUNTERS.update(partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
+                 liens=links.search, abonnements=subscriptions.search,
+                 **{"presse-papier": clipboard.search})
+COUNTERS.update(abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
 
 
 if __name__ == "__main__":
@@ -537,6 +598,9 @@ if __name__ == "__main__":
     transcribe.start()
     imagetool.start()
     backup.start()
+    subscriptions.start()
+    clipboard.start()
+    monitor.start()
     app.secret_key = secret_key()
     app.permanent_session_lifetime = timedelta(days=30)
     max_upload = int(float(os.environ.get("MAX_UPLOAD_GB", "20")) * 1024 ** 3)

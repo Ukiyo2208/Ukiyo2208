@@ -3,11 +3,14 @@ import { $, $$, esc, icon, toast, modal, closePanel } from "../ui.js";
 import { TOOLS, CATS } from "../registry.js";
 import { state, isAdmin, api, ago } from "../state.js";
 import { pageHead, reloadConfig, setTheme } from "../main.js";
+import * as push from "../push.js";
+import { canvas as qrCanvas } from "../qrcode.js";
 
 const TABS = [
   ["general", "Général", "settings", true],
   ["outils", "Outils", "grid", true],
   ["comptes", "Comptes", "users", false],
+  ["notifications", "Notifications", "bell", false],
   ["maj", "Mises à jour", "refresh", true],
   ["apparence", "Apparence", "sun", false],
   ["apropos", "À propos", "help", false],
@@ -19,7 +22,7 @@ export async function render(root, parts) {
   root.innerHTML = pageHead({ name: "Réglages", icon: "settings", tile: "", desc: "Personnalise Bêta Tool : outils, comptes, mises à jour…" })
     + `<nav class="tabs">${tabs.map(([id, label, ic]) => `<a href="#/reglages/${id}" class="${id === tab ? "on" : ""}">${icon(ic)}${label}</a>`).join("")}</nav>
        <div id="set-body"></div>`;
-  await ({ general, outils, comptes, maj, apparence, apropos })[tab]($("#set-body"));
+  await ({ general, outils, comptes, notifications, maj, apparence, apropos })[tab]($("#set-body"));
 }
 
 // --- Général ----------------------------------------------------------------
@@ -77,14 +80,16 @@ async function comptes(el) {
       <div class="card-title">${icon("key")}Mon mot de passe <span class="count">${esc(state.config.user.name)}</span></div>
       <div class="grid2"><input type="password" name="old" placeholder="Mot de passe actuel" required autocomplete="current-password">
         <input type="password" name="new" placeholder="Nouveau mot de passe (6 caractères min.)" required autocomplete="new-password"></div>
-      <button class="btn">${icon("check")}Changer</button></form>`;
+      <button class="btn">${icon("check")}Changer</button></form>
+    <div class="card" id="twofa"></div>`;
   if (isAdmin()) {
     if (mode === "accounts") {
       const users = await api("/api/users");
       html += `<div class="card"><div class="card-title">${icon("users")}Comptes <span class="count">${users.length}</span></div>
         ${users.map(u => `<div class="set-row" data-user="${esc(u.name)}">
           <span class="avatar">${esc(u.name[0].toUpperCase())}</span>
-          <div class="txt"><b>${esc(u.name)}${u.name === state.config.user.name ? " (toi)" : ""}</b><small>Créé le ${esc(u.created || "?")}</small></div>
+          <div class="txt"><b>${esc(u.name)}${u.name === state.config.user.name ? " (toi)" : ""}</b><small>Créé le ${esc(u.created || "?")}${u.twofa ? ` · <span class="pill-ok">${icon("shield")}Double authentification</span>` : ""}</small></div>
+          ${u.twofa && u.name !== state.config.user.name ? `<button class="icon-btn plain" data-a="twofa" title="Désactiver sa double authentification (téléphone perdu)">${icon("shield")}</button>` : ""}
           <select data-a="role"><option value="member" ${u.role === "member" ? "selected" : ""}>Membre</option><option value="admin" ${u.role === "admin" ? "selected" : ""}>Administrateur</option></select>
           <button class="icon-btn plain" data-a="pw" title="Changer le mot de passe">${icon("key")}</button>
           <button class="icon-btn plain" data-a="del" title="Supprimer">${icon("trash")}</button>
@@ -123,8 +128,14 @@ async function comptes(el) {
       comptes(el);
     } catch (err) { toast(err.message, "err"); }
   });
+  if ($("#twofa")) twofa($("#twofa"));
   el.querySelectorAll("[data-user]").forEach(row => {
     const name = row.dataset.user;
+    row.querySelector("[data-a=twofa]")?.addEventListener("click", () => {
+      const m = modal(`Désactiver la double authentification de ${name} ?`, `<p>À utiliser si ${esc(name)} a perdu son téléphone et ses codes de secours : il pourra se connecter avec son seul mot de passe, puis la réactiver.</p>
+        <div class="modal-foot"><button class="btn ghost" data-close>Annuler</button><button class="btn danger" data-ok>${icon("shield")}Désactiver</button></div>`, { ic: "shield" });
+      m.querySelector("[data-ok]").onclick = async () => { await api(`/api/users/${encodeURIComponent(name)}/2fa`, { method: "DELETE" }); closePanel(); toast("Double authentification désactivée"); comptes(el); };
+    });
     row.querySelector("[data-a=role]").onchange = async e => {
       try { await api(`/api/users/${encodeURIComponent(name)}`, { method: "PUT", json: { role: e.target.value } }); toast("Rôle modifié"); }
       catch (err) { toast(err.message, "err"); comptes(el); }
@@ -148,6 +159,123 @@ async function comptes(el) {
     };
   });
 }
+
+// --- Double authentification ---------------------------------------------------
+async function twofa(el) {
+  const st = await api("/api/me/2fa");
+  el.innerHTML = `<div class="card-title">${icon("shield")}Double authentification ${st.enabled ? `<span class="pill-ok">activée</span>` : `<span class="pill-warn">désactivée</span>`}</div>
+    <p class="hint" style="margin-top:-6px">En plus du mot de passe, la connexion demande un code à 6 chiffres affiché par une appli sur ton téléphone
+      (Google Authenticator, Microsoft Authenticator, Authy, 2FAS, Bitwarden…). Indispensable si le site est ouvert sur Internet.</p>
+    ${st.enabled ? `<p>Codes de secours restants : <b>${st.recovery_left}</b> sur 10.</p>
+      <button class="btn ghost" data-a="off">${icon("x")}Désactiver</button>`
+      : `<button class="btn" data-a="on">${icon("shield")}Activer</button>`}`;
+  el.querySelector("[data-a=off]")?.addEventListener("click", () => {
+    const m = modal("Désactiver la double authentification", `<form><label class="field">Ton mot de passe</label><input type="password" required autocomplete="current-password">
+      <div class="modal-foot"><button type="button" class="btn ghost" data-close>Annuler</button><button class="btn danger">Désactiver</button></div></form>`, { ic: "shield" });
+    m.querySelector("form").onsubmit = async e => {
+      e.preventDefault();
+      try { await api("/api/me/2fa/disable", { json: { password: m.querySelector("input").value } }); closePanel(); toast("Double authentification désactivée"); twofa(el); }
+      catch (err) { toast(err.message, "err"); }
+    };
+  });
+  el.querySelector("[data-a=on]")?.addEventListener("click", () => {
+    const m = modal("Activer la double authentification", `<div class="tf-body"><form id="tf-pw"><label class="field">Confirme ton mot de passe</label>
+      <input type="password" required autocomplete="current-password">
+      <div class="modal-foot"><button type="button" class="btn ghost" data-close>Annuler</button><button class="btn">Continuer</button></div></form></div>`, { ic: "shield" });
+    m.querySelector("#tf-pw").onsubmit = async e => {
+      e.preventDefault();
+      try {
+        const setup = await api("/api/me/2fa/setup", { json: { password: m.querySelector("input").value } });
+        const body = m.querySelector(".tf-body");
+        const c = await qrCanvas(setup.uri, { size: 520, ecc: "M" });
+        c.className = "qr-canvas";
+        body.innerHTML = `<ol class="tuto">
+            <li><b>Scanne ce QR code</b><span>Avec ton appli d'authentification (bouton « + » ou « Ajouter un compte »).</span></li></ol>
+          <div class="tf-qr"></div>
+          <p class="hint center">Impossible de scanner ? Saisis cette clé : <code class="tf-key">${esc(setup.secret.match(/.{1,4}/g).join(" "))}</code></p>
+          <form id="tf-code"><ol class="tuto" style="counter-reset: s 1"><li><b>Tape le code affiché</b><span>6 chiffres, qui changent toutes les 30 secondes.</span></li></ol>
+            <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="7" class="code-input" placeholder="123 456" required>
+            <div class="modal-foot"><button type="button" class="btn ghost" data-close>Annuler</button><button class="btn">${icon("check")}Activer</button></div></form>`;
+        body.querySelector(".tf-qr").append(c);
+        body.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", closePanel));
+        body.querySelector("input").focus();
+        body.querySelector("#tf-code").onsubmit = async ev => {
+          ev.preventDefault();
+          try {
+            const { codes } = await api("/api/me/2fa/enable", { json: { code: body.querySelector(".code-input").value } });
+            body.innerHTML = `<div class="intro" style="margin-top:0"><span class="tile vert">${icon("check")}</span><p><b>C'est activé !</b> Garde ces <b>codes de secours</b> en lieu sûr :
+              chacun permet de te connecter une fois si tu perds ton téléphone.</p></div>
+              <div class="recovery">${codes.map(c => `<code>${c}</code>`).join("")}</div>
+              <div class="modal-foot"><button class="btn ghost" data-a="copy">${icon("copy")}Copier</button><button class="btn ghost" data-a="dl">${icon("download")}Télécharger</button><button class="btn" data-close>J'ai noté mes codes</button></div>`;
+            const text = `Codes de secours ${state.config.site || "Bêta Tool"} (${state.config.user.name})\n\n${codes.join("\n")}\n`;
+            body.querySelector("[data-a=copy]").onclick = async () => { await navigator.clipboard.writeText(text).catch(() => {}); toast("Codes copiés"); };
+            body.querySelector("[data-a=dl]").onclick = () => {
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+              a.download = "codes-de-secours-beta-tool.txt";
+              a.click();
+            };
+            body.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", closePanel));
+            twofa(el);
+          } catch (err) { toast(err.message, "err"); }
+        };
+      } catch (err) { toast(err.message, "err"); }
+    };
+  });
+}
+
+// --- Notifications --------------------------------------------------------------
+const NOTIF_TOOLS = ["telecharger", "abonnements", "convertir", "video", "transcription", "image", "drop", "presse-papier", "questionnaires",
+  "agenda", "paperasse", "recettes", "surveillance", "sauvegardes", "traduction", "reglages"];
+
+async function notifications(el) {
+  const sub = await push.current().catch(() => null);
+  const st = await api("/api/push" + (sub ? "?endpoint=" + encodeURIComponent(sub.endpoint) : ""));
+  const why = push.unsupported();
+  const on = !!sub && st.subscribed;
+  const tools = NOTIF_TOOLS.map(id => id === "reglages" ? { id, name: "Sécurité du compte", icon: "shield", tile: "", desc: "Connexion avec un code de secours, double authentification…" }
+    : TOOLS.find(t => t.id === id)).filter(t => t && (t.id === "reglages" || state.config.tools[t.id] !== false) && (!t.admin || isAdmin()));
+  el.innerHTML = `<div class="card">
+      <div class="card-title">${icon("bell")}Sur cet appareil <span class="count">${esc(push.deviceName())}</span></div>
+      <p class="hint" style="margin-top:-6px">Reçois une notification sur ton téléphone ou ton ordinateur quand un téléchargement est fini, qu'un youtubeur publie une vidéo,
+        qu'un site ne répond plus… même quand Bêta Tool est fermé.</p>
+      ${why ? `<div class="intro" style="margin:0"><span class="tile ambre">${icon("alert")}</span><p>${why === "https"
+        ? "<b>Adresse en https:// nécessaire.</b> Les navigateurs n'autorisent les notifications push que sur un site sécurisé : passe par le proxy inversé du NAS ou Tailscale (voir le README)."
+        : why === "ios-install" ? "<b>Sur iPhone et iPad</b>, installe d'abord l'appli : bouton Partager de Safari → « Sur l'écran d'accueil ». Ouvre ensuite Bêta Tool depuis l'icône et reviens ici."
+        : "Ce navigateur ne gère pas les notifications push. Essaie avec Chrome, Edge, Firefox ou Safari récent."}</p></div>`
+        : `<div class="set-row" style="border:0;padding:0"><span class="tile ${on ? "vert" : ""}">${icon("bell")}</span>
+          <div class="txt"><b>${on ? "Notifications activées" : "Notifications désactivées"}</b><small>${on ? "Cet appareil reçoit les notifications choisies plus bas." : "Active-les pour être prévenu même quand Bêta Tool est fermé."}</small></div>
+          ${on ? `<button class="btn ghost small" data-a="test">${icon("send")}Tester</button><button class="btn ghost small" data-a="off">Désactiver</button>`
+            : `<button class="btn" data-a="on">${icon("bell")}Activer</button>`}</div>`}
+    </div>
+    <div class="card"><div class="card-title">${icon("list")}Me prévenir pour</div>
+      ${tools.map(t => `<div class="set-row"><span class="tile ${t.tile}">${icon(t.icon)}</span>
+        <div class="txt"><b>${esc(t.name)}</b><small>${esc(NOTIF_HINT[t.id] || t.desc)}</small></div>
+        <label class="switch"><input type="checkbox" data-tool="${t.id}" ${st.prefs.off.includes(t.id) ? "" : "checked"}><span></span></label></div>`).join("")}
+    </div>
+    ${st.devices.length ? `<div class="card"><div class="card-title">${icon("monitor")}Mes appareils abonnés <span class="count">${st.devices.length}</span></div>
+      ${st.devices.map(d => `<div class="set-row"><span class="tile">${icon(/iPhone|Android|iPad/.test(d.name) ? "phone" : "monitor")}</span>
+        <div class="txt"><b>${esc(d.name)}${d.this ? " (cet appareil)" : ""}</b><small>Depuis ${ago(d.created)}</small></div></div>`).join("")}</div>` : ""}`;
+  el.querySelector("[data-a=on]")?.addEventListener("click", async () => {
+    try { await push.enable(); toast("Notifications activées sur cet appareil"); notifications(el); } catch (err) { toast(err.message, "err"); }
+  });
+  el.querySelector("[data-a=off]")?.addEventListener("click", async () => { await push.disable(); toast("Notifications désactivées"); notifications(el); });
+  el.querySelector("[data-a=test]")?.addEventListener("click", async () => {
+    try { const r = await api("/api/push/test", { json: {} }); toast(`Notification envoyée à ${r.sent} appareil${r.sent > 1 ? "s" : ""}`); } catch (err) { toast(err.message, "err"); }
+  });
+  el.querySelectorAll("[data-tool]").forEach(cb => cb.onchange = async () => {
+    const off = [...el.querySelectorAll("[data-tool]")].filter(x => !x.checked).map(x => x.dataset.tool);
+    await api("/api/push/prefs", { method: "PUT", json: { off } });
+    toast("Préférences enregistrées");
+  });
+}
+const NOTIF_HINT = {
+  telecharger: "Téléchargement terminé ou en échec.", abonnements: "Nouvelle vidéo d'une chaîne suivie.", convertir: "Conversion terminée.",
+  video: "Compression terminée.", transcription: "Transcription prête.", image: "Traitement d'images terminé.", drop: "Quelqu'un t'a envoyé des fichiers.",
+  "presse-papier": "Nouveau contenu copié depuis un autre appareil.", questionnaires: "Nouvelle réponse à un questionnaire.",
+  agenda: "Rappels de tes événements.", paperasse: "Échéances à venir (factures, contrats…).", recettes: "Liste de courses modifiée par quelqu'un d'autre.",
+  surveillance: "Un site ou un service ne répond plus, ou revient.", sauvegardes: "Sauvegarde réussie ou en échec.", traduction: "Traduction de document terminée.",
+};
 
 // --- Mises à jour -------------------------------------------------------------
 async function maj(el) {

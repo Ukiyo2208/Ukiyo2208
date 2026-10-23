@@ -9,6 +9,7 @@ import store
 # id : (préfixes des routes de l'outil, activé par défaut)
 TOOLS = {
     "telecharger": (["/api/download"], True),
+    "abonnements": (["/api/subs"], True),
     "convertir": (["/api/convert"], True),
     "pdf": (["/api/pdf"], True),
     "decompresser": (["/api/archive"], True),
@@ -23,9 +24,11 @@ TOOLS = {
     "questionnaires": (["/api/forms", "/f/", "/api/public/forms"], True),
     "notes": (["/api/notes"], True),
     "qr": ([], True),
+    "presse-papier": (["/api/clips"], True),
     "liens": (["/api/links", "/s/"], True),
     "coffre": (["/api/vault"], False),
     "sauvegardes": (["/api/backup"], True),
+    "surveillance": (["/api/monitor", "/statut", "/api/public/status"], True),
 }
 DEFAULTS = {"tools": {}, "storage_name": "", "update_url": "", "site_name": "Bêta Tool"}
 

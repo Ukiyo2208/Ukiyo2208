@@ -9,10 +9,17 @@ import store
 
 _lock = threading.Lock()
 MAX = 4000
+# Titre des notifications push, par outil
+TITLES = {"telecharger": "Téléchargeur", "convertir": "Convertisseur", "video": "Compresseur vidéo", "transcription": "Transcription",
+          "image": "Studio Image", "drop": "Bêta Drop", "questionnaires": "Questionnaires", "sauvegardes": "Sauvegardes",
+          "abonnements": "Abonnements", "surveillance": "Surveillance", "agenda": "Agenda", "paperasse": "Paperasse",
+          "presse-papier": "Presse-papier", "recettes": "Recettes", "reglages": "Bêta Tool", "traduction": "Traduction",
+          "scanner": "Scanner", "stockage": "Stockage"}
 
 
-def log(user, tool, text, link=None, kind="ok"):
-    """user : nom du compte concerné, ou "*" pour tout le monde."""
+def log(user, tool, text, link=None, kind="ok", push=True, title=None, image=None, icon=None, skip=None):
+    """user : nom du compte concerné, ou "*" pour tout le monde. Envoie aussi une notification push
+    aux appareils abonnés (sauf push=False)."""
     entry = {"id": time.time_ns(), "ts": time.time(), "user": user or "*", "tool": tool, "text": text,
              "link": link, "kind": kind}
     with _lock:
@@ -22,6 +29,10 @@ def log(user, tool, text, link=None, kind="ok"):
             lines = store.read_lines("activity")
             if len(lines) > MAX:
                 store.rewrite_lines("activity", lines[-MAX // 2:])
+    if push:
+        import push as push_
+        push_.notify(entry["user"], title or TITLES.get(tool, "Bêta Tool"), text, "/" + (link or "#/"), tool, tag=str(entry["id"]),
+                      image=image, icon=icon, skip=skip)
     return entry
 
 

@@ -44,7 +44,7 @@ def build_options(job_id, mode, target):
             pct = round(d.get("downloaded_bytes", 0) * 100 / total, 1) if total else None
             info = d.get("info_dict") or {}
             update(job_id, status="downloading", progress=pct,
-                   title=info.get("title") or jobs[job_id]["title"],
+                   title=jobs[job_id].get("fixed") or info.get("title") or jobs[job_id]["title"],
                    speed=d.get("_speed_str", "").strip(), eta=d.get("_eta_str", "").strip())
         elif d["status"] == "finished":
             update(job_id, status="processing", progress=100)
@@ -106,7 +106,7 @@ def worker():
         queue.task_done()
 
 
-def submit(text, mode, subfolder, keep=True, user="*"):
+def submit(text, mode, subfolder, keep=True, user="*", title=None):
     urls = [u.strip() for u in str(text or "").split() if u.strip()]
     if not urls or not all(u.startswith(("http://", "https://")) for u in urls):
         raise ValueError("Lien invalide")
@@ -120,7 +120,7 @@ def submit(text, mode, subfolder, keep=True, user="*"):
         with jobs_lock:
             jobs[job_id] = {"id": job_id, "url": url, "mode": mode, "subfolder": subfolder if keep else "",
                             "keep": keep, "target": target, "paths": [], "user": user,
-                            "title": url, "status": "queued", "progress": 0,
+                            "title": title or url, "fixed": title, "status": "queued", "progress": 0,
                             "speed": "", "eta": "", "error": None}
         queue.put(job_id)
         created.append(job_id)
@@ -129,7 +129,7 @@ def submit(text, mode, subfolder, keep=True, user="*"):
 
 def list_jobs():
     with jobs_lock:
-        return [{**{k: v for k, v in j.items() if k not in ("paths", "target", "user")},
+        return [{**{k: v for k, v in j.items() if k not in ("paths", "target", "user", "fixed")},
                  "files": [os.path.basename(p) for p in j["paths"]]} for j in reversed(jobs.values())]
 
 
