@@ -2,7 +2,7 @@
 import { $, esc, icon, toast, modal } from "../ui.js";
 import { api, ago } from "../state.js";
 import { pageHead } from "../main.js";
-import { svg as qrSvg } from "../qrcode.js";
+import { svg as qrSvg, BRAND_LOGO } from "../qrcode.js";
 
 const short = code => `${location.origin}/s/${code}`;
 
@@ -24,7 +24,7 @@ export async function render(root) {
     try {
       const l = await api("/api/links", { json: Object.fromEntries(new FormData(e.target)) });
       e.target.reset();
-      $("#ln-result").innerHTML = `<div class="result share-result"><div class="qr-mini">${qrSvg(short(l.code), { px: 4 })}</div>
+      $("#ln-result").innerHTML = `<div class="result share-result"><div class="qr-mini">${qrSvg(short(l.code), { px: 4, logo: BRAND_LOGO })}</div>
         <div class="body"><b>Lien créé</b><div class="copy-row"><input type="text" readonly value="${short(l.code)}"><button type="button" class="btn small" data-copy="${short(l.code)}">${icon("copy")}Copier</button></div>
         <span class="meta">→ ${esc(l.url)}</span></div></div>`;
       bindCopy($("#ln-result"));
@@ -53,7 +53,7 @@ async function list() {
     if (!a) return;
     const code = e.target.closest("[data-code]").dataset.code;
     if (a === "copy") { await navigator.clipboard.writeText(short(code)).catch(() => {}); toast("Lien copié"); }
-    if (a === "qr") modal("/s/" + code, `<div class="qr-big">${qrSvg(short(code), { px: 8 })}</div><p class="meta center">${esc(short(code))}</p>`, { ic: "qr" });
+    if (a === "qr") modal("/s/" + code, `<div class="qr-big">${qrSvg(short(code), { px: 8, logo: BRAND_LOGO })}</div><p class="meta center">${esc(short(code))}</p>`, { ic: "qr" });
     if (a === "del") { await api(`/api/links/${code}`, { method: "DELETE" }); toast("Lien supprimé"); list(); }
   };
 }

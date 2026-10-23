@@ -1005,3 +1005,6 @@ button.chip { cursor: pointer; font: inherit; font-size: .8rem; }
 .tuto li b { display: block; }
 .tuto li span { color: var(--muted); font-size: .92rem; }
 @media (max-width: 700px) { .bk .row { flex-wrap: wrap; } .bk .kv { grid-template-columns: 1fr; } }
+.qr-logo-ic { width: 18px; height: 18px; border-radius: 5px; margin-right: 6px; vertical-align: -4px; }
+.link-btn { background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; font: inherit; }
+.powered svg.i { width: 14px; height: 14px; }

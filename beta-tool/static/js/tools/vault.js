@@ -3,6 +3,8 @@ import { $, esc, icon } from "../ui.js";
 import { api } from "../state.js";
 import { pageHead } from "../main.js";
 
+const POWERED = `<a class="powered" href="https://github.com/dani-garcia/vaultwarden" target="_blank" rel="noopener">${icon("key")}Propulsé par <b>Vaultwarden</b> · open source (AGPL v3)</a>`;
+
 export async function render(root) {
   const st = await api("/api/vault/status").catch(() => ({ ready: false }));
   const url = st.url || `${location.protocol}//${location.hostname}:8082`;
@@ -11,7 +13,8 @@ export async function render(root) {
     <div class="card vault-hero">
       <span class="tile rose" style="width:64px;height:64px">${icon("key")}</span>
       <div class="grow"><h2 style="margin:0">${st.ready ? "Ton coffre est prêt" : "Le coffre n'est pas démarré"}</h2>
-        <p class="meta" style="margin:4px 0 0">${st.ready ? esc(url) : "Active le service Vaultwarden (profil « vault » dans le fichier .env), puis recharge cette page."}</p></div>
+        <p class="meta" style="margin:4px 0 0">${st.ready ? esc(url) : "Active le service Vaultwarden (profil « vault » dans le fichier .env), puis recharge cette page."}</p>
+        <div style="margin-top:10px">${POWERED}</div></div>
       ${st.ready ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${icon("external")}Ouvrir le coffre</a>` : ""}
     </div>
     ${secure ? "" : `<div class="intro"><span class="tile ambre">${icon("alert")}</span><p><b>HTTPS obligatoire.</b> Pour des raisons de sécurité, les navigateurs n'autorisent
@@ -31,5 +34,6 @@ export async function render(root) {
         <a class="chip" href="https://bitwarden.com/download/#downloads-web-browser" target="_blank" rel="noopener">Extensions navigateur</a>
         <a class="chip" href="https://bitwarden.com/download/#downloads-desktop" target="_blank" rel="noopener">Windows, Mac, Linux</a>
       </div>
-      <p class="hint">Propulsé par <a href="https://github.com/dani-garcia/vaultwarden" target="_blank" rel="noopener">Vaultwarden</a> (open source, AGPL v3), compatible avec les applis officielles Bitwarden.</p></div>`;
+      <p class="hint">Le coffre est compatible avec les applis officielles Bitwarden (Bitwarden est une marque de Bitwarden Inc., sans lien avec Bêta Tool).</p></div>
+    <div class="powered-wrap">${POWERED}</div>`;
 }

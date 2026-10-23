@@ -394,7 +394,7 @@ export const HELP = {
     steps: [
       ["Choisis le type", "Lien, texte, Wi-Fi (tes invités se connectent en scannant), contact, e-mail, SMS ou appel."],
       ["Remplis les champs", "L'aperçu se met à jour en direct."],
-      ["Personnalise", "Couleurs, style à points, logo au centre."],
+      ["Personnalise", "Logo Bêta Tool au centre par défaut (ou aucun, ou le tien), couleurs, style à points."],
       ["Télécharge", "PNG pour imprimer ou partager, SVG pour une qualité parfaite à toutes les tailles."],
     ],
     tips: ["Avec un logo, garde des couleurs bien contrastées pour que le code reste lisible.", "« Lire un QR code » accepte aussi une capture d'écran."],

@@ -1,7 +1,7 @@
 // Outil « QR codes » : créer (lien, Wi-Fi, contact…) et lire (caméra ou image).
 import { $, $$, esc, icon, toast } from "../ui.js";
 import { pageHead } from "../main.js";
-import { svg as qrSvg, canvas as qrCanvas } from "../qrcode.js";
+import { svg as qrSvg, canvas as qrCanvas, brandLogo } from "../qrcode.js";
 
 const TYPES = {
   url: ["Lien", "link", [["url", "Adresse", "https://"]]],
@@ -13,7 +13,8 @@ const TYPES = {
   tel: ["Appel", "phone", [["phone", "Numéro"]]],
 };
 const wifiEsc = s => String(s || "").replace(/([\\;,:"])/g, "\\$1");
-let type = "url", logo = null;
+let type = "url", logoMode = "brand", customLogo = null;
+const LOGOS = [["brand", "Bêta Tool"], ["none", "Aucun"], ["custom", "Le mien"]];
 
 export async function render(root, parts) {
   const tab = parts[0] === "lire" ? "lire" : "creer";
@@ -28,6 +29,9 @@ function creator(el) {
     <div class="card">
       <div class="chips" id="qr-types">${Object.entries(TYPES).map(([k, [l, ic]]) => `<button class="chip ${k === type ? "on" : ""}" data-type="${k}">${icon(ic)}${l}</button>`).join("")}</div>
       <form id="qr-fields" style="margin-top:16px"></form>
+      <label class="field" style="margin-top:14px">Logo au centre</label>
+      <div class="seg" id="qr-logos">${LOGOS.map(([v, l]) => `<label><input type="radio" name="qr-logo-mode" value="${v}" ${logoMode === v ? "checked" : ""}>${v === "brand" ? `<img src="/brand/icon-192.png" alt="" class="qr-logo-ic">` : ""}${l}</label>`).join("")}</div>
+      <input type="file" id="qr-logo" accept="image/*" hidden><button type="button" class="link-btn meta" id="qr-logo-name" style="margin-left:8px" title="Changer d'image">${customLogo ? "Changer d'image" : ""}</button>
       <details class="formats"><summary>Personnaliser</summary>
         <div class="grid2" style="margin-top:12px">
           <div><label class="field">Couleur</label><input type="color" id="qr-fg" value="#0a1430"></div>
@@ -35,7 +39,6 @@ function creator(el) {
           <div><label class="field">Résistance aux dégâts</label><select id="qr-ecc" style="width:100%"><option value="L">Faible</option><option value="M" selected>Moyenne</option><option value="Q">Élevée</option><option value="H">Maximale</option></select></div>
           <div><label class="field">Style</label><select id="qr-style" style="width:100%"><option value="square">Carrés</option><option value="round">Points</option></select></div>
         </div>
-        <label class="check" style="margin-top:6px"><input type="file" id="qr-logo" accept="image/*" hidden><span class="btn small ghost" onclick="this.previousElementSibling.click()">${icon("image")}Ajouter un logo au centre</span><span class="meta" id="qr-logo-name"></span></label>
       </details>
     </div>
     <div class="card qr-out">
@@ -46,18 +49,28 @@ function creator(el) {
   el.querySelector("#qr-types").onclick = e => { const b = e.target.closest("[data-type]"); if (b) { type = b.dataset.type; creator(el); } };
   drawFields();
   ["qr-fg", "qr-bg", "qr-ecc", "qr-style"].forEach(id => $("#" + id).addEventListener("input", update));
+  $("#qr-logos").onchange = e => {
+    logoMode = e.target.value;
+    if (logoMode === "custom" && !customLogo) $("#qr-logo").click();
+    update();
+  };
+  $("#qr-logo-name").onclick = () => $("#qr-logo").click();
   $("#qr-logo").onchange = e => {
     const f = e.target.files[0];
     if (!f) return;
     const r = new FileReader();
-    r.onload = () => { logo = r.result; $("#qr-logo-name").textContent = f.name; update(); };
+    r.onload = () => { customLogo = r.result; $("#qr-logo-name").textContent = `${f.name} · changer`; update(); };
     r.readAsDataURL(f);
   };
   $("#qr-png").onclick = async () => {
     const c = await qrCanvas(data(), opts(1024));
     c.toBlob(b => download(b, "qr-code.png"));
   };
-  $("#qr-svg").onclick = () => download(new Blob([qrSvg(data(), { ...opts(), px: 10 })], { type: "image/svg+xml" }), "qr-code.svg");
+  $("#qr-svg").onclick = async () => {
+    const o = opts();
+    if (logoMode === "brand") o.logo = await brandLogo();
+    download(new Blob([qrSvg(data(), { ...o, px: 10 })], { type: "image/svg+xml" }), "qr-code.svg");
+  };
 }
 
 function drawFields() {
@@ -88,7 +101,8 @@ function data() {
   return " ";
 }
 
-const opts = (size = 600) => ({ fg: $("#qr-fg").value, bg: $("#qr-bg").value, ecc: $("#qr-ecc").value, rounded: $("#qr-style").value === "round", logo, size });
+const logo = () => logoMode === "brand" ? "/brand/icon.png" : logoMode === "custom" ? customLogo : null;
+const opts = (size = 600) => ({ fg: $("#qr-fg").value, bg: $("#qr-bg").value, ecc: $("#qr-ecc").value, rounded: $("#qr-style").value === "round", logo: logo(), size });
 
 async function update() {
   try {

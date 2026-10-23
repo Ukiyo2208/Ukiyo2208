@@ -2,7 +2,7 @@
 import { $, $$, esc, icon, toast, modal, closePanel } from "../ui.js";
 import { api, ago } from "../state.js";
 import { pageHead } from "../main.js";
-import { svg as qrSvg } from "../qrcode.js";
+import { svg as qrSvg, BRAND_LOGO } from "../qrcode.js";
 
 const TYPES = {
   text: ["Réponse courte", "type"], paragraph: ["Paragraphe", "list"], email: ["E-mail", "mail"], number: ["Nombre", "hash2"],
@@ -56,7 +56,7 @@ async function list(root) {
 
 function shareBox(id, title) {
   const url = publicUrl(id);
-  const m = modal(`Partager « ${title} »`, `<div class="qr-big">${qrSvg(url, { px: 8 })}</div>
+  const m = modal(`Partager « ${title} »`, `<div class="qr-big">${qrSvg(url, { px: 8, logo: BRAND_LOGO })}</div>
     <div class="copy-row"><input type="text" readonly value="${esc(url)}"><button class="btn small" data-copy>${icon("copy")}Copier</button></div>
     <div class="modal-foot"><a class="btn ghost" href="${url}" target="_blank" rel="noopener">${icon("external")}Ouvrir</a>
       <a class="btn ghost" href="mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(url)}">${icon("mail")}E-mail</a></div>`, { ic: "send" });
@@ -79,7 +79,7 @@ async function editor(root, id) {
       </div>
       <div class="fe-side">
         <div class="card"><div class="card-title">${icon("send")}Partage <span class="count" id="fe-saved">Enregistré</span></div>
-          <div class="qr-mini center">${qrSvg(publicUrl(id), { px: 4 })}</div>
+          <div class="qr-mini center">${qrSvg(publicUrl(id), { px: 4, logo: BRAND_LOGO })}</div>
           <div class="copy-row"><input type="text" readonly value="${esc(publicUrl(id))}"><button class="btn small" data-copy>${icon("copy")}</button></div>
           <div class="row" style="margin:8px 0 0"><a class="btn small ghost" href="${publicUrl(id)}" target="_blank" rel="noopener">${icon("eye")}Aperçu</a>
             <a class="btn small" href="#/questionnaires/${id}/reponses">${icon("chart")}${F.responses} réponse${F.responses > 1 ? "s" : ""}</a></div></div>

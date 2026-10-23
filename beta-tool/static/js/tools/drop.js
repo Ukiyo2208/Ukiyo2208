@@ -2,7 +2,7 @@
 import { $, esc, icon, toast, modal, sizeStr, dropzone, dropHTML } from "../ui.js";
 import { api, ago } from "../state.js";
 import { pageHead } from "../main.js";
-import { svg as qrSvg } from "../qrcode.js";
+import { svg as qrSvg, BRAND_LOGO } from "../qrcode.js";
 
 const EXPIRY = [["1", "1 jour"], ["7", "7 jours"], ["30", "30 jours"], ["0", "Jamais"]];
 let files = [], refs = [];
@@ -114,7 +114,7 @@ function receiveForm() {
 function showLink(el, s) {
   const url = linkOf(s.token);
   el.innerHTML = `<div class="result share-result">
-    <div class="qr-mini">${qrSvg(url, { px: 4 })}</div>
+    <div class="qr-mini">${qrSvg(url, { px: 4, logo: BRAND_LOGO })}</div>
     <div class="body"><b>${esc(s.title)}</b>
       <div class="copy-row"><input type="text" readonly value="${esc(url)}"><button type="button" class="btn small" data-copy="${esc(url)}">${icon("copy")}Copier</button></div>
       <span class="meta">${s.expires ? "Expire " + new Date(s.expires * 1000).toLocaleDateString("fr-FR", { day: "numeric", month: "long" }) : "Sans expiration"}${s.password ? " · protégé par mot de passe" : ""}</span>
@@ -157,7 +157,7 @@ async function list() {
     const s = shares.find(x => x.token === e.target.closest("[data-token]").dataset.token);
     const url = linkOf(s.token);
     if (a === "copy") { try { await navigator.clipboard.writeText(url); toast("Lien copié"); } catch { toast(url); } }
-    if (a === "qr") { const m = modal(s.title, `<div class="qr-big">${qrSvg(url, { px: 8 })}</div><div class="copy-row"><input type="text" readonly value="${esc(url)}"><button class="btn small" data-copy="${esc(url)}">${icon("copy")}Copier</button></div>`, { ic: "qr" }); bindCopy(m); }
+    if (a === "qr") { const m = modal(s.title, `<div class="qr-big">${qrSvg(url, { px: 8, logo: BRAND_LOGO })}</div><div class="copy-row"><input type="text" readonly value="${esc(url)}"><button class="btn small" data-copy="${esc(url)}">${icon("copy")}Copier</button></div>`, { ic: "qr" }); bindCopy(m); }
     if (a === "del") {
       const m = modal("Supprimer ce partage ?", `<p>Le lien ne fonctionnera plus.${s.kind === "send" ? " Les fichiers envoyés pour ce partage seront effacés (ceux déjà sur le NAS ne sont pas touchés)." : " Les fichiers reçus restent dans Fichiers reçus."}</p>
         <div class="modal-foot"><button class="btn ghost" data-close>Annuler</button><button class="btn danger" data-ok>${icon("trash")}Supprimer</button></div>`, { ic: "trash" });
