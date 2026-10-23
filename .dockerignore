@@ -1,0 +1,5 @@
+# données du NAS : jamais copiées dans l’image Docker
+server/data
+server/mqtt
+server/matter
+.git

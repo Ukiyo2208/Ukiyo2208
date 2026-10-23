@@ -8,10 +8,38 @@ services:
     container_name: beta-os
     restart: unless-stopped
     ports:
-      - "8090:8090"
+      - "8090:8090"                                   # application + bornes de recharge (OCPP)
     environment:
       - BETA_KEY=changez-moi-par-une-longue-phrase   # même clé dans Bêta OS › Connexions
       - BACKUP_KEEP=30                                # nombre de sauvegardes gardées
       - TZ=Europe/Paris
     volumes:
       - ./data:/data                                  # sauvegardes, journal, données
+    extra_hosts:
+      - "host.docker.internal:host-gateway"           # pour joindre le service Matter (réseau de l'hôte)
+
+  # Serveur MQTT : LinknLink (eRemote, capteurs) et autres appareils MQTT. Adresse dans Bêta OS : mqtt://mqtt:1883
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: beta-mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"                                   # les appareils se connectent sur IP-du-NAS:1883
+    environment:
+      - MQTT_USER=maison
+      - MQTT_PASS=changez-moi-aussi                   # même identifiant dans l'app LinknLink et dans Bêta OS › Marques
+    command: sh -c 'mosquitto_passwd -b -c /mosquitto/data/passwd "$$MQTT_USER" "$$MQTT_PASS" && chown mosquitto:mosquitto /mosquitto/data/passwd && chmod 0700 /mosquitto/data/passwd && exec mosquitto -c /mosquitto/config/mosquitto.conf'
+    volumes:
+      - ./mosquitto:/mosquitto/config:ro
+      - ./mqtt:/mosquitto/data
+
+  # Contrôleur Matter (sans Home Assistant) : Aqara Hub M3 et appareils Matter. Matter a besoin du réseau de l'hôte.
+  matter:
+    image: ghcr.io/home-assistant-libs/python-matter-server:stable
+    container_name: beta-matter
+    restart: unless-stopped
+    network_mode: host                                # service sur IP-du-NAS:5580
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - ./matter:/data

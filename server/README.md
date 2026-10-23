@@ -38,3 +38,7 @@ Les connecteurs sont dans `server/hub/` (un fichier par marque, sans dépendance
 dans `data/hub.json` sur le NAS et ne sont jamais renvoyés au navigateur. Réglages et tutos : Bêta OS › **Marques**.
 Pour SmartThings, Home Connect et Viessmann, le serveur doit être joignable en **https** (reverse proxy UGOS Pro).
 La borne de recharge se connecte en OCPP 1.6J sur `ws://IP-du-NAS:8090/ocpp/<identifiant>` (même port que l'application).
+
+Le projet Docker lance aussi deux services pour les appareils locaux :
+- **mqtt** (Mosquitto, port 1883) : LinknLink et autres appareils MQTT. Changez `MQTT_PASS` dans `docker-compose.yml` ; dans Bêta OS, l'adresse est `mqtt://mqtt:1883`.
+- **matter** (python-matter-server, port 5580, réseau de l'hôte) : contrôleur Matter pour le Aqara Hub M3, sans Home Assistant. Le Hub s'ajoute depuis Bêta OS › Marques › Aqara avec son code d'appairage.
