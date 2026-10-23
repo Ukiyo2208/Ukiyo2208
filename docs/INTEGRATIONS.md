@@ -15,6 +15,13 @@ Les connecteurs sont écrits en Node.js pour rester dans `server/server.js`. Pou
 marques dont seule une bibliothèque Python existe (HomePod via pyatv, Roborock, Verisure),
 un petit conteneur Python séparé pourra être ajouté au `docker-compose.yml`.
 
+## Avancement dans Bêta OS (page « Marques »)
+
+| Marque | État |
+|---|---|
+| Somfy TaHoma, Philips Hue, Elgato, Govee, Samsung SmartThings, Siemens Home Connect | ✅ Connecteur disponible (`server/hub/`) |
+| Aqara, LinknLink, Schneider Charge, Viessmann, TV Philips, HomePod, Roborock, Navimow, Verisure, Ford | ⏳ Tuto « à préparer » en place, connecteur à venir |
+
 ## Matériel confirmé
 
 - Somfy **TaHoma switch** (réf. 1870595)
