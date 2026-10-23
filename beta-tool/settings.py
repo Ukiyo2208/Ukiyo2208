@@ -25,6 +25,8 @@ TOOLS = {
     "transcription": (["/api/transcribe"], True),
     "questionnaires": (["/api/forms", "/f/", "/api/public/forms"], True),
     "notes": (["/api/notes"], True),
+    "agenda": (["/api/agenda", "/dav"], True),
+    "recettes": (["/api/recipes", "/api/shopping"], True),
     "qr": ([], True),
     "presse-papier": (["/api/clips"], True),
     "liens": (["/api/links", "/s/"], True),

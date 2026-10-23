@@ -146,7 +146,7 @@ async function loadDashboard() {
         <p class="meta">${sizeStr(k.free)} libres sur ${sizeStr(k.total)}</p>
         <p class="hint" style="margin:0">${k.roots.map(esc).join(" · ")}</p></div>`;
     }).join("");
-    const labels = { paperasse: ["Papiers à valider", "receipt", "#/paperasse"], abonnements: ["Chaînes suivies", "rss", "#/abonnements"], documents: ["Documents", "briefcase", "#/work"], notes: ["Notes", "notebook", "#/notes"], partages: ["Partages actifs", "send", "#/drop"],
+    const labels = { recettes: ["Recettes", "utensils", "#/recettes"], paperasse: ["Papiers à valider", "receipt", "#/paperasse"], abonnements: ["Chaînes suivies", "rss", "#/abonnements"], documents: ["Documents", "briefcase", "#/work"], notes: ["Notes", "notebook", "#/notes"], partages: ["Partages actifs", "send", "#/drop"],
                      questionnaires: ["Questionnaires", "form", "#/questionnaires"], liens: ["Liens courts", "link", "#/liens"] };
     const counts = Object.entries(d.counts).filter(([k, v]) => v != null && labels[k]).map(([k, v]) =>
       `<a class="stat" href="${labels[k][2]}">${icon(labels[k][1])}<b>${v}</b><span>${labels[k][0]}</span></a>`).join("");
@@ -322,8 +322,8 @@ $("#palette-q").addEventListener("input", e => {
     } catch {}
   }, 220);
 });
-const TYPE_ICON = { sub: "rss", clip: "clipboard", paper: "receipt", document: "doc", note: "notebook", file: "file", folder: "folder", form: "form", share: "send", link: "link", photo: "image", media: "play" };
-const TYPE_LABEL = { sub: "Abonnements", clip: "Presse-papier", paper: "Paperasse", tool: "Outils", document: "Documents", note: "Notes", file: "Fichiers", folder: "Fichiers", form: "Questionnaires", share: "Partages", link: "Liens", photo: "Photos", media: "Médias" };
+const TYPE_ICON = { sub: "rss", clip: "clipboard", paper: "receipt", recipe: "utensils", event: "calendar", document: "doc", note: "notebook", file: "file", folder: "folder", form: "form", share: "send", link: "link", photo: "image", media: "play" };
+const TYPE_LABEL = { sub: "Abonnements", clip: "Presse-papier", paper: "Paperasse", recipe: "Recettes", event: "Agenda", tool: "Outils", document: "Documents", note: "Notes", file: "Fichiers", folder: "Fichiers", form: "Questionnaires", share: "Partages", link: "Liens", photo: "Photos", media: "Médias" };
 function palette(q, remote = []) {
   const n = q.toLowerCase();
   const tools = [...TOOLS.filter(visible), ...SYSTEM].filter(t => !n || t.name.toLowerCase().includes(n) || (t.desc || "").toLowerCase().includes(n))

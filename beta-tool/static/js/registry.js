@@ -5,6 +5,7 @@ export const CATS = [
   ["medias", "Médias"],
   ["documents", "Documents"],
   ["fichiers", "Fichiers"],
+  ["maison", "Maison"],
   ["utilitaires", "Utilitaires"],
 ];
 
@@ -50,6 +51,10 @@ export const TOOLS = [
   { id: "sauvegardes", name: "Sauvegardes", icon: "shield", tile: "bleu-vert", cat: "fichiers", load: () => import("./tools/backup.js"), admin: true,
     desc: "Copie automatique de tes dossiers chaque nuit, avec historique.", chips: ["Planifié", "Incrémental", "Rapport"] },
 
+  { id: "agenda", name: "Agenda", icon: "calendar", tile: "", cat: "maison", load: () => import("./tools/agenda.js"),
+    desc: "Agenda perso et agenda Famille partagé, synchronisés avec vos téléphones.", chips: ["Famille", "Rappels", "iPhone / Android"] },
+  { id: "recettes", name: "Recettes", icon: "utensils", tile: "rose", cat: "maison", load: () => import("./tools/recipes.js"),
+    desc: "Ton carnet de recettes, importées d'un lien, et la liste de courses partagée.", chips: ["Import", "Mode cuisine", "Courses"] },
   { id: "presse-papier", name: "Presse-papier", icon: "clipboard", tile: "bleu-vert", cat: "utilitaires", load: () => import("./tools/clipboard.js"),
     desc: "Copie sur ton téléphone, colle sur ton PC (et l'inverse), en un instant.", chips: ["Texte", "Images", "Fichiers"] },
   { id: "qr", name: "QR codes", icon: "qr", tile: "violet", cat: "utilitaires", load: () => import("./tools/qr.js"),

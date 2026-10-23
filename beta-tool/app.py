@@ -12,6 +12,7 @@ from flask import Flask, abort, g, jsonify, redirect, request, send_file, send_f
 from waitress import serve
 
 import activity
+import agenda
 import archives
 import auth
 import backup
@@ -33,6 +34,7 @@ import videotool
 import paperasse
 import pdftools
 import push
+import recipes
 import roots
 import scanner
 import settings
@@ -95,7 +97,7 @@ def share_target():
 # Accessibles sans être connecté : page de connexion, ressources de la page, pages publiques
 # (partages /d/, questionnaires /f/, liens courts /s/) et leurs API publiques.
 PUBLIC = ("/login", "/login/code", "/style.css", "/vendor/fonts/", "/brand/", "/manifest.webmanifest", "/sw.js", "/api/auth/mode",
-          "/d/", "/f/", "/s/", "/public/", "/api/public/", "/statut")
+          "/d/", "/f/", "/s/", "/public/", "/api/public/", "/statut", "/.well-known/")
 
 
 def admin_only(fn):
@@ -598,12 +600,12 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,
-                 paperasse=paperasse.search, **{"presse-papier": clipboard.search})
-COUNTERS.update(paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
+                 paperasse=paperasse.search, recettes=recipes.search, agenda=agenda.search, **{"presse-papier": clipboard.search})
+COUNTERS.update(recettes=recipes.count, paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
 
 
 if __name__ == "__main__":
@@ -626,6 +628,16 @@ if __name__ == "__main__":
     clipboard.start()
     monitor.start()
     paperasse.start()
+    agenda.start()
+    dav = agenda.radicale_app()
+    if dav:  # serveur CalDAV des agendas (synchronisation des téléphones)
+        from werkzeug.middleware.dispatcher import DispatcherMiddleware
+        def dav_gate(environ, start_response):
+            if not settings.enabled("agenda"):
+                start_response("404 Not Found", [("Content-Type", "text/plain")])
+                return [b"Agenda desactive"]
+            return dav(environ, start_response)
+        app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/dav": dav_gate})
     app.secret_key = secret_key()
     app.permanent_session_lifetime = timedelta(days=30)
     max_upload = int(float(os.environ.get("MAX_UPLOAD_GB", "20")) * 1024 ** 3)
