@@ -995,3 +995,13 @@ button.chip { cursor: pointer; font: inherit; font-size: .8rem; }
   .nt-body.mode-split { grid-template-columns: 1fr; }
   .barrow { grid-template-columns: 90px 1fr 30px; } .barrow .meta { display: none; }
 }
+
+/* ---------- Sauvegardes, coffre ---------- */
+.bk .kv { grid-template-columns: 110px 1fr; }
+.bk .kv .chip { margin: 0 4px 4px 0; }
+.bk-src { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; max-height: 240px; overflow: auto; }
+.vault-hero { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.tuto { margin: 0; padding-left: 22px; display: grid; gap: 12px; }
+.tuto li b { display: block; }
+.tuto li span { color: var(--muted); font-size: .92rem; }
+@media (max-width: 700px) { .bk .row { flex-wrap: wrap; } .bk .kv { grid-template-columns: 1fr; } }

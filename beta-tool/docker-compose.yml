@@ -1,5 +1,5 @@
-# Bêta Tool + Bêta Work (ONLYOFFICE Docs)
-# Réglages dans le fichier .env (mot de passe, secret, activation de Bêta Work…)
+# Bêta Tool + Bêta Work (ONLYOFFICE Docs) + Coffre (Vaultwarden)
+# Réglages dans le fichier .env (secret, services optionnels, adresses…)
 services:
   beta-tool:
     build: .
@@ -9,16 +9,24 @@ services:
     volumes:
       # Remplace les chemins de gauche par tes dossiers (Synology : /volume1/… — QNAP : /share/…
       # — sans NAS, n'importe quel dossier de l'ordinateur, ex. ./donnees/videos)
-      - /volume1/video/YouTube:/downloads          # Téléchargeur
-      - /volume1/documents/Conversions:/converted  # Convertisseur
-      - /volume1/documents/PDF:/pdf                # Studio PDF (bouton « Sur le NAS »)
+      - /volume1/video/YouTube:/downloads            # Téléchargeur
+      - /volume1/documents/Conversions:/converted    # Convertisseur, Compresseur vidéo, Studio Image
+      - /volume1/documents/PDF:/pdf                  # Studio PDF (bouton « Sur le NAS »)
       - /volume1/documents/Decompresses:/extracted   # Décompresseur
       - /volume1/documents/BetaWork:/documents       # Bêta Work
-      - /volume1/docker/beta-tool/data:/data       # Suggestions, clé de session
-      - ./static/brand:/app/static/brand           # Icône et bannière
+      - /volume1/photo:/photos                       # Album photo
+      - /volume1/documents/Recus:/depots             # Bêta Drop : fichiers que l'on t'envoie
+      - /volume1/docker/beta-tool/data:/data         # Comptes, réglages, notes, mises à jour, modèles IA…
+      - ./static/brand:/app/static/brand             # Icône et bannière
+      # Sauvegardes automatiques : un AUTRE disque (USB, second volume…)
+      # - /volumeUSB1/usbshare/BetaTool:/backup
+      # Autres dossiers à afficher dans Fichiers et la Médiathèque (voir EXTRA_ROOTS plus bas)
+      # - /volume1/music:/media/musique
+      # - /volume1/video/Films:/media/films
       # Optionnel : fichiers temporaires sur le disque plutôt que dans le conteneur
       # - /volume1/docker/beta-tool/work:/work
     environment:
+      - TZ=Europe/Paris           # fuseau horaire (heure des sauvegardes)
       - WORKERS=2                 # téléchargements en parallèle
       - CONVERT_WORKERS=2         # conversions en parallèle
       - MAX_UPLOAD_GB=20          # taille max d'un fichier envoyé
@@ -26,12 +34,15 @@ services:
       - JOB_TTL_HOURS=24          # durée de conservation des résultats temporaires
       - APP_PASSWORD=${APP_PASSWORD:-}
       - STORAGE_NAME=${STORAGE_NAME:-NAS}
+      - EXTRA_ROOTS=${EXTRA_ROOTS:-}
       - ONLYOFFICE_JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-}
       - ONLYOFFICE_URL=${ONLYOFFICE_URL:-}
+      - VAULT_URL=${VAULT_URL:-}
+      - WHISPER_MODEL=${WHISPER_MODEL:-small}
     # user: "1026:100"            # optionnel : propriétaire des fichiers (voir `id` sur le NAS)
     restart: unless-stopped
 
-  # Bêta Work : éditeur ONLYOFFICE Docs (≈ 2 à 4 Go de RAM). Activé par COMPOSE_PROFILES=work dans .env
+  # Bêta Work : éditeur ONLYOFFICE Docs (≈ 2 à 4 Go de RAM). Activé par « work » dans COMPOSE_PROFILES (.env)
   onlyoffice:
     image: onlyoffice/documentserver:8.3.3
     container_name: beta-work
@@ -44,4 +55,21 @@ services:
       - ALLOW_PRIVATE_IP_ADDRESS=true   # autorise ONLYOFFICE à joindre Bêta Tool sur le réseau local
     volumes:
       - /volume1/docker/beta-tool/onlyoffice:/var/www/onlyoffice/Data
+    restart: unless-stopped
+
+  # Coffre : gestionnaire de mots de passe Vaultwarden (≈ 50 Mo de RAM). Activé par « vault » dans COMPOSE_PROFILES
+  # Il exige une adresse en HTTPS (voir le README) pour fonctionner dans le navigateur et les applis.
+  vaultwarden:
+    image: vaultwarden/server:1.32.7
+    container_name: vaultwarden
+    profiles: ["vault"]
+    ports:
+      - "8082:80"
+    environment:
+      - DOMAIN=${VAULT_URL:-}
+      - SIGNUPS_ALLOWED=${VAULT_SIGNUPS:-true}
+      - ADMIN_TOKEN=${VAULT_ADMIN_TOKEN:-}
+      - TZ=Europe/Paris
+    volumes:
+      - /volume1/docker/beta-tool/data/vault:/data
     restart: unless-stopped

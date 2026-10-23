@@ -408,6 +408,30 @@ export const HELP = {
     tips: ["Pour qu'un lien court marche hors de chez toi, le site doit être accessible depuis Internet."],
     faq: [],
   },
+  sauvegardes: {
+    title: "Tuto · Sauvegardes", icon: "shield", tile: "bleu-vert",
+    lead: "Copie automatiquement tes dossiers importants vers un autre disque, à l'heure que tu veux.",
+    steps: [
+      ["Branche un disque", "Un disque USB ou un autre volume, monté sur /backup dans docker-compose.yml."],
+      ["Crée une sauvegarde", "Choisis les dossiers, les jours et l'heure (ex. chaque nuit à 3 h)."],
+      ["Choisis le type", "Incrémental : une version par passage, seuls les fichiers modifiés prennent de la place. Miroir : une copie unique, toujours à jour."],
+      ["Restaure", "Clique sur une version : elle s'ouvre dans Fichiers, d'où tu peux récupérer un fichier."],
+    ],
+    tips: ["Une sauvegarde sur le même disque que l'original ne protège pas d'une panne : vise un disque séparé.", "« Lancer maintenant » sert à tester avant la première nuit."],
+    faq: [["Le NAS doit-il rester allumé ?", "Oui, à l'heure prévue. Si le NAS était éteint, la sauvegarde attend le créneau suivant."]],
+  },
+  coffre: {
+    title: "Tuto · Coffre", icon: "key", tile: "rose",
+    lead: "Un gestionnaire de mots de passe hébergé chez toi, compatible avec les applis Bitwarden.",
+    steps: [
+      ["Démarre le service", "Ajoute « vault » à COMPOSE_PROFILES dans .env, puis docker compose up -d."],
+      ["Passe en HTTPS", "Obligatoire : proxy inversé du NAS ou Tailscale, puis renseigne VAULT_URL."],
+      ["Crée ton compte", "Ton mot de passe principal ne se récupère pas : note-le en lieu sûr."],
+      ["Installe les applis", "Bitwarden sur téléphone et navigateur, en mode « Auto-hébergé »."],
+    ],
+    tips: ["Ferme les inscriptions (SIGNUPS_ALLOWED=false) une fois les comptes créés.", "Le dossier /data/vault est à inclure dans tes sauvegardes."],
+    faq: [],
+  },
   reglages: {
     title: "Tuto · Réglages", icon: "settings", tile: "",
     lead: "Adapte Bêta Tool à ton usage : outils affichés, comptes, mises à jour, apparence.",

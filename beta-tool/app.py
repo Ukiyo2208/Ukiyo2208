@@ -14,6 +14,7 @@ from waitress import serve
 import activity
 import archives
 import auth
+import backup
 import converter
 import downloader
 import drop
@@ -25,6 +26,7 @@ import media
 import notes
 import photos
 import transcribe
+import vault
 import videotool
 import pdftools
 import roots
@@ -512,7 +514,7 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search)
@@ -534,6 +536,7 @@ if __name__ == "__main__":
     videotool.start()
     transcribe.start()
     imagetool.start()
+    backup.start()
     app.secret_key = secret_key()
     app.permanent_session_lifetime = timedelta(days=30)
     max_upload = int(float(os.environ.get("MAX_UPLOAD_GB", "20")) * 1024 ** 3)

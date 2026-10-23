@@ -10,6 +10,24 @@ fichier n'est envoyé à un service externe.
 | **Studio PDF** | Dans l'esprit d'Acrobat / BentoPDF : éditer et signer, remplir un formulaire, filigrane, numérotation, organiser les pages, fusionner, découper, compresser, protéger, déverrouiller, OCR. |
 | **Décompresseur** | Ouvre un ZIP, RAR, 7Z, TAR.GZ, ISO… (même protégé), choisis les fichiers et extrais-les sur le NAS ou sur ton appareil. Crée aussi des ZIP. |
 | **Bêta Work** | Suite bureautique : traitement de texte, tableur, présentations, compatibles Word / Excel / PowerPoint, enregistrement automatique, co-édition. Propulsé par ONLYOFFICE Docs. |
+| **Fichiers** | Explorateur de tous les dossiers du NAS : aperçu, envoi de dossiers entiers, renommer, déplacer, corbeille, zip, et « Ouvrir avec » les autres outils. |
+| **Bêta Drop** | Partage des fichiers par lien (mot de passe, date d'expiration, nombre de téléchargements) ou crée une page de dépôt pour recevoir des fichiers. |
+| **Médiathèque** | Regarde tes vidéos et écoute ta musique depuis le navigateur ; le lecteur continue quand tu changes de page. |
+| **Album photo** | Tes photos rangées par date de prise de vue (EXIF), diaporama, import depuis le téléphone. |
+| **Compresseur vidéo** | Vise une taille (ex. 25 Mo pour Discord, 2 Go pour un mail) ou une qualité ; découpe et redimensionnement. |
+| **Studio Image** | Recadrer, pivoter, luminosité, contraste, filtres, redimensionner, et **détourage automatique** (suppression du fond, IA locale). |
+| **Transcription** | Transforme un audio ou une vidéo en texte ou en sous-titres (SRT, VTT), en local avec Whisper. |
+| **Questionnaires** | Formulaires et sondages avec lien public, résultats en graphiques, export Excel / CSV. |
+| **Bêta Notes** | Notes en Markdown avec cases à cocher, couleurs, épingles, aperçu en direct. |
+| **QR codes** | Crée (lien, Wi-Fi, contact, e-mail…) avec couleurs et logo, ou lis un QR code depuis la caméra ou une image. |
+| **Liens courts** | `/s/mon-lien` vers une longue adresse, avec compteur de clics. |
+| **Sauvegardes** | Copie planifiée de tes dossiers vers un autre disque, avec historique des versions. |
+| **Coffre** | Gestionnaire de mots de passe compatible Bitwarden (Vaultwarden), optionnel. |
+
+Autour des outils : **tableau de bord** (espace disque, activité récente), **recherche globale** (`Ctrl K`),
+**notifications** (cloche, et notifications du navigateur quand un travail se termine), **comptes utilisateurs**,
+**appli installable** sur le téléphone (avec « Partager vers Bêta Tool » pour envoyer un lien au Téléchargeur), et une
+page **Réglages** pour activer ou désactiver chaque outil et installer les **mises à jour**.
 
 Chaque outil a un bouton **Aide** (tuto pas à pas, astuces, FAQ) et le site a un bouton **Suggestion**
 pour envoyer une idée ou signaler un problème ; les suggestions sont listées sur la page « Suggestions »
@@ -66,6 +84,63 @@ second conteneur. Les deux se parlent avec des requêtes signées (JWT, `ONLYOFF
 - Marque et licence : la licence d'ONLYOFFICE impose de garder son logo dans l'éditeur ; Bêta Work l'habille
   (barre, thème, pages de gestion) et affiche « Propulsé par ONLYOFFICE Docs ».
 
+## Réglages, comptes et mises à jour
+
+**Outils** : Réglages → Outils, un interrupteur par outil. Un outil désactivé disparaît du menu, de l'accueil,
+de la recherche, et ses adresses `/api/...` sont bloquées.
+
+**Comptes** : tant qu'aucun compte n'existe, le site est en accès libre (ou protégé par `APP_PASSWORD`). Crée un
+premier compte dans Réglages → Comptes : il devient administrateur et le site demande alors une connexion.
+Les **membres** utilisent les outils ; seuls les **administrateurs** voient les réglages, les comptes et les
+sauvegardes. Mot de passe administrateur perdu : supprime `/data/users.json`.
+
+**Mises à jour** : Réglages → Mises à jour.
+- Colle le **lien** d'une mise à jour (un `.zip`, ou un `latest.json` qui pointe vers le zip) ou **glisse le fichier**
+  `.zip` : la nouvelle version s'installe dans `/data/versions` et le site redémarre tout seul en quelques secondes.
+- Si la nouvelle version plante au démarrage, le lanceur (`launch.py`) revient automatiquement à la dernière
+  version qui fonctionnait. L'historique permet aussi de revenir en arrière à la main.
+- Enregistre une adresse de `latest.json` pour que le bouton « Vérifier » te signale les nouvelles versions.
+- « Mettre à jour yt-dlp » récupère le dernier yt-dlp sans reconstruire l'image (utile quand YouTube change).
+- Une mise à jour qui ajoute des logiciels système (marquée `rebuild`) demande de reconstruire l'image :
+  `docker compose build --pull && docker compose up -d`.
+
+Fabriquer une mise à jour (pour le développeur) : augmente le numéro dans `VERSION`, puis
+```sh
+python scripts/make_update.py --notes "Ce qui change" --url-base https://exemple.fr/maj/
+```
+Publie ensuite `dist/beta-tool-update-<version>.zip` et `dist/latest.json` au même endroit (une *release* GitHub
+convient très bien). Le fichier contient une empreinte SHA-256 vérifiée à l'installation.
+
+## Sauvegardes
+
+Monte un **autre disque** sur `/backup` (ligne commentée dans `docker-compose.yml`, ex. un disque USB), puis
+ouvre l'outil « Sauvegardes » (réservé aux administrateurs) : choisis les dossiers, les jours et l'heure.
+- **Incrémental** (conseillé) : une version datée par passage ; grâce aux liens physiques de rsync, seuls les fichiers
+  modifiés prennent de la place. Le disque doit être formaté en ext4, Btrfs ou NTFS (pas exFAT/FAT32).
+- **Miroir** : une seule copie à jour (ce qui est supprimé à la source l'est aussi dans la copie).
+- Pour restaurer, ouvre une version : elle s'affiche dans Fichiers → Sauvegardes, d'où tu récupères ce qu'il faut.
+- `TZ` (fuseau horaire) règle l'heure des sauvegardes.
+- Le dossier `/data` (comptes, notes, questionnaires, coffre) n'est volontairement pas proposé ici, pour ne pas
+  l'exposer dans Fichiers : sauvegarde `/volume1/docker/beta-tool/data` avec l'outil du NAS (Hyper Backup sur Synology).
+
+## Coffre (Vaultwarden)
+
+1. Ajoute `vault` à `COMPOSE_PROFILES` dans `.env` (ex. `COMPOSE_PROFILES=work,vault`) puis `docker compose up -d`.
+2. **HTTPS obligatoire** : les navigateurs n'autorisent le chiffrement du coffre que sur une adresse en `https://`.
+   - Synology : Panneau de configuration → Portail de connexion → Avancé → **Proxy inversé** : crée
+     `https://coffre.mondomaine.fr` → `http://localhost:8082`, avec un certificat Let's Encrypt (Sécurité → Certificat).
+   - Ou [Tailscale](https://tailscale.com/) avec `tailscale serve` pour une adresse HTTPS privée.
+3. Renseigne `VAULT_URL=https://coffre.mondomaine.fr` dans `.env`, relance, crée les comptes, puis `VAULT_SIGNUPS=false`.
+4. Installe les applis Bitwarden et choisis « Auto-hébergé » à la connexion.
+
+Les données du coffre sont dans `/data/vault` : sauvegarde-les.
+
+## Appli sur le téléphone
+
+Ouvre le site dans Safari (iPhone) ou Chrome (Android) → « Sur l'écran d'accueil » / « Installer l'application ».
+Sur Android, Bêta Tool apparaît ensuite dans le menu **Partager** : partage une vidéo YouTube vers lui et elle
+arrive dans le Téléchargeur. L'installation et le partage demandent une adresse en HTTPS (même méthode que le coffre).
+
 ## Pas de NAS ?
 
 Bêta Tool est un simple conteneur Docker : le NAS n'est qu'un endroit possible pour le faire tourner.
@@ -93,15 +168,24 @@ au public : télécharger des contenus protégés pour d'autres engage ta respon
    - `/pdf` : où le Studio PDF enregistre (bouton « Sur le NAS ») ;
    - `/extracted` : les archives décompressées ;
    - `/documents` : les documents de Bêta Work ;
-   - `/data` : les suggestions et la clé de session.
-3. Ouvre le fichier `.env` : change `ONLYOFFICE_JWT_SECRET`, et éventuellement `APP_PASSWORD`.
+   - `/photos` : ta photothèque (Album photo) ;
+   - `/depots` : les fichiers que l'on t'envoie avec Bêta Drop ;
+   - `/backup` : le disque des sauvegardes (optionnel) ;
+   - `/data` : comptes, réglages, notes, questionnaires, mises à jour, modèles d'IA.
+3. Ouvre le fichier `.env` : change `ONLYOFFICE_JWT_SECRET`, choisis les services optionnels (`COMPOSE_PROFILES`).
 4. Lance :
    ```sh
    docker compose up -d --build
    ```
    (Synology : *Container Manager → Projet → Créer*. QNAP : *Container Station → Applications → Créer*.)
    L'image pèse environ 1,7 Go à cause de LibreOffice, Calibre et Tesseract (+ environ 4 Go pour ONLYOFFICE) ; la première construction prend quelques minutes.
-5. Ouvre `http://IP-DU-NAS:8080`.
+5. Ouvre `http://IP-DU-NAS:8080`, puis va dans Réglages → Comptes pour créer ton compte administrateur.
+
+Les modèles d'IA (transcription ≈ 500 Mo pour `small`, détourage ≈ 180 Mo) se téléchargent au premier usage dans `/data/models`.
+
+**Passer de la version 1 à la version 2** : cette version change le Dockerfile (nouveaux logiciels, lanceur) ;
+remplace le dossier, garde ton `.env` et tes chemins, puis `docker compose up -d --build`. Les mises à jour
+suivantes passeront par Réglages → Mises à jour.
 
 ## Icône et bannière
 
@@ -109,22 +193,24 @@ L'identité visuelle est dans `static/brand/` (`banner.jpg`, `icon.png`, `apple-
 Ce dossier est monté dans le conteneur : pour changer une image, remplace le fichier en gardant son nom et recharge la page.
 Les couleurs (`--accent`, `--accent-2`) sont en haut de `static/style.css`.
 
-## Mise à jour
+## Reconstruire l'image
 
-YouTube change souvent ; si les téléchargements échouent, reconstruis l'image pour avoir le dernier yt-dlp :
+Pour avoir aussi les derniers FFmpeg, LibreOffice… :
 ```sh
-docker compose build --no-cache && docker compose up -d
+docker compose build --no-cache --pull && docker compose up -d
 ```
 
 ## Ajouter un outil
 
-Côté serveur, chaque outil est un module Python (`downloader.py`, `converter.py`, `pdftools.py`, `archives.py`,
-`work.py`) branché sur des
-routes `/api/...` dans `app.py`. Côté page, chaque outil est un module dans `static/js/` (une section `data-view`
-dans `static/index.html`, une entrée de menu, une carte sur l'accueil) et son tuto se trouve dans `static/js/help.js`.
+Côté serveur, chaque outil est un module Python (les plus récents sont des *blueprints* Flask : `files.py`,
+`drop.py`, `forms.py`…) enregistré dans `app.py`, et déclaré dans `settings.py` (`TOOLS`) pour pouvoir être désactivé.
+Côté page, ajoute une entrée dans `static/js/registry.js` (menu, accueil, recherche et réglages en découlent) avec un
+module `static/js/tools/<outil>.js` qui exporte `render(root, parts, query)` ; le tuto va dans `static/js/help.js`.
 
 ## Notes
 
-- Sans `APP_PASSWORD`, le site n'a pas de mot de passe : garde-le alors sur ton réseau local.
+- Sans compte ni `APP_PASSWORD`, le site n'a pas de mot de passe : garde-le alors sur ton réseau local.
+- Les liens publics (Bêta Drop `/d/…`, questionnaires `/f/…`, liens courts `/s/…`) restent accessibles sans connexion,
+  c'est voulu : il faut que le site soit joignable depuis Internet pour qu'ils marchent hors de chez toi.
 - Les résultats de conversion restent téléchargeables depuis la page pendant 24 h (`JOB_TTL_HOURS`), ceux copiés sur le NAS restent.
 - Téléchargeur réservé à un usage personnel et aux contenus que tu as le droit de télécharger.
