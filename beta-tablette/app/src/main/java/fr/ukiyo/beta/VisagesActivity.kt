@@ -58,6 +58,7 @@ class VisagesActivity : Activity() {
                     bouton("Enregistrer ce visage") { enregistrer(nom.text.toString().trim().lowercase()) },
                     texte("Personnes enregistrées", 20f, gras = true),
                     liste,
+                    bouton("Envoyer les visages au NAS (caméras de la maison)") { envoyerAuNas() },
                 ),
             ),
         )
@@ -141,6 +142,22 @@ class VisagesActivity : Activity() {
             withContext(Dispatchers.IO) { v.ajouter(nom, enCours.toList()) }
             etat.text = "Visage de $nom enregistré (${enCours.size} images)"
             afficherListe()
+        }
+    }
+
+    private fun envoyerAuNas() {
+        val v = visages ?: return
+        etat.text = "Envoi…"
+        scope.launch {
+            etat.text = try {
+                withContext(Dispatchers.IO) {
+                    val client = ClientNas(Reglages(this@VisagesActivity))
+                    v.noms.forEach { client.envoyerVisage(it, v.empreintes(it)) }
+                }
+                "Visages envoyés : ${v.noms.joinToString()}"
+            } catch (e: Exception) {
+                "Échec : ${e.message}"
+            }
         }
     }
 

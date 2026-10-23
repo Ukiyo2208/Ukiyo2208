@@ -22,6 +22,8 @@ class ClientNas(private val reglages: Reglages) {
     companion object {
         /** Le NAS a besoin de savoir qui parle : allumer la caméra puis appeler [identite] */
         const val IDENTIFICATION_REQUISE = "identification_requise"
+        /** Le NAS hésite entre plusieurs personnes : demander « C'est pour qui ? » puis appeler [qui] */
+        const val QUI_REQUIS = "qui_requis"
         private val JSON = "application/json".toMediaType()
     }
 
@@ -35,12 +37,13 @@ class ClientNas(private val reglages: Reglages) {
 
     class ErreurNas(message: String) : IOException(message)
 
-    fun envoyer(wav: ByteArray, personne: String?, confiance: Float): Reponse {
+    fun envoyer(wav: ByteArray, personne: String?, confiance: Float, piece: String): Reponse {
         val corps = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("audio", "commande.wav", wav.toRequestBody("audio/wav".toMediaType()))
             .addFormDataPart("personne", personne ?: "")
             .addFormDataPart("confiance", String.format(Locale.US, "%.3f", confiance))
+            .addFormDataPart("piece", piece)
             .build()
         val requete = Request.Builder()
             .url("${reglages.urlNas}/v1/commande")
@@ -63,6 +66,34 @@ class ClientNas(private val reglages: Reglages) {
             .post(corps.toString().toRequestBody(JSON))
             .build()
         return executer(requete)
+    }
+
+    /** Envoie la réponse à « C'est pour qui ? » (un prénom). */
+    fun qui(demandeId: String, wav: ByteArray): Reponse {
+        val corps = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("audio", "qui.wav", wav.toRequestBody("audio/wav".toMediaType()))
+            .addFormDataPart("demande_id", demandeId)
+            .build()
+        val requete = Request.Builder()
+            .url("${reglages.urlNas}/v1/qui")
+            .header("Authorization", "Bearer ${reglages.jeton}")
+            .post(corps)
+            .build()
+        return executer(requete)
+    }
+
+    /** Partage les visages enregistrés sur la tablette avec les caméras du NAS. */
+    fun envoyerVisage(nom: String, empreintes: List<FloatArray>) {
+        val liste = org.json.JSONArray(empreintes.map { e -> org.json.JSONArray(e.map { it.toDouble() }) })
+        val requete = Request.Builder()
+            .url("${reglages.urlNas}/v1/visages/$nom")
+            .header("Authorization", "Bearer ${reglages.jeton}")
+            .post(JSONObject().put("empreintes", liste).toString().toRequestBody(JSON))
+            .build()
+        http.newCall(requete).execute().use { r ->
+            if (!r.isSuccessful) throw ErreurNas("Le NAS refuse les visages (${r.code}) : ${r.body?.string().orEmpty()}")
+        }
     }
 
     private fun executer(requete: Request): Reponse {

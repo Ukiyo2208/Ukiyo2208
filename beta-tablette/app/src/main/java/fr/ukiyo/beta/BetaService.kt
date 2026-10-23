@@ -73,6 +73,8 @@ class BetaService : Service() {
 
     @Volatile private var phase = Phase.ARRET
     private var enregistreur: Enregistreur? = null
+    /** Rempli pendant qu'on attend la réponse à « C'est pour qui ? » (pas besoin de redire « Hey Bêta ») */
+    @Volatile private var reponseAttendue: CompletableDeferred<ByteArray?>? = null
     private var bruitAmbiant = 300f
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -160,8 +162,14 @@ class BetaService : Service() {
                         if (score >= reglages.seuilWakeWord) motCleEntendu()
                     }
                     Phase.COMMANDE -> when (enregistreur?.ajouter(bloc)) {
-                        Enregistreur.Etat.TERMINE -> commandeTerminee()
-                        Enregistreur.Etat.RIEN_ENTENDU -> rienEntendu()
+                        Enregistreur.Etat.TERMINE -> reponseAttendue?.let {
+                            phase = Phase.ENVOI
+                            it.complete(enregistreur!!.wav())
+                        } ?: commandeTerminee()
+                        Enregistreur.Etat.RIEN_ENTENDU -> reponseAttendue?.let {
+                            phase = Phase.ENVOI
+                            it.complete(null)
+                        } ?: rienEntendu()
                         else -> Unit
                     }
                     else -> Unit // pendant l'envoi et la réponse, on n'écoute pas
@@ -201,10 +209,14 @@ class BetaService : Service() {
             try {
                 if (!reglages.estConfigure) throw ClientNas.ErreurNas("Renseigne l'adresse du NAS dans les réglages")
                 // Sans caméra : la plupart des demandes (maison, questions) n'ont pas besoin de savoir qui parle
-                var reponse = client.envoyer(wav, null, 0f)
+                var reponse = client.envoyer(wav, null, 0f, reglages.piece)
                 val demandeId = reponse.demandeId
                 if (reponse.route == ClientNas.IDENTIFICATION_REQUISE && demandeId != null) {
                     reponse = identifierPuisReprendre(demandeId, reponse)
+                }
+                val questionId = reponse.demandeId
+                if (reponse.route == ClientNas.QUI_REQUIS && questionId != null) {
+                    reponse = demanderQui(questionId, reponse)
                 }
                 afficherReponse(reponse)
                 reponse.audioWav?.let { lire(it) }
@@ -230,6 +242,28 @@ class BetaService : Service() {
             Etat.maj { it.copy(phase = Phase.ENVOI, message = "Je réfléchis…", personne = personne) }
             client.identite(demandeId, personne, id.score)
         }
+
+    /** Plusieurs personnes possibles et aucun visage : Bêta demande « C'est pour qui ? » et écoute la réponse. */
+    private suspend fun demanderQui(demandeId: String, question: ClientNas.Reponse): ClientNas.Reponse {
+        Etat.maj { it.copy(phase = Phase.REPONSE, message = question.reponse, texteReconnu = question.texteReconnu) }
+        question.audioWav?.let { lire(it) }
+
+        val attente = CompletableDeferred<ByteArray?>()
+        reponseAttendue = attente
+        enregistreur = Enregistreur(bruitAmbiant)
+        bip.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+        phase = Phase.COMMANDE
+        Etat.maj { it.copy(phase = Phase.COMMANDE, message = question.reponse) }
+        val wav = try {
+            withTimeoutOrNull(15_000) { attente.await() }
+        } finally {
+            reponseAttendue = null
+            phase = Phase.ENVOI
+        }
+        if (wav == null) return question.copy(reponse = "Je n'ai pas entendu de prénom.", audioWav = null, demandeId = null)
+        Etat.maj { it.copy(phase = Phase.ENVOI, message = "Je réfléchis…") }
+        return client.qui(demandeId, wav)
+    }
 
     private fun afficherReponse(reponse: ClientNas.Reponse) {
         phase = Phase.REPONSE

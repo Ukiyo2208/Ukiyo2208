@@ -1,0 +1,7 @@
+fastapi==0.161.1
+httpx==0.28.1
+numpy==2.5.4
+opencv-python-headless==5.0.0.93
+PyYAML==6.0.3
+uvicorn==0.38.0
+websockets==17.3

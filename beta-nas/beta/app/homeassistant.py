@@ -72,6 +72,14 @@ class HomeAssistant:
         r = await self._client.post(f"/api/config/automation/config/{identifiant}", json=config)
         r.raise_for_status()
 
+    async def etat(self, entite: str) -> str | None:
+        """État d'une entité (ex : person.bastien -> "home"), ou None si inconnu."""
+        try:
+            r = await self._client.get(f"/api/states/{entite}")
+        except httpx.HTTPError:
+            return None
+        return r.json().get("state") if r.status_code == 200 else None
+
     async def en_ligne(self) -> bool:
         try:
             r = await self._client.get("/api/")

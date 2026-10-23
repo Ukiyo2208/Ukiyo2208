@@ -30,6 +30,9 @@ class Visages(cheminYunet: String, cheminSface: String, private val fichier: Fil
     @Synchronized
     fun nombreEmpreintes(nom: String) = personnes[nom]?.size ?: 0
 
+    @Synchronized
+    fun empreintes(nom: String): List<FloatArray> = personnes[nom]?.toList().orEmpty()
+
     /** Empreinte du plus grand visage de l'image (BGR), ou null s'il n'y a personne. */
     @Synchronized
     fun empreinte(image: Mat): FloatArray? {

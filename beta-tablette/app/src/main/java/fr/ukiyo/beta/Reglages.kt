@@ -31,5 +31,10 @@ class Reglages(context: Context) {
         get() = prefs.getInt("rotation_camera", -1)
         set(v) = prefs.edit().putInt("rotation_camera", if (v in listOf(0, 90, 180, 270)) v else -1).apply()
 
+    /** Pièce où est posée la tablette (ex : salon), comme dans `maison.zones` du config.yaml du NAS */
+    var piece: String
+        get() = prefs.getString("piece", "")!!
+        set(v) = prefs.edit().putString("piece", v.trim().lowercase()).apply()
+
     val estConfigure: Boolean get() = urlNas.isNotEmpty() && jeton.isNotEmpty()
 }

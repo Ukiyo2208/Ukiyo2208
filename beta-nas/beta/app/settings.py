@@ -14,6 +14,13 @@ MAILS = "mails"
 QUESTIONS = "questions"
 AUTOMATISATIONS = "automatisations"
 
+# Comment on sait qui parle, du plus sûr au moins sûr
+VISAGE = "visage"  # caméra de la tablette
+PRESENCE = "presence"  # seule personne connue vue récemment à cet étage par les caméras
+DECLARATION = "declaration"  # réponse à « C'est pour qui ? »
+# Ce qui exige d'avoir vu le visage : une présence ou une déclaration ne suffisent pas
+CAPACITES_VISAGE_OBLIGATOIRE = {AUTOMATISATIONS}
+
 ROLES_PAR_DEFAUT = {
     "admin": [DOMOTIQUE, MAILS, QUESTIONS, AUTOMATISATIONS],
     "adulte": [DOMOTIQUE, MAILS, QUESTIONS],
@@ -36,6 +43,8 @@ class Personne:
     nom: str
     role: str
     mail: CompteMail | None = None
+    companion: str | None = None  # entité person.xxx de l'app Home Assistant Companion
+    surnoms: list[str] = field(default_factory=list)  # autres façons de dire son prénom
 
 
 @dataclass
@@ -78,15 +87,26 @@ class Settings:
     )
     envoyer_noms_appareils: bool = True
 
+    # Présence (service beta-presence + caméras)
+    presence_url: str = "http://presence:8801"
+    zones: dict[str, str] = field(default_factory=dict)  # pièce -> zone (étage)
+    validite_minutes: float = 15
+
     def identifie(self, personne: str | None, confiance: float) -> bool:
         return bool(personne) and personne in self.personnes and confiance >= self.seuil_confiance
 
-    def capacites(self, personne: str | None, confiance: float) -> set[str]:
-        """Ce que la personne a le droit de faire. Confiance trop basse = inconnu."""
-        if not self.identifie(personne, confiance):
-            return set(self.roles.get("inconnu", []))
-        role = self.personnes[personne].role
-        return set(self.roles.get(role, []))
+    def capacites(self, personne: str | None, niveau: str | None) -> set[str]:
+        """Ce que la personne peut faire selon la façon dont on l'a reconnue."""
+        inconnu = set(self.roles.get("inconnu", []))
+        if not personne or not niveau or personne not in self.personnes:
+            return inconnu
+        capacites = set(self.roles.get(self.personnes[personne].role, [])) | inconnu
+        if niveau != VISAGE:
+            capacites -= CAPACITES_VISAGE_OBLIGATOIRE
+        return capacites
+
+    def zone_de(self, piece: str | None) -> str | None:
+        return self.zones.get(piece, piece) if piece else None
 
 
 def _env(nom: str, defaut: str = "") -> str:
@@ -108,6 +128,7 @@ def charger(chemin_config: str | None = None) -> Settings:
         ollama_model=_env("OLLAMA_MODEL", Settings.ollama_model),
         anthropic_api_key=_env("ANTHROPIC_API_KEY"),
         claude_model=_env("CLAUDE_MODEL", Settings.claude_model),
+        presence_url=_env("PRESENCE_URL", Settings.presence_url).rstrip("/"),
     )
 
     chemin = Path(chemin_config or _env("BETA_CONFIG", "/config/config.yaml"))
@@ -122,6 +143,12 @@ def charger(chemin_config: str | None = None) -> Settings:
     for role, capacites in (brut.get("roles") or {}).items():
         s.roles[role] = list(capacites or [])
 
+    maison = brut.get("maison") or {}
+    s.validite_minutes = float(maison.get("validite_minutes", s.validite_minutes))
+    for zone, pieces in (maison.get("zones") or {}).items():
+        for piece in pieces or []:
+            s.zones[str(piece)] = str(zone)
+
     for nom, infos in (brut.get("personnes") or {}).items():
         infos = infos or {}
         mail = None
@@ -134,5 +161,11 @@ def charger(chemin_config: str | None = None) -> Settings:
                 mot_de_passe=_env(m.get("mot_de_passe_env", "")),
                 port=int(m.get("port", 993)),
             )
-        s.personnes[nom] = Personne(nom=nom, role=infos.get("role", "adulte"), mail=mail)
+        s.personnes[nom] = Personne(
+            nom=nom,
+            role=infos.get("role", "adulte"),
+            mail=mail,
+            companion=infos.get("companion"),
+            surnoms=[str(x) for x in infos.get("surnoms") or []],
+        )
     return s

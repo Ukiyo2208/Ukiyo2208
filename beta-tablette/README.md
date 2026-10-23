@@ -5,10 +5,13 @@ La tablette joue le rôle des **yeux et des oreilles** de Bêta :
 1. Elle écoute en continu le mot d'activation (openWakeWord, 100 % sur la tablette).
 2. Quand elle l'entend, elle émet un bip, enregistre ta phrase et s'arrête toute seule quand tu te tais.
 3. Elle envoie l'audio au NAS (`beta-nas`) **sans allumer la caméra**, puis lit la réponse à voix haute.
-4. **Seulement si la demande est personnelle** (mails, automatisation…), le NAS répond
-   « Regarde la tablette une seconde ». La tablette allume alors la caméra frontale, reconnaît
-   le visage avec YuNet + SFace et renvoie le prénom. Le NAS termine la demande, sans que tu aies
-   à la répéter. Seul le prénom quitte la tablette, jamais d'image.
+4. **Seulement si la demande est personnelle** (mails, automatisation…) :
+   - si tu es la seule personne vue récemment à cet étage par les caméras Reolink, Bêta sait que c'est toi ;
+   - sinon, il dit « Regarde la tablette une seconde ». La tablette allume la caméra frontale, reconnaît
+     le visage avec YuNet + SFace et renvoie le prénom. Seul le prénom quitte la tablette, jamais d'image ;
+   - si elle ne te voit pas, Bêta demande « C'est pour qui ? » et écoute ton prénom, sans « Hey Bêta ».
+
+   Le NAS termine la demande sans que tu aies à la répéter.
 
 Les commandes de la maison et les questions générales ne déclenchent donc jamais la caméra.
 
@@ -44,6 +47,7 @@ Dans **Réglages** :
 |---|---|
 | Adresse du NAS | `http://IP_DU_NAS:8800` (la même que pour tester `/sante`) |
 | Jeton | Le `BETA_TOKEN` du fichier `.env` du NAS |
+| Pièce de la tablette | Ex : `salon`, comme dans `maison.zones` du `config.yaml` du NAS. Sert à savoir qui est à cet étage |
 
 Appuie sur **Tester la connexion**. Le message doit indiquer « Bêta OK · Home Assistant OK ».
 Appuie ensuite sur **Enregistrer**.
@@ -53,6 +57,7 @@ Dans **Visages** :
 2. Mets-toi face à la tablette, puis appuie sur **Enregistrer ce visage**. 8 images sont prises en quelques secondes.
 3. Recommence avec et sans lunettes, ou le soir avec un autre éclairage : chaque enregistrement s'ajoute aux précédents.
 4. Fais de même pour chaque personne de la maison.
+5. Appuie sur **Envoyer les visages au NAS** : les caméras Reolink de la maison pourront aussi vous reconnaître.
 
 ## 4. Le mot « Hey Bêta »
 

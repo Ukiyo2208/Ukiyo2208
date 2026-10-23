@@ -5,6 +5,13 @@
 3. Intentions locales de Home Assistant (sans LLM, < 1 s)
 4. Petit LLM local pour trier ce que HA n'a pas compris
 5. IA web pour les automatisations, avec confirmation avant création
+
+Savoir qui parle n'est utile que pour les demandes personnelles. Dans ce cas, et seulement
+dans ce cas, Bêta cherche dans l'ordre :
+  a. la seule personne connue vue récemment à cet étage (service de présence) ;
+  b. le visage, avec la caméra de la tablette (étape « identification_requise ») ;
+  c. « C'est pour qui ? » (étape « qui_requis »).
+Les automatisations exigent le visage (b).
 """
 
 from __future__ import annotations
@@ -21,13 +28,23 @@ import httpx
 from . import llm_local, settings as cfg
 from .homeassistant import HomeAssistant, ReponseHA
 from .ia_web import ErreurAutomatisation, IAWeb
+from .localisation import Localisation
 from .mails import DEMANDE_MAILS, resume_mails
 
 log = logging.getLogger("beta.routeur")
 
-_PAS_RECONNU = "Je ne vois pas qui tu es. Mets-toi face à la tablette et redemande-moi."
-_REGARDE_MOI = "Regarde la tablette une seconde."
 IDENTIFICATION_REQUISE = "identification_requise"
+QUI_REQUIS = "qui_requis"
+
+# Étapes d'une même demande
+INITIALE = "initiale"  # la tablette n'a pas encore regardé
+APRES_CAMERA = "apres_camera"  # la tablette a regardé
+FINALE = "finale"  # plus rien à essayer
+
+_PAS_RECONNU = "Je ne vois pas qui tu es. Mets-toi face à la tablette et redemande-moi."
+_VISAGE_OBLIGATOIRE = "Pour ça, j'ai besoin de voir ton visage. Mets-toi face à la tablette et redemande-moi."
+_REGARDE_MOI = "Regarde la tablette une seconde."
+_POUR_QUI = "C'est pour qui ?"
 _MAISON = "maison"
 DUREE_CONFIRMATION = 120  # secondes pour dire « oui »
 _OUI = re.compile(r"^\W*(oui|ouais|vas-?y|confirme|je confirme|d'accord|ok|c'est bon|valide)\b", re.IGNORECASE)
@@ -52,21 +69,33 @@ class Routeur:
     ha: HomeAssistant
     llm: llm_local.LLMLocal
     ia_web: IAWeb | None = None
+    localisation: Localisation | None = None
     _attentes: dict[str, _Attente] = field(default_factory=dict)
 
     async def traiter(
-        self, texte: str, personne: str | None, confiance: float, identite_possible: bool = False
+        self,
+        texte: str,
+        personne: str | None = None,
+        confiance: float = 0.0,
+        *,
+        niveau: str | None = None,
+        piece: str | None = None,
+        etape: str = FINALE,
     ) -> Resultat:
-        """`identite_possible` : la tablette peut allumer sa caméra si la demande est personnelle.
-        Dans ce cas, au lieu de refuser, Bêta répond IDENTIFICATION_REQUISE et la tablette
-        renvoie la même demande avec le prénom reconnu."""
+        """`personne` + `confiance` : visage vu par la tablette. `niveau` force la façon dont la
+        personne a été reconnue (présence, déclaration). `etape` : ce qu'il reste à essayer."""
         texte = texte.strip()
         if not texte:
             return Resultat("Je n'ai rien entendu.", "vide")
 
-        identifie = self.settings.identifie(personne, confiance)
-        capacites = self.settings.capacites(personne, confiance)
-        refus = lambda message: self._refus(identifie, identite_possible, message)  # noqa: E731
+        if niveau is None and self.settings.identifie(personne, confiance):
+            niveau = cfg.VISAGE
+        if niveau is None:
+            personne = None
+        capacites = self.settings.capacites(personne, niveau)
+
+        async def manque(capacite: str, refus: str) -> Resultat:
+            return await self._identifier(texte, capacite, refus, personne, niveau, piece, etape)
 
         # Une seule confirmation en attente pour la maison : le « oui » arrive sans visage
         attente = self._attentes.pop(_MAISON, None)
@@ -77,12 +106,9 @@ class Routeur:
                 return Resultat("D'accord, j'annule.", "confirmation")
             # Autre chose : on oublie la proposition et on traite la nouvelle demande
 
-        if not capacites:
-            return refus("Désolé, je ne peux rien faire pour toi.")
-
         if DEMANDE_MAILS.search(texte):
             if cfg.MAILS not in capacites:
-                return refus("Désolé, je ne peux pas lire les mails pour toi.")
+                return await manque(cfg.MAILS, "Désolé, je ne peux pas lire les mails pour toi.")
             return await self._mails(personne)
 
         # « Tous les jours à 6h, ouvre les volets » ne doit pas ouvrir les volets tout de suite
@@ -95,7 +121,9 @@ class Routeur:
         tri = await self.llm.trier(texte)
         log.info("Tri local : %s", tri)
 
-        if tri.categorie == llm_local.DOMOTIQUE and tri.commande and cfg.DOMOTIQUE in capacites:
+        if tri.categorie == llm_local.DOMOTIQUE and tri.commande:
+            if cfg.DOMOTIQUE not in capacites:
+                return await manque(cfg.DOMOTIQUE, "Désolé, je ne peux pas piloter la maison pour toi.")
             reponse = await self._ha(tri.commande)
             if reponse and reponse.comprise:
                 return Resultat(reponse.texte or "C'est fait.", "llm_local+home_assistant")
@@ -103,15 +131,48 @@ class Routeur:
 
         if tri.categorie == llm_local.AUTOMATISATION:
             if cfg.AUTOMATISATIONS not in capacites:
-                return refus("Désolé, tu n'as pas le droit de créer des automatisations.")
+                return await manque(cfg.AUTOMATISATIONS, "Désolé, tu n'as pas le droit de créer des automatisations.")
             return await self._proposer_automatisation(texte)
 
         if tri.categorie == llm_local.QUESTION and tri.reponse:
             if cfg.QUESTIONS not in capacites:
-                return refus("Désolé, je ne peux pas répondre à ça pour toi.")
+                return await manque(cfg.QUESTIONS, "Désolé, je ne peux pas répondre à ça pour toi.")
             return Resultat(tri.reponse, "llm_local")
 
         return Resultat("Je n'ai pas compris, tu peux reformuler ?", "incompris")
+
+    async def _identifier(
+        self,
+        texte: str,
+        capacite: str,
+        refus: str,
+        personne: str | None,
+        niveau: str | None,
+        piece: str | None,
+        etape: str,
+    ) -> Resultat:
+        """La demande a besoin de savoir qui parle (ou d'en être plus sûr) : on cherche, du plus discret au plus direct."""
+        visage_obligatoire = capacite in cfg.CAPACITES_VISAGE_OBLIGATOIRE
+
+        if personne:
+            # Reconnu, mais son rôle ne le permet pas, ou il faut voir son visage
+            if capacite not in self.settings.capacites(personne, cfg.VISAGE):
+                return Resultat(refus, "refus")
+            if etape == INITIALE:
+                return Resultat(_REGARDE_MOI, IDENTIFICATION_REQUISE)
+            return Resultat(_VISAGE_OBLIGATOIRE, "refus")
+
+        if not visage_obligatoire and self.localisation:
+            candidat = await self.localisation.candidat(piece)
+            if candidat:
+                log.info("Seule personne à cet étage : %s", candidat)
+                return await self.traiter(texte, candidat, niveau=cfg.PRESENCE, piece=piece, etape=etape)
+
+        if etape == INITIALE:
+            return Resultat(_REGARDE_MOI, IDENTIFICATION_REQUISE)
+        if etape == APRES_CAMERA and not visage_obligatoire:
+            return Resultat(_POUR_QUI, QUI_REQUIS)
+        return Resultat(_VISAGE_OBLIGATOIRE if visage_obligatoire else _PAS_RECONNU, "refus")
 
     async def _ha(self, texte: str) -> ReponseHA | None:
         try:
@@ -119,15 +180,6 @@ class Routeur:
         except httpx.HTTPError:
             log.exception("Home Assistant injoignable")
             return None
-
-    @staticmethod
-    def _refus(identifie: bool, identite_possible: bool, message: str) -> Resultat:
-        if identifie:
-            return Resultat(message, "refus")
-        # Sans visage : on demande à la tablette de regarder, sinon on explique comment débloquer
-        if identite_possible:
-            return Resultat(_REGARDE_MOI, IDENTIFICATION_REQUISE)
-        return Resultat(_PAS_RECONNU, "refus")
 
     async def _mails(self, personne: str | None) -> Resultat:
         compte = self.settings.personnes[personne].mail if personne in self.settings.personnes else None

@@ -1,11 +1,19 @@
 # Bêta IA : partie NAS
 
 Tout le « cerveau » de Bêta tourne sur le NAS (UGREEN DXP4800, UGOS Pro, Docker).
-La tablette s'occupe seulement du « Hey Bêta » et de la reconnaissance du visage. Ensuite, elle envoie ici
-l'audio de la commande et le nom de la personne.
+La tablette s'occupe seulement du « Hey Bêta ». Elle envoie ici l'audio de la commande et la pièce
+où elle se trouve. Savoir **qui parle** ne sert que pour les demandes personnelles (mails,
+automatisations). Dans ce cas, et seulement dans ce cas, Bêta cherche dans cet ordre :
+
+1. **Les caméras de la maison** : si une seule personne connue a été vue récemment à l'étage de la
+   tablette, sans inconnu, c'est elle. Pas de caméra à allumer, pas de question.
+2. **La caméra de la tablette** : « Regarde la tablette une seconde ».
+3. **« C'est pour qui ? »** : tu réponds par ton prénom.
+
+Créer une automatisation exige toujours l'étape 2 (le visage).
 
 ```
-Tablette ── audio + "bastien" ──→ Bêta (port 8800)
+Tablette ── audio + "salon" ──→ Bêta (port 8800)
                                    │ 1. Whisper : parole → texte
                                    │ 2. Mails ? → lecture IMAP
                                    │ 3. Home Assistant (intentions locales, < 1 s)
@@ -22,6 +30,7 @@ Tablette ←── texte + audio WAV ────┘
 | `beta-piper` | Voix de Bêta |
 | `beta-ollama` | Petit LLM local (`qwen2.5:3b` par défaut) |
 | `beta` | Le routeur, c'est-à-dire l'API appelée par la tablette |
+| `beta-presence` | Reconnaît les visages quand une Reolink détecte quelqu'un, et tient à jour qui est où |
 
 ---
 
@@ -134,6 +143,40 @@ ni accès à Home Assistant n'est transmis. L'IA renvoie une proposition. Bêta 
 appareils, pas de script ni de commande système), puis te demande « Tu confirmes ? ». Rien n'est créé tant
 que tu n'as pas dit « oui ».
 
+### 8. Présence avec les caméras Reolink (optionnel)
+
+Le service `beta-presence` écoute les détections de personne de tes Reolink dans Home Assistant.
+À chaque détection, il prend 3 à 5 captures, reconnaît les visages et met à jour
+`sensor.beta_position_<prénom>` dans Home Assistant (la pièce, ou `inconnue` après 15 minutes).
+Tu peux aussi utiliser ces capteurs dans tes propres automatisations. Les images ne sont jamais
+enregistrées : seules les empreintes des visages enregistrés sont gardées (`data/presence/visages.json`).
+
+1. **Les caméras dans Home Assistant** : ajoute l'intégration **Reolink**
+   (*Paramètres → Appareils et services → Ajouter une intégration*). Pour chaque caméra, active le flux
+   **Clair** (pleine résolution, souvent désactivé par défaut) : les visages y sont bien plus nets.
+2. **Le fichier `config/config.yaml`** :
+   - section `maison.zones` : l'étage de chaque pièce. La pièce de la tablette doit y être, même sans caméra ;
+   - section `cameras` : le nom **exact** de chaque entité (*Paramètres → Entités*, cherche « Personne »).
+     L'exemple contient tes 8 caméras avec des noms probables, à vérifier ;
+   - pour chaque personne, `companion: person.xxx` (app Home Assistant Companion). Bêta ignore ainsi
+     quelqu'un qui est sorti de la maison.
+3. **Les visages** :
+   - le plus simple : dans l'app de la tablette, écran **Visages**, appuie sur **Envoyer les visages au NAS** ;
+   - le plus fiable : ajoute aussi des captures prises par les Reolink elles-mêmes (vues d'en haut,
+     de plus loin). Ouvre `http://IP_DU_NAS:8801/docs`, clique sur *Authorize* et colle ton jeton.
+     Dans `POST /visages/{nom}/capturer`, mets ton prénom et `{"camera": "camera.salon_clair"}`, puis
+     reste **seul** face à cette caméra, à 1 ou 2 mètres, pendant 15 secondes.
+4. Relance : `sudo docker compose up -d --build`. Dans `sudo docker logs -f beta-presence`, tu dois
+   voir « À l'écoute de 8 caméras », puis par exemple « salon : bastien » quand tu passes devant.
+
+**Bon à savoir :**
+- La reconnaissance marche bien jusqu'à 3 mètres environ. De dos ou de loin, la caméra voit
+  quelqu'un sans le reconnaître.
+- Un visage non reconnu à un étage compte comme « quelqu'un d'autre est peut-être là ». Bêta
+  préfère alors demander plutôt que de deviner.
+- Les caméras reconnaissent tout le monde, invités compris : préviens les gens de la maison.
+  Seules les personnes enregistrées sont nommées.
+
 ---
 
 ## Réglages utiles
@@ -142,6 +185,7 @@ que tu n'as pas dit « oui ».
 |---|---|
 | `config/config.yaml` → `personnes` | Les prénoms **doivent être identiques** à ceux envoyés par la tablette |
 | `config/config.yaml` → `roles` | Qui a le droit de faire quoi (`domotique`, `mails`, `questions`, `automatisations`). Sans visage reconnu, c'est le rôle `inconnu` : domotique seulement, par défaut |
+| `config/config.yaml` → `maison.validite_minutes` | Durée pendant laquelle une position vue par les caméras compte (15 min) |
 | `config/config.yaml` → `seuil_confiance` | En dessous de ce seuil, le visage est considéré comme inconnu |
 | `.env` → `OLLAMA_MODEL` | `qwen2.5:1.5b` si le LLM local est trop lent, `qwen2.5:3b` par défaut |
 | `.env` → `WHISPER_MODEL` | `base-int8` (plus rapide), `small-int8` (meilleur en français, par défaut) |
@@ -200,6 +244,15 @@ allume sa caméra, puis appelle :
 
 Le NAS reprend la phrase mise de côté (sans la retranscrire) et renvoie une réponse normale.
 Un `demande_id` ne sert qu'une fois et expire au bout de 60 secondes.
+
+Si la tablette n'a vu personne et que plusieurs personnes sont possibles, la réponse vaut
+`qui_requis` (« C'est pour qui ? »), avec un nouveau `demande_id`. La tablette enregistre la réponse
+et l'envoie en `multipart/form-data` à `POST /v1/qui` (champs `audio` et `demande_id`).
+
+Le champ `piece` de `/v1/commande` (ex : `salon`) permet à Bêta de savoir à quel étage chercher.
+
+`POST /v1/visages/{nom}` avec `{"empreintes": [[128 valeurs], …]}` transmet au service de présence
+les visages enregistrés sur la tablette.
 
 ## Développement
 

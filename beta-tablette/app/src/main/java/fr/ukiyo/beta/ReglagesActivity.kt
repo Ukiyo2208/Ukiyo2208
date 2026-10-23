@@ -36,6 +36,7 @@ class ReglagesActivity : Activity() {
             reglages.rotationCamera.takeIf { it >= 0 }?.toString() ?: "",
             InputType.TYPE_CLASS_NUMBER,
         )
+        val piece = champ("salon", reglages.piece)
         val resultat = texte("", 16f, ACCENT)
         val modele = texte(etatModele(), 15f, TEXTE_DOUX)
 
@@ -50,6 +51,7 @@ class ReglagesActivity : Activity() {
         fun enregistrer() {
             reglages.urlNas = url.text.toString()
             reglages.jeton = jeton.text.toString()
+            reglages.piece = piece.text.toString()
             seuilWake.text.toString().replace(',', '.').toFloatOrNull()?.let { reglages.seuilWakeWord = it }
             seuilVisage.text.toString().replace(',', '.').toFloatOrNull()?.let { reglages.seuilVisage = it }
             reglages.rotationCamera = rotation.text.toString().toIntOrNull() ?: -1
@@ -74,6 +76,7 @@ class ReglagesActivity : Activity() {
                         }
                     },
                     resultat,
+                    texte("Pièce de la tablette (comme dans maison.zones du config.yaml)", 15f, TEXTE_DOUX), piece,
                     texte("Sensibilité « Hey Bêta » (0,3 = très sensible, 0,7 = strict)", 15f, TEXTE_DOUX), seuilWake,
                     texte("Seuil de reconnaissance du visage (0,4 conseillé)", 15f, TEXTE_DOUX), seuilVisage,
                     texte("Rotation caméra (vide = auto, sinon 0, 90, 180 ou 270)", 15f, TEXTE_DOUX), rotation,

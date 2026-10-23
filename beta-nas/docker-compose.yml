@@ -50,6 +50,22 @@ services:
       - OLLAMA_NUM_PARALLEL=1
     restart: unless-stopped
 
+  # Qui est où : reconnaît les visages quand une caméra Reolink détecte quelqu'un
+  presence:
+    build: ./presence
+    container_name: beta-presence
+    env_file: .env
+    environment:
+      - BETA_CONFIG=/config/config.yaml
+    ports:
+      - "8801:8801" # page /docs pour enregistrer un visage depuis une caméra
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./config:/config:ro
+      - ./data/presence:/data # base des visages (empreintes uniquement, aucune image)
+    restart: unless-stopped
+
   # Le cerveau : reçoit les demandes de la tablette et choisit qui les traite
   beta:
     build: ./beta
@@ -70,4 +86,5 @@ services:
       - whisper
       - piper
       - ollama
+      - presence
     restart: unless-stopped

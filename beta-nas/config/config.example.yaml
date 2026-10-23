@@ -8,6 +8,8 @@ seuil_confiance: 0.4
 personnes:
   bastien:
     role: admin
+    companion: person.bastien # app Home Assistant Companion : savoir si tu es à la maison
+    surnoms: [bast] # autres réponses possibles à « C'est pour qui ? »
     mail:
       serveur: imap.gmail.com
       utilisateur: ton.adresse@gmail.com
@@ -23,6 +25,30 @@ roles:
   # Sans visage : ce qui ne dépend pas de la personne. La caméra ne s'allume que pour le reste
   # (mails, automatisations...). Mets [] pour que Bêta regarde à chaque demande.
   inconnu: [domotique, questions]
+
+# ------------------------------------------------------------------ Présence
+# Pour une demande personnelle (mails…), si une seule personne connue a été vue récemment
+# à l'étage de la tablette, Bêta sait que c'est elle : pas de caméra, pas de question.
+maison:
+  validite_minutes: 15 # au-delà, une position vue par les caméras n'est plus prise en compte
+  # Chaque pièce appartient à une zone (un étage). La pièce de la tablette doit y figurer.
+  zones:
+    rez-de-chaussee: [salon, sejour, entree, cuisine]
+    etage: [couloir-etage, chambre, bureau]
+    exterieur: [jardin, cour, sonnette]
+
+# Caméras Reolink, telles qu'elles apparaissent dans Home Assistant (Paramètres > Entités).
+# camera : de préférence le flux « Clair » (pleine résolution), à activer s'il est désactivé.
+# detection : le capteur « Personne » de la caméra.
+cameras:
+  - { camera: camera.salon_clair, detection: binary_sensor.salon_personne, piece: salon }
+  - { camera: camera.sejour_clair, detection: binary_sensor.sejour_personne, piece: sejour }
+  - { camera: camera.entree_clair, detection: binary_sensor.entree_personne, piece: entree }
+  - { camera: camera.couloir_etage_clair, detection: binary_sensor.couloir_etage_personne, piece: couloir-etage }
+  - { camera: camera.jardin_1_clair, detection: binary_sensor.jardin_1_personne, piece: jardin }
+  - { camera: camera.jardin_2_clair, detection: binary_sensor.jardin_2_personne, piece: jardin }
+  - { camera: camera.cour_clair, detection: binary_sensor.cour_personne, piece: cour }
+  - { camera: camera.sonnette_clair, detection: binary_sensor.sonnette_personne, piece: sonnette }
 
 # Types d'appareils que Bêta peut lister et utiliser dans les automatisations
 domaines_exposes:
