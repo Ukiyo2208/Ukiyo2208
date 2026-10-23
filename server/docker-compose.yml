@@ -1,5 +1,9 @@
 # Serveur Bêta pour NAS UGREEN (UGOS Pro › Docker › Projet › Créer)
 # Placez ce fichier dans le dossier « server » de Bêta OS, puis lancez le projet.
+# Clé secrète commune au serveur Bêta et au pont Python : changez-la ici (une seule fois),
+# puis saisissez la même dans Bêta OS › Connexions.
+x-cle: &cle changez-moi-par-une-longue-phrase
+
 services:
   beta-os:
     build:
@@ -10,9 +14,9 @@ services:
     ports:
       - "8090:8090"                                   # application + bornes de recharge (OCPP)
     environment:
-      - BETA_KEY=changez-moi-par-une-longue-phrase   # même clé dans Bêta OS › Connexions
-      - BACKUP_KEEP=30                                # nombre de sauvegardes gardées
-      - TZ=Europe/Paris
+      BETA_KEY: *cle                                  # même clé dans Bêta OS › Connexions
+      BACKUP_KEEP: 30                                 # nombre de sauvegardes gardées
+      TZ: Europe/Paris
     volumes:
       - ./data:/data                                  # sauvegardes, journal, données
     extra_hosts:
@@ -43,3 +47,15 @@ services:
       - apparmor:unconfined
     volumes:
       - ./matter:/data
+
+  # Pont Python : HomePod (pyatv) et Roborock (python-roborock). Réseau de l'hôte pour trouver les HomePod.
+  py:
+    build: ./py
+    container_name: beta-py
+    restart: unless-stopped
+    network_mode: host                                # service sur IP-du-NAS:8099
+    environment:
+      BETA_KEY: *cle
+      TZ: Europe/Paris
+    volumes:
+      - ./py-data:/data                               # appairages Apple, jeton Roborock

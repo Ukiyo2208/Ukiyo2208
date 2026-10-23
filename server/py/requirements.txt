@@ -1,0 +1,4 @@
+# Pont Python du serveur Bêta (HomePod, Roborock)
+aiohttp==3.14.5
+pyatv==0.18.0
+python-roborock==7.13.0

@@ -22,7 +22,9 @@ un petit conteneur Python séparé pourra être ajouté au `docker-compose.yml`.
 | Somfy TaHoma, Philips Hue, Elgato, Govee, Samsung SmartThings, Siemens Home Connect | ✅ Connecteur disponible (`server/hub/`) |
 | Schneider Charge (OCPP 1.6J : suivi, départ, arrêt, limite en A), Viessmann (lecture) | ✅ Connecteur disponible |
 | Aqara Hub M3 (Matter, service `matter`), LinknLink (MQTT, service `mqtt`) | ✅ Connecteur disponible |
-| TV Philips, HomePod, Roborock, Navimow, Verisure, Ford | ⏳ Tuto « à préparer » en place, connecteur à venir |
+| TV Philips (JointSpace, appairage PIN), HomePod (pyatv), Roborock (python-roborock) | ✅ Connecteur disponible (HomePod et Roborock via le pont Python, service `py`) |
+| Segway Navimow | ⏳ En attente d'un accès développeur Segway (la connexion actuelle est réservée à l'intégration Home Assistant officielle) |
+| Verisure, Ford | ⛔ Non prévus |
 
 ## Matériel confirmé
 

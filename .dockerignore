@@ -3,3 +3,4 @@ server/data
 server/mqtt
 server/matter
 .git
+server/py-data

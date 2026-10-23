@@ -8,7 +8,7 @@ Petit serveur Node.js **sans dépendance** qui accompagne Bêta OS :
 
 ## Installation (UGOS Pro)
 1. Copiez tout le dossier Bêta OS sur le NAS (par ex. `/volume1/docker/beta-os`).
-2. Ouvrez `server/docker-compose.yml` et remplacez `BETA_KEY` par une longue phrase secrète.
+2. Ouvrez `server/docker-compose.yml` : remplacez la clé `x-cle` (en haut) par une longue phrase secrète, et `MQTT_PASS` par un mot de passe.
 3. UGOS Pro › Docker › Projet › Créer › choisissez ce fichier › Lancer.
 4. Ouvrez `http://IP-du-NAS:8090`. Pour le https, ajoutez un reverse proxy dans UGOS Pro (nécessaire pour Google/YouTube).
 5. Dans Bêta OS › Paramètres › Connexions › « Serveur Bêta » : adresse + même clé › Tester.
@@ -39,6 +39,7 @@ dans `data/hub.json` sur le NAS et ne sont jamais renvoyés au navigateur. Régl
 Pour SmartThings, Home Connect et Viessmann, le serveur doit être joignable en **https** (reverse proxy UGOS Pro).
 La borne de recharge se connecte en OCPP 1.6J sur `ws://IP-du-NAS:8090/ocpp/<identifiant>` (même port que l'application).
 
-Le projet Docker lance aussi deux services pour les appareils locaux :
+Le projet Docker lance aussi trois services pour les appareils locaux :
 - **mqtt** (Mosquitto, port 1883) : LinknLink et autres appareils MQTT. Changez `MQTT_PASS` dans `docker-compose.yml` ; dans Bêta OS, l'adresse est `mqtt://mqtt:1883`.
 - **matter** (python-matter-server, port 5580, réseau de l'hôte) : contrôleur Matter pour le Aqara Hub M3, sans Home Assistant. Le Hub s'ajoute depuis Bêta OS › Marques › Aqara avec son code d'appairage.
+- **py** (pont Python, port 8099, réseau de l'hôte) : HomePod (pyatv) et Roborock (python-roborock). Protégé par la même clé `x-cle`.
