@@ -20,7 +20,9 @@ roles:
   admin: [domotique, mails, questions, automatisations]
   adulte: [domotique, mails, questions]
   enfant: [domotique, questions]
-  inconnu: [] # mets [domotique] si un inconnu doit pouvoir allumer la lumière
+  # Visage absent ou non reconnu : commandes domotiques seulement, sans personnalisation.
+  # Mets [] pour que Bêta ne réponde qu'aux personnes reconnues.
+  inconnu: [domotique]
 
 # Types d'appareils que Bêta peut lister et utiliser dans les automatisations
 domaines_exposes:

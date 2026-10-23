@@ -141,7 +141,7 @@ que tu n'as pas dit « oui ».
 | Où | Quoi |
 |---|---|
 | `config/config.yaml` → `personnes` | Les prénoms **doivent être identiques** à ceux envoyés par la tablette |
-| `config/config.yaml` → `roles` | Qui a le droit de faire quoi (`domotique`, `mails`, `questions`, `automatisations`) |
+| `config/config.yaml` → `roles` | Qui a le droit de faire quoi (`domotique`, `mails`, `questions`, `automatisations`). Sans visage reconnu, c'est le rôle `inconnu` : domotique seulement, par défaut |
 | `config/config.yaml` → `seuil_confiance` | En dessous de ce seuil, le visage est considéré comme inconnu |
 | `.env` → `OLLAMA_MODEL` | `qwen2.5:1.5b` si le LLM local est trop lent, `qwen2.5:3b` par défaut |
 | `.env` → `WHISPER_MODEL` | `base-int8` (plus rapide), `small-int8` (meilleur en français, par défaut) |

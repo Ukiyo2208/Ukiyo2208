@@ -18,7 +18,8 @@ ROLES_PAR_DEFAUT = {
     "admin": [DOMOTIQUE, MAILS, QUESTIONS, AUTOMATISATIONS],
     "adulte": [DOMOTIQUE, MAILS, QUESTIONS],
     "enfant": [DOMOTIQUE, QUESTIONS],
-    "inconnu": [],
+    # Visage absent ou non reconnu : Bêta reste un assistant domotique, sans personnalisation
+    "inconnu": [DOMOTIQUE],
 }
 
 
@@ -77,9 +78,12 @@ class Settings:
     )
     envoyer_noms_appareils: bool = True
 
+    def identifie(self, personne: str | None, confiance: float) -> bool:
+        return bool(personne) and personne in self.personnes and confiance >= self.seuil_confiance
+
     def capacites(self, personne: str | None, confiance: float) -> set[str]:
         """Ce que la personne a le droit de faire. Confiance trop basse = inconnu."""
-        if not personne or confiance < self.seuil_confiance or personne not in self.personnes:
+        if not self.identifie(personne, confiance):
             return set(self.roles.get("inconnu", []))
         role = self.personnes[personne].role
         return set(self.roles.get(role, []))

@@ -124,7 +124,8 @@ class MainActivity : Activity() {
             Phase.ERREUR -> "⚠️"
         }
         message.text = a.message
-        personne.text = a.personne?.let { if (it == "inconnu") "Visage non reconnu" else "Bonjour $it" } ?: ""
+        // Sans visage reconnu, rien de personnel n'est affiché
+        personne.text = a.personne?.let { "Bonjour ${it.replaceFirstChar(Char::titlecase)}" } ?: ""
         niveau.progress = (a.scoreWakeWord * 100).toInt()
         dit.text = if (a.texteReconnu.isNotEmpty()) "Tu as dit : « ${a.texteReconnu} »" else ""
         reponse.text = a.reponse

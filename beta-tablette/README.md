@@ -85,7 +85,7 @@ S'il ne t'entend pas, baisse-la (0,3 ou 0,4). La barre de l'écran principal mon
 |---|---|
 | « Jeton refusé par le NAS » | Le jeton ne correspond pas à `BETA_TOKEN` dans `.env` |
 | « Le NAS ne répond pas » | Mauvaise IP ou port, ou conteneur `beta` arrêté (`sudo docker logs beta`) |
-| Tu es reconnu comme « inconnu » | Réenregistre ton visage. Vérifie que le prénom est identique dans `config.yaml` |
+| Bêta ne te dit pas bonjour / refuse les mails | Ton visage n'est pas reconnu (sans visage, seule la domotique marche). Réenregistre-le. Vérifie que le prénom est identique dans `config.yaml` |
 | L'écoute s'arrête toute seule | Mets la batterie de Bêta sur « Non restreinte » (étape 2.4) |
 | Bêta se déclenche quand il parle | Ça ne devrait pas arriver : l'écoute est coupée pendant ses réponses. Sinon, baisse le volume |
 

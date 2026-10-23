@@ -61,9 +61,18 @@ async def test_llm_reformule_pour_home_assistant():
 
 
 @pytest.mark.asyncio
-async def test_inconnu_refuse():
-    r = await routeur(FauxHA()).traiter("allume le salon", "bastien", 0.2)
-    assert r.route == "refus"
+async def test_sans_visage_la_domotique_marche():
+    ha = FauxHA(compris={"allume le salon"})
+    r = await routeur(ha).traiter("allume le salon", None, 0.0)
+    assert r.route == "home_assistant"
+
+
+@pytest.mark.asyncio
+async def test_sans_visage_pas_de_mails_ni_d_automatisation():
+    rt = routeur(FauxHA(), llm_local.Tri(llm_local.AUTOMATISATION), FausseIA())
+    for demande in ("lis mes mails", "tous les jours à 6h ouvre les volets"):
+        r = await rt.traiter(demande, "bastien", 0.2)  # visage trop incertain
+        assert r.route == "refus" and "face à la tablette" in r.texte
 
 
 @pytest.mark.asyncio

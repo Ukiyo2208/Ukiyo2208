@@ -25,6 +25,7 @@ from .mails import DEMANDE_MAILS, resume_mails
 
 log = logging.getLogger("beta.routeur")
 
+_PAS_RECONNU = "Je ne vois pas qui tu es. Mets-toi face à la tablette et redemande-moi."
 DUREE_CONFIRMATION = 120  # secondes pour dire « oui »
 _OUI = re.compile(r"^\W*(oui|ouais|vas-?y|confirme|je confirme|d'accord|ok|c'est bon|valide)\b", re.IGNORECASE)
 _NON = re.compile(r"^\W*(non|annule|laisse tomber|stop|pas maintenant)\b", re.IGNORECASE)
@@ -55,8 +56,9 @@ class Routeur:
         if not texte:
             return Resultat("Je n'ai rien entendu.", "vide")
 
+        identifie = self.settings.identifie(personne, confiance)
         capacites = self.settings.capacites(personne, confiance)
-        cle = personne or "inconnu"
+        cle = personne if identifie else "inconnu"
 
         attente = self._attentes.pop(cle, None)
         if attente and attente.expire > time.monotonic():
@@ -67,10 +69,12 @@ class Routeur:
             # Autre chose : on oublie la proposition et on traite la nouvelle demande
 
         if not capacites:
-            return Resultat("Je ne te reconnais pas, je ne peux rien faire pour toi.", "refus")
+            return Resultat(_PAS_RECONNU, "refus")
 
         if DEMANDE_MAILS.search(texte):
-            return await self._mails(personne, capacites)
+            if cfg.MAILS not in capacites:
+                return self._refus(identifie, "Désolé, je ne peux pas lire les mails pour toi.")
+            return await self._mails(personne)
 
         # « Tous les jours à 6h, ouvre les volets » ne doit pas ouvrir les volets tout de suite
         semble_automatisation = llm_local.tri_par_mots_cles(texte).categorie == llm_local.AUTOMATISATION
@@ -90,10 +94,12 @@ class Routeur:
 
         if tri.categorie == llm_local.AUTOMATISATION:
             if cfg.AUTOMATISATIONS not in capacites:
-                return Resultat("Désolé, tu n'as pas le droit de créer des automatisations.", "refus")
+                return self._refus(identifie, "Désolé, tu n'as pas le droit de créer des automatisations.")
             return await self._proposer_automatisation(texte, cle)
 
-        if tri.categorie == llm_local.QUESTION and tri.reponse and cfg.QUESTIONS in capacites:
+        if tri.categorie == llm_local.QUESTION and tri.reponse:
+            if cfg.QUESTIONS not in capacites:
+                return self._refus(identifie, "Désolé, je ne peux pas répondre à ça pour toi.")
             return Resultat(tri.reponse, "llm_local")
 
         return Resultat("Je n'ai pas compris, tu peux reformuler ?", "incompris")
@@ -105,9 +111,12 @@ class Routeur:
             log.exception("Home Assistant injoignable")
             return None
 
-    async def _mails(self, personne: str | None, capacites: set[str]) -> Resultat:
-        if cfg.MAILS not in capacites:
-            return Resultat("Désolé, je ne peux pas lire les mails pour toi.", "refus")
+    @staticmethod
+    def _refus(identifie: bool, message: str) -> Resultat:
+        # Sans visage, on explique comment débloquer plutôt que de dire « non »
+        return Resultat(message if identifie else _PAS_RECONNU, "refus")
+
+    async def _mails(self, personne: str | None) -> Resultat:
         compte = self.settings.personnes[personne].mail if personne in self.settings.personnes else None
         if not compte:
             return Resultat("Aucune boîte mail n'est configurée pour toi.", "mails")

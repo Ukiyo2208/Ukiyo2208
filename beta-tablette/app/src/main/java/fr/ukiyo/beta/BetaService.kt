@@ -47,6 +47,7 @@ class BetaService : Service() {
         private const val TAG = "Beta"
         private const val CANAL = "beta"
         private const val DUREE_MAX_VISAGE_MS = 3000L
+        private const val ATTENTE_VISAGE_APRES_PHRASE_MS = 500L
         /** Au-delà de seuil + marge, inutile de continuer à chercher un meilleur visage */
         private const val MARGE_VISAGE_SUR = 0.15f
 
@@ -72,7 +73,9 @@ class BetaService : Service() {
 
     @Volatile private var phase = Phase.ARRET
     private var enregistreur: Enregistreur? = null
-    private var identification: Deferred<Visages.Identification>? = null
+    private var identification: Deferred<Unit>? = null
+    /** Meilleur visage vu depuis « Hey Bêta » (mis à jour image par image par la caméra) */
+    private val meilleurVisage = AtomicReference(Visages.Identification(null, 0f))
     private var bruitAmbiant = 300f
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -188,6 +191,7 @@ class BetaService : Service() {
         enregistreur = Enregistreur(bruitAmbiant)
         bip.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
         Etat.maj { it.copy(phase = Phase.COMMANDE, message = "Je t'écoute…", personne = null) }
+        meilleurVisage.set(Visages.Identification(null, 0f))
         identification = scope.async(Dispatchers.IO) { reconnaitreVisage() }
     }
 
@@ -204,9 +208,12 @@ class BetaService : Service() {
 
         scope.launch(Dispatchers.IO) {
             try {
-                val id = visage?.await() ?: Visages.Identification(null, 0f)
+                // Le visage ne sert qu'à personnaliser : on ne fait pas attendre une commande domotique
+                withTimeoutOrNull(ATTENTE_VISAGE_APRES_PHRASE_MS) { visage?.await() }
+                visage?.cancel()
+                val id = meilleurVisage.get()
                 val personne = id.nom.takeIf { id.score >= reglages.seuilVisage }
-                Etat.maj { it.copy(personne = personne ?: "inconnu") }
+                Etat.maj { it.copy(personne = personne) }
 
                 if (!reglages.estConfigure) throw ClientNas.ErreurNas("Renseigne l'adresse du NAS dans les réglages")
                 val reponse = client.envoyer(wav, personne, id.score)
@@ -230,12 +237,10 @@ class BetaService : Service() {
         }
     }
 
-    private suspend fun reconnaitreVisage(): Visages.Identification {
-        val v = visages ?: return Visages.Identification(null, 0f)
-        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            return Visages.Identification(null, 0f)
-        }
-        val meilleur = AtomicReference(Visages.Identification(null, 0f))
+    private suspend fun reconnaitreVisage() {
+        val v = visages ?: return
+        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return
+        val meilleur = meilleurVisage
         val suffisant = CompletableDeferred<Unit>()
         val ouverte = camera.demarrer { image ->
             if (suffisant.isCompleted) return@demarrer
@@ -254,7 +259,6 @@ class BetaService : Service() {
                 camera.arreter()
             }
         }
-        return meilleur.get()
     }
 
     private suspend fun lire(wav: ByteArray) {
