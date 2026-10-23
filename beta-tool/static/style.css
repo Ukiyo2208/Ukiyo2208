@@ -1275,3 +1275,46 @@ button.chip { cursor: pointer; font: inherit; font-size: .8rem; }
 .st-dfile .grow { min-width: 0; }
 .st-dfile small { display: block; color: var(--muted); font-size: .8rem; }
 .st-titems { max-height: 320px; overflow: auto; }
+
+/* ---------- Outils épinglés ---------- */
+.pin-head { display: flex; align-items: center; gap: 8px; margin-top: 22px; }
+.pin-head .meta { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.pins { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.pin-tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 10px 14px; border-radius: 18px;
+  background: var(--surface); border: 1px solid var(--border); color: inherit; text-decoration: none; text-align: center; transition: transform .15s, border-color .15s, box-shadow .15s; }
+.pin-tile:hover { transform: translateY(-2px); border-color: var(--border-strong); box-shadow: var(--shadow); }
+.pin-tile .tile { width: 52px; height: 52px; border-radius: 16px; }
+.pin-tile .tile svg.i { width: 24px; height: 24px; }
+.pin-tile b { font-size: .9rem; line-height: 1.25; }
+.pin-tile.dragging { opacity: .4; }
+.pin-x { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; border: 0; display: grid; place-items: center;
+  background: var(--surface-2); color: var(--muted); cursor: pointer; opacity: 0; transition: opacity .15s; }
+.pin-x svg.i { width: 13px; height: 13px; }
+.pin-tile:hover .pin-x { opacity: 1; }
+.all-tools { margin-top: 22px; }
+.all-tools > summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; padding: 14px 18px; border-radius: 16px;
+  background: var(--surface); border: 1px solid var(--border); font-weight: 650; }
+.all-tools > summary::-webkit-details-marker { display: none; }
+.all-tools > summary::after { content: ""; margin-left: auto; width: 9px; height: 9px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); transition: transform .2s; }
+.all-tools[open] > summary::after { transform: rotate(-135deg); }
+.all-tools[open] > summary { margin-bottom: 6px; }
+.tool { position: relative; }
+.pin-btn { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--muted); display: grid; place-items: center; cursor: pointer; opacity: 0; transition: opacity .15s, color .15s; }
+.pin-btn svg.i { width: 15px; height: 15px; }
+.tool:hover .pin-btn, .pin-btn.on { opacity: 1; }
+.pin-btn.on, .pin-head-btn.on { color: var(--accent); border-color: var(--accent); }
+@media (hover: none) { .pin-x, .pin-btn { opacity: 1; } }
+@media (max-width: 600px) { .pins { grid-template-columns: repeat(3, 1fr); gap: 8px; } .pin-tile { padding: 14px 6px 10px; } .pin-tile b { font-size: .8rem; } .pin-tile .tile { width: 44px; height: 44px; } }
+.dash-col { display: flex; flex-direction: column; gap: 16px; }
+.dash-col > .widget:first-child { flex: none; }
+.pins-card { flex: 1; }
+.pins-card .w-head .meta { margin-left: auto; font-size: .74rem; }
+.pins-card .pins { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin-top: 12px; }
+.pins-card .pin-tile { padding: 12px 6px 10px; gap: 7px; border-radius: 14px; background: var(--surface-2); }
+.pins-card .pin-tile .tile { width: 40px; height: 40px; border-radius: 12px; }
+.pins-card .pin-tile .tile svg.i { width: 20px; height: 20px; }
+.pins-card .pin-tile b { font-size: .78rem; font-weight: 600; }
+.pins-fallback { margin-bottom: 16px; }
+.dash .acts { max-height: 380px; overflow: auto; }
+@media (max-width: 600px) { .pins-card .pins { grid-template-columns: repeat(4, 1fr); } .pins-card .pin-tile b { font-size: .7rem; } }

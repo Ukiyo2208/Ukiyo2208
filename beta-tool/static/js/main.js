@@ -61,18 +61,80 @@ const navLink = t => `<a href="#/${t.id}" data-route="${t.id}">${icon(t.icon)}${
 const sheetLink = t => `<a href="#/${t.id}" data-route="${t.id}"><span class="tile ${t.tile}">${icon(t.icon)}</span>${esc(t.name)}</a>`;
 
 function buildHome() {
-  $("#home-tools").innerHTML = CATS.map(([cat, label]) => {
-    const items = TOOLS.filter(t => t.cat === cat && visible(t));
-    if (!items.length) return "";
-    return `<div class="home-cat">${label}</div><div class="tools">${items.map(t => `
-      <a class="card tool" href="#/${t.id}">
-        <span class="tile ${t.tile}">${icon(t.icon)}</span>
-        <h2>${esc(t.name)}</h2><p>${esc(t.desc)}</p>
-        <div class="chips">${t.chips.map(c => `<span class="chip">${esc(c)}</span>`).join("")}</div>
-      </a>`).join("")}</div>`;
-  }).join("");
+  const pins = (state.config.prefs?.pins || []).map(byId).filter(t => t && TOOLS.includes(t) && visible(t));
+  const open = !pins.length || state.config.prefs?.all_open;
+  renderPins();
+  $("#home-tools").innerHTML = `
+    <details class="all-tools" id="all-tools" ${open ? "open" : ""}><summary>${icon("grid")}Tous les outils <span class="count">${TOOLS.filter(visible).length}</span></summary>
+    ${CATS.map(([cat, label]) => {
+      const items = TOOLS.filter(t => t.cat === cat && visible(t));
+      if (!items.length) return "";
+      return `<div class="home-cat">${label}</div><div class="tools">${items.map(t => `
+        <a class="card tool" href="#/${t.id}">
+          <button class="pin-btn ${pins.includes(t) ? "on" : ""}" data-pin="${t.id}" title="${pins.includes(t) ? "Désépingler" : "Épingler sur l'accueil"}">${icon("pin")}</button>
+          <span class="tile ${t.tile}">${icon(t.icon)}</span>
+          <h2>${esc(t.name)}</h2><p>${esc(t.desc)}</p>
+          <div class="chips">${t.chips.map(c => `<span class="chip">${esc(c)}</span>`).join("")}</div>
+        </a>`).join("")}</div>`;
+    }).join("")}</details>`;
   $("#version").textContent = "v" + state.config.version;
+  $("#all-tools").addEventListener("toggle", e => savePrefs({ all_open: e.target.open }, false));
 }
+
+/** Outils épinglés : sous la carte « Stockage » du tableau de bord (ou en haut des outils s'il n'est pas chargé). */
+function renderPins() {
+  const pins = (state.config.prefs?.pins || []).map(byId).filter(t => t && TOOLS.includes(t) && visible(t));
+  const slot = $("#pins-slot") || (() => { const d = document.createElement("div"); d.id = "pins-slot"; d.className = "pins-fallback"; $("#home-tools").before(d); return d; })();
+  slot.innerHTML = `<div class="card widget pins-card"><div class="w-head">${icon("pin")}<b>Mes outils</b>${pins.length > 1 ? `<span class="meta">glisse pour réordonner</span>` : ""}</div>
+    ${pins.length ? `<div class="pins" id="pins">${pins.map(t => `<a class="pin-tile" href="#/${t.id}" draggable="true" data-id="${t.id}">
+        <span class="tile ${t.tile}">${icon(t.icon)}</span><b>${esc(t.name)}</b>
+        <button class="pin-x" data-unpin="${t.id}" title="Désépingler">${icon("x")}</button></a>`).join("")}</div>`
+      : `<p class="hint" style="margin:0">Épingle tes outils préférés (bouton ${icon("pin")} sur chaque outil) pour les retrouver ici en un clic.</p>`}</div>`;
+  const grid = $("#pins");
+  if (grid) {  // réordonner par glisser-déposer
+    let dragged = null;
+    grid.addEventListener("dragstart", e => { dragged = e.target.closest(".pin-tile"); dragged?.classList.add("dragging"); });
+    grid.addEventListener("dragend", () => {
+      dragged?.classList.remove("dragging");
+      dragged = null;
+      savePrefs({ pins: [...grid.querySelectorAll(".pin-tile")].map(a => a.dataset.id) }, false);
+    });
+    grid.addEventListener("dragover", e => {
+      e.preventDefault();
+      const over = e.target.closest(".pin-tile");
+      if (!dragged || !over || over === dragged) return;
+      const r = over.getBoundingClientRect();
+      over.parentNode.insertBefore(dragged, e.clientX > r.left + r.width / 2 ? over.nextSibling : over);
+    });
+  }
+}
+
+export function isPinned(id) { return (state.config.prefs?.pins || []).includes(id); }
+
+export async function togglePin(id) {
+  const pins = state.config.prefs?.pins || [];
+  const on = !pins.includes(id);
+  await savePrefs({ pins: on ? [...pins, id] : pins.filter(p => p !== id) });
+  toast(on ? `${byId(id)?.name} épinglé sur l'accueil` : `${byId(id)?.name} retiré de l'accueil`);
+  return on;
+}
+
+async function savePrefs(patch, rebuild = true) {
+  state.config.prefs = { ...state.config.prefs, ...patch };
+  try { state.config.prefs = await api("/api/me/prefs", { method: "PUT", json: patch }); } catch (err) { toast(err.message, "err"); }
+  if (rebuild) buildHome();
+}
+
+document.addEventListener("click", e => {
+  const pin = e.target.closest("[data-pin], [data-unpin]");
+  if (!pin) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const id = pin.dataset.pin || pin.dataset.unpin;
+  togglePin(id).then(on => {
+    document.querySelectorAll(`.page-head [data-pin="${id}"]`).forEach(b => { b.classList.toggle("on", on); b.title = on ? "Désépingler de l'accueil" : "Épingler sur l'accueil"; });
+  });
+}, true);
 
 async function loadDashboard() {
   try {
@@ -89,9 +151,11 @@ async function loadDashboard() {
     const counts = Object.entries(d.counts).filter(([k, v]) => v != null && labels[k]).map(([k, v]) =>
       `<a class="stat" href="${labels[k][2]}">${icon(labels[k][1])}<b>${v}</b><span>${labels[k][0]}</span></a>`).join("");
     const acts = d.activity.length ? d.activity.map(activityRow).join("") : `<p class="hint">Rien pour l'instant.</p>`;
-    $("#dash").innerHTML = disks + (counts ? `<div class="card widget"><div class="w-head">${icon("chart")}<b>En bref</b></div><div class="stats">${counts}</div></div>` : "")
+    $("#dash").innerHTML = `<div class="dash-col">${disks}<div id="pins-slot"></div></div>` + (counts ? `<div class="card widget"><div class="w-head">${icon("chart")}<b>En bref</b></div><div class="stats">${counts}</div></div>` : "")
       + `<div class="card widget"><div class="w-head">${icon("clock")}<b>Activité récente</b></div><div class="acts">${acts}</div></div>`;
   } catch { $("#dash").innerHTML = ""; }
+  $$(".pins-fallback").forEach(el => el.remove());
+  renderPins();
 }
 const activityRow = a => {
   const t = byId(a.tool);
@@ -124,6 +188,13 @@ async function route() {
   if (prev.top !== current.top) window.scrollTo(0, 0);
   const t = current.tool;
   if (t && !visible(t)) return disabledPage(t);
+  if (t && TOOLS.includes(t) && t.view) {  // en-têtes écrits dans index.html : on y ajoute l'épingle
+    const head = $(`main > section[data-view="${t.view}"] .page-head`);
+    const help = head?.querySelector("[data-help]");
+    if (help && !head.querySelector("[data-pin]")) help.insertAdjacentHTML("beforebegin", `<button class="icon-btn pin-head-btn" data-pin="${t.id}">${icon("pin")}</button>`);
+    head?.querySelector("[data-pin]")?.classList.toggle("on", isPinned(t.id));
+    if (head?.querySelector("[data-pin]")) head.querySelector("[data-pin]").title = isPinned(t.id) ? "Désépingler de l'accueil" : "Épingler sur l'accueil";
+  }
   if (current.view === "home") loadDashboard();
   if (current.view === "telecharger") downloader.show(current.query);
   if (current.view === "convertir") converter.show();
@@ -167,6 +238,7 @@ export function pageHead(tool, extra = "") {
   const t = typeof tool === "string" ? byId(tool) : tool;
   return `<div class="page-head"><span class="tile ${t.tile}">${icon(t.icon)}</span>
     <div class="grow"><h1>${esc(t.name)}</h1><p>${esc(t.desc || "")}</p></div>${extra}
+    ${TOOLS.includes(t) ? `<button class="icon-btn pin-head-btn ${isPinned(t.id) ? "on" : ""}" data-pin="${t.id}" title="${isPinned(t.id) ? "Désépingler de l'accueil" : "Épingler sur l'accueil"}">${icon("pin")}</button>` : ""}
     <button class="btn ghost" data-help>${icon("help")}Aide</button></div>`;
 }
 

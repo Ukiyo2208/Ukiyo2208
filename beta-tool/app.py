@@ -163,7 +163,28 @@ def logout():
 def config():
     s = settings.get()
     return jsonify(storage=settings.storage_name(), site=s["site_name"], tools=s["tools"], user=g.user,
-                   mode=auth.mode(), version=updater.current_version())
+                   mode=auth.mode(), version=updater.current_version(), prefs=user_prefs(g.user["name"]))
+
+
+DEFAULT_PINS = ["telecharger", "convertir", "pdf", "fichiers", "paperasse", "presse-papier"]
+
+
+def user_prefs(name):
+    return {"pins": DEFAULT_PINS, "all_open": False, **store.load("prefs", {}).get(name, {})}
+
+
+@app.put("/api/me/prefs")
+def my_prefs():
+    d = request.get_json(silent=True) or {}
+
+    def go(data):
+        p = data.setdefault(g.user["name"], {})
+        if "pins" in d:
+            p["pins"] = [str(t)[:40] for t in d["pins"] if isinstance(t, str)][:40]
+        if "all_open" in d:
+            p["all_open"] = bool(d["all_open"])
+    store.update("prefs", {}, go)
+    return jsonify(user_prefs(g.user["name"]))
 
 
 @app.get("/api/settings")
@@ -338,7 +359,7 @@ def dashboard():
             counts[name] = fn(g.user["name"])
         except Exception:
             counts[name] = None
-    return jsonify(disks=list(disks.values()), counts=counts, activity=activity.recent(g.user["name"], limit=6),
+    return jsonify(disks=list(disks.values()), counts=counts, activity=activity.recent(g.user["name"], limit=5),
                    version=updater.current_version())
 
 
