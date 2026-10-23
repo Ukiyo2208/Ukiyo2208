@@ -1,7 +1,7 @@
 # Intégrations domotique — connexion directe, sans Home Assistant
 
-Architecture : un **petit serveur maison** (backend Python) qui parle directement à
-chaque marque, et le dashboard web qui ne parle qu'à ce serveur.
+Architecture : le **serveur Bêta** (Node.js, Docker sur le NAS, voir `server/`) gagne un
+connecteur par marque, et Bêta OS ne parle qu'à ce serveur.
 
 ```
 Appareils / clouds des marques ──> Backend (connecteurs par marque) ──> API unique ──> Dashboard
@@ -11,8 +11,9 @@ Le backend est nécessaire : les secrets (tokens OAuth, mots de passe) ne doiven
 être dans le navigateur, et les API locales (TaHoma, TV, HomePod) ne sont joignables
 que depuis le réseau de la maison.
 
-Python est retenu car les meilleures bibliothèques existent dans ce langage
-(pyoverkiz, pyatv, python-roborock, vsure…).
+Les connecteurs sont écrits en Node.js pour rester dans `server/server.js`. Pour les
+marques dont seule une bibliothèque Python existe (HomePod via pyatv, Roborock, Verisure),
+un petit conteneur Python séparé pourra être ajouté au `docker-compose.yml`.
 
 ## Matériel confirmé
 
