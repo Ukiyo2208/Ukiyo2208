@@ -25,18 +25,20 @@ Python est retenu car les meilleures bibliothèques existent dans ce langage
 |---|---|---|---|---|
 | Somfy volets + garage | API locale TaHoma (« mode développeur ») | Local | Activer le mode développeur sur somfy.fr, générer un token | ✅ Officielle |
 | Aqara lumières | Matter (le M3 sert de pont Matter) ou Aqara Open API | Local / Cloud | Code d'appairage Matter du M3, ou compte developer.aqara.com | ✅ |
-| Télécommande IR | À confirmer (le Hub M3 a un émetteur IR intégré) | — | Préciser quel appareil | ❓ |
+| LinknLink (télécommande IR eRemote, capteurs) | MQTT natif vers un broker local (Mosquitto) | Local | Firmware « HA » via l'app LinknLink, puis saisir l'adresse du broker | ✅ |
 | TV Samsung | SmartThings API (+ API locale Samsung TV en option) | Cloud / Local | App OAuth SmartThings (les tokens perso expirent en 24 h) | ✅ Officielle |
 | Samsung lave-linge + clim | SmartThings API | Cloud | Même app OAuth que la TV | ✅ Officielle |
 | TV Philips | API JointSpace (port 1926) | Local | Appairage par PIN affiché sur la TV | ✅ |
 | Apple HomePod | pyatv (AirPlay / Companion) | Local | Appairage au premier lancement | ✅ Média + volume |
 | Siemens lave-linge | Home Connect API | Cloud officiel | Compte developer.home-connect.com, activer « démarrage à distance » | ✅ Officielle |
 | Philips Hue lumières | API locale du Hue Bridge (CLIP v2, événements en temps réel) | Local | Appuyer sur le bouton du Bridge pour générer une clé | ✅ Officielle |
+| Elgato lumières (Key Light / Light Strip) | API HTTP locale (port 9123) | Local | Rien, détection automatique sur le réseau | ✅ |
+| Viessmann chauffage | API ViCare officielle (OAuth) | Cloud | Compte developer.viessmann.com ; offre gratuite limitée à 1 450 appels/jour | ✅ Officielle |
 | Govee lumières | Govee API (clé dans l'app) + API LAN | Cloud / Local | Demander la clé API, activer « Contrôle LAN » par lampe | ✅ Officielle |
 | Roborock aspirateur | python-roborock | Cloud + local | Compte Roborock | ⚠️ Non officielle |
 | Segway Navimow tondeuse | Navimow OpenAPI (accès développeur via l'app) | Cloud | Demande d'accès développeur dans l'app Navimow | ⚠️ À vérifier selon modèle |
 | Verisure alarme | API GraphQL Verisure (vsure) | Cloud | Compte Verisure + code SMS (2FA) | ⚠️ Non officielle |
-| Schneider borne de recharge | Selon modèle : OCPP, Modbus TCP ou cloud Wiser | Local / Cloud | Préciser le modèle exact (EVlink Home, Pro AC…) | ❓ |
+| Schneider Charge (borne VE) | OCPP 1.6J : le backend joue le rôle de serveur OCPP | Local | Pointer l'URL OCPP de la borne vers le backend (peut couper le lien avec l'app Wiser) | ✅ Standard |
 | Ford voiture | FordConnect API (lecture seule) | Cloud | App sur le portail développeur Ford, compte FordPass dédié | ❌ Fragile |
 
 ## Sécurité
