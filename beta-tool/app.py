@@ -98,7 +98,7 @@ def share_target():
 
 # Accessibles sans être connecté : page de connexion, ressources de la page, pages publiques
 # (partages /d/, questionnaires /f/, liens courts /s/) et leurs API publiques.
-PUBLIC = ("/login", "/login/code", "/style.css", "/vendor/fonts/", "/brand/", "/manifest.webmanifest", "/sw.js", "/api/auth/mode",
+PUBLIC = ("/login", "/login/code", "/style.css", "/js/i18n.js", "/i18n/", "/vendor/fonts/", "/brand/", "/manifest.webmanifest", "/sw.js", "/api/auth/mode",
           "/d/", "/f/", "/s/", "/public/", "/api/public/", "/statut", "/.well-known/")
 
 
@@ -187,6 +187,8 @@ def my_prefs():
             p["pins"] = [str(t)[:40] for t in d["pins"] if isinstance(t, str)][:40]
         if "all_open" in d:
             p["all_open"] = bool(d["all_open"])
+        if d.get("lang") in ("fr", "en"):
+            p["lang"] = d["lang"]
     store.update("prefs", {}, go)
     return jsonify(user_prefs(g.user["name"]))
 

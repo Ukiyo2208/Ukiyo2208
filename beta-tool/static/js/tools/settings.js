@@ -5,6 +5,7 @@ import { state, isAdmin, api, ago } from "../state.js";
 import { pageHead, reloadConfig, setTheme } from "../main.js";
 import * as push from "../push.js";
 import { canvas as qrCanvas } from "../qrcode.js";
+import * as i18n from "../i18n.js";
 
 const TABS = [
   ["general", "Général", "settings", true],
@@ -395,12 +396,13 @@ function apparence(el) {
     <div class="card"><div class="card-title">${icon("sun")}Thème</div>
       <div class="seg">${[["auto", "Automatique", "monitor"], ["light", "Clair", "sun"], ["dark", "Sombre", "moon"]].map(([v, l, i]) =>
         `<label><input type="radio" name="th" value="${v}" ${theme === v ? "checked" : ""}>${icon(i)}${l}</label>`).join("")}</div></div>
+    <div class="card"><div class="card-title">${icon("translate")}Langue · Language</div>
+      <div class="seg">${[["fr", "Français"], ["en", "English"]].map(([v, l]) =>
+        `<label class="notranslate"><input type="radio" name="lg" value="${v}" ${(state.config.prefs?.lang || i18n.current()) === v ? "checked" : ""}>${l}</label>`).join("")}</div>
+      <p class="hint">Choix enregistré pour ton compte, sur tous tes appareils.</p></div>
     <div class="card"><div class="card-title">${icon("bell")}Notifications</div>
-      <p class="hint" style="margin-top:-6px">Être prévenu quand un téléchargement, une conversion ou une réponse à un questionnaire arrive, même si l'onglet est en arrière-plan.</p>
-      ${!("Notification" in window) ? `<p class="hint">Ton navigateur ne gère pas les notifications.</p>`
-        : Notification.permission === "granted" ? `<span class="pill-ok">${icon("check")}Activées</span>`
-        : Notification.permission === "denied" ? `<span class="pill-warn">Bloquées dans les réglages du navigateur</span>`
-        : `<button class="btn" id="notif-on">${icon("bell")}Activer les notifications</button>`}</div>
+      <p class="hint" style="margin-top:-6px">Notifications sur ton téléphone ou ordinateur, même quand Bêta Tool est fermé : réglages dans l'onglet Notifications.</p>
+      <a class="btn ghost" href="#/reglages/notifications">${icon("bell")}Régler les notifications</a></div>
     <div class="card"><div class="card-title">${icon("phone")}Installer l'application</div>
       <p class="hint" style="margin-top:-6px">Une vraie icône sur ton téléphone ou ton ordinateur, en plein écran. Bonus : « Partager → Bêta Tool » depuis YouTube lance le téléchargement.</p>
       ${window.btInstall ? `<button class="btn" id="pwa">${icon("download")}Installer Bêta Tool</button>`
@@ -408,7 +410,11 @@ function apparence(el) {
         : `<p>Menu du navigateur → <b>Installer l'application</b> (ou « Ajouter à l'écran d'accueil »).</p>`}
       ${isSecureContext ? "" : `<p class="hint">${icon("alert")} L'installation complète (et le partage depuis d'autres applis) demande une adresse en HTTPS. Le README explique comment.</p>`}</div>`;
   el.querySelectorAll("[name=th]").forEach(r => r.onchange = () => setTheme(r.value));
-  $("#notif-on")?.addEventListener("click", async () => { await Notification.requestPermission(); apparence(el); });
+  el.querySelectorAll("[name=lg]").forEach(r => r.onchange = async () => {
+    await api("/api/me/prefs", { method: "PUT", json: { lang: r.value } });
+    try { localStorage.setItem("bt-lang", r.value); } catch {}
+    location.reload();
+  });
   $("#pwa")?.addEventListener("click", async () => { window.btInstall.prompt(); window.btInstall = null; });
 }
 
@@ -422,6 +428,8 @@ function apropos(el) {
     ["JSZip", "MIT / GPL 3", "Archives ZIP"], ["7-Zip, bsdtar", "LGPL / BSD", "Décompresseur"], ["ONLYOFFICE Docs", "AGPL 3", "Bêta Work"],
     ["faster-whisper", "MIT", "Transcription"], ["rembg", "MIT", "Détourage d'images"], ["Vaultwarden", "AGPL 3", "Coffre"],
     ["marked, DOMPurify", "MIT / Apache 2.0", "Bêta Notes"], ["qrcode-generator, qr-scanner", "MIT", "QR codes"],
+    ["Radicale", "GPL 3", "Agenda (CalDAV)"], ["Argos Translate, CTranslate2, SentencePiece", "MIT / Apache 2.0", "Traduction"],
+    ["WireGuard, wg-easy", "GPL 2 / AGPL 3", "VPN"],
     ["Inter, Dancing Script", "OFL 1.1", "Polices"], ["Flask, Waitress", "BSD / ZPL", "Serveur web"],
   ];
   el.innerHTML = `<div class="card"><div class="card-title">${icon("help")}Bêta Tool ${esc(state.config.version)}</div>

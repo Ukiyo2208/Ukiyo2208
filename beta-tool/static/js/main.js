@@ -9,6 +9,7 @@ import * as pdf from "./pdf/hub.js";
 import * as archive from "./archive.js";
 import * as work from "./work.js";
 import * as push from "./push.js";
+import * as i18n from "./i18n.js";
 
 hydrateIcons();
 
@@ -455,6 +456,7 @@ export async function reloadConfig() {
   const hr = new Date().getHours();
   $("#greeting").textContent = (hr < 5 || hr >= 18 ? "Bonsoir" : "Bonjour") + (state.config?.user ? "" : "") + " 👋";
   state.config = await api("/api/config");
+  await i18n.apply(i18n.preferred(state.config.prefs?.lang));
   if (state.config.mode === "accounts") $("#greeting").textContent = $("#greeting").textContent.replace(" 👋", `, ${state.config.user.name} 👋`);
   if (state.config.site && state.config.site !== "Bêta Tool") document.title = state.config.site;
   if (state.config.storage && state.config.storage !== "NAS") swapStorage(state.config.storage);

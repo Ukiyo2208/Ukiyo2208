@@ -23,11 +23,21 @@ fichier n'est envoyé à un service externe.
 | **Liens courts** | `/s/mon-lien` vers une longue adresse, avec compteur de clics. |
 | **Sauvegardes** | Copie planifiée de tes dossiers vers un autre disque, avec historique des versions. |
 | **Coffre** | Gestionnaire de mots de passe compatible Bitwarden (Vaultwarden), optionnel. |
+| **Abonnements** | Suis des chaînes YouTube, playlists ou podcasts : notification à chaque nouvelle vidéo (avec la miniature) et téléchargement automatique au choix. |
+| **Presse-papier** | Copie un texte, un lien, une image ou un fichier sur un appareil, retrouve-le aussitôt sur les autres. |
+| **Surveillance** | Vérifie sites, services (port TCP), ping et espace disque ; alerte en cas de panne et au retour ; page de statut publique `/statut`. |
+| **Scanner** | Photo d'un document → bords détectés, page redressée et nettoyée (filtres « document »), PDF avec texte cherchable. |
+| **Paperasse** | Factures, fiches de paie, impôts… lus (OCR), reconnus, renommés et rangés par catégorie et année ; échéances avec rappels ; recherche dans le texte. |
+| **Stockage** | Carte de l'espace occupé, plus gros fichiers, doublons (comparaison du contenu), suggestions de rangement d'un dossier (avec annulation). |
+| **Agenda** | Agendas perso et agenda « Famille » partagé, rappels, synchronisés dans les deux sens avec les téléphones (CalDAV, Radicale). |
+| **Recettes** | Import depuis un lien (Marmiton, 750g…), portions ajustables, mode cuisine avec minuteurs, liste de courses partagée triée par rayon. |
+| **Traduction** | Textes, documents (Word, OpenDocument, PDF) et sous-titres traduits sur le NAS (Argos Translate), sans service en ligne. |
+| **VPN** | Accès à la maison depuis l'extérieur avec WireGuard (wg-easy) : appareils, QR codes, état des connexions. Optionnel. |
 
-Autour des outils : **tableau de bord** (espace disque, activité récente), **recherche globale** (`Ctrl K`),
-**notifications** (cloche, et notifications du navigateur quand un travail se termine), **comptes utilisateurs**,
-**appli installable** sur le téléphone (avec « Partager vers Bêta Tool » pour envoyer un lien au Téléchargeur), et une
-page **Réglages** pour activer ou désactiver chaque outil et installer les **mises à jour**.
+Autour des outils : **tableau de bord** (espace disque, outils épinglés, activité récente), **recherche globale** (`Ctrl K`),
+**notifications push** sur le téléphone et l'ordinateur (même Bêta Tool fermé), **comptes utilisateurs** avec
+**double authentification**, **appli installable** sur le téléphone (avec « Partager vers Bêta Tool »), interface en
+**français ou anglais**, et une page **Réglages** pour activer ou désactiver chaque outil et installer les **mises à jour**.
 
 Chaque outil a un bouton **Aide** (tuto pas à pas, astuces, FAQ) et le site a un bouton **Suggestion**
 pour envoyer une idée ou signaler un problème ; les suggestions sont listées sur la page « Suggestions »
@@ -111,6 +121,61 @@ python scripts/make_update.py --notes "Ce qui change" --url-base https://exemple
 Publie ensuite `dist/beta-tool-update-<version>.zip` et `dist/latest.json` au même endroit (une *release* GitHub
 convient très bien). Le fichier contient une empreinte SHA-256 vérifiée à l'installation.
 
+## Notifications push et double authentification
+
+**Notifications push** : Réglages → Notifications → « Activer » sur chaque appareil. Le téléphone reçoit alors une
+notification même quand Bêta Tool est fermé : téléchargement fini, nouvelle vidéo d'une chaîne suivie, rappel d'agenda,
+échéance d'une facture, site en panne… Chacun choisit les outils qui le préviennent.
+- Le navigateur exige une adresse en **https://** (voir « Appli sur le téléphone ») ; sur iPhone, il faut d'abord
+  installer l'appli (« Sur l'écran d'accueil »), iOS 16.4 ou plus récent.
+- Le NAS doit pouvoir joindre les services de notification d'Apple, Google et Mozilla (accès Internet sortant).
+- Les clés du serveur (VAPID) sont créées automatiquement dans `/data/vapid.pem`.
+
+**Double authentification** : Réglages → Comptes → « Activer » : scanne le QR code avec Google Authenticator,
+Microsoft Authenticator, Authy, 2FAS, Bitwarden… La connexion demande ensuite un code à 6 chiffres. 10 codes de secours
+sont donnés à l'activation. Un administrateur peut désactiver la double authentification d'un compte (téléphone perdu).
+
+## Agenda : synchronisation des téléphones
+
+Le serveur CalDAV [Radicale](https://radicale.org) (GPL v3) est intégré à Bêta Tool sur `/dav/`. Dans l'Agenda,
+« Synchroniser » crée un mot de passe propre à l'agenda (différent de celui du site) :
+- **iPhone / iPad** : Réglages → Calendrier → Comptes → Ajouter un compte → Autre → Compte CalDAV ; serveur = adresse du
+  NAS (ex. `192.168.1.10:8080`), identifiant et mot de passe affichés dans Bêta Tool.
+- **Android** : appli gratuite [DAVx⁵](https://www.davx5.com) ; les agendas apparaissent ensuite dans Google Agenda.
+- **Thunderbird, Calendrier macOS, Outlook (avec extension)** : agenda CalDAV avec `http://IP-DU-NAS:8080/dav/`.
+
+L'agenda « Famille » est partagé par tous les comptes. Les fichiers sont dans `/data/agenda` (à sauvegarder).
+Hors de la maison, passe par une adresse en HTTPS ou par le VPN.
+
+## Paperasse et Scanner
+
+Les documents sont rangés dans `Documents (Bêta Work)/Paperasse/<Catégorie>/<Année>/` (variable `PAPERS_DIR` pour un
+autre dossier). Tout ce qui est déposé dans `Paperasse/À classer` est traité automatiquement (pratique avec un scanner
+réseau qui enregistre sur le NAS, ou une appli de scan du téléphone). La reconnaissance (catégorie, émetteur, date,
+montant, échéance) se fait par mots-clés, sur le NAS ; l'OCR utilise Tesseract (français et anglais).
+
+## Traduction
+
+Les modèles [Argos Translate](https://www.argosopentech.com) (MIT) sont téléchargés depuis l'outil (onglet Langues,
+administrateur), environ 100 Mo par paire de langues, dans `/data/models/traduction`, puis tout fonctionne hors ligne.
+Entre deux langues étrangères, la traduction passe par l'anglais.
+
+## VPN (WireGuard)
+
+1. Dans `.env` : ajoute `vpn` à `COMPOSE_PROFILES`, choisis `VPN_PASSWORD` et renseigne `VPN_HOST` (adresse publique de
+   la box ou nom DynDNS, ex. `maison.synology.me`). Lance `docker compose up -d`.
+2. Sur la box : redirige le port **UDP 51820** vers le NAS.
+3. Outil VPN → « Ajouter un appareil » → scanne le QR code avec l'appli WireGuard.
+
+Le conteneur [wg-easy](https://github.com/wg-easy/wg-easy) utilise le module WireGuard du noyau : il est présent sur
+la plupart des Linux, QNAP et Unraid, mais **pas sur Synology DSM** (il faut d'abord installer un paquet communautaire
+WireGuard pour DSM). Alternative la plus simple : [Tailscale](https://tailscale.com) (paquet officiel sur Synology).
+
+## Version anglaise
+
+Réglages → Apparence → Langue : **English**. Le choix est enregistré pour le compte (et sur la page de connexion,
+pour l'appareil). La traduction de l'interface est dans `static/i18n/en.json` (texte français → texte anglais).
+
 ## Sauvegardes
 
 Monte un **autre disque** sur `/backup` (ligne commentée dans `docker-compose.yml`, ex. un disque USB), puis
@@ -171,7 +236,7 @@ au public : télécharger des contenus protégés pour d'autres engage ta respon
    - `/photos` : ta photothèque (Album photo) ;
    - `/depots` : les fichiers que l'on t'envoie avec Bêta Drop ;
    - `/backup` : le disque des sauvegardes (optionnel) ;
-   - `/data` : comptes, réglages, notes, questionnaires, mises à jour, modèles d'IA.
+   - `/data` : comptes, réglages, notes, questionnaires, agendas, recettes, mises à jour, modèles d'IA.
 3. Ouvre le fichier `.env` : change `ONLYOFFICE_JWT_SECRET`, choisis les services optionnels (`COMPOSE_PROFILES`).
 4. Lance :
    ```sh
@@ -182,6 +247,10 @@ au public : télécharger des contenus protégés pour d'autres engage ta respon
 5. Ouvre `http://IP-DU-NAS:8080`, puis va dans Réglages → Comptes pour créer ton compte administrateur.
 
 Les modèles d'IA (transcription ≈ 500 Mo pour `small`, détourage ≈ 180 Mo) se téléchargent au premier usage dans `/data/models`.
+
+**Passer à la version 2.1** depuis une 2.0 : Réglages → Mises à jour → glisse `beta-tool-update-2.1.0.zip` (les
+nouvelles dépendances Radicale et SentencePiece sont installées automatiquement). Pour une installation neuve, utilise
+l'archive complète.
 
 **Passer de la version 1 à la version 2** : cette version change le Dockerfile (nouveaux logiciels, lanceur) ;
 remplace le dossier, garde ton `.env` et tes chemins, puis `docker compose up -d --build`. Les mises à jour
