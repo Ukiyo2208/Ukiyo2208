@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Questionnaire</title>
+<link rel="icon" href="/brand/favicon.ico" sizes="any">
+<link rel="stylesheet" href="/style.css">
+<style>
+  :root { --form: #1f6bff; }
+  .pub { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 32px 16px 60px; }
+  .pub > * { width: min(680px, 100%); }
+  .f-head { border-top: 8px solid var(--form); }
+  .f-head h1 { margin: 0 0 8px; font-size: 1.7rem; letter-spacing: -.02em; }
+  .f-head p { margin: 0; color: var(--muted); white-space: pre-wrap; }
+  .q label.qt { display: block; font-weight: 650; margin-bottom: 4px; }
+  .q .req { color: var(--err); margin-left: 4px; }
+  .q .help { color: var(--muted); font-size: .88rem; margin: 0 0 10px; }
+  .q .opt { display: flex; align-items: center; gap: 10px; padding: 8px 4px; cursor: pointer; }
+  .q .opt input { width: 18px; height: 18px; accent-color: var(--form); }
+  .q.bad { box-shadow: 0 0 0 2px var(--err); }
+  .scale { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .scale label { display: grid; place-items: center; min-width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--border-strong); cursor: pointer; font-weight: 600; }
+  .scale input { display: none; }
+  .scale label:has(input:checked) { background: var(--form); color: #fff; border-color: transparent; }
+  .scale .ends { display: flex; justify-content: space-between; width: 100%; color: var(--muted); font-size: .82rem; margin-top: 4px; }
+  .stars { display: flex; gap: 4px; flex-direction: row-reverse; justify-content: flex-end; }
+  .stars input { display: none; }
+  .stars label { font-size: 2rem; color: var(--border-strong); cursor: pointer; transition: color .1s; }
+  .stars label:hover, .stars label:hover ~ label, .stars input:checked ~ label { color: #f5b301; }
+  .send { background: var(--form); box-shadow: none; }
+  .pub-foot { color: var(--muted); font-size: .82rem; text-align: center; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div class="pub" id="app"><div class="card"><div class="loading"><span class="spinner"></span>Chargement…</div></div></div>
+<script>
+const id = location.pathname.split("/").pop();
+const app = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let form;
+
+function field(q) {
+  const n = `q-${q.id}`;
+  switch (q.type) {
+    case "paragraph": return `<textarea name="${n}" rows="4"></textarea>`;
+    case "email": return `<input type="email" name="${n}" autocomplete="email">`;
+    case "number": return `<input type="number" name="${n}" step="any">`;
+    case "date": return `<input type="date" name="${n}">`;
+    case "choice": case "checkbox": {
+      const t = q.type === "choice" ? "radio" : "checkbox";
+      return q.options.map(o => `<label class="opt"><input type="${t}" name="${n}" value="${esc(o)}">${esc(o)}</label>`).join("")
+        + (q.other ? `<label class="opt"><input type="${t}" name="${n}" value="__autre">Autre : <input type="text" name="${n}-autre" style="flex:1;padding:6px 10px"></label>` : "");
+    }
+    case "dropdown": return `<select name="${n}" style="width:100%"><option value="">Choisir…</option>${q.options.map(o => `<option>${esc(o)}</option>`).join("")}</select>`;
+    case "scale": {
+      let html = `<div class="scale">`;
+      for (let v = q.min; v <= q.max; v++) html += `<label><input type="radio" name="${n}" value="${v}">${v}</label>`;
+      return html + (q.min_label || q.max_label ? `<div class="ends"><span>${esc(q.min_label)}</span><span>${esc(q.max_label)}</span></div>` : "") + `</div>`;
+    }
+    case "rating": return `<div class="stars">${[5, 4, 3, 2, 1].map(v => `<input type="radio" name="${n}" id="${n}-${v}" value="${v}"><label for="${n}-${v}" title="${v}/5">★</label>`).join("")}</div>`;
+    case "yesno": return `<label class="opt"><input type="radio" name="${n}" value="Oui">Oui</label><label class="opt"><input type="radio" name="${n}" value="Non">Non</label>`;
+    default: return `<input type="text" name="${n}">`;
+  }
+}
+
+function value(q, f) {
+  const n = `q-${q.id}`;
+  if (q.type === "checkbox") {
+    return [...f.querySelectorAll(`[name="${n}"]:checked`)].map(i => i.value === "__autre" ? f.elements[`${n}-autre`].value.trim() : i.value).filter(Boolean);
+  }
+  if (["choice", "scale", "rating", "yesno"].includes(q.type)) {
+    const c = f.querySelector(`[name="${n}"]:checked`);
+    if (!c) return "";
+    return c.value === "__autre" ? f.elements[`${n}-autre`].value.trim() : c.value;
+  }
+  return (f.elements[n]?.value || "").trim();
+}
+
+async function load() {
+  const r = await fetch(`/api/public/forms/${id}`);
+  form = await r.json();
+  if (!r.ok) return app.innerHTML = `<div class="card"><div class="empty"><b>Questionnaire introuvable</b>${esc(form.error)}</div></div>`;
+  document.title = form.title;
+  document.documentElement.style.setProperty("--form", form.color || "#1f6bff");
+  const head = `<div class="card f-head"><h1>${esc(form.title)}</h1>${form.description ? `<p>${esc(form.description)}</p>` : ""}</div>`;
+  if (!form.open) return app.innerHTML = head + `<div class="card"><div class="empty"><b>Ce questionnaire est fermé</b>Il n'accepte plus de réponses.</div></div>`;
+  app.innerHTML = head + `<form id="f" novalidate>${form.questions.map(q => `<div class="card q" data-q="${q.id}">
+      <label class="qt">${esc(q.label || "Question")}${q.required ? `<span class="req">*</span>` : ""}</label>
+      ${q.help ? `<p class="help">${esc(q.help)}</p>` : ""}${field(q)}</div>`).join("")}
+    <p class="msg" id="err"></p>
+    <button class="btn wide send">Envoyer</button></form>
+    <p class="pub-foot">Formulaire créé avec Bêta Tool · ne communique jamais de mot de passe.</p>`;
+  document.getElementById("f").onsubmit = async e => {
+    e.preventDefault();
+    const f = e.target, answers = {};
+    let firstBad = null;
+    form.questions.forEach(q => {
+      const v = value(q, f);
+      answers[q.id] = v;
+      const empty = v === "" || (Array.isArray(v) && !v.length);
+      const card = f.querySelector(`[data-q="${q.id}"]`);
+      card.classList.toggle("bad", q.required && empty);
+      if (q.required && empty && !firstBad) firstBad = card;
+    });
+    if (firstBad) { document.getElementById("err").textContent = "Merci de répondre aux questions obligatoires (*)"; firstBad.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+    const btn = f.querySelector(".send");
+    btn.disabled = true;
+    const r2 = await fetch(`/api/public/forms/${id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers }) });
+    const d = await r2.json();
+    if (!r2.ok) { document.getElementById("err").textContent = d.error; btn.disabled = false; return; }
+    app.innerHTML = head + `<div class="card"><div class="empty" style="color:var(--text)"><b style="font-size:1.2rem">✓ ${esc(d.message)}</b>
+      <button class="btn small ghost" onclick="load()">Envoyer une autre réponse</button></div></div>`;
+  };
+}
+load();
+</script>
+</body>
+</html>

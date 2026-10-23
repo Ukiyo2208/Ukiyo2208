@@ -18,8 +18,11 @@ import converter
 import downloader
 import drop
 import files
+import forms
 import imagetool
+import links
 import media
+import notes
 import photos
 import transcribe
 import videotool
@@ -509,10 +512,11 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links):
     app.register_blueprint(module.bp)
-SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search)
-COUNTERS.update(partages=drop.count)
+SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
+                 liens=links.search)
+COUNTERS.update(partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
 
 
 if __name__ == "__main__":
