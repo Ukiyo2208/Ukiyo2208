@@ -24,9 +24,10 @@
     ['pieces', 'Pièces', 'rooms', 'rooms', 'noside'],
     ['journal', 'Journal', 'journal', 'journal', 'noside'],
     ['connexions', 'Connexions', 'link', 'link', 'noside'],
+    ['marques', 'Marques', 'plug', 'plug', 'noside'],
     ['parametres', 'Paramètres', 'gear', 'gearFill']
   ];
-  const GUEST_HIDE = ['nas', 'calendrier', 'mails', 'parametres'];
+  const GUEST_HIDE = ['nas', 'calendrier', 'mails', 'parametres', 'marques'];
   const navItems = () => (B.navList ? B.navList(NAV) : NAV).filter(n => !(guest() && GUEST_HIDE.includes(n[0])));
   const unread = () => S.mails.filter(m => !m.read).length;
   const badgeHTML = id => id === 'mails' && unread() ? '<span class="badge">' + unread() + '</span>' : '';

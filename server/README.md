@@ -24,5 +24,16 @@ Sans Docker : `BETA_KEY=… node server/server.js` (Node 20 ou plus).
 | `POST /api/backup`, `GET /api/backups`, `GET /api/backup/:nom` | sauvegardes |
 | `POST /api/proxy` `{url, method, headers, body}` | relais HTTP |
 | `POST /api/mail/test` `{imap, port, user, pass}` | test IMAP |
+| `GET /api/hub` | marques et leur état (secrets masqués) |
+| `PUT /api/hub/:marque` · `POST /api/hub/:marque/test` | réglages d'une marque, test |
+| `POST /api/hub/:marque/action/:nom` | appairage Hue, jeton Somfy… |
+| `GET /api/hub/:marque/oauth?redirect=…` | début de connexion OAuth (SmartThings, Home Connect) |
+| `GET /api/hub/:marque/devices` | appareils trouvés par l'API de la marque |
+| `GET /api/hub/states?brands=…` · `POST /api/hub/command` | états en direct, commandes |
 
-Toutes les routes sauf `ping` demandent l’en-tête `X-Beta-Key`.
+Toutes les routes sauf `ping` et `/api/hub/oauth/callback` (retour de la page de connexion de la marque) demandent l’en-tête `X-Beta-Key`.
+
+## Marques (sans Home Assistant)
+Les connecteurs sont dans `server/hub/` (un fichier par marque, sans dépendance). Les identifiants sont gardés
+dans `data/hub.json` sur le NAS et ne sont jamais renvoyés au navigateur. Réglages et tutos : Bêta OS › **Marques**.
+Pour SmartThings et Home Connect, le serveur doit être joignable en **https** (reverse proxy UGOS Pro).
