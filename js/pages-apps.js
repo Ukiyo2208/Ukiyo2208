@@ -60,7 +60,7 @@
     for (const id in DATA.DEVICES) {
       const d = DATA.DEVICES[id], s = dev(id); let w = 0;
       if (d.type === 'light' && s.on) w = .02; if (d.type === 'group' && s.on) w = .01 * s.lit; if (d.type === 'clim' && s.on && id !== 'home.chauffage') w = .18;
-      if (d.type === 'power' && s.on) w = { 'rdc.salon.tv': .12, 'rdc.salon.amp': .08, 'rdc.salon.pc': .15 }[id] || 0; if (d.type === 'app' && s.on) w = .55; if (d.type === 'charger' && s.on) w = 7.4;
+      if (d.type === 'power' && s.on) w = { 'rdc.salon.tv': .12, 'rdc.salon.amp': .08, 'rdc.salon.pc': .15 }[id] || 0; if (d.type === 'app' && s.on) w = .55; if (d.type === 'charger' && s.on) w = s.kw || 7.4;
       if (w) rooms[d.room] = (rooms[d.room] || 0) + w;
     }
     const list = Object.entries(rooms).sort((a, b) => b[1] - a[1]).slice(0, 8), max = list.length ? list[0][1] : 1;
@@ -71,7 +71,7 @@
     return '<div style="display:flex;flex-direction:column;gap:12px">' +
       '<div class="erow tile">' + ico('batteryV').replace('class="ico', 'style="color:#22e3a4" class="ico') + '<b>' + nf(L.bat / 100 * 16) + ' / 16 kWh</b><small>Batterie' + (L.real ? '' : ' virtuelle') + '</small><div class="bar"><div><i style="width:' + Math.round(L.bat) + '%"></i></div>' + Math.round(L.bat) + ' %</div></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="tile kpi"><small>Achat au réseau</small><b>' + nf(Math.max(0, h.kw - sol)) + ' kW</b><em style="color:#cfdcf3">Heures ' + (new Date().getHours() >= 22 || new Date().getHours() < 6 ? 'creuses' : 'pleines') + '</em></div><div class="tile kpi"><small>Revente</small><b>' + nf(Math.max(0, sol - h.kw)) + ' kW</b><em>Surplus solaire</em></div></div>' +
-      '<div class="tile" style="display:flex;align-items:center;gap:14px;padding:12px 14px">' + ico('charger').replace('class="ico', 'style="font-size:30px;color:#2fb6ff" class="ico') + '<div style="flex:1"><b style="font-weight:400">Borne de recharge</b><div class="muted" style="font-size:13px">' + (b.on ? 'Recharge en cours · 7,4 kW' : 'Libre · aucun véhicule branché') + '</div></div><button class="pbtn' + (b.on ? '' : ' off') + '" data-act="borne" aria-label="Recharge">' + ico('power') + '</button></div></div>';
+      '<div class="tile" style="display:flex;align-items:center;gap:14px;padding:12px 14px">' + ico('charger').replace('class="ico', 'style="font-size:30px;color:#2fb6ff" class="ico') + '<div style="flex:1"><b style="font-weight:400">Borne de recharge</b><div class="muted" style="font-size:13px">' + (b.on ? 'Recharge en cours · ' + String(b.kw || 7.4).replace('.', ',') + ' kW' : b.prog && b.prog !== 'Libre' ? b.prog : 'Libre · aucun véhicule branché') + '</div></div><button class="pbtn' + (b.on ? '' : ' off') + '" data-act="borne" aria-label="Recharge">' + ico('power') + '</button></div></div>';
   };
   RENDER.eactive = () => {
     const on = Object.values(DATA.DEVICES).filter(d => ['light', 'clim', 'power', 'app', 'charger', 'group'].includes(d.type) && dev(d.id).on && !d.id.startsWith('home.'));

@@ -20,7 +20,8 @@ un petit conteneur Python séparé pourra être ajouté au `docker-compose.yml`.
 | Marque | État |
 |---|---|
 | Somfy TaHoma, Philips Hue, Elgato, Govee, Samsung SmartThings, Siemens Home Connect | ✅ Connecteur disponible (`server/hub/`) |
-| Aqara, LinknLink, Schneider Charge, Viessmann, TV Philips, HomePod, Roborock, Navimow, Verisure, Ford | ⏳ Tuto « à préparer » en place, connecteur à venir |
+| Schneider Charge (OCPP 1.6J : suivi, départ, arrêt, limite en A), Viessmann (lecture) | ✅ Connecteur disponible |
+| Aqara, LinknLink, TV Philips, HomePod, Roborock, Navimow, Verisure, Ford | ⏳ Tuto « à préparer » en place, connecteur à venir |
 
 ## Matériel confirmé
 

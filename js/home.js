@@ -29,6 +29,7 @@
     vacuum: ['Aspirateur robot', 'robotFill', 'vacuum', ['vacuum'], { status: 'docked', bat: 100, power: 'Standard' }],
     mower: ['Tondeuse robot', 'mowerRobot', 'mower', ['lawn_mower'], { status: 'docked', bat: 100 }],
     app: ['Électroménager', 'washer', 'app', ['switch', 'sensor'], { on: false, prog: 'Normal' }],
+    charger: ['Borne de recharge', 'charger', 'charger', ['switch', 'sensor'], { on: false, kw: 0, car: false }],
     temp: ['Capteur de température', 'therm', 'sensor', ['sensor'], { val: 21.4, unit: '°C' }],
     hum: ['Capteur d’humidité', 'drop', 'sensor', ['sensor'], { val: 48, unit: '%' }],
     co2: ['Qualité de l’air (CO₂)', 'wind', 'sensor', ['sensor'], { val: 620, unit: 'ppm' }],
@@ -39,9 +40,9 @@
     scene: ['Scène / script', 'sparkle', 'scene', ['scene', 'script'], {}]
   };
   const GROUPS = [['Éclairage & prises', ['light', 'rgb', 'plug', 'computer']], ['Ouvrants', ['cover', 'awning', 'garage', 'lock']], ['Confort', ['clim', 'fan', 'heater']], ['Multimédia', ['tv', 'speaker']],
-    ['Robots & jardin', ['vacuum', 'mower', 'valve']], ['Électroménager & sécurité', ['app', 'alarm']], ['Capteurs', ['temp', 'hum', 'co2', 'meter', 'door', 'motion', 'leak']], ['Automatisations', ['scene']]];
+    ['Robots & jardin', ['vacuum', 'mower', 'valve']], ['Électroménager & sécurité', ['app', 'charger', 'alarm']], ['Capteurs', ['temp', 'hum', 'co2', 'meter', 'door', 'motion', 'leak']], ['Automatisations', ['scene']]];
   const TYPE_ICON = { light: 'bulbFill', group: 'bulbFill', cover: 'blindsWin', clim: 'snow', power: 'power', app: 'washer', vacuum: 'robotFill', mower: 'mowerRobot', sprinkler: 'sprinkler', charger: 'charger', media: 'tv', fan: 'fan', valve: 'dropFill', lock: 'lock', alarm: 'shieldCheck', heater: 'hotWater', sensor: 'therm', binary: 'door', scene: 'sparkle' };
-  const kindOf = d => d.kind || ({ light: d.def && d.def.rgb ? 'rgb' : 'light', group: 'light', cover: /garage/i.test(d.name) ? 'garage' : /store/i.test(d.name) ? 'awning' : 'cover', clim: 'clim', power: /tv|ampli|marantz/i.test(d.name) ? 'tv' : /ordi/i.test(d.name) ? 'computer' : 'plug', app: 'app', vacuum: 'vacuum', mower: 'mower', sprinkler: 'valve', charger: 'plug' }[d.type]);
+  const kindOf = d => d.kind || ({ light: d.def && d.def.rgb ? 'rgb' : 'light', group: 'light', cover: /garage/i.test(d.name) ? 'garage' : /store/i.test(d.name) ? 'awning' : 'cover', clim: 'clim', power: /tv|ampli|marantz/i.test(d.name) ? 'tv' : /ordi/i.test(d.name) ? 'computer' : 'plug', app: 'app', vacuum: 'vacuum', mower: 'mower', sprinkler: 'valve', charger: 'charger' }[d.type]);
   const iconOf = d => (KIND[d.kind] || [])[1] || TYPE_ICON[d.type] || 'power';
   B.KIND = KIND; B.kindOf = kindOf; B.iconOf = iconOf;
 

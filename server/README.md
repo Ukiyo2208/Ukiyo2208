@@ -36,4 +36,5 @@ Toutes les routes sauf `ping` et `/api/hub/oauth/callback` (retour de la page de
 ## Marques (sans Home Assistant)
 Les connecteurs sont dans `server/hub/` (un fichier par marque, sans dépendance). Les identifiants sont gardés
 dans `data/hub.json` sur le NAS et ne sont jamais renvoyés au navigateur. Réglages et tutos : Bêta OS › **Marques**.
-Pour SmartThings et Home Connect, le serveur doit être joignable en **https** (reverse proxy UGOS Pro).
+Pour SmartThings, Home Connect et Viessmann, le serveur doit être joignable en **https** (reverse proxy UGOS Pro).
+La borne de recharge se connecte en OCPP 1.6J sur `ws://IP-du-NAS:8090/ocpp/<identifiant>` (même port que l'application).

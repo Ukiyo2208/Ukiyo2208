@@ -8,6 +8,8 @@
   const isAdmin = () => !!(B.isAdmin ? B.isAdmin() : B.user() && B.user().admin);
   const map = () => (S.settings.hubMap = S.settings.hubMap || {});   // appareil Bêta OS → { brand, id }
   const callback = () => B.Server.url() + '/api/hub/oauth/callback';
+  // adresse OCPP à saisir dans la borne : ws:// + IP du NAS (une adresse https de reverse proxy ne convient pas)
+  const ocpp = () => { const u = B.Server.url(), id = ((H.list.schneider || {}).cfg || {}).cpId || 'borne'; return (/^http:\/\/\d/.test(u) ? u.replace(/^http/, 'ws') : 'ws://IP-du-NAS:8090') + '/ocpp/' + encodeURIComponent(id); };
 
   /* ---------- catalogue des marques ---------- */
   // fields : [clé, libellé, options] — tmp : envoyé au serveur pour une action mais jamais enregistré
@@ -57,6 +59,22 @@
         'Copiez le <b>Client ID</b> et le <b>Client secret</b>, <b>Enregistrer</b>, puis <b>Se connecter</b> avec le compte de l’app Home Connect.',
         '<b>Ajouter les appareils</b>.'],
       note: 'Gratuit. Lecture de l’état (en cours, temps restant, terminé) toutes les 3 minutes à cause du quota de 1 000 appels par jour. Le départ à distance reste sur la machine.' },
+    { id: 'schneider', name: 'Schneider Charge', sub: 'Borne de recharge (OCPP)', icon: 'charger', ready: true,
+      fields: [['cpId', 'Identifiant de la borne', { ph: 'automatique à la 1re connexion' }], ['password', 'Mot de passe OCPP (facultatif)', { pw: 1 }], ['idTag', 'Badge utilisé pour démarrer', { ph: 'BETAOS' }], ['amps', 'Limite de courant (A)', { ph: '16' }]],
+      actions: [['limit', 'Appliquer la limite', 'boltPlain']],
+      steps: ['Réservez l’<b>IP du NAS</b> dans votre box internet : la borne va s’y connecter.',
+        'Dans l’outil de configuration de la borne (app d’installation <b>eSetup</b> ou Wiser selon le modèle, parfois réservé à l’installateur), section <b>OCPP</b> : activez OCPP 1.6J.',
+        'Adresse du serveur central : <code>{ocpp}</code> (en <b>ws://</b> avec l’IP du NAS et le port 8090, pas l’adresse https).',
+        'Identifiant de la borne : laissez celui proposé ou choisissez-en un ; s’il est saisi ici, seule cette borne est acceptée. Mot de passe : facultatif, le même des deux côtés.',
+        'Quand la borne apparaît <b>Connectée</b>, cliquez <b>Ajouter les appareils</b> et choisissez « Remplacer : Borne de recharge » pour garder votre tuile actuelle.'],
+      note: 'Suivi de la charge en direct (puissance, kWh, état), départ, arrêt et limite de courant. Attention : une fois l’OCPP pointé vers le NAS, l’app Wiser peut ne plus suivre la borne.' },
+    { id: 'viessmann', name: 'Viessmann', sub: 'Chauffage, eau chaude (ViCare)', icon: 'hotWater', ready: true, oauth: true,
+      fields: [['clientId', 'Client ID']],
+      steps: ['Connectez-vous au <b>portail développeur Viessmann</b> (developer.viessmann-climatesolutions.com, ex-developer.viessmann.com) avec votre compte ViCare.',
+        '<b>Clients</b> › créer un client : nom « Bêta OS », <b>Google reCAPTCHA désactivé</b>, adresse de retour : <code>{callback}</code>',
+        'Copiez le <b>Client ID</b> (pas de secret), <b>Enregistrer</b>, puis <b>Se connecter</b> avec votre compte ViCare.',
+        '<b>Ajouter les appareils</b> : température extérieure, départ chauffage, eau chaude.'],
+      note: 'Offre gratuite : lecture toutes les 5 minutes (quota 1 450 appels/jour). Régler le chauffage demande l’offre payante « Advanced ».' },
     // marques préparées : le tuto dit quoi faire dès maintenant, le connecteur arrive ensuite
     { id: 'aqara', name: 'Aqara (Hub M3)', sub: 'Lumières, capteurs', icon: 'bulbFill',
       steps: ['App Aqara Home › Hub M3 › <b>Matter</b> : activez le pont Matter et notez le <b>code d’appairage</b>.', 'Le serveur Bêta pilotera ensuite les appareils Aqara en local via Matter.'],
@@ -64,12 +82,6 @@
     { id: 'linknlink', name: 'LinknLink', sub: 'Télécommande IR eRemote, capteurs', icon: 'tv',
       steps: ['App LinknLink › appareil › mettez à jour le firmware en version <b>HA / MQTT</b>.', 'Le serveur Bêta fournira l’adresse MQTT à saisir dans l’app (… › Connexion MQTT).'],
       note: 'Connecteur MQTT en préparation (petit serveur Mosquitto ajouté au docker-compose).' },
-    { id: 'schneider', name: 'Schneider Charge', sub: 'Borne de recharge', icon: 'charger',
-      steps: ['Relevez le modèle et l’accès installateur de la borne (app Wiser / eSetup).', 'La borne sera reliée au serveur Bêta par <b>OCPP 1.6J</b> : suivi de la charge, départ, arrêt, limite de puissance.'],
-      note: 'Connecteur OCPP en préparation. Attention : rediriger l’OCPP peut couper le lien avec l’app Wiser.' },
-    { id: 'viessmann', name: 'Viessmann', sub: 'Chauffage (ViCare)', icon: 'hotWater',
-      steps: ['Créez un compte sur <b>developer.viessmann.com</b> et une application (Client ID).', 'L’offre gratuite permet de lire températures et état ; régler le thermostat demande l’offre payante « Advanced ».'],
-      note: 'Connecteur en préparation.' },
     { id: 'philipstv', name: 'TV Philips', sub: 'Allumage, volume, sources', icon: 'tv',
       steps: ['Réservez l’IP de la TV dans votre box internet.', 'L’appairage se fera par un code PIN affiché sur la TV.'], note: 'Connecteur en préparation (API locale JointSpace).' },
     { id: 'homepod', name: 'Apple HomePod', sub: 'Musique et volume', icon: 'speaker',
@@ -153,7 +165,7 @@
   /* ---------- fiche d'une marque : tuto + réglages ---------- */
   function sheet(id) {
     const b = BR(id), x = H.list[id] || { cfg: {} }, cfg = x.cfg || {}, s = status(id);
-    const steps = '<ol class="steps">' + b.steps.map(t => '<li>' + t.replace('{callback}', esc(callback())) + '</li>').join('') + '</ol>';
+    const steps = '<ol class="steps">' + b.steps.map(t => '<li>' + t.replace('{callback}', esc(callback())).replace('{ocpp}', esc(ocpp())) + '</li>').join('') + '</ol>';
     if (!b.ready) return B.modal('<h2>' + ico(b.icon) + esc(b.name) + '</h2><p class="muted" style="margin:-6px 0 12px;font-size:13px">' + esc(b.sub) + '</p><h4 style="margin:0 0 8px">À préparer dès maintenant</h4>' + steps + '<p class="muted" style="font-size:12.5px;margin:12px 0 0;line-height:1.5">' + esc(b.note) + '</p>', 'sm');
     const fld = f => '<label class="field">' + f[1] + '<input name="' + f[0] + '" value="' + esc(f[2] && f[2].tmp ? '' : cfg[f[0]] == null ? '' : cfg[f[0]]) + '"' + (f[2] && f[2].pw ? ' type="password"' : '') + (f[2] && f[2].ph ? ' placeholder="' + esc(f[2].ph) + '"' : '') + ' spellcheck="false" autocomplete="off"' + (f[2] && f[2].tmp ? ' data-tmp="1"' : '') + '></label>';
     B.modal('<h2>' + ico(b.icon) + esc(b.name) + ' <span class="tag2 ' + s[0] + '" style="margin-left:8px">' + esc(s[1]) + '</span></h2>' +
@@ -208,19 +220,24 @@
     imp = { id, list: list.filter(d => !linked.has(d.id) && B.KIND[d.kind]) };
     const all = B.floors(true).flatMap(f => B.roomsList(f.id, true).map(r => [f, r]));
     const match = room => { const n = (room || '').toLowerCase(); const hit = all.find(([f, r]) => r.name.toLowerCase() === n || r.label.toLowerCase() === n); return hit ? hit[1].key : ''; };
+    // appareils déjà dans Bêta OS du même type, que l'appareil de la marque peut remplacer (ex. la borne de démo)
+    const same = d => Object.values(DATA.DEVICES).filter(x => !map()[x.id] && B.KIND[d.kind] && x.type === B.KIND[d.kind][2] && B.kindOf(x) === d.kind);
+    const solo = d => imp.list.filter(y => y.kind === d.kind).length === 1 && same(d).length === 1 ? same(d)[0].id : '';
     const body = !imp.list.length ? '<p class="muted">' + (list.length ? 'Tous les appareils ' + esc(BR(id).name) + ' sont déjà dans Bêta OS.' : 'Aucun appareil trouvé sur ce compte.') + '</p>' :
       '<p class="muted" style="margin:0 0 10px;font-size:13px">' + imp.list.length + ' appareil(s) trouvé(s) par l’API. Les pièces de la marque sont associées aux pièces du même nom ; vérifiez puis importez.</p><form data-submit="hubImportGo"><div class="implist">' +
       imp.list.map((d, i) => '<label class="imrow"><input type="checkbox" name="on' + i + '" checked><span><b>' + esc(d.name) + '</b><small>' + esc(B.KIND[d.kind][0] + (d.info ? ' · ' + d.info : '')) + (d.room ? ' · pièce « ' + esc(d.room) + ' »' : '') + (d.error ? ' · ' + esc(d.error) : '') + '</small></span><select name="k' + i + '">' + kindOpts(d.kind) + '</select>' +
-        '<select name="r' + i + '"><option value="new:' + esc(d.room || BR(id).name) + '">Nouvelle pièce : ' + esc(d.room || BR(id).name) + '</option>' + all.map(([f, r]) => '<option value="' + esc(r.key) + '"' + (match(d.room) === r.key ? ' selected' : '') + '>' + esc(f.name + ' · ' + r.label) + '</option>').join('') + '</select></label>').join('') +
+        '<select name="r' + i + '"><option value="new:' + esc(d.room || BR(id).name) + '">Nouvelle pièce : ' + esc(d.room || BR(id).name) + '</option>' + all.map(([f, r]) => '<option value="' + esc(r.key) + '"' + (match(d.room) === r.key && !solo(d) ? ' selected' : '') + '>' + esc(f.name + ' · ' + r.label) + '</option>').join('') +
+          (same(d).length ? '<optgroup label="Remplacer un appareil existant">' + same(d).map(x => '<option value="dev:' + esc(x.id) + '"' + (solo(d) === x.id ? ' selected' : '') + '>Remplacer : ' + esc(x.name + ' (' + x.room + ')') + '</option>').join('') + '</optgroup>' : '') + '</select></label>').join('') +
       '</div><div class="row" style="justify-content:flex-end;margin-top:12px;gap:8px;flex-wrap:wrap"><select class="search" name="newfloor" style="flex:0 0 200px" aria-label="Niveau des nouvelles pièces">' + B.floors(true).map(f => '<option value="' + f.id + '">' + esc(f.name) + '</option>').join('') + '</select><button class="btn pri">' + ico('download') + 'Importer la sélection</button></div></form>';
     B.modal('<h2>' + ico('download') + 'Appareils ' + esc(BR(id).name) + '</h2>' + body, 'wide');
   }
   B.act('hubImport', el => importer(el.dataset.arg));
   B.act('hubImportGo', el => {
-    const f = new FormData(el), nf = f.get('newfloor'), m = map(), added = []; let n = 0;
+    const f = new FormData(el), nf = f.get('newfloor'), m = map(), added = [], linked = []; let n = 0;
     imp.list.forEach((d, i) => {
       if (!f.get('on' + i)) return;
       let rk = f.get('r' + i), fl, room;
+      if (rk.startsWith('dev:')) { const xid = rk.slice(4); m[xid] = { brand: imp.id, id: d.id }; delete C.hidden[xid]; linked.push([xid, d.state]); n++; return; }
       if (rk.startsWith('new:')) { room = rk.slice(4); fl = nf; if (!B.roomsList(fl, true).some(r => r.name === room)) C.rooms.push({ id: uid('r'), name: room, floor: fl, icon: 'homeFill' }); }
       else { fl = rk.split('|')[0]; room = rk.split('|').slice(1).join('|'); }
       const did = fl + '.c' + uid('');
@@ -229,7 +246,7 @@
     });
     added.forEach(([did]) => { const fl = did.split('.')[0], fo = B.floor(fl); if (fo && fo.builtin) C.layout[fl] = 'auto'; });
     B.registerCustom();
-    added.forEach(([did, s]) => { if (s && Object.keys(s).length) setDev(did, s, { silent: true }); });
+    added.concat(linked).forEach(([did, s]) => { if (s && Object.keys(s).length) setDev(did, s, { silent: true }); });
     imp = null; B.save(); B.closeModal(); B.show(); B.toast(n + ' appareil' + (n > 1 ? 's ajoutés' : ' ajouté') + ' — pilotés en direct, sans Home Assistant', 'download');
   });
   // un appareil supprimé ne garde pas son lien avec la marque

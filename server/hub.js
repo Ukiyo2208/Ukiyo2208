@@ -6,7 +6,7 @@ const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { request } = require('./hub/net');
 
 const BRANDS = {};
-['tahoma', 'hue', 'elgato', 'govee', 'smartthings', 'homeconnect'].forEach(n => { const m = require('./hub/' + n); BRANDS[m.id] = m; });
+['tahoma', 'hue', 'elgato', 'govee', 'smartthings', 'homeconnect', 'schneider', 'viessmann'].forEach(n => { const m = require('./hub/' + n); BRANDS[m.id] = m; });
 
 module.exports = function hub(DATA, send, readBody) {
   const FILE = path.join(DATA, 'hub.json');
@@ -14,14 +14,14 @@ module.exports = function hub(DATA, send, readBody) {
   const persist = () => fs.writeFileSync(FILE, JSON.stringify(CFG, null, 1), { mode: 0o600 });
   const cfg = id => (CFG[id] = CFG[id] || {});
   const update = (id, patch) => { Object.assign(cfg(id), patch); persist(); };
-  const pending = {};           // états OAuth en attente : state → { brand, redirect, at }
+  const pending = {};           // états OAuth en attente : state → { brand, redirect, at, verifier }
   const cache = {};             // états des appareils par marque : { at, data, busy }
 
-  /* ---------- OAuth (SmartThings, Home Connect) ---------- */
+  /* ---------- OAuth (SmartThings, Home Connect, Viessmann) ---------- */
   async function oauthToken(b, form) {
     const c = cfg(b.id), o = b.oauth, headers = {};
     if (o.basic) headers.Authorization = 'Basic ' + Buffer.from(c.clientId + ':' + c.clientSecret).toString('base64');
-    else Object.assign(form, { client_id: c.clientId, client_secret: c.clientSecret });
+    else Object.assign(form, { client_id: c.clientId }, c.clientSecret ? { client_secret: c.clientSecret } : {});
     const r = (await request(o.token, { form, headers })).json();
     if (!r || !r.access_token) throw new Error('jeton refusé');
     update(b.id, { tokens: { access: r.access_token, refresh: r.refresh_token || (c.tokens && c.tokens.refresh), exp: Date.now() + (r.expires_in || 3600) * 1000 } });
@@ -55,7 +55,7 @@ module.exports = function hub(DATA, send, readBody) {
     if (!st || Date.now() - st.at > 15 * 6e4) return page('Lien expiré, recommencez depuis Bêta OS', false);
     delete pending[url.searchParams.get('state')];
     if (url.searchParams.get('error')) return page('Connexion refusée : ' + url.searchParams.get('error'), false);
-    try { await oauthToken(BRANDS[st.brand], { grant_type: 'authorization_code', code: url.searchParams.get('code'), redirect_uri: st.redirect }); update(st.brand, { status: 'ok', info: 'Compte relié' }); return page(BRANDS[st.brand].name + ' est relié', true); }
+    try { await oauthToken(BRANDS[st.brand], Object.assign({ grant_type: 'authorization_code', code: url.searchParams.get('code'), redirect_uri: st.redirect }, st.verifier ? { code_verifier: st.verifier } : {})); update(st.brand, { status: 'ok', info: 'Compte relié' }); return page(BRANDS[st.brand].name + ' est relié', true); }
     catch (e) { return page('Échec : ' + e.message, false); }
   }
 
@@ -85,14 +85,22 @@ module.exports = function hub(DATA, send, readBody) {
     if (what === 'devices' && m === 'GET') { const list = await b.devices(c, helper(b)); return send(res, 200, list); }
     if (what === 'action' && m === 'POST' && b.actions && b.actions[r[3]]) { const patch = await b.actions[r[3]](c, await readBody(req) || {}); update(b.id, patch || {}); return send(res, 200, view(b)); }
     if (what === 'oauth' && m === 'GET' && b.oauth) {
-      if (!c.clientId || !c.clientSecret) return send(res, 400, { error: 'Client ID et secret à renseigner d’abord' });
+      if (!c.clientId || (!b.oauth.pkce && !c.clientSecret)) return send(res, 400, { error: b.oauth.pkce ? 'Client ID à renseigner d’abord' : 'Client ID et secret à renseigner d’abord' });
       const redirect = url.searchParams.get('redirect') || '', state = crypto.randomBytes(16).toString('hex');
       if (!/^https?:\/\/.+\/api\/hub\/oauth\/callback$/.test(redirect)) return send(res, 400, { error: 'adresse de retour invalide' });
-      pending[state] = { brand: b.id, redirect, at: Date.now() };
-      return send(res, 200, { url: b.oauth.auth + '?' + new URLSearchParams({ client_id: c.clientId, response_type: 'code', redirect_uri: redirect, scope: b.oauth.scope, state }) });
+      const q = { client_id: c.clientId, response_type: 'code', redirect_uri: redirect, scope: b.oauth.scope, state }, verifier = b.oauth.pkce ? crypto.randomBytes(32).toString('base64url') : '';
+      if (verifier) Object.assign(q, { code_challenge: crypto.createHash('sha256').update(verifier).digest('base64url'), code_challenge_method: 'S256' });
+      pending[state] = { brand: b.id, redirect, verifier, at: Date.now() };
+      return send(res, 200, { url: b.oauth.auth + '?' + new URLSearchParams(q) });
     }
     return send(res, 404, { error: 'route inconnue' });
   }
 
-  return { callback, api };
+  // connexion WebSocket d'un appareil vers le serveur (bornes OCPP sur /ocpp/…)
+  function upgrade(req, socket) {
+    for (const b of Object.values(BRANDS)) if (b.upgrade && b.upgrade(req, socket, cfg(b.id), patch => update(b.id, patch))) return;
+    socket.end('HTTP/1.1 404 Not Found\r\n\r\n');
+  }
+
+  return { callback, api, upgrade };
 };

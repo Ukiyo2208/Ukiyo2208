@@ -94,11 +94,13 @@ function serveStatic(req, res, url) {
   });
 }
 
-http.createServer(async (req, res) => {
+const srv = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname.startsWith('/api/')) {
     cors(req, res);
     if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
     try { await api(req, res, url); } catch (e) { send(res, 500, { error: e.message }); }
   } else serveStatic(req, res, url);
-}).listen(PORT, () => console.log('Serveur Bêta ' + VERSION + ' sur http://0.0.0.0:' + PORT + ' — application : ' + ROOT + ' — données : ' + DATA));
+});
+srv.on('upgrade', (req, socket) => HUB.upgrade(req, socket));   // bornes de recharge OCPP (ws://IP-du-NAS:8090/ocpp/…)
+srv.listen(PORT, () => console.log('Serveur Bêta ' + VERSION + ' sur http://0.0.0.0:' + PORT + ' — application : ' + ROOT + ' — données : ' + DATA));
