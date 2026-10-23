@@ -1,32 +1,44 @@
-# Intégrations domotique — état des lieux par marque
+# Intégrations domotique — connexion directe, sans Home Assistant
 
-Architecture recommandée : **Home Assistant (HA)** comme hub central, et le dashboard
-perso qui parle uniquement à l'API de HA (REST + WebSocket, jeton longue durée).
-Un seul point d'entrée au lieu d'une dizaine d'API propriétaires.
+Architecture : un **petit serveur maison** (backend Python) qui parle directement à
+chaque marque, et le dashboard web qui ne parle qu'à ce serveur.
 
 ```
-Appareils ──> intégrations HA ──> API HA (REST / WebSocket) ──> Dashboard perso
+Appareils / clouds des marques ──> Backend (connecteurs par marque) ──> API unique ──> Dashboard
 ```
 
-| Appareil | Intégration HA | Type | Prérequis | Fiabilité |
+Le backend est nécessaire : les secrets (tokens OAuth, mots de passe) ne doivent pas
+être dans le navigateur, et les API locales (TaHoma, TV, HomePod) ne sont joignables
+que depuis le réseau de la maison.
+
+Python est retenu car les meilleures bibliothèques existent dans ce langage
+(pyoverkiz, pyatv, python-roborock, vsure…).
+
+## Matériel confirmé
+
+- Somfy **TaHoma switch** (réf. 1870595)
+- Aqara **Hub M3**
+
+## Connexion par appareil
+
+| Appareil | Méthode directe | Type | À faire de ton côté | Fiabilité |
 |---|---|---|---|---|
-| Somfy volets + garage | Overkiz (core) | Cloud ou local | Box TaHoma (Switch / v2). Moteurs io ou RTS via la box | Bonne (local recommandé) |
-| Verisure alarme | Verisure (core) | Cloud, API non officielle | Compte Verisure, 2FA possible | Moyenne (peut casser) |
-| Aqara lumières | Matter, HomeKit Controller, ou Zigbee2MQTT/ZHA | Local | Hub Aqara (M2/M3) **ou** dongle Zigbee | Bonne |
-| Télécommande IR | Broadlink / SwitchBot / hub Aqara selon le modèle | Local | Préciser le modèle | Bonne |
-| TV Samsung | Samsung Smart TV (local) ou SmartThings (cloud) | Local / Cloud | TV sur le réseau | Bonne |
-| TV Philips | Philips TV (JointSpace) ou Android TV Remote | Local | Appairage par code PIN | Bonne |
-| Samsung lave-linge + clim | SmartThings (core, OAuth) | Cloud officiel | Appareils dans l'app SmartThings | Bonne |
-| Apple enceinte (HomePod) | Apple TV (pyatv) | Local | Même réseau | Bonne (média/volume seulement) |
-| Siemens lave-linge | Home Connect (core, OAuth) | Cloud officiel | Compte développeur Home Connect ; « démarrage à distance » activé sur la machine | Bonne |
-| Ford voiture | ha-fordpass (HACS) ou FordConnect Query (lecture seule) | Cloud, non officiel | Compte FordPass (idéalement un compte dédié) ; app développeur Ford pour FordConnect | Fragile — risque de blocage du compte |
+| Somfy volets + garage | API locale TaHoma (« mode développeur ») | Local | Activer le mode développeur sur somfy.fr, générer un token | ✅ Officielle |
+| Aqara lumières | Matter (le M3 sert de pont Matter) ou Aqara Open API | Local / Cloud | Code d'appairage Matter du M3, ou compte developer.aqara.com | ✅ |
+| Télécommande IR | À confirmer (le Hub M3 a un émetteur IR intégré) | — | Préciser quel appareil | ❓ |
+| TV Samsung | SmartThings API (+ API locale Samsung TV en option) | Cloud / Local | App OAuth SmartThings (les tokens perso expirent en 24 h) | ✅ Officielle |
+| Samsung lave-linge + clim | SmartThings API | Cloud | Même app OAuth que la TV | ✅ Officielle |
+| TV Philips | API JointSpace (port 1926) | Local | Appairage par PIN affiché sur la TV | ✅ |
+| Apple HomePod | pyatv (AirPlay / Companion) | Local | Appairage au premier lancement | ✅ Média + volume |
+| Siemens lave-linge | Home Connect API | Cloud officiel | Compte developer.home-connect.com, activer « démarrage à distance » | ✅ Officielle |
+| Govee lumières | Govee API (clé dans l'app) + API LAN | Cloud / Local | Demander la clé API, activer « Contrôle LAN » par lampe | ✅ Officielle |
+| Roborock aspirateur | python-roborock | Cloud + local | Compte Roborock | ⚠️ Non officielle |
+| Segway Navimow tondeuse | Navimow OpenAPI (accès développeur via l'app) | Cloud | Demande d'accès développeur dans l'app Navimow | ⚠️ À vérifier selon modèle |
+| Verisure alarme | API GraphQL Verisure (vsure) | Cloud | Compte Verisure + code SMS (2FA) | ⚠️ Non officielle |
+| Ford voiture | FordConnect API (lecture seule) | Cloud | App sur le portail développeur Ford, compte FordPass dédié | ❌ Fragile |
 
-## Points d'attention
+## Sécurité
 
-- **Verisure** : désarmer l'alarme depuis le dashboard = point sensible. Exiger le code
-  Verisure à chaque désarmement, ne jamais le stocker côté navigateur.
-- **Ford** : pas d'API officielle grand public stable. Commencer en lecture seule
-  (autonomie, position, verrouillage) via FordConnect Query.
-- **Aqara** : le hub doit être compatible Matter, sinon passer par un dongle Zigbee.
-- **Secrets** : tous les jetons dans `.env` (jamais commités) ; le dashboard ne parle
-  qu'à HA, pas directement aux clouds des marques.
+- Tous les secrets dans `.env`, jamais commités.
+- Désarmement Verisure : code demandé à chaque fois, jamais stocké.
+- Dashboard accessible uniquement sur le réseau local (ou via VPN), avec authentification.
