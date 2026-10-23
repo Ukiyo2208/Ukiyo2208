@@ -315,6 +315,54 @@ export const HELP = {
     tips: ["Les photos HEIC d'iPhone s'affichent sans conversion.", "La première analyse d'une grande photothèque peut prendre quelques minutes ; ensuite seules les nouvelles photos sont lues."],
     faq: [["Où sont mes photos ?", "Dans le dossier monté sur /photos (docker-compose.yml), par exemple le dossier « photo » d'un Synology."]],
   },
+  video: {
+    title: "Tuto · Compresseur vidéo", icon: "video", tile: "rose",
+    lead: "Réduis le poids d'une vidéo pour l'envoyer facilement, et garde seulement le passage utile.",
+    steps: [
+      ["Ajoute ta vidéo", "Glisse-la dans la zone, ou depuis Fichiers : ⋮ → « Compresser / couper »."],
+      ["Coupe si besoin", "Déplace les deux poignées sous la vidéo, ou lis la vidéo et clique « Début ici » / « Fin ici »."],
+      ["Choisis l'objectif", "Taille cible (10 Mo pour Discord, 16 Mo WhatsApp, 25 Mo e-mail…) ou niveau de qualité."],
+      ["Lance la compression", "Suis l'avancement en bas ; le bouton ▶ prévisualise le résultat avant de le télécharger."],
+    ],
+    tips: [
+      "En mode taille cible, la résolution baisse automatiquement si besoin pour que l'image reste nette.",
+      "Le résultat est un MP4 (H.264), lisible sur tous les téléphones et ordinateurs.",
+      "Couper la vidéo est le meilleur moyen de gagner de la place sans perdre en qualité.",
+    ],
+    faq: [["La taille obtenue est un peu sous la cible", "C'est voulu : une petite marge garantit que le fichier passe sous la limite."]],
+  },
+  image: {
+    title: "Tuto · Studio Image", icon: "image", tile: "violet",
+    lead: "Retouche une photo, traite des dizaines d'images d'un coup ou retire l'arrière-plan.",
+    steps: [
+      ["Retouche", "Ouvre une image : pivote, retourne, recadre (format libre, carré, 16:9…), applique un filtre et ajuste luminosité, contraste, couleurs."],
+      ["Exporte", "Choisis la taille, le format (JPEG, PNG, WebP) et la qualité, puis « Enregistrer l'image »."],
+      ["Traitement par lot", "Glisse plusieurs images : elles sont redimensionnées, converties et renommées d'un coup, dans un .zip."],
+      ["Détourage", "Glisse une photo : l'arrière-plan est retiré automatiquement. Choisis ensuite un fond transparent, uni ou flou."],
+    ],
+    tips: [
+      "Retouche et traitement par lot se font dans ton navigateur : les photos ne quittent pas ton appareil.",
+      "Le traitement par lot retire aussi les données cachées (position GPS, modèle d'appareil).",
+      "« Annuler » revient en arrière étape par étape.",
+    ],
+    faq: [["Mes photos HEIC ne s'ouvrent pas", "Le navigateur ne lit pas le HEIC : convertis-les d'abord en JPG avec le Convertisseur."]],
+  },
+  transcription: {
+    title: "Tuto · Transcription", icon: "mic", tile: "vert",
+    lead: "Transforme ce qui est dit dans une vidéo ou un audio en texte et en sous-titres.",
+    steps: [
+      ["Ajoute le fichier", "Glisse un audio ou une vidéo, ou depuis Fichiers : ⋮ → « Transcrire en texte »."],
+      ["Choisis la langue", "Indique la langue parlée (plus fiable que la détection automatique)."],
+      ["Choisis la précision", "« small » est un bon compromis ; « medium » est plus précis mais plus lent."],
+      ["Récupère le résultat", "Lis le texte, copie-le, ou télécharge les sous-titres (.srt / .vtt) et le texte brut (.txt)."],
+    ],
+    tips: [
+      "Depuis Fichiers, les sous-titres sont enregistrés à côté de la vidéo : Plex, Jellyfin et VLC les affichent tout seuls.",
+      "« Traduire en anglais » produit directement des sous-titres en anglais.",
+      "Le premier usage télécharge le modèle choisi (quelques centaines de Mo) ; ensuite tout fonctionne hors ligne.",
+    ],
+    faq: [["C'est long", "La transcription utilise le processeur du NAS : compte à peu près la durée du fichier en précision « small »."]],
+  },
   reglages: {
     title: "Tuto · Réglages", icon: "settings", tile: "",
     lead: "Adapte Bêta Tool à ton usage : outils affichés, comptes, mises à jour, apparence.",

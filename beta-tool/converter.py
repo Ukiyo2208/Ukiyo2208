@@ -156,9 +156,10 @@ def probe_duration(src):
         return 0
 
 
-def run_ffmpeg(src, dst, args, on_progress):
-    duration = probe_duration(src)
-    cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", src, *args,
+def run_ffmpeg(src, dst, args, on_progress, duration=None, input_args=()):
+    """Lance ffmpeg en suivant l'avancement (pourcentage de `duration`, ou de la durée du fichier)."""
+    duration = duration or probe_duration(src)
+    cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", *input_args, "-i", src, *args,
            "-progress", "pipe:1", "-nostats", dst]
     with tempfile.TemporaryFile("w+") as err:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=err, text=True)

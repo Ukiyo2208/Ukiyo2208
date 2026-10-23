@@ -837,3 +837,52 @@ body.has-player main { padding-bottom: 120px; }
   .fx-bar { gap: 6px; }
   .fx-bar .crumbs { flex-basis: 100%; }
 }
+
+/* ---------- Compresseur vidéo ---------- */
+.vd-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 22px; align-items: start; }
+.vd-grid video { width: 100%; max-height: 420px; border-radius: 14px; background: #000; display: block; }
+.trim { margin-top: 12px; }
+.trim-bar { position: relative; height: 34px; }
+.trim-bar::before { content: ""; position: absolute; left: 0; right: 0; top: 14px; height: 6px; border-radius: 3px; background: var(--surface-2); }
+#trim-fill { position: absolute; top: 14px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.trim-bar input { position: absolute; inset: 0; width: 100%; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
+.trim-bar input::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 18px; height: 30px; border-radius: 7px; background: #fff; border: 3px solid var(--accent); cursor: ew-resize; }
+.trim-bar input::-moz-range-thumb { pointer-events: auto; width: 14px; height: 26px; border-radius: 7px; background: #fff; border: 3px solid var(--accent); cursor: ew-resize; }
+.center { text-align: center; }
+.presets .chip { cursor: pointer; font: inherit; font-size: .8rem; }
+.chip.on { background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: #fff; border-color: transparent; }
+button.chip { cursor: pointer; font: inherit; font-size: .8rem; }
+
+/* ---------- Studio Image ---------- */
+.im-edit { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: start; }
+.im-stage { position: sticky; top: 12px; }
+.im-wrap { position: relative; display: flex; justify-content: center; align-items: center; min-height: 300px; border-radius: 14px; overflow: hidden;
+  background: repeating-conic-gradient(var(--surface-2) 0% 25%, transparent 0% 50%) 0 0 / 22px 22px; }
+#im-canvas { max-width: 100%; max-height: 70vh; display: block; }
+.crop-box { position: absolute; box-shadow: 0 0 0 9999px rgb(0 0 0 / .55); border: 2px solid #fff; cursor: move; touch-action: none; }
+.crop-box::before, .crop-box::after { content: ""; position: absolute; border: 1px solid rgb(255 255 255 / .35); pointer-events: none; }
+.crop-box::before { inset: 33.3% 0; border-left: 0; border-right: 0; }
+.crop-box::after { inset: 0 33.3%; border-top: 0; border-bottom: 0; }
+.crop-box .h { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 3px solid var(--accent); }
+.crop-box .nw { left: -9px; top: -9px; cursor: nwse-resize; } .crop-box .se { right: -9px; bottom: -9px; cursor: nwse-resize; }
+.crop-box .ne { right: -9px; top: -9px; cursor: nesw-resize; } .crop-box .sw { left: -9px; bottom: -9px; cursor: nesw-resize; }
+.im-side .card { padding: 16px; margin-bottom: 12px; }
+.im-side h3 { margin: 0 0 10px; font-size: .95rem; display: flex; align-items: center; gap: 8px; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.adj { display: grid; grid-template-columns: 82px 1fr 36px; align-items: center; gap: 8px; margin: 6px 0; font-size: .85rem; }
+.adj span { color: var(--muted); }
+.adj b { text-align: right; font-size: .8rem; font-weight: 600; }
+.bg-result { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-top: 16px; align-items: start; }
+.bg-view { border-radius: 14px; overflow: hidden; display: grid; place-items: center; }
+.bg-view canvas { max-width: 100%; max-height: 60vh; display: block; }
+.checker { background: repeating-conic-gradient(#d9dee8 0% 25%, #fff 0% 50%) 0 0 / 20px 20px; }
+
+/* ---------- Transcription ---------- */
+.segs { max-height: 60vh; overflow-y: auto; padding-right: 6px; }
+.segs p { margin: 0 0 10px; line-height: 1.6; }
+.ts { display: inline-block; min-width: 48px; margin-right: 10px; font-size: .78rem; font-weight: 600; color: var(--accent); }
+
+@media (max-width: 900px) {
+  .vd-grid, .im-edit, .bg-result { grid-template-columns: 1fr; }
+  .im-stage { position: static; }
+}
