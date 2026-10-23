@@ -14,8 +14,10 @@ personnes:
       serveur: imap.gmail.com
       utilisateur: ton.adresse@gmail.com
       mot_de_passe_env: MAIL_BASTIEN_PASSWORD # nom de la variable dans .env
-  # invite:
+  # Chaque personne de la maison, avec l'entité person.xxx de son app Companion :
+  # lea:
   #   role: adulte
+  #   companion: person.lea
 
 # Ce que chaque rôle peut faire : domotique, mails, questions, automatisations
 roles:
@@ -31,10 +33,11 @@ roles:
 # à l'étage de la tablette, Bêta sait que c'est elle : pas de caméra, pas de question.
 maison:
   validite_minutes: 15 # au-delà, une position vue par les caméras n'est plus prise en compte
-  # Chaque pièce appartient à une zone (un étage). La pièce de la tablette doit y figurer.
+  # Chaque pièce appartient à une zone (un étage). La pièce de la tablette (salon) doit y figurer.
   zones:
     rez-de-chaussee: [salon, sejour, entree, cuisine]
     etage: [couloir-etage, chambre, bureau]
+    grenier: [grenier] # pas de caméra : quelqu'un au grenier est « à la maison, vu nulle part »
     exterieur: [jardin, cour, sonnette]
 
 # Caméras Reolink, telles qu'elles apparaissent dans Home Assistant (Paramètres > Entités).
