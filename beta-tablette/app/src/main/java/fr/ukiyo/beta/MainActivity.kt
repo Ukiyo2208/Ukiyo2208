@@ -4,10 +4,13 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.WindowManager
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import fr.ukiyo.beta.Etat.Phase
 import kotlinx.coroutines.Job
@@ -34,7 +37,11 @@ class MainActivity : Activity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         reglages = Reglages(this)
 
-        icone = texte("", 72f).apply { gravity = Gravity.CENTER }
+        val logo = ImageView(this).apply {
+            setImageBitmap(assets.open("logo.png").use { BitmapFactory.decodeStream(it) })
+            layoutParams = LinearLayout.LayoutParams(dp(200), dp(200)).apply { gravity = Gravity.CENTER_HORIZONTAL }
+        }
+        icone = texte("", 40f).apply { gravity = Gravity.CENTER }
         message = texte("", 28f, gras = true).apply { gravity = Gravity.CENTER }
         personne = texte("", 18f, ACCENT).apply { gravity = Gravity.CENTER }
         dit = texte("", 18f, TEXTE_DOUX)
@@ -46,7 +53,7 @@ class MainActivity : Activity() {
             defilable(
                 colonne(
                     32,
-                    icone, message, personne, niveau, dit, reponse,
+                    logo, icone, message, personne, niveau, dit, reponse,
                     ligne(
                         pause,
                         bouton("Visages") { startActivity(Intent(this, VisagesActivity::class.java)) },

@@ -14,10 +14,11 @@ import android.widget.TextView
 
 /** Petits outils pour construire les écrans en code (pas de fichiers XML). */
 
-val FOND = Color.rgb(16, 18, 24)
-val TEXTE = Color.rgb(235, 238, 245)
-val TEXTE_DOUX = Color.rgb(150, 158, 175)
-val ACCENT = Color.rgb(99, 179, 237)
+// Couleurs reprises du logo de Bêta
+val FOND = Color.rgb(13, 17, 65)
+val TEXTE = Color.rgb(236, 238, 255)
+val TEXTE_DOUX = Color.rgb(160, 168, 215)
+val ACCENT = Color.rgb(86, 200, 255)
 
 fun Context.dp(valeur: Int) = (valeur * resources.displayMetrics.density).toInt()
 
