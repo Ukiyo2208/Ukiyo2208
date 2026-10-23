@@ -7,10 +7,14 @@ import base64
 import logging
 import secrets
 import time
+from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import settings as cfg
@@ -48,7 +52,31 @@ async def lifespan(app: FastAPI):
         await ia_web.fermer()
 
 
-app = FastAPI(title="Bêta", lifespan=lifespan)
+STATIQUE = Path(__file__).parent / "static"
+
+app = FastAPI(
+    title="Bêta",
+    description=(
+        '<img src="/static/logo.png" width="120" alt="Logo de Bêta">\n\n'
+        "L'assistant vocal de la maison. Clique sur **Authorize** et colle ton `BETA_TOKEN`, "
+        "puis essaie `/v1/texte` avec par exemple `allume la lumière du salon`."
+    ),
+    lifespan=lifespan,
+    docs_url=None,  # remplacée ci-dessous pour afficher le logo dans l'onglet
+)
+app.mount("/static", StaticFiles(directory=STATIQUE), name="static")
+
+
+@app.get("/docs", include_in_schema=False)
+async def docs():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url, title="Bêta", swagger_favicon_url="/static/favicon.png"
+    )
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(STATIQUE / "favicon.png")
 
 
 _bearer = HTTPBearer(auto_error=False)
