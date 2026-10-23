@@ -11,7 +11,7 @@ import java.io.File
 
 /** Ce que l'écran principal affiche, mis à jour par le service. */
 object Etat {
-    enum class Phase { ARRET, ECOUTE, COMMANDE, ENVOI, REPONSE, ERREUR }
+    enum class Phase { ARRET, ECOUTE, COMMANDE, ENVOI, IDENTIFICATION, REPONSE, ERREUR }
 
     data class Affichage(
         val phase: Phase = Phase.ARRET,

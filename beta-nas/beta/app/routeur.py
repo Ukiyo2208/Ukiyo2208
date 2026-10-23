@@ -26,6 +26,9 @@ from .mails import DEMANDE_MAILS, resume_mails
 log = logging.getLogger("beta.routeur")
 
 _PAS_RECONNU = "Je ne vois pas qui tu es. Mets-toi face à la tablette et redemande-moi."
+_REGARDE_MOI = "Regarde la tablette une seconde."
+IDENTIFICATION_REQUISE = "identification_requise"
+_MAISON = "maison"
 DUREE_CONFIRMATION = 120  # secondes pour dire « oui »
 _OUI = re.compile(r"^\W*(oui|ouais|vas-?y|confirme|je confirme|d'accord|ok|c'est bon|valide)\b", re.IGNORECASE)
 _NON = re.compile(r"^\W*(non|annule|laisse tomber|stop|pas maintenant)\b", re.IGNORECASE)
@@ -51,16 +54,22 @@ class Routeur:
     ia_web: IAWeb | None = None
     _attentes: dict[str, _Attente] = field(default_factory=dict)
 
-    async def traiter(self, texte: str, personne: str | None, confiance: float) -> Resultat:
+    async def traiter(
+        self, texte: str, personne: str | None, confiance: float, identite_possible: bool = False
+    ) -> Resultat:
+        """`identite_possible` : la tablette peut allumer sa caméra si la demande est personnelle.
+        Dans ce cas, au lieu de refuser, Bêta répond IDENTIFICATION_REQUISE et la tablette
+        renvoie la même demande avec le prénom reconnu."""
         texte = texte.strip()
         if not texte:
             return Resultat("Je n'ai rien entendu.", "vide")
 
         identifie = self.settings.identifie(personne, confiance)
         capacites = self.settings.capacites(personne, confiance)
-        cle = personne if identifie else "inconnu"
+        refus = lambda message: self._refus(identifie, identite_possible, message)  # noqa: E731
 
-        attente = self._attentes.pop(cle, None)
+        # Une seule confirmation en attente pour la maison : le « oui » arrive sans visage
+        attente = self._attentes.pop(_MAISON, None)
         if attente and attente.expire > time.monotonic():
             if _OUI.search(texte):
                 return await self._appliquer(attente.config)
@@ -69,11 +78,11 @@ class Routeur:
             # Autre chose : on oublie la proposition et on traite la nouvelle demande
 
         if not capacites:
-            return Resultat(_PAS_RECONNU, "refus")
+            return refus("Désolé, je ne peux rien faire pour toi.")
 
         if DEMANDE_MAILS.search(texte):
             if cfg.MAILS not in capacites:
-                return self._refus(identifie, "Désolé, je ne peux pas lire les mails pour toi.")
+                return refus("Désolé, je ne peux pas lire les mails pour toi.")
             return await self._mails(personne)
 
         # « Tous les jours à 6h, ouvre les volets » ne doit pas ouvrir les volets tout de suite
@@ -94,12 +103,12 @@ class Routeur:
 
         if tri.categorie == llm_local.AUTOMATISATION:
             if cfg.AUTOMATISATIONS not in capacites:
-                return self._refus(identifie, "Désolé, tu n'as pas le droit de créer des automatisations.")
-            return await self._proposer_automatisation(texte, cle)
+                return refus("Désolé, tu n'as pas le droit de créer des automatisations.")
+            return await self._proposer_automatisation(texte)
 
         if tri.categorie == llm_local.QUESTION and tri.reponse:
             if cfg.QUESTIONS not in capacites:
-                return self._refus(identifie, "Désolé, je ne peux pas répondre à ça pour toi.")
+                return refus("Désolé, je ne peux pas répondre à ça pour toi.")
             return Resultat(tri.reponse, "llm_local")
 
         return Resultat("Je n'ai pas compris, tu peux reformuler ?", "incompris")
@@ -112,9 +121,13 @@ class Routeur:
             return None
 
     @staticmethod
-    def _refus(identifie: bool, message: str) -> Resultat:
-        # Sans visage, on explique comment débloquer plutôt que de dire « non »
-        return Resultat(message if identifie else _PAS_RECONNU, "refus")
+    def _refus(identifie: bool, identite_possible: bool, message: str) -> Resultat:
+        if identifie:
+            return Resultat(message, "refus")
+        # Sans visage : on demande à la tablette de regarder, sinon on explique comment débloquer
+        if identite_possible:
+            return Resultat(_REGARDE_MOI, IDENTIFICATION_REQUISE)
+        return Resultat(_PAS_RECONNU, "refus")
 
     async def _mails(self, personne: str | None) -> Resultat:
         compte = self.settings.personnes[personne].mail if personne in self.settings.personnes else None
@@ -126,7 +139,7 @@ class Routeur:
             log.exception("Lecture des mails impossible")
             return Resultat("Je n'arrive pas à accéder à ta boîte mail.", "mails")
 
-    async def _proposer_automatisation(self, texte: str, cle: str) -> Resultat:
+    async def _proposer_automatisation(self, texte: str) -> Resultat:
         if not self.ia_web:
             return Resultat(
                 "Créer une automatisation demande l'IA web, qui n'est pas configurée.", "automatisation"
@@ -145,7 +158,7 @@ class Routeur:
 
         if not proposition.possible:
             return Resultat(proposition.resume, "ia_web")
-        self._attentes[cle] = _Attente(proposition.config, time.monotonic() + DUREE_CONFIRMATION)
+        self._attentes[_MAISON] = _Attente(proposition.config, time.monotonic() + DUREE_CONFIRMATION)
         return Resultat(f"{proposition.resume} Tu confirmes ?", "ia_web")
 
     async def _appliquer(self, config: dict[str, Any]) -> Resultat:

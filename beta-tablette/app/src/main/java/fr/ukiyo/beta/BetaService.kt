@@ -23,15 +23,16 @@ import android.util.Log
 import fr.ukiyo.beta.Etat.Phase
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.opencv.android.OpenCVLoader
 import java.io.File
@@ -47,7 +48,6 @@ class BetaService : Service() {
         private const val TAG = "Beta"
         private const val CANAL = "beta"
         private const val DUREE_MAX_VISAGE_MS = 3000L
-        private const val ATTENTE_VISAGE_APRES_PHRASE_MS = 500L
         /** Au-delà de seuil + marge, inutile de continuer à chercher un meilleur visage */
         private const val MARGE_VISAGE_SUR = 0.15f
 
@@ -73,9 +73,6 @@ class BetaService : Service() {
 
     @Volatile private var phase = Phase.ARRET
     private var enregistreur: Enregistreur? = null
-    private var identification: Deferred<Unit>? = null
-    /** Meilleur visage vu depuis « Hey Bêta » (mis à jour image par image par la caméra) */
-    private val meilleurVisage = AtomicReference(Visages.Identification(null, 0f))
     private var bruitAmbiant = 300f
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -191,41 +188,25 @@ class BetaService : Service() {
         enregistreur = Enregistreur(bruitAmbiant)
         bip.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
         Etat.maj { it.copy(phase = Phase.COMMANDE, message = "Je t'écoute…", personne = null) }
-        meilleurVisage.set(Visages.Identification(null, 0f))
-        identification = scope.async(Dispatchers.IO) { reconnaitreVisage() }
     }
 
-    private fun rienEntendu() {
-        identification?.cancel() // la caméra est fermée par reconnaitreVisage
-        passerEnEcoute()
-    }
+    private fun rienEntendu() = passerEnEcoute()
 
     private fun commandeTerminee() {
         phase = Phase.ENVOI
         val wav = enregistreur!!.wav()
-        val visage = identification
         Etat.maj { it.copy(phase = Phase.ENVOI, message = "Je réfléchis…") }
 
         scope.launch(Dispatchers.IO) {
             try {
-                // Le visage ne sert qu'à personnaliser : on ne fait pas attendre une commande domotique
-                withTimeoutOrNull(ATTENTE_VISAGE_APRES_PHRASE_MS) { visage?.await() }
-                visage?.cancel()
-                val id = meilleurVisage.get()
-                val personne = id.nom.takeIf { id.score >= reglages.seuilVisage }
-                Etat.maj { it.copy(personne = personne) }
-
                 if (!reglages.estConfigure) throw ClientNas.ErreurNas("Renseigne l'adresse du NAS dans les réglages")
-                val reponse = client.envoyer(wav, personne, id.score)
-                phase = Phase.REPONSE
-                Etat.maj {
-                    it.copy(
-                        phase = Phase.REPONSE,
-                        message = "",
-                        texteReconnu = reponse.texteReconnu,
-                        reponse = reponse.reponse,
-                    )
+                // Sans caméra : la plupart des demandes (maison, questions) n'ont pas besoin de savoir qui parle
+                var reponse = client.envoyer(wav, null, 0f)
+                val demandeId = reponse.demandeId
+                if (reponse.route == ClientNas.IDENTIFICATION_REQUISE && demandeId != null) {
+                    reponse = identifierPuisReprendre(demandeId, reponse)
                 }
+                afficherReponse(reponse)
                 reponse.audioWav?.let { lire(it) }
             } catch (e: Exception) {
                 Log.e(TAG, "Échec de la commande", e)
@@ -237,10 +218,31 @@ class BetaService : Service() {
         }
     }
 
-    private suspend fun reconnaitreVisage() {
-        val v = visages ?: return
-        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return
-        val meilleur = meilleurVisage
+    /** Demande personnelle (mails, automatisation…) : on allume la caméra, puis le NAS reprend la demande. */
+    private suspend fun identifierPuisReprendre(demandeId: String, invite: ClientNas.Reponse): ClientNas.Reponse =
+        coroutineScope {
+            phase = Phase.IDENTIFICATION
+            Etat.maj { it.copy(phase = Phase.IDENTIFICATION, message = invite.reponse, texteReconnu = invite.texteReconnu) }
+            val regard = async { reconnaitreVisage() }
+            invite.audioWav?.let { lire(it) } // « Regarde la tablette une seconde » pendant que la caméra cherche
+            val id = regard.await()
+            val personne = id.nom.takeIf { id.score >= reglages.seuilVisage }
+            Etat.maj { it.copy(phase = Phase.ENVOI, message = "Je réfléchis…", personne = personne) }
+            client.identite(demandeId, personne, id.score)
+        }
+
+    private fun afficherReponse(reponse: ClientNas.Reponse) {
+        phase = Phase.REPONSE
+        Etat.maj {
+            it.copy(phase = Phase.REPONSE, message = "", texteReconnu = reponse.texteReconnu, reponse = reponse.reponse)
+        }
+    }
+
+    private suspend fun reconnaitreVisage(): Visages.Identification {
+        val aucun = Visages.Identification(null, 0f)
+        val v = visages ?: return aucun
+        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return aucun
+        val meilleur = AtomicReference(aucun)
         val suffisant = CompletableDeferred<Unit>()
         val ouverte = camera.demarrer { image ->
             if (suffisant.isCompleted) return@demarrer
@@ -256,9 +258,10 @@ class BetaService : Service() {
             try {
                 withTimeoutOrNull(DUREE_MAX_VISAGE_MS) { suffisant.await() }
             } finally {
-                camera.arreter()
+                withContext(Dispatchers.IO) { camera.arreter() }
             }
         }
+        return meilleur.get()
     }
 
     private suspend fun lire(wav: ByteArray) {

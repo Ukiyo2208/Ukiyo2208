@@ -18,8 +18,8 @@ ROLES_PAR_DEFAUT = {
     "admin": [DOMOTIQUE, MAILS, QUESTIONS, AUTOMATISATIONS],
     "adulte": [DOMOTIQUE, MAILS, QUESTIONS],
     "enfant": [DOMOTIQUE, QUESTIONS],
-    # Visage absent ou non reconnu : Bêta reste un assistant domotique, sans personnalisation
-    "inconnu": [DOMOTIQUE],
+    # Sans visage : tout ce qui ne dépend pas de la personne (maison, questions générales)
+    "inconnu": [DOMOTIQUE, QUESTIONS],
 }
 
 

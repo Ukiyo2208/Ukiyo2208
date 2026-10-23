@@ -120,6 +120,7 @@ class MainActivity : Activity() {
             Phase.ECOUTE -> "👂"
             Phase.COMMANDE -> "🎙"
             Phase.ENVOI -> "💭"
+            Phase.IDENTIFICATION -> "👀"
             Phase.REPONSE -> "💬"
             Phase.ERREUR -> "⚠️"
         }

@@ -19,7 +19,19 @@ class ClientNas(private val reglages: Reglages) {
         .readTimeout(90, TimeUnit.SECONDS)
         .build()
 
-    data class Reponse(val texteReconnu: String, val reponse: String, val route: String, val audioWav: ByteArray?)
+    companion object {
+        /** Le NAS a besoin de savoir qui parle : allumer la caméra puis appeler [identite] */
+        const val IDENTIFICATION_REQUISE = "identification_requise"
+        private val JSON = "application/json".toMediaType()
+    }
+
+    data class Reponse(
+        val texteReconnu: String,
+        val reponse: String,
+        val route: String,
+        val audioWav: ByteArray?,
+        val demandeId: String?,
+    )
 
     class ErreurNas(message: String) : IOException(message)
 
@@ -36,6 +48,24 @@ class ClientNas(private val reglages: Reglages) {
             .post(corps)
             .build()
 
+        return executer(requete)
+    }
+
+    /** Renvoie le prénom reconnu pour une demande mise de côté par le NAS. */
+    fun identite(demandeId: String, personne: String?, confiance: Float): Reponse {
+        val corps = JSONObject()
+            .put("demande_id", demandeId)
+            .put("personne", personne ?: "")
+            .put("confiance", confiance.toDouble())
+        val requete = Request.Builder()
+            .url("${reglages.urlNas}/v1/identite")
+            .header("Authorization", "Bearer ${reglages.jeton}")
+            .post(corps.toString().toRequestBody(JSON))
+            .build()
+        return executer(requete)
+    }
+
+    private fun executer(requete: Request): Reponse {
         http.newCall(requete).execute().use { r ->
             val texte = r.body?.string().orEmpty()
             when {
@@ -43,12 +73,13 @@ class ClientNas(private val reglages: Reglages) {
                 !r.isSuccessful -> throw ErreurNas("Erreur du NAS (${r.code}) : $texte")
             }
             val json = JSONObject(texte)
-            val audio = json.optString("audio_wav_base64", "")
+            fun texteOuNull(cle: String) = json.optString(cle, "").takeUnless { it.isEmpty() || it == "null" }
             return Reponse(
                 texteReconnu = json.optString("texte_reconnu"),
                 reponse = json.optString("reponse"),
                 route = json.optString("route"),
-                audioWav = if (audio.isEmpty() || audio == "null") null else Base64.decode(audio, Base64.DEFAULT),
+                audioWav = texteOuNull("audio_wav_base64")?.let { Base64.decode(it, Base64.DEFAULT) },
+                demandeId = texteOuNull("demande_id"),
             )
         }
     }

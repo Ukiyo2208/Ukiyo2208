@@ -20,9 +20,9 @@ roles:
   admin: [domotique, mails, questions, automatisations]
   adulte: [domotique, mails, questions]
   enfant: [domotique, questions]
-  # Visage absent ou non reconnu : commandes domotiques seulement, sans personnalisation.
-  # Mets [] pour que Bêta ne réponde qu'aux personnes reconnues.
-  inconnu: [domotique]
+  # Sans visage : ce qui ne dépend pas de la personne. La caméra ne s'allume que pour le reste
+  # (mails, automatisations...). Mets [] pour que Bêta regarde à chaque demande.
+  inconnu: [domotique, questions]
 
 # Types d'appareils que Bêta peut lister et utiliser dans les automatisations
 domaines_exposes:

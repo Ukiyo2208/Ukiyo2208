@@ -21,7 +21,7 @@ from . import settings as cfg
 from .homeassistant import HomeAssistant
 from .ia_web import IAWeb
 from .llm_local import LLMLocal
-from .routeur import Routeur
+from .routeur import IDENTIFICATION_REQUISE, Routeur
 from .voix import ErreurAudio, synthetiser, transcrire
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -94,6 +94,19 @@ class Reponse(BaseModel):
     route: str
     duree_ms: int
     audio_wav_base64: str | None = None
+    # Rempli quand route == "identification_requise" : à renvoyer à /v1/identite avec le prénom
+    demande_id: str | None = None
+
+
+class Identite(BaseModel):
+    demande_id: str
+    personne: str = ""
+    confiance: float = 0.0
+    sans_voix: bool = False
+
+
+DUREE_DEMANDE = 60  # secondes pour envoyer le visage
+_demandes: dict[str, tuple[str, float]] = {}
 
 
 class DemandeTexte(BaseModel):
@@ -103,9 +116,19 @@ class DemandeTexte(BaseModel):
     voix: bool = False
 
 
-async def _repondre(texte: str, personne: str | None, confiance: float, voix: bool, debut: float) -> Reponse:
+async def _repondre(
+    texte: str, personne: str | None, confiance: float, voix: bool, debut: float, identite_possible: bool = False
+) -> Reponse:
     s: cfg.Settings = etat["settings"]
-    resultat = await etat["routeur"].traiter(texte, personne, confiance)
+    resultat = await etat["routeur"].traiter(texte, personne, confiance, identite_possible)
+
+    demande_id = None
+    if resultat.route == IDENTIFICATION_REQUISE:
+        maintenant = time.monotonic()
+        for ancien in [k for k, (_, expire) in _demandes.items() if expire < maintenant]:
+            del _demandes[ancien]
+        demande_id = secrets.token_urlsafe(12)
+        _demandes[demande_id] = (texte, maintenant + DUREE_DEMANDE)
     log.info("[%s %.2f] « %s » -> %s : %s", personne, confiance, texte, resultat.route, resultat.texte)
 
     audio = None
@@ -122,6 +145,7 @@ async def _repondre(texte: str, personne: str | None, confiance: float, voix: bo
         route=resultat.route,
         duree_ms=int((time.monotonic() - debut) * 1000),
         audio_wav_base64=audio,
+        demande_id=demande_id,
     )
 
 
@@ -133,7 +157,8 @@ async def commande(
     # Un booléen absent d'un formulaire vaut False (comme une case décochée), d'où le « sans_ »
     sans_voix: bool = Form(False),
 ):
-    """Appelé par la tablette après « Hey Bêta » + reconnaissance du visage."""
+    """Appelé par la tablette après « Hey Bêta ». Sans `personne`, la caméra n'a pas été allumée :
+    si la demande est personnelle, la réponse vaut `identification_requise`."""
     debut = time.monotonic()
     s: cfg.Settings = etat["settings"]
     try:
@@ -142,7 +167,16 @@ async def commande(
         raise HTTPException(status_code=400, detail=str(e)) from e
     except OSError as e:
         raise HTTPException(status_code=503, detail="Whisper injoignable") from e
-    return await _repondre(texte, personne or None, confiance, not sans_voix, debut)
+    return await _repondre(texte, personne or None, confiance, not sans_voix, debut, identite_possible=True)
+
+
+@app.post("/v1/identite", response_model=Reponse, dependencies=[Depends(verifier_jeton)])
+async def identite(demande: Identite):
+    """La tablette a regardé qui parle : on reprend la demande mise de côté, sans la redemander."""
+    texte, expire = _demandes.pop(demande.demande_id, ("", 0.0))
+    if expire < time.monotonic():
+        raise HTTPException(status_code=404, detail="Demande inconnue ou expirée")
+    return await _repondre(texte, demande.personne or None, demande.confiance, not demande.sans_voix, time.monotonic())
 
 
 @app.post("/v1/texte", response_model=Reponse, dependencies=[Depends(verifier_jeton)])

@@ -168,7 +168,7 @@ au format `multipart/form-data` :
 | Champ | Exemple | Description |
 |---|---|---|
 | `audio` | fichier `.wav` | **16 kHz, mono, 16 bits** : la phrase après « Hey Bêta » |
-| `personne` | `bastien` | Nom reconnu par SFace (vide si personne n'est reconnu) |
+| `personne` | `bastien` | Nom reconnu par SFace. Vide : la caméra n'a pas été allumée |
 | `confiance` | `0.87` | Score de la reconnaissance du visage |
 | `sans_voix` | `true` | Optionnel : ne pas générer l'audio de réponse |
 
@@ -185,7 +185,21 @@ Réponse :
 ```
 
 `route` vaut `home_assistant`, `llm_local`, `llm_local+home_assistant`, `ia_web`, `confirmation`,
-`mails`, `refus` ou `incompris`.
+`mails`, `refus`, `incompris` ou `identification_requise`.
+
+**Caméra à la demande.** La tablette envoie d'abord la commande sans visage. Si la demande dépend
+de la personne (mails, automatisation…), la réponse est `identification_requise`. Le champ
+`demande_id` est alors rempli et `reponse` vaut « Regarde la tablette une seconde. ». La tablette
+allume sa caméra, puis appelle :
+
+`POST /v1/identite` (JSON, même en-tête `Authorization`)
+
+```json
+{"demande_id": "…", "personne": "bastien", "confiance": 0.82}
+```
+
+Le NAS reprend la phrase mise de côté (sans la retranscrire) et renvoie une réponse normale.
+Un `demande_id` ne sert qu'une fois et expire au bout de 60 secondes.
 
 ## Développement
 

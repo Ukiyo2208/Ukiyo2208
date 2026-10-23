@@ -5,7 +5,7 @@ import pytest
 from app import llm_local
 from app.homeassistant import ReponseHA
 from app.ia_web import Proposition
-from app.routeur import Routeur
+from app.routeur import IDENTIFICATION_REQUISE, Routeur
 from app.settings import Personne, Settings
 
 
@@ -94,7 +94,7 @@ async def test_confirmation_expiree_ou_annulee():
     await rt.traiter("tous les jours à 6h ouvre les volets", "bastien", 0.9)
     assert (await rt.traiter("non", "bastien", 0.9)).texte == "D'accord, j'annule."
     await rt.traiter("tous les jours à 6h ouvre les volets", "bastien", 0.9)
-    rt._attentes["bastien"].expire = time.monotonic() - 1
+    rt._attentes["maison"].expire = time.monotonic() - 1
     await rt.traiter("oui", "bastien", 0.9)
     assert ha.creees == []
 
@@ -104,3 +104,23 @@ async def test_enfant_ne_cree_pas_d_automatisation():
     rt = routeur(FauxHA(), llm_local.Tri(llm_local.AUTOMATISATION), FausseIA())
     r = await rt.traiter("tous les jours à 6h ouvre les volets", "leo", 0.9)
     assert r.route == "refus"
+
+
+@pytest.mark.asyncio
+async def test_question_generale_sans_camera():
+    tri = llm_local.Tri(llm_local.QUESTION, reponse="Paris.")
+    r = await routeur(FauxHA(), tri).traiter("capitale de la France ?", None, 0.0, identite_possible=True)
+    assert r.route == "llm_local"
+
+
+@pytest.mark.asyncio
+async def test_demande_personnelle_demande_la_camera_puis_aboutit():
+    ha = FauxHA()
+    rt = routeur(ha, llm_local.Tri(llm_local.AUTOMATISATION), FausseIA())
+    r = await rt.traiter("tous les jours à 6h ouvre les volets", None, 0.0, identite_possible=True)
+    assert r.route == IDENTIFICATION_REQUISE
+    r = await rt.traiter("tous les jours à 6h ouvre les volets", "bastien", 0.9)
+    assert r.texte.endswith("Tu confirmes ?")
+    # Le « oui » arrive sans visage : il doit quand même valider
+    r = await rt.traiter("oui", None, 0.0, identite_possible=True)
+    assert r.texte == "C'est enregistré."

@@ -3,10 +3,14 @@
 La tablette joue le rôle des **yeux et des oreilles** de Bêta :
 
 1. Elle écoute en continu le mot d'activation (openWakeWord, 100 % sur la tablette).
-2. Quand elle l'entend, elle émet un bip, allume la caméra frontale et reconnaît le visage avec YuNet + SFace.
-   Seul le prénom quitte la tablette, jamais d'image.
-3. Elle enregistre ta phrase et s'arrête toute seule quand tu te tais.
-4. Elle envoie l'audio et le prénom au NAS (`beta-nas`), puis lit la réponse à voix haute.
+2. Quand elle l'entend, elle émet un bip, enregistre ta phrase et s'arrête toute seule quand tu te tais.
+3. Elle envoie l'audio au NAS (`beta-nas`) **sans allumer la caméra**, puis lit la réponse à voix haute.
+4. **Seulement si la demande est personnelle** (mails, automatisation…), le NAS répond
+   « Regarde la tablette une seconde ». La tablette allume alors la caméra frontale, reconnaît
+   le visage avec YuNet + SFace et renvoie le prénom. Le NAS termine la demande, sans que tu aies
+   à la répéter. Seul le prénom quitte la tablette, jamais d'image.
+
+Les commandes de la maison et les questions générales ne déclenchent donc jamais la caméra.
 
 Elle fonctionne sur Android 8 ou plus récent. Elle n'utilise pas Google Play, AndroidX ni les services Google.
 
