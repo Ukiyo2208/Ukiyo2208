@@ -1,0 +1,7 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+# Modèles téléchargés automatiquement à la compilation
+app/src/main/assets/modeles/

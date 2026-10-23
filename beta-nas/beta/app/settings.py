@@ -66,7 +66,7 @@ class Settings:
     langue: str = "fr"
 
     # Issu de config.yaml
-    seuil_confiance: float = 0.6
+    seuil_confiance: float = 0.4
     personnes: dict[str, Personne] = field(default_factory=dict)
     roles: dict[str, list[str]] = field(default_factory=lambda: dict(ROLES_PAR_DEFAUT))
     domaines_exposes: list[str] = field(

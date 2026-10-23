@@ -1,7 +1,8 @@
 # Copie ce fichier en « config.yaml » (même dossier) et adapte-le.
 
-# En dessous de cette confiance de reconnaissance du visage, la personne est traitée comme inconnue.
-seuil_confiance: 0.6
+# En dessous de ce score de reconnaissance du visage (similarité SFace envoyée par la tablette),
+# la personne est traitée comme inconnue. Même personne ≈ 0,6 à 0,9 ; quelqu'un d'autre ≈ 0,2.
+seuil_confiance: 0.4
 
 # Les noms doivent être identiques à ceux envoyés par la tablette.
 personnes:
