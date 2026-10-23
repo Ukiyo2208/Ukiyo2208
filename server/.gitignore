@@ -2,3 +2,4 @@ data/
 mqtt/
 matter/
 py-data/
+__pycache__/
