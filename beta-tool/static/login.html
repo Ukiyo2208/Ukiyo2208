@@ -20,12 +20,22 @@
   <form class="card" method="post" action="/login">
     <img src="brand/apple-touch-icon.png" alt="">
     <h1>Bêta Tool<span class="badge">bêta</span></h1>
-    <p>Entre le mot de passe pour accéder à tes outils.</p>
-    <input type="password" name="password" placeholder="Mot de passe" autofocus required>
+    <p id="lead">Connecte-toi pour accéder à tes outils.</p>
+    <input type="text" name="username" id="username" placeholder="Identifiant" autocomplete="username" autocapitalize="none" hidden>
+    <input type="password" name="password" placeholder="Mot de passe" autocomplete="current-password" required>
     <button class="btn wide">Se connecter</button>
     <p class="msg" id="err" style="margin:12px 0 0"></p>
   </form>
 </div>
-<script>if (location.search.includes("erreur")) document.getElementById("err").textContent = "Mot de passe incorrect";</script>
+<script>
+  if (location.search.includes("erreur")) document.getElementById("err").textContent = "Identifiant ou mot de passe incorrect";
+  fetch("/api/auth/mode").then(r => r.json()).then(m => {
+    if (m.mode === "open") return location.replace("/");
+    const user = document.getElementById("username");
+    if (m.mode === "accounts") { user.hidden = false; user.required = true; user.focus(); }
+    else { document.getElementById("lead").textContent = "Entre le mot de passe pour accéder à tes outils."; document.querySelector("[name=password]").focus(); }
+    if (m.site) document.querySelector("h1").firstChild.textContent = m.site;
+  });
+</script>
 </body>
 </html>

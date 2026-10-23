@@ -1,32 +1,46 @@
 """Bêta Tool : une boîte à outils web auto-hébergée (téléchargeur, convertisseur,
 studio PDF, décompresseur, Bêta Work…)."""
 
-import hmac
 import mimetypes
 import os
 import secrets
+import shutil
 from datetime import timedelta
+from functools import wraps
 
-from flask import Flask, abort, jsonify, redirect, request, send_file, session
+from flask import Flask, abort, g, jsonify, redirect, request, send_file, send_from_directory, session
 from waitress import serve
 
+import activity
 import archives
+import auth
 import converter
 import downloader
 import pdftools
+import roots
+import settings
+import store
 import suggestions
+import updater
 import work
 
 mimetypes.add_type("text/javascript", ".mjs")  # modules pdf.js
+mimetypes.add_type("application/manifest+json", ".webmanifest")
 
 app = Flask(__name__, static_folder="static", static_url_path="")
-APP_PASSWORD = os.environ.get("APP_PASSWORD", "")
-STORAGE_NAME = os.environ.get("STORAGE_NAME", "NAS")  # « NAS », « serveur », « PC »… selon l'hébergement
+# Icône et bannière : dossier de l'image (monté par docker-compose), même quand une mise à jour tourne
+BRAND_DIR = os.path.join(os.environ.get("BETA_BASE_DIR", os.path.dirname(os.path.abspath(__file__))), "static", "brand")
+BLUEPRINTS = []  # outils déclarés dans leur propre module (fichiers, partages, notes…)
 
 
 @app.errorhandler(ValueError)
 def bad_request(e):
     return jsonify(error=str(e)), 400
+
+
+@app.errorhandler(PermissionError)
+def forbidden(e):
+    return jsonify(error=str(e) or "Accès refusé"), 403
 
 
 @app.errorhandler(converter.ConvertError)
@@ -39,24 +53,49 @@ def index():
     return app.send_static_file("index.html")
 
 
-@app.get("/api/config")
-def config():
-    return jsonify(storage=STORAGE_NAME, auth=bool(APP_PASSWORD))
+@app.get("/brand/<path:name>")
+def brand(name):
+    return send_from_directory(BRAND_DIR, name)
 
 
-# --- Mot de passe (optionnel, conseillé si le site est accessible depuis Internet) ---
+@app.get("/share")
+def share_target():
+    """Cible de partage de l'appli installée : « Partager → Bêta Tool » depuis YouTube…"""
+    shared = request.args.get("url") or request.args.get("text") or ""
+    from urllib.parse import quote
+    return redirect("/#/telecharger?url=" + quote(shared))
 
-PUBLIC = ("/login", "/style.css", "/vendor/fonts/", "/brand/")
+
+# --- Connexion, comptes, rôles ---------------------------------------------
+
+# Accessibles sans être connecté : page de connexion, ressources de la page, pages publiques
+# (partages /d/, questionnaires /f/, liens courts /s/) et leurs API publiques.
+PUBLIC = ("/login", "/style.css", "/vendor/fonts/", "/brand/", "/manifest.webmanifest", "/sw.js", "/api/auth/mode",
+          "/d/", "/f/", "/s/", "/public/", "/api/public/")
+
+
+def admin_only(fn):
+    @wraps(fn)
+    def wrapper(*a, **kw):
+        if g.user["role"] != "admin":
+            raise PermissionError("Réservé aux administrateurs")
+        return fn(*a, **kw)
+    return wrapper
 
 
 @app.before_request
-def require_login():
-    if not APP_PASSWORD or session.get("ok") or request.path.startswith(PUBLIC):
+def gatekeeper():
+    g.user = auth.current()
+    path = request.path
+    tool = settings.blocked(path)
+    if tool:
+        return jsonify(error="Cet outil est désactivé dans les réglages"), 404
+    if g.user or path.startswith(PUBLIC):
         return None
     # ONLYOFFICE appelle ces routes lui-même ; elles sont protégées par une signature
-    if request.path.startswith("/api/work/") and request.path.endswith(("/raw", "/callback")):
+    if path.startswith("/api/work/") and path.endswith(("/raw", "/callback")):
         return None
-    if request.path.startswith("/api/"):
+    if path.startswith("/api/"):
         return jsonify(error="Connexion requise"), 401
     return redirect("/login")
 
@@ -66,11 +105,14 @@ def login_page():
     return app.send_static_file("login.html")
 
 
+@app.get("/api/auth/mode")
+def auth_mode():
+    return jsonify(mode=auth.mode(), site=settings.get()["site_name"])
+
+
 @app.post("/login")
 def login():
-    if APP_PASSWORD and hmac.compare_digest(request.form.get("password", ""), APP_PASSWORD):
-        session.permanent = True
-        session["ok"] = True
+    if auth.login(request.form.get("username", ""), request.form.get("password", "")):
         return redirect("/")
     return redirect("/login?erreur=1")
 
@@ -78,7 +120,174 @@ def login():
 @app.post("/logout")
 def logout():
     session.clear()
-    return redirect("/login")
+    return redirect("/login" if auth.mode() != "open" else "/")
+
+
+@app.get("/api/config")
+def config():
+    s = settings.get()
+    return jsonify(storage=settings.storage_name(), site=s["site_name"], tools=s["tools"], user=g.user,
+                   mode=auth.mode(), version=updater.current_version())
+
+
+@app.get("/api/settings")
+@admin_only
+def settings_get():
+    return jsonify(settings.get())
+
+
+@app.put("/api/settings")
+@admin_only
+def settings_put():
+    return jsonify(settings.update(request.get_json(silent=True) or {}))
+
+
+@app.get("/api/users")
+@admin_only
+def users_list():
+    return jsonify([auth.public(u) for u in auth.users()])
+
+
+@app.post("/api/users")
+@admin_only
+def users_add():
+    d = request.get_json(silent=True) or {}
+    first = auth.mode() != "accounts"
+    role = auth.add(d.get("name"), d.get("password"), d.get("role", "member"))
+    if first:  # premier compte : on connecte directement la personne qui l'a créé
+        session.permanent = True
+        session["user"] = d.get("name").strip()
+    return jsonify(ok=True, role=role, first=first)
+
+
+@app.put("/api/users/<name>")
+@admin_only
+def users_edit(name):
+    d = request.get_json(silent=True) or {}
+    if d.get("password"):
+        auth.set_password(name, d["password"])
+    if d.get("role"):
+        auth.set_role(name, d["role"])
+    return jsonify(ok=True)
+
+
+@app.delete("/api/users/<name>")
+@admin_only
+def users_delete(name):
+    if name == g.user["name"]:
+        raise ValueError("Tu ne peux pas supprimer ton propre compte")
+    auth.delete(name)
+    return jsonify(ok=True)
+
+
+@app.post("/api/me/password")
+def my_password():
+    if auth.mode() != "accounts":
+        raise ValueError("Pas de compte à modifier (crée d'abord des comptes dans Réglages)")
+    d = request.get_json(silent=True) or {}
+    if not auth.login(g.user["name"], d.get("old", "")):
+        raise ValueError("Mot de passe actuel incorrect")
+    auth.set_password(g.user["name"], d.get("new", ""))
+    return jsonify(ok=True)
+
+
+# --- Mises à jour ------------------------------------------------------------
+
+@app.get("/api/update")
+@admin_only
+def update_info():
+    return jsonify({**updater.info(), "ytdlp": updater.ytdlp_version(), "update_url": settings.get()["update_url"]})
+
+
+@app.post("/api/update/check")
+@admin_only
+def update_check():
+    return jsonify(updater.check((request.get_json(silent=True) or {}).get("url") or settings.get()["update_url"]))
+
+
+@app.post("/api/update/install")
+@admin_only
+def update_install():
+    force = request.args.get("force") == "1"
+    if request.files.get("file"):
+        result = updater.install(request.files["file"].read(), force=force)
+    else:
+        d = request.get_json(silent=True) or {}
+        result = updater.install_url(d.get("url", "").strip(), d.get("sha256"), force)
+    activity.log("*", "reglages", f"Bêta Tool mis à jour en version {result['version']}", "#/reglages/maj")
+    return jsonify(result)
+
+
+@app.post("/api/update/use")
+@admin_only
+def update_use():
+    updater.use((request.get_json(silent=True) or {}).get("version", "builtin"))
+    return jsonify(ok=True)
+
+
+@app.post("/api/update/ytdlp")
+@admin_only
+def update_ytdlp():
+    updater.update_ytdlp()
+    return jsonify(ok=True)
+
+
+@app.post("/api/restart")
+@admin_only
+def restart():
+    updater.restart()
+    return jsonify(ok=True)
+
+
+# --- Historique, recherche, tableau de bord ---------------------------------
+
+@app.get("/api/activity")
+def activity_list():
+    return jsonify(activity.recent(g.user["name"], int(request.args.get("since", 0) or 0)))
+
+
+@app.get("/api/dashboard")
+def dashboard():
+    disks = {}
+    for r in roots.all_roots():
+        try:
+            st = os.stat(r["path"])
+            usage = shutil.disk_usage(r["path"])
+        except OSError:
+            continue
+        d = disks.setdefault(st.st_dev, {"total": usage.total, "used": usage.used, "free": usage.free, "roots": []})
+        d["roots"].append(r["label"])
+    counts = {"documents": len(work.list_docs()) if settings.enabled("work") else None}
+    for name, fn in COUNTERS.items():
+        try:
+            counts[name] = fn(g.user["name"])
+        except Exception:
+            counts[name] = None
+    return jsonify(disks=list(disks.values()), counts=counts, activity=activity.recent(g.user["name"], limit=6),
+                   version=updater.current_version())
+
+
+COUNTERS = {}  # outils qui exposent un compteur pour le tableau de bord (notes, partages…)
+SEARCHERS = {}  # outils qui participent à la recherche globale
+
+
+@app.get("/api/search")
+def search():
+    q = (request.args.get("q") or "").strip().lower()
+    if len(q) < 2:
+        return jsonify([])
+    results = []
+    tools = settings.get()["tools"]
+    if tools.get("work"):
+        results += [{"type": "document", "title": d["name"], "sub": "Bêta Work", "link": f"#/work/{d['id']}", "kind": d["kind"]}
+                    for d in work.list_docs() if q in d["name"].lower()][:8]
+    for tool, fn in SEARCHERS.items():
+        if tools.get(tool, True):
+            try:
+                results += fn(q, g.user["name"])
+            except Exception as e:  # une source en panne ne casse pas la recherche
+                print("recherche", tool, e)
+    return jsonify(results[:40])
 
 
 # --- Téléchargeur -----------------------------------------------------------
@@ -86,7 +295,8 @@ def logout():
 @app.post("/api/download")
 def download():
     data = request.get_json(silent=True) or {}
-    return jsonify(ids=downloader.submit(data.get("url"), data.get("mode"), data.get("subfolder"), data.get("keep", True) is not False))
+    return jsonify(ids=downloader.submit(data.get("url"), data.get("mode"), data.get("subfolder"),
+                                         data.get("keep", True) is not False, g.user["name"]))
 
 
 @app.get("/api/download/jobs")
@@ -115,7 +325,7 @@ def convert():
     if not upload or not upload.filename:
         raise ValueError("Aucun fichier reçu")
     job_id = converter.submit(upload, request.form.get("target", ""),
-                              request.form.get("nas") == "1", request.form.get("subfolder"))
+                              request.form.get("nas") == "1", request.form.get("subfolder"), g.user["name"])
     return jsonify(id=job_id)
 
 
@@ -283,7 +493,7 @@ def suggestion_list():
 
 def secret_key():
     """Clé de session stable entre deux redémarrages (gardée dans DATA_DIR)."""
-    path = os.path.join(suggestions.DATA_DIR, "secret.key")
+    path = store.path("secret.key")
     if not os.path.exists(path):
         with open(path, "w") as f:
             f.write(secrets.token_hex(32))
@@ -295,6 +505,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8080"))
     downloader.start(int(os.environ.get("WORKERS", "2")))
     converter.start(int(os.environ.get("CONVERT_WORKERS", "2")))
+    store.start()
     pdftools.start()
     suggestions.start()
     archives.start()

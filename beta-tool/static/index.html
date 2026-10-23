@@ -4,11 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Bêta Tool</title>
-<meta name="description" content="Boîte à outils auto-hébergée : téléchargeur, convertisseur et studio PDF.">
+<meta name="description" content="Boîte à outils auto-hébergée : fichiers, médias, documents, PDF, partages…">
 <link rel="icon" href="brand/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="brand/icon.png">
 <link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
 <meta name="theme-color" content="#030816">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bêta Tool">
 <script>
   // Thème choisi (auto / clair / sombre), appliqué avant l'affichage pour éviter un flash
   try { const t = localStorage.getItem("bt-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}
@@ -23,30 +28,10 @@
     <img src="brand/apple-touch-icon.png" alt="">
     <span><strong>Bêta Tool<span class="badge">bêta</span></strong><small>Ta boîte à outils NAS</small></span>
   </a>
-  <nav class="nav" id="nav">
-    <a href="#/" data-route="home"><i data-icon="home"></i>Accueil</a>
-    <div class="nav-label">Outils</div>
-    <a href="#/telecharger" data-route="telecharger"><i data-icon="download"></i>Téléchargeur</a>
-    <a href="#/convertir" data-route="convertir"><i data-icon="convert"></i>Convertisseur</a>
-    <a href="#/pdf" data-route="pdf"><i data-icon="pdf"></i>Studio PDF</a>
-    <a href="#/decompresser" data-route="decompresser"><i data-icon="archive"></i>Décompresseur</a>
-    <div class="nav-label">Bureautique</div>
-    <a href="#/work" data-route="work"><i data-icon="briefcase"></i>Bêta Work</a>
-    <div class="nav-label">Communauté</div>
-    <a href="#/suggestions" data-route="suggestions"><i data-icon="lightbulb"></i>Suggestions</a>
-  </nav>
+  <button class="search-btn" data-search><i data-icon="search"></i><span>Rechercher…</span><kbd>Ctrl K</kbd></button>
+  <nav class="nav" id="nav"></nav>
   <div class="spacer"></div>
-  <div class="side-card">
-    <b>Besoin d'aide ?</b>
-    <p>Chaque outil a son tuto pas à pas.</p>
-    <button class="btn small ghost" data-help><i data-icon="help"></i>Ouvrir le tuto</button>
-  </div>
-  <div class="theme-switch" role="group" aria-label="Thème">
-    <button data-theme-set="auto" title="Automatique"><i data-icon="monitor"></i></button>
-    <button data-theme-set="light" title="Clair"><i data-icon="sun"></i></button>
-    <button data-theme-set="dark" title="Sombre"><i data-icon="moon"></i></button>
-  </div>
-  <form method="post" action="/logout" id="logout" hidden><button class="btn small ghost wide" style="margin-top:8px"><i data-icon="logout"></i>Se déconnecter</button></form>
+  <div class="side-user" id="side-user"></div>
 </aside>
 
 <div class="content">
@@ -56,9 +41,14 @@
       <img src="brand/apple-touch-icon.png" alt="">
       <strong>Bêta Tool<span class="badge">bêta</span></strong>
     </a>
-    <button class="icon-btn" data-theme-cycle title="Changer de thème"><i data-icon="moon"></i></button>
+    <button class="icon-btn" data-search title="Rechercher"><i data-icon="search"></i></button>
+    <button class="icon-btn bell" data-bell title="Notifications"><i data-icon="bell"></i><span class="dotcount" hidden></span></button>
     <button class="icon-btn" data-help title="Aide"><i data-icon="help"></i></button>
   </header>
+  <div class="deskbar">
+    <button class="icon-btn bell" data-bell title="Notifications"><i data-icon="bell"></i><span class="dotcount" hidden></span></button>
+    <button class="icon-btn" data-help title="Aide"><i data-icon="help"></i></button>
+  </div>
 
   <main>
     <!-- ================= Accueil ================= -->
@@ -69,50 +59,10 @@
           <h1 id="greeting">Bonjour 👋</h1>
           <p>Choisis un outil. Tout se passe sur ton NAS, rien ne part sur Internet.</p>
         </div>
-        <span class="pill"><span class="dot"></span>Serveur en ligne</span>
+        <span class="pill"><span class="dot"></span>Serveur en ligne · <span id="version"></span></span>
       </div>
-      <div class="tools">
-        <a class="card tool" href="#/telecharger">
-          <span class="tile"><i data-icon="download"></i></span>
-          <h2>Téléchargeur</h2>
-          <p>Colle un lien, récupère la vidéo ou la musique en meilleure qualité, directement sur le NAS.</p>
-          <div class="chips"><span class="chip">YouTube</span><span class="chip">TikTok</span><span class="chip">Instagram</span><span class="chip">+1800 sites</span></div>
-          <span class="go">Ouvrir <i data-icon="arrow"></i></span>
-        </a>
-        <a class="card tool" href="#/convertir">
-          <span class="tile violet"><i data-icon="convert"></i></span>
-          <h2>Convertisseur</h2>
-          <p>Transforme n'importe quel fichier : vidéo, audio, image, document, e-book… plus de 60 formats.</p>
-          <div class="chips"><span class="chip">MP4 → MP3</span><span class="chip">HEIC → JPG</span><span class="chip">Word → PDF</span></div>
-          <span class="go">Ouvrir <i data-icon="arrow"></i></span>
-        </a>
-        <a class="card tool" href="#/pdf">
-          <span class="tile rose"><i data-icon="pdf"></i></span>
-          <h2>Studio PDF</h2>
-          <p>Modifie, signe, remplis, organise, fusionne, compresse et protège tes PDF.</p>
-          <div class="chips"><span class="chip">Signer</span><span class="chip">Fusionner</span><span class="chip">Compresser</span><span class="chip">OCR</span></div>
-          <span class="go">Ouvrir <i data-icon="arrow"></i></span>
-        </a>
-        <a class="card tool" href="#/work">
-          <span class="tile bleu-vert"><i data-icon="briefcase"></i></span>
-          <h2>Bêta Work</h2>
-          <p>Ta suite bureautique : documents, tableurs et présentations, compatibles Word, Excel et PowerPoint.</p>
-          <div class="chips"><span class="chip">Traitement de texte</span><span class="chip">Tableur</span><span class="chip">Présentations</span></div>
-          <span class="go">Ouvrir <i data-icon="arrow"></i></span>
-        </a>
-        <a class="card tool" href="#/decompresser">
-          <span class="tile vert"><i data-icon="archive"></i></span>
-          <h2>Décompresseur</h2>
-          <p>Ouvre un ZIP, RAR ou 7Z, choisis les fichiers et extrais-les sur le NAS ou ton appareil.</p>
-          <div class="chips"><span class="chip">ZIP</span><span class="chip">RAR</span><span class="chip">7Z</span><span class="chip">TAR.GZ</span></div>
-          <span class="go">Ouvrir <i data-icon="arrow"></i></span>
-        </a>
-      </div>
-      <div class="steps-mini">
-        <div class="card"><span class="num">1</span><div><b>Choisis un outil</b><p>Dans le menu ou ci-dessus.</p></div></div>
-        <div class="card"><span class="num">2</span><div><b>Suis le tuto</b><p>Le bouton « Aide » explique chaque étape.</p></div></div>
-        <div class="card"><span class="num">3</span><div><b>Une idée ?</b><p>Le bouton « Suggestion » est là pour ça.</p></div></div>
-      </div>
+      <div class="dash" id="dash"></div>
+      <div id="home-tools"></div>
     </section>
 
     <!-- ================= Téléchargeur ================= -->
@@ -217,6 +167,9 @@
       <div id="work-root"></div>
     </section>
 
+    <!-- ================= Outils chargés à la demande ================= -->
+    <section data-view="dyn" hidden><div id="dyn-root"></div></section>
+
     <!-- ================= Suggestions ================= -->
     <section data-view="suggestions" hidden>
       <div class="page-head">
@@ -236,11 +189,33 @@
 <!-- Onglets (mobile) -->
 <nav class="tabbar" id="tabbar">
   <a href="#/" data-route="home"><i data-icon="home"></i>Accueil</a>
-  <a href="#/telecharger" data-route="telecharger"><i data-icon="download"></i>Télécharger</a>
-  <a href="#/convertir" data-route="convertir"><i data-icon="convert"></i>Convertir</a>
-  <a href="#/pdf" data-route="pdf"><i data-icon="pdf"></i>PDF</a>
-  <a href="#/work" data-route="work"><i data-icon="briefcase"></i>Work</a>
+  <a href="#/fichiers" data-route="fichiers" id="tab-files"><i data-icon="folder"></i>Fichiers</a>
+  <a href="#/" data-search><i data-icon="search"></i>Rechercher</a>
+  <a href="#/" data-menu><i data-icon="menu"></i>Menu</a>
 </nav>
+
+<!-- Menu complet (mobile) -->
+<div class="sheet" id="sheet">
+  <div class="sheet-grip"></div>
+  <div id="sheet-body"></div>
+</div>
+
+<!-- Recherche globale (Ctrl K) -->
+<div class="modal palette" id="palette" role="dialog" aria-modal="true" aria-label="Recherche">
+  <div class="palette-input"><i data-icon="search"></i><input type="text" id="palette-q" placeholder="Rechercher un outil, un document, un fichier, une note…" autocomplete="off"><kbd>Échap</kbd></div>
+  <div class="palette-results" id="palette-results"></div>
+</div>
+
+<!-- Notifications -->
+<aside class="drawer" id="notifs" aria-label="Notifications">
+  <div class="drawer-head">
+    <span class="tile"><i data-icon="bell"></i></span>
+    <h2>Notifications</h2>
+    <button class="icon-btn plain" data-close title="Fermer"><i data-icon="x"></i></button>
+  </div>
+  <div id="notifs-perm"></div>
+  <div id="notifs-list"></div>
+</aside>
 
 <button class="fab" data-suggest title="Envoyer une suggestion"><i data-icon="lightbulb"></i><span class="lbl">Suggestion</span></button>
 
@@ -276,6 +251,7 @@
       <option value="pdf">Studio PDF</option>
       <option value="decompresser">Décompresseur</option>
       <option value="work">Bêta Work</option>
+      <option value="autre">Un autre outil</option>
     </select>
     <label class="field" for="suggest-msg">Ton message</label>
     <textarea id="suggest-msg" placeholder="Ex. : ce serait top de pouvoir compresser des vidéos…" required></textarea>

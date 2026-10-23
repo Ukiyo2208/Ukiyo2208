@@ -13,6 +13,8 @@ from queue import Queue
 
 import yt_dlp
 
+import activity
+
 DOWNLOAD_DIR = os.environ.get("DOWNLOAD_DIR", "/downloads")
 # Téléchargements « appareil seulement » : gardés temporairement puis effacés
 TMP_DIR = os.path.join(os.environ.get("WORK_DIR", os.path.join(tempfile.gettempdir(), "beta-tool")), "telechargements")
@@ -95,13 +97,16 @@ def worker():
                 code = ydl.download([job["url"]])
             update(job_id, status="done" if code == 0 else "error",
                    error=None if code == 0 else "Certains éléments ont échoué")
+            activity.log(job.get("user"), "telecharger", ("Téléchargement terminé : " if code == 0 else "Téléchargement incomplet : ")
+                         + jobs[job_id]["title"], "#/telecharger", "ok" if code == 0 else "err")
         except Exception as e:  # noqa: BLE001
             update(job_id, status="error", error=str(e))
+            activity.log(job.get("user"), "telecharger", "Échec du téléchargement : " + job["url"], "#/telecharger", "err")
         update(job_id, finished=time.time())
         queue.task_done()
 
 
-def submit(text, mode, subfolder, keep=True):
+def submit(text, mode, subfolder, keep=True, user="*"):
     urls = [u.strip() for u in str(text or "").split() if u.strip()]
     if not urls or not all(u.startswith(("http://", "https://")) for u in urls):
         raise ValueError("Lien invalide")
@@ -114,7 +119,7 @@ def submit(text, mode, subfolder, keep=True):
             else os.path.join(TMP_DIR, job_id)
         with jobs_lock:
             jobs[job_id] = {"id": job_id, "url": url, "mode": mode, "subfolder": subfolder if keep else "",
-                            "keep": keep, "target": target, "paths": [],
+                            "keep": keep, "target": target, "paths": [], "user": user,
                             "title": url, "status": "queued", "progress": 0,
                             "speed": "", "eta": "", "error": None}
         queue.put(job_id)
@@ -124,7 +129,7 @@ def submit(text, mode, subfolder, keep=True):
 
 def list_jobs():
     with jobs_lock:
-        return [{**{k: v for k, v in j.items() if k not in ("paths", "target")},
+        return [{**{k: v for k, v in j.items() if k not in ("paths", "target", "user")},
                  "files": [os.path.basename(p) for p in j["paths"]]} for j in reversed(jobs.values())]
 
 

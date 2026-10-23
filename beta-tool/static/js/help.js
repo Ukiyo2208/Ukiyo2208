@@ -250,6 +250,25 @@ export const HELP = {
       ["Les anciens formats .doc / .xls / .ppt ?", "Ils s'ouvrent en lecture ; pour les modifier, enregistre-les au format moderne depuis l'éditeur (Fichier → Télécharger en .docx…)."],
     ],
   },
+  reglages: {
+    title: "Tuto · Réglages", icon: "settings", tile: "",
+    lead: "Adapte Bêta Tool à ton usage : outils affichés, comptes, mises à jour, apparence.",
+    steps: [
+      ["Outils", "Active ou désactive chaque outil d'un clic : il disparaît du menu, de l'accueil et de la recherche pour tout le monde."],
+      ["Comptes", "Crée un compte administrateur pour protéger le site, puis un compte par personne (rôle Membre ou Administrateur)."],
+      ["Mises à jour", "Colle le lien d'une nouvelle version (ou glisse le fichier .zip) : elle s'installe et le site redémarre tout seul."],
+      ["Apparence", "Thème, notifications du navigateur, installation de l'appli sur ton téléphone."],
+    ],
+    tips: [
+      "Si une mise à jour ne démarre pas, Bêta Tool revient automatiquement à la version précédente.",
+      "L'onglet Mises à jour garde l'historique : tu peux revenir à une ancienne version à tout moment.",
+      "« Mettre à jour yt-dlp » répare la plupart des soucis du Téléchargeur sans rien réinstaller.",
+    ],
+    faq: [
+      ["J'ai perdu le mot de passe administrateur", "Supprime le fichier users.json dans le dossier /data du NAS : le site repasse en accès libre et tu pourras recréer un compte."],
+      ["Une mise à jour dit qu'il faut reconstruire l'image", "Elle apporte de nouveaux logiciels système : sur le NAS, lance « docker compose build --pull && docker compose up -d »."],
+    ],
+  },
   suggestions: {
     title: "Tuto · Suggestions", icon: "lightbulb", tile: "ambre",
     lead: "Une idée d'outil, une amélioration, un bug ? Dis-le !",

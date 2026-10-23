@@ -20,6 +20,7 @@ from queue import Queue
 from PIL import Image, ImageOps, ImageSequence
 from pillow_heif import register_heif_opener
 
+import activity
 from downloader import safe_subfolder
 
 register_heif_opener()
@@ -310,7 +311,7 @@ def update(job_id, **fields):
 
 
 def public(job):
-    return {k: v for k, v in job.items() if k not in ("src", "work", "result")}
+    return {k: v for k, v in job.items() if k not in ("src", "work", "result", "user")}
 
 
 def convert(job):
@@ -349,10 +350,10 @@ def worker():
                 saved = os.path.relpath(dest, CONVERT_DIR)
             update(job_id, status="done", progress=100, result=result, output=os.path.basename(result),
                    size=os.path.getsize(result), saved=saved)
-        except ConvertError as e:
-            update(job_id, status="error", error=str(e))
+            activity.log(job.get("user"), "convertir", f"Conversion terminée : {os.path.basename(result)}", "#/convertir")
         except Exception as e:  # noqa: BLE001
-            update(job_id, status="error", error=f"{type(e).__name__}: {e}")
+            update(job_id, status="error", error=str(e) if isinstance(e, ConvertError) else f"{type(e).__name__}: {e}")
+            activity.log(job.get("user"), "convertir", f"Échec de la conversion : {job['name']}", "#/convertir", "err")
         finally:
             update(job_id, finished=time.time())
         queue.task_done()
@@ -371,7 +372,7 @@ def janitor():
             shutil.rmtree(j["work"], ignore_errors=True)
 
 
-def submit(upload, target, nas, subfolder):
+def submit(upload, target, nas, subfolder, user="*"):
     name = sanitize_name(upload.filename)
     ext = normalize_ext(os.path.splitext(name)[1])
     target = normalize_ext(target)
@@ -387,7 +388,7 @@ def submit(upload, target, nas, subfolder):
                         "engine": find_engine(ext, target)["tool"], "nas": bool(nas),
                         "subfolder": safe_subfolder(subfolder), "status": "queued", "progress": None,
                         "error": None, "output": None, "size": None, "saved": None,
-                        "src": src, "work": work, "created": time.time()}
+                        "src": src, "work": work, "created": time.time(), "user": user}
     queue.put(job_id)
     return job_id
 

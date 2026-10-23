@@ -53,7 +53,13 @@ async function refresh() {
   } catch {}
 }
 
-export function show() {
+export function show(query = {}) {
+  // « Partager → Bêta Tool » depuis une autre appli : le lien arrive dans l'adresse
+  if (query.url) {
+    const m = /https?:\/\/\S+/.exec(query.url);
+    if (m) $("#dl-url").value = m[0];
+    history.replaceState(null, "", "#/telecharger");
+  }
   refresh();
   clearInterval(timer);
   timer = setInterval(() => { if (!$("[data-view=telecharger]").hidden) refresh(); else clearInterval(timer); }, 1500);
