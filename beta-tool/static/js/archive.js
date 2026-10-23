@@ -50,7 +50,7 @@ const header = (name, extra) => `<div class="files"><div class="file"><span clas
   <div class="name">${esc(name)}<small>${extra}</small></div>
   <span class="pick"><button class="btn small ghost" data-change>${icon("file")}Autre archive</button></span></div></div>`;
 
-function show(data) {
+export function show(data) {
   const zone = $("#arc-zone");
   if (data.need_password) {
     zone.innerHTML = header(data.name, "Archive protégée") + `

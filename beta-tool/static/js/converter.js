@@ -8,8 +8,8 @@ let engines = [];
 let pending = [];  // { file, ext, targets, target, progress }
 let timer = null;
 
-const extOf = name => { const m = /\.([^.]+)$/.exec(name); const e = m ? m[1].toLowerCase() : ""; return ALIASES[e] || e; };
-function targetsFor(ext) {
+export const extOf = name => { const m = /\.([^.]+)$/.exec(name); const e = m ? m[1].toLowerCase() : ""; return ALIASES[e] || e; };
+export function targetsFor(ext) {
   const out = new Set();
   engines.filter(e => e.inputs.includes(ext)).forEach(e => e.outputs.forEach(o => o !== ext && out.add(o)));
   return [...out];

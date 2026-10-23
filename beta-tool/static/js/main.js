@@ -129,7 +129,10 @@ async function route() {
   if (current.view === "pdf") pdf.showHub($("#pdf-hub"));
   if (current.view === "pdf-tool") pdf.showTool(current.parts[1], $("#pdf-tool"));
   if (current.view === "suggestions") loadSuggestions();
-  if (current.view === "decompresser" && !$("#arc-root").children.length) archive.init();
+  if (current.view === "decompresser") {
+    if (!$("#arc-root").children.length) archive.init();
+    if (window.btArchive) { archive.show(window.btArchive); window.btArchive = null; }  // archive ouverte depuis Fichiers
+  }
   if (current.view === "work") current.parts[1] ? work.showEditor(current.parts[1]) : work.showHome();
   else work.closeEditor();
   if (current.view === "dyn") {
@@ -271,11 +274,13 @@ function paintPalette() {
 $("#palette-results").addEventListener("click", e => { if (e.target.closest(".pal-item")) closePanel(); });
 
 // --- Notifications ----------------------------------------------------------
-let notifs = [], lastId = 0;
+let notifs = [], lastId = 0, polling = false;
 const seenId = () => { try { return +localStorage.getItem("bt-notif-seen") || 0; } catch { return 0; } };
 async function pollActivity(first = false) {
+  if (polling) return;  // évite deux requêtes simultanées (minuterie + retour sur l'onglet)
+  polling = true;
   try {
-    const fresh = await api("/api/activity?since=" + lastId);
+    const fresh = (await api("/api/activity?since=" + lastId)).filter(a => a.id > lastId);
     if (!fresh.length) return;
     lastId = Math.max(lastId, ...fresh.map(a => a.id));
     notifs = [...fresh, ...notifs].slice(0, 60);
@@ -287,7 +292,7 @@ async function pollActivity(first = false) {
     });
     paintBell();
     if (current.view === "home" && !first) loadDashboard();
-  } catch {}
+  } catch {} finally { polling = false; }
 }
 function paintBell() {
   const unread = notifs.filter(a => a.id > seenId()).length;

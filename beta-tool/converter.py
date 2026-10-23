@@ -67,6 +67,20 @@ class ConvertError(Exception):
     pass
 
 
+class LocalFile:
+    """Fichier déjà présent sur le NAS, utilisable comme un fichier envoyé (filename + save)."""
+
+    def __init__(self, path):
+        self.path = path
+        self.filename = os.path.basename(path)
+
+    def save(self, dest):
+        try:
+            os.link(self.path, dest)  # lien physique : instantané, sans doubler la place
+        except OSError:
+            shutil.copy2(self.path, dest)
+
+
 def normalize_ext(ext):
     ext = ext.lower().lstrip(".")
     return ALIASES.get(ext, ext)

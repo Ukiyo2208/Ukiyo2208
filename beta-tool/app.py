@@ -16,6 +16,10 @@ import archives
 import auth
 import converter
 import downloader
+import drop
+import files
+import media
+import photos
 import pdftools
 import roots
 import settings
@@ -501,6 +505,12 @@ def secret_key():
         return f.read().strip()
 
 
+for module in (files, drop, media, photos):
+    app.register_blueprint(module.bp)
+SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search)
+COUNTERS.update(partages=drop.count)
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8080"))
     downloader.start(int(os.environ.get("WORKERS", "2")))
@@ -510,6 +520,9 @@ if __name__ == "__main__":
     suggestions.start()
     archives.start()
     work.start()
+    files.start()
+    drop.start()
+    photos.start()
     app.secret_key = secret_key()
     app.permanent_session_lifetime = timedelta(days=30)
     max_upload = int(float(os.environ.get("MAX_UPLOAD_GB", "20")) * 1024 ** 3)

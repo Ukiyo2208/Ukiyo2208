@@ -250,6 +250,71 @@ export const HELP = {
       ["Les anciens formats .doc / .xls / .ppt ?", "Ils s'ouvrent en lecture ; pour les modifier, enregistre-les au format moderne depuis l'éditeur (Fichier → Télécharger en .docx…)."],
     ],
   },
+  fichiers: {
+    title: "Tuto · Fichiers", icon: "folder", tile: "ambre",
+    lead: "Parcours tous les dossiers du NAS, range tes fichiers et ouvre-les avec le bon outil.",
+    steps: [
+      ["Choisis un dossier", "En haut : Téléchargements, Conversions, Documents, Photos, Fichiers reçus… (plus ceux ajoutés par EXTRA_ROOTS)."],
+      ["Navigue", "Clique sur un dossier pour l'ouvrir, sur un fichier pour l'aperçu (images, vidéos, musique, PDF, textes)."],
+      ["Sélectionne", "Coche des éléments (ou Ctrl + clic) : la barre propose Télécharger, Partager, Déplacer, Copier, Renommer, Supprimer."],
+      ["Ouvre avec…", "Le bouton ⋮ d'un fichier l'envoie vers un autre outil : décompresser un ZIP, modifier un PDF, convertir, compresser une vidéo, ouvrir dans Bêta Work…"],
+      ["Envoie des fichiers", "Glisse-les dans la fenêtre, ou utilise « Importer » (fichiers) et l'icône dossier (dossier entier)."],
+    ],
+    tips: [
+      "Les éléments supprimés vont dans la corbeille du dossier : rien n'est perdu par erreur.",
+      "Plusieurs fichiers ou un dossier se téléchargent en un seul .zip.",
+      "Ctrl K cherche un fichier par son nom dans tous les dossiers.",
+      "Les fichiers texte (.txt, .md, .json…) se modifient directement dans l'aperçu.",
+    ],
+    faq: [
+      ["Comment ajouter d'autres dossiers du NAS ?", "Monte-les dans docker-compose.yml puis liste-les dans EXTRA_ROOTS, ex. « Films=/media/films;Musique=/media/musique »."],
+    ],
+  },
+  drop: {
+    title: "Tuto · Bêta Drop", icon: "send", tile: "",
+    lead: "Envoie des fichiers à quelqu'un par un simple lien, ou laisse quelqu'un t'en envoyer.",
+    steps: [
+      ["Partager des fichiers", "Glisse tes fichiers, choisis l'expiration, un mot de passe et une limite de téléchargements si tu veux, puis « Créer le lien »."],
+      ["Envoie le lien", "Copie-le, envoie-le par e-mail ou fais scanner le QR code. La personne n'a besoin d'aucun compte."],
+      ["Recevoir des fichiers", "Crée un lien de dépôt (ex. « Photos du mariage ») : tes invités y déposent leurs fichiers, qui arrivent dans Fichiers reçus."],
+      ["Suis tes partages", "« Mes partages » montre les téléchargements, les fichiers reçus, et permet de supprimer un lien."],
+    ],
+    tips: [
+      "Depuis Fichiers ou l'Album photo, « Partager » crée un lien sans copier les fichiers.",
+      "Tu es notifié au premier téléchargement et à chaque dépôt reçu.",
+      "Pour partager hors de chez toi, le site doit être accessible depuis Internet (voir le README).",
+    ],
+    faq: [
+      ["Le lien ne marche pas chez mon ami", "Il pointe vers l'adresse de ton NAS : elle doit être joignable depuis Internet (nom de domaine, Tailscale Funnel, Synology QuickConnect…)."],
+    ],
+  },
+  medias: {
+    title: "Tuto · Médiathèque", icon: "play", tile: "",
+    lead: "Regarde tes vidéos et écoute ta musique stockées sur le NAS, sur ordinateur comme sur téléphone.",
+    steps: [
+      ["Vidéos", "Toutes les vidéos des dossiers du NAS, les plus récentes d'abord. Clique pour regarder."],
+      ["Musique", "Tes morceaux classés par artiste. « Tout lire » ou « Aléatoire » lance une liste de lecture."],
+      ["Continue d'utiliser le site", "Le lecteur reste en bas de l'écran pendant que tu utilises les autres outils."],
+    ],
+    tips: [
+      "Une vidéo MKV ou AVI ne se lit pas dans le navigateur ? Le bouton « Convertir en MP4 » s'en occupe.",
+      "Sur téléphone, les boutons de l'écran verrouillé (suivant, précédent) pilotent la musique.",
+    ],
+    faq: [],
+  },
+  photos: {
+    title: "Tuto · Album photo", icon: "camera", tile: "ambre",
+    lead: "Toutes tes photos et vidéos rangées par date de prise de vue.",
+    steps: [
+      ["Chronologie", "Les photos sont classées par mois, d'après la date de l'appareil photo."],
+      ["Albums", "Chaque dossier du dossier photos devient un album."],
+      ["Visionneuse", "Clique sur une photo ; flèches du clavier ou balayage pour passer à la suivante."],
+      ["Sélection", "Clic droit (ou appui long) puis clic sur d'autres photos : télécharger, partager par lien ou supprimer."],
+      ["Importer", "Le bouton « Importer » ajoute des photos depuis ton téléphone (dossier Import/année-mois)."],
+    ],
+    tips: ["Les photos HEIC d'iPhone s'affichent sans conversion.", "La première analyse d'une grande photothèque peut prendre quelques minutes ; ensuite seules les nouvelles photos sont lues."],
+    faq: [["Où sont mes photos ?", "Dans le dossier monté sur /photos (docker-compose.yml), par exemple le dossier « photo » d'un Synology."]],
+  },
   reglages: {
     title: "Tuto · Réglages", icon: "settings", tile: "",
     lead: "Adapte Bêta Tool à ton usage : outils affichés, comptes, mises à jour, apparence.",

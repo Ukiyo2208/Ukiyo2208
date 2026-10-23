@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Partage · Bêta Drop</title>
+<link rel="icon" href="/brand/favicon.ico" sizes="any">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .pub { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 16px; }
+  .pub .card { width: min(620px, 100%); }
+  .pub-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; color: var(--muted); text-decoration: none; }
+  .pub-brand img { width: 34px; height: 34px; border-radius: 10px; }
+  .pub h1 { margin: 0 0 6px; font-size: 1.5rem; letter-spacing: -.02em; }
+  .pub .from { color: var(--muted); margin: 0 0 16px; }
+  .pub .msg-box { padding: 12px 14px; border-radius: 12px; background: var(--surface-2); white-space: pre-wrap; margin-bottom: 16px; }
+  .pub .file a { margin-left: auto; }
+  .pub-foot { margin-top: 22px; color: var(--muted); font-size: .82rem; }
+</style>
+</head>
+<body>
+<div class="pub">
+  <a class="pub-brand" href="/" rel="nofollow"><img src="/brand/apple-touch-icon.png" alt=""><b>Bêta Drop</b></a>
+  <div class="card" id="box"><div class="loading"><span class="spinner"></span>Chargement…</div></div>
+  <p class="pub-foot">Partage sécurisé hébergé par son propriétaire avec Bêta Tool.</p>
+</div>
+<script>
+const token = location.pathname.split("/").pop();
+const box = document.getElementById("box");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const size = b => b < 1024 ** 2 ? Math.max(1, Math.round(b / 1024)) + " Ko" : b < 1024 ** 3 ? (b / 1024 ** 2).toFixed(1) + " Mo" : (b / 1024 ** 3).toFixed(2) + " Go";
+const api = `/api/public/drop/${token}`;
+
+async function load() {
+  const r = await fetch(api);
+  const d = await r.json();
+  if (!r.ok) return box.innerHTML = `<div class="empty"><b>Lien introuvable</b>${esc(d.error || "")}</div>`;
+  const meta = [d.owner && `Partagé par ${esc(d.owner)}`, d.expires && `Disponible jusqu'au ${new Date(d.expires * 1000).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}`].filter(Boolean);
+  const head = `<h1>${esc(d.title)}</h1><p class="from">${meta.join(" · ")}</p>
+    ${d.message ? `<div class="msg-box">${esc(d.message)}</div>` : ""}`;
+  if (d.state !== "actif") return box.innerHTML = head + `<div class="empty"><b>Ce partage n'est plus disponible</b>${d.state === "expire" ? "Il a expiré." : "La limite de téléchargements est atteinte."}</div>`;
+  if (d.locked) {
+    box.innerHTML = head + `<form id="pw" class="row"><input type="password" class="grow" placeholder="Mot de passe" required autofocus><button class="btn">Ouvrir</button></form><p class="msg" id="err"></p>`;
+    document.getElementById("pw").onsubmit = async e => {
+      e.preventDefault();
+      const r2 = await fetch(api + "/unlock", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: e.target.querySelector("input").value }) });
+      if (r2.ok) load(); else document.getElementById("err").textContent = (await r2.json()).error;
+    };
+    return;
+  }
+  if (d.kind === "receive") return receive(head);
+  const total = d.files.reduce((s, f) => s + f.size, 0);
+  box.innerHTML = head + `<div class="files">${d.files.map((f, i) => `<div class="file"><span class="ficon">${esc((f.name.split(".").pop() || "").slice(0, 4))}</span>
+      <div class="name">${esc(f.name)}<small>${size(f.size)}</small></div><a class="btn small" href="${api}/file/${i}">Télécharger</a></div>`).join("")}</div>
+    ${d.files.length > 1 ? `<a class="btn wide" style="margin-top:14px" href="${api}/all">Tout télécharger (${size(total)}, .zip)</a>` : ""}`;
+}
+
+function receive(head) {
+  box.innerHTML = head + `<form id="up">
+      <label class="drop" id="dz"><input type="file" multiple hidden><strong>Glisse tes fichiers ici</strong><small>ou clique pour les choisir</small></label>
+      <div class="files" id="list" style="margin:12px 0"></div>
+      <input type="text" name="sender" placeholder="Ton prénom (optionnel)" style="margin-bottom:12px">
+      <button class="btn wide" id="go" disabled>Envoyer</button><p class="msg" id="err"></p></form>`;
+  let files = [];
+  const dz = document.getElementById("dz"), input = dz.querySelector("input");
+  const paint = () => {
+    document.getElementById("list").innerHTML = files.map(f => `<div class="file"><div class="name">${esc(f.name)}<small>${size(f.size)}</small></div></div>`).join("");
+    document.getElementById("go").disabled = !files.length;
+  };
+  input.onchange = () => { files = files.concat([...input.files]); paint(); };
+  ["dragenter", "dragover"].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.remove("over"); }));
+  dz.addEventListener("drop", e => { files = files.concat([...e.dataTransfer.files]); paint(); });
+  document.getElementById("up").onsubmit = e => {
+    e.preventDefault();
+    const form = new FormData();
+    files.forEach(f => form.append("file", f));
+    form.append("sender", e.target.sender.value);
+    const btn = document.getElementById("go");
+    btn.disabled = true;
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", api + "/upload");
+    xhr.upload.onprogress = ev => { if (ev.lengthComputable) btn.textContent = `Envoi… ${Math.round(ev.loaded / ev.total * 100)} %`; };
+    xhr.onload = () => {
+      const d = JSON.parse(xhr.responseText || "{}");
+      if (xhr.status === 200) box.innerHTML = head + `<div class="result"><div class="body"><b>Merci ! ${d.received.length} fichier${d.received.length > 1 ? "s" : ""} envoyé${d.received.length > 1 ? "s" : ""}.</b>
+        <span class="meta">Tu peux fermer cette page.</span></div><div class="actions"><button class="btn small ghost" onclick="load()">Envoyer d'autres fichiers</button></div></div>`;
+      else { document.getElementById("err").textContent = d.error || "Échec de l'envoi"; btn.disabled = false; btn.textContent = "Envoyer"; }
+    };
+    xhr.onerror = () => { document.getElementById("err").textContent = "Connexion perdue"; btn.disabled = false; btn.textContent = "Envoyer"; };
+    xhr.send(form);
+  };
+}
+load();
+</script>
+</body>
+</html>
