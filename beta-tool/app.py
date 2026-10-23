@@ -29,8 +29,10 @@ import monitor
 import notes
 import photos
 import transcribe
+import translate
 import vault
 import videotool
+import vpn
 import paperasse
 import pdftools
 import push
@@ -600,7 +602,7 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,
@@ -629,6 +631,7 @@ if __name__ == "__main__":
     monitor.start()
     paperasse.start()
     agenda.start()
+    translate.start()
     dav = agenda.radicale_app()
     if dav:  # serveur CalDAV des agendas (synchronisation des téléphones)
         from werkzeug.middleware.dispatcher import DispatcherMiddleware

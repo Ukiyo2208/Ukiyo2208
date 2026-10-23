@@ -55,7 +55,7 @@ async function outils(el) {
     ${CATS.map(([cat, label]) => `<div class="home-cat">${label}</div>` + TOOLS.filter(t => t.cat === cat).map(t => `
       <div class="set-row">
         <span class="tile ${t.tile}">${icon(t.icon)}</span>
-        <div class="txt"><b>${esc(t.name)}</b><small>${esc(t.desc)}${t.id === "coffre" ? " Demande le conteneur Vaultwarden (voir le README)." : ""}${t.id === "work" ? " Demande le conteneur ONLYOFFICE." : ""}</small></div>
+        <div class="txt"><b>${esc(t.name)}</b><small>${esc(t.desc)}${t.id === "coffre" ? " Demande le conteneur Vaultwarden (voir le README)." : ""}${t.id === "vpn" ? " Demande le conteneur wg-easy (voir le README)." : ""}${t.id === "work" ? " Demande le conteneur ONLYOFFICE." : ""}</small></div>
         <label class="switch"><input type="checkbox" data-tool="${t.id}" ${s.tools[t.id] ? "checked" : ""}><span></span></label>
       </div>`).join("")).join("")}
   </div>`;

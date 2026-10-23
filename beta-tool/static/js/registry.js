@@ -37,6 +37,8 @@ export const TOOLS = [
     desc: "Factures, fiches de paie, impôts : lus, renommés et rangés tout seuls, avec rappels d'échéances.", chips: ["Classement auto", "Échéances", "Recherche"] },
   { id: "scanner", name: "Scanner", icon: "scan", tile: "violet", cat: "documents", load: () => import("./tools/scanner.js"),
     desc: "Photographie un document : il est redressé, nettoyé et transformé en PDF.", chips: ["Recadrage auto", "PDF", "OCR"] },
+  { id: "traduction", name: "Traduction", icon: "translate", tile: "vert", cat: "documents", load: () => import("./tools/translate.js"),
+    desc: "Traduis textes, documents et sous-titres, sans rien envoyer sur Internet.", chips: ["Texte", "Word", "Sous-titres"] },
   { id: "questionnaires", name: "Questionnaires", icon: "form", tile: "vert", cat: "documents", load: () => import("./tools/forms.js"),
     desc: "Crée un formulaire, partage le lien, analyse les réponses.", chips: ["Sondage", "Inscription", "Export Excel"] },
 
@@ -63,6 +65,8 @@ export const TOOLS = [
     desc: "Raccourcis un long lien et compte les clics.", chips: ["Lien court", "Statistiques"] },
   { id: "surveillance", name: "Surveillance", icon: "pulse", tile: "vert", cat: "utilitaires", load: () => import("./tools/monitor.js"), admin: true,
     desc: "Sois prévenu si un site, un service ou le NAS ne répond plus.", chips: ["Sites", "Services", "Disque"] },
+  { id: "vpn", name: "VPN", icon: "globe", tile: "bleu-vert", cat: "utilitaires", load: () => import("./tools/vpn.js"), admin: true,
+    desc: "Accède à la maison depuis n'importe où, en toute sécurité (WireGuard).", chips: ["WireGuard", "QR code", "Wi-Fi public"] },
   { id: "coffre", name: "Coffre", icon: "key", tile: "rose", cat: "utilitaires", load: () => import("./tools/vault.js"),
     desc: "Gestionnaire de mots de passe compatible Bitwarden.", chips: ["Vaultwarden", "Applis", "Extensions"] },
 ];

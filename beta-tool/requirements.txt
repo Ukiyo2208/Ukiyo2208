@@ -9,3 +9,4 @@ faster-whisper>=1.1
 rembg[cpu]>=2.0.60
 openpyxl>=3.1
 radicale>=3.2
+sentencepiece>=0.2
