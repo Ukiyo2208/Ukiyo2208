@@ -32,6 +32,10 @@ export const TOOLS = [
     desc: "Documents, tableurs et présentations compatibles Office.", chips: ["Texte", "Tableur", "Présentations"] },
   { id: "notes", name: "Bêta Notes", icon: "notebook", tile: "ambre", cat: "documents", load: () => import("./tools/notes.js"),
     desc: "Notes et listes de tâches, rangées et cherchables.", chips: ["Markdown", "Tâches", "Dossiers"] },
+  { id: "paperasse", name: "Paperasse", icon: "receipt", tile: "bleu-vert", cat: "documents", load: () => import("./tools/papers.js"),
+    desc: "Factures, fiches de paie, impôts : lus, renommés et rangés tout seuls, avec rappels d'échéances.", chips: ["Classement auto", "Échéances", "Recherche"] },
+  { id: "scanner", name: "Scanner", icon: "scan", tile: "violet", cat: "documents", load: () => import("./tools/scanner.js"),
+    desc: "Photographie un document : il est redressé, nettoyé et transformé en PDF.", chips: ["Recadrage auto", "PDF", "OCR"] },
   { id: "questionnaires", name: "Questionnaires", icon: "form", tile: "vert", cat: "documents", load: () => import("./tools/forms.js"),
     desc: "Crée un formulaire, partage le lien, analyse les réponses.", chips: ["Sondage", "Inscription", "Export Excel"] },
 
@@ -41,6 +45,8 @@ export const TOOLS = [
     desc: "Partage des fichiers par lien, ou reçois-en de n'importe qui.", chips: ["Lien temporaire", "Mot de passe", "Dépôt"] },
   { id: "decompresser", name: "Décompresseur", icon: "archive", tile: "vert", cat: "fichiers", view: "decompresser",
     desc: "Ouvre un ZIP, RAR ou 7Z et extrais ce que tu veux.", chips: ["ZIP", "RAR", "7Z"] },
+  { id: "stockage", name: "Stockage", icon: "pie", tile: "ambre", cat: "fichiers", load: () => import("./tools/storage.js"),
+    desc: "Vois ce qui prend de la place, supprime les doublons, range tes dossiers.", chips: ["Carte", "Doublons", "Rangement"] },
   { id: "sauvegardes", name: "Sauvegardes", icon: "shield", tile: "bleu-vert", cat: "fichiers", load: () => import("./tools/backup.js"), admin: true,
     desc: "Copie automatique de tes dossiers chaque nuit, avec historique.", chips: ["Planifié", "Incrémental", "Rapport"] },
 

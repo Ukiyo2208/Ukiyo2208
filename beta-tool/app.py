@@ -30,10 +30,13 @@ import photos
 import transcribe
 import vault
 import videotool
+import paperasse
 import pdftools
 import push
 import roots
+import scanner
 import settings
+import storage
 import store
 import subscriptions
 import suggestions
@@ -574,12 +577,12 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,
-                 **{"presse-papier": clipboard.search})
-COUNTERS.update(abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
+                 paperasse=paperasse.search, **{"presse-papier": clipboard.search})
+COUNTERS.update(paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
 
 
 if __name__ == "__main__":
@@ -601,6 +604,7 @@ if __name__ == "__main__":
     subscriptions.start()
     clipboard.start()
     monitor.start()
+    paperasse.start()
     app.secret_key = secret_key()
     app.permanent_session_lifetime = timedelta(days=30)
     max_upload = int(float(os.environ.get("MAX_UPLOAD_GB", "20")) * 1024 ** 3)

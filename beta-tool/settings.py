@@ -13,6 +13,8 @@ TOOLS = {
     "convertir": (["/api/convert"], True),
     "pdf": (["/api/pdf"], True),
     "decompresser": (["/api/archive"], True),
+    "paperasse": (["/api/papers"], True),
+    "scanner": (["/api/scan"], True),
     "work": (["/api/work/docs", "/api/work/new", "/api/work/upload", "/api/work/status"], True),
     "fichiers": (["/api/files"], True),
     "drop": (["/api/drop", "/d/", "/api/public/drop"], True),
@@ -27,6 +29,7 @@ TOOLS = {
     "presse-papier": (["/api/clips"], True),
     "liens": (["/api/links", "/s/"], True),
     "coffre": (["/api/vault"], False),
+    "stockage": (["/api/storage"], True),
     "sauvegardes": (["/api/backup"], True),
     "surveillance": (["/api/monitor", "/statut", "/api/public/status"], True),
 }
