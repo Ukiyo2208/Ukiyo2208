@@ -1,0 +1,150 @@
+/* Bêta OS 6.4 — notifications sur les téléphones via Home Assistant (application Home Assistant
+   « Companion », service notify.mobile_app_…). Deux façons de faire :
+   1. Bêta OS envoie lui-même (depuis l'écran choisi comme « émetteur », ex. la tablette du salon) ;
+   2. recommandé : on exporte des automatisations Home Assistant qui tournent 24 h/24, site ouvert ou non. */
+(function () {
+  const B = window.BOS, { S, DATA, esc, F, dev } = B;
+  const HA = B.HA;
+  const N = S.notif = Object.assign({ to: {}, rules: {}, garageMin: 10, trashAt: '18:30', log: {} }, S.notif || {});
+  const RULES = [
+    ['doorbell', 'bellFill', 'Sonnette', 'Avec la photo de la caméra', 'all'],
+    ['person', 'user', 'Personne détectée', 'Seulement en mode absent ou alarme activée', 'all'],
+    ['garage', 'garage', 'Garage resté ouvert', 'Après quelques minutes (réglable)', 'all'],
+    ['leak', 'dropFill', 'Fuite d’eau', 'Alerte critique, même en silencieux', 'all'],
+    ['alarm', 'shieldCheck', 'Alarme déclenchée', 'Alerte critique, même en silencieux', 'all'],
+    ['trash', 'trash', 'Poubelles à sortir', 'La veille au soir, d’après le calendrier', 'all'],
+    ['appliance', 'washer', 'Machine terminée', 'Lave-linge, lave-vaisselle', 'all'],
+    ['weather', 'rain', 'Alerte météo', 'Pluie imminente, orage, vent fort, gel', 'all'],
+    ['away', 'walk', 'Mode absent', 'Quand la maison passe en absent ou revient', 'admins']
+  ];
+  RULES.forEach(r => { if (!N.rules[r[0]]) N.rules[r[0]] = { on: r[0] !== 'away', who: r[4] }; });
+  const isSender = () => { try { return localStorage.getItem('betaos.notifier') === '1'; } catch (e) { return false; } };
+  const svcOf = u => (N.to[u.id] || '').replace(/^notify\./, '');
+  const site = () => location.origin + location.pathname.replace(/index\.html$/, '');
+
+  /* ---------- envoi ---------- */
+  async function send(rule, title, message, o) {
+    o = o || {};
+    const r = N.rules[rule]; if (!r || !r.on || !HA.enabled()) return 0;
+    const users = S.users.filter(u => svcOf(u) && (r.who !== 'admins' || u.admin));
+    const data = { url: site() + '#' + (o.go || 'accueil'), clickAction: site() + '#' + (o.go || 'accueil'), group: 'beta-' + rule, tag: o.tag || 'beta-' + rule };
+    if (o.image) data.image = o.image;
+    if (o.url) data.url = data.clickAction = o.url;
+    if (o.actions) data.actions = o.actions;
+    if (o.critical) data.push = { sound: { name: 'default', critical: 1, volume: 1 }, 'interruption-level': 'critical' }, data.ttl = 0, data.priority = 'high', data.channel = 'Alertes Bêta OS';
+    else if (o.urgent) data.push = { 'interruption-level': 'time-sensitive' };
+    let n = 0;
+    for (const u of users) { try { await HA.req('/api/services/notify/' + svcOf(u), { title, message, data }); n++; } catch (e) { HA.lastError = 'notification : ' + e.message; } }
+    return n;
+  }
+  // une seule fois par clé et par délai, et uniquement depuis l'écran « émetteur »
+  function once(key, ms, fn) {
+    if (!isSender()) return;
+    const t = N.log[key] || 0; if (Date.now() - t < ms) return;
+    N.log[key] = Date.now(); B.save(); fn();
+  }
+  B.notifySend = send;
+
+  /* ---------- déclencheurs ---------- */
+  const camImg = cid => { const e = HA.camEntity ? HA.camEntity(cid) : ''; return e ? '/api/camera_proxy/' + e : undefined; };
+  B.on('doorbell', () => once('doorbell', 60e3, () => send('doorbell', 'Sonnette', 'Quelqu’un sonne à la porte', { image: camImg('cam.sonnette'), go: 'exterieur', urgent: 1 })));
+  B.on('motion', cid => { if (!(S.away || S.alarm)) return; once('person:' + cid, 10 * 6e4, () => send('person', 'Mouvement détecté', ((DATA.CAMS[cid] || {}).name || 'Caméra') + ' — alors que la maison est en absence', { image: camImg(cid), go: 'absence', urgent: 1 })); });
+  B.on('dev', ({ id, patch }) => {
+    const d = DATA.DEVICES[id]; if (!d) return;
+    const k = B.kindOf ? B.kindOf(d) : d.type;
+    if (k === 'leak' && patch.on) once('leak:' + id, 30 * 6e4, () => send('leak', 'Fuite d’eau !', d.name + ' — ' + d.room, { critical: 1, go: 'absence' }));
+    if (d.type === 'alarm' && patch.mode === 'triggered') once('alarm:' + id, 5 * 6e4, () => send('alarm', 'ALARME DÉCLENCHÉE', d.name + ' — vérifiez les caméras', { critical: 1, go: 'exterieur' }));
+    if (d.type === 'app' && patch.on === false) once('app:' + id, 30 * 6e4, () => send('appliance', d.name + ' terminé', 'Le cycle est fini (' + d.room + ')', { go: 'rdc' }));
+    if (id === 'rdc.garage.door' && 'pos' in patch) { if (patch.pos > 0) N.garageAt = N.garageAt || Date.now(); else N.garageAt = 0; B.save(); }
+  });
+  if (B.awayLock) { const a0 = B.awayLock; B.awayLock = () => { once('away:on', 60e3, () => send('away', 'Mode absent activé', 'Maison sécurisée par ' + B.user().name, { go: 'absence' })); return a0(); }; }
+  // vérifications à la minute : garage, poubelles, météo
+  setInterval(() => {
+    if (!isSender()) return;
+    const now = new Date();
+    if (N.garageAt && dev('rdc.garage.door').pos > 0 && Date.now() - N.garageAt > N.garageMin * 6e4) once('garage', 30 * 6e4, () => send('garage', 'Garage ouvert', 'La porte du garage est ouverte depuis ' + Math.round((Date.now() - N.garageAt) / 6e4) + ' min', { go: 'absence', urgent: 1 }));
+    const [hh, mm] = (N.trashAt || '18:30').split(':').map(Number);
+    if (now.getHours() * 60 + now.getMinutes() >= hh * 60 + mm) {
+      const tm = F.ymd(new Date(Date.now() + 864e5)), ev = S.events.filter(e => e.date === tm && /poubelle|ordure|d[ée]chet|collecte|verre|bio ?d[ée]chet|encombrant|papier/i.test(e.title));
+      if (ev.length) once('trash:' + tm, 20 * 36e5, () => send('trash', 'Poubelles', 'À sortir ce soir : ' + ev.map(e => e.title).join(', '), { go: 'calendrier' }));
+    }
+    const a = (B.wxAlerts ? B.wxAlerts() : [])[0];
+    if (a) once('wx:' + a.icon, 6 * 36e5, () => send('weather', 'Alerte météo', a.text + ' (' + S.settings.city + ')', { go: 'accueil' }));
+    else { const h = B.WX.hours.find(x => +x.t > Date.now() && +x.t < Date.now() + 36e5 && x.prob >= 70); if (h && B.WX.now.code < 51) once('wx:rain', 6 * 36e5, () => send('weather', 'Pluie bientôt', 'Pluie probable vers ' + F.time(h.t) + ' à ' + S.settings.city + ' — linge dehors ?', { go: 'accueil' })); }
+  }, 60e3);
+
+  /* ---------- réglages ---------- */
+  let svcs = null;
+  async function loadSvcs() {
+    if (!HA.enabled()) return [];
+    try { const l = await HA.req('/api/services'); const n = l.find(x => x.domain === 'notify'); svcs = n ? Object.keys(n.services).filter(s => s !== 'notify' && s !== 'send_message' && s !== 'persistent_notification').sort() : []; }
+    catch (e) { svcs = []; }
+    return svcs;
+  }
+  function body() {
+    const opt = (cur) => '<option value="">— personne —</option>' + (svcs || []).map(s => '<option' + (s === cur ? ' selected' : '') + '>' + esc(s) + '</option>').join('') + (cur && svcs && !svcs.includes(cur) ? '<option selected>' + esc(cur) + '</option>' : '');
+    return '<div class="nfgrid">' +
+      '<section><h4>' + ico('user') + 'Qui reçoit les notifications</h4>' + (!HA.enabled() ? '<p class="warn">Reliez d’abord Home Assistant (Connexions).</p>' : '') +
+      '<div class="list">' + S.users.map(u => '<div class="li nfu"><img src="' + esc(u.avatar) + '" alt=""><div><b>' + esc(u.name) + (u.admin ? ' <small class="tag2">admin</small>' : '') + '</b>' +
+        (svcs && svcs.length ? '<select data-change="nfTo" data-id="' + u.id + '">' + opt(svcOf(u)) + '</select>' : '<input placeholder="mobile_app_iphone_de_' + esc(u.id) + '" value="' + esc(svcOf(u)) + '" data-change="nfTo" data-id="' + u.id + '" spellcheck="false">') +
+        '</div><button class="btn sm" data-act="nfTest" data-id="' + u.id + '"' + (svcOf(u) ? '' : ' disabled') + '>' + ico('send') + 'Tester</button></div>').join('') + '</div>' +
+      '<p class="muted" style="font-size:12px;line-height:1.5;margin:8px 0 0">Installez l’application <b>Home Assistant</b> sur chaque téléphone et connectez-la : un service <code>notify.mobile_app_…</code> apparaît alors ici.</p></section>' +
+      '<section><h4>' + ico('bellFill') + 'Quand prévenir</h4><div class="list">' + RULES.map(r => { const c = N.rules[r[0]]; return '<div class="li nfr"><span class="aico">' + ico(r[1]) + '</span><div><b>' + r[2] + '</b><small>' + r[3] + '</small></div>' +
+        '<select data-change="nfWho" data-arg="' + r[0] + '"><option value="all"' + (c.who === 'all' ? ' selected' : '') + '>Tous</option><option value="admins"' + (c.who === 'admins' ? ' selected' : '') + '>Admins</option></select>' +
+        '<button type="button" class="sw sm' + (c.on ? ' on' : '') + '" data-act="nfRule" data-arg="' + r[0] + '" aria-label="' + r[2] + '"></button></div>'; }).join('') + '</div>' +
+      '<div class="grid2" style="margin-top:10px"><label class="field">Garage ouvert depuis (min)<input type="number" min="1" max="120" value="' + N.garageMin + '" data-change="nfGarage"></label><label class="field">Rappel poubelles à<input type="time" value="' + N.trashAt + '" data-change="nfTrash"></label></div></section>' +
+      '<section class="wide"><h4>' + ico('homeFill') + 'Qui envoie</h4>' +
+      '<label class="row" style="gap:10px;font-size:14px"><button type="button" class="sw sm' + (isSender() ? ' on' : '') + '" data-act="nfSender" aria-label="Cet écran envoie"></button><span><b>Cet écran envoie les notifications</b><br><small class="muted">À activer sur un seul appareil toujours allumé (tablette murale). Les alertes partent tant que Bêta OS y est ouvert.</small></span></label>' +
+      '<div class="nfrec">' + ico('sparkle') + '<span><b>Recommandé : automatisations Home Assistant.</b> Elles tournent 24 h/24 dans Home Assistant, même si aucun écran n’est allumé (sonnette, garage, fuite, alarme, machines). Les poubelles et la météo restent envoyées par l’écran émetteur.</span><button class="btn sm pri" data-act="nfYaml">' + ico('download') + 'Créer les automatisations</button></div></section></div>';
+  }
+  async function open() { if (svcs === null) await loadSvcs(); B.modal('<h2>' + ico('bellFill') + 'Notifications sur les téléphones</h2>' + body(), 'wide nfmodal'); }
+  B.notifSettings = open;
+  const redraw = () => { const m = document.querySelector('.nfmodal'); if (m) { const sc = m.scrollTop; m.innerHTML = '<button class="x" data-act="closeModal" aria-label="Fermer">' + ico('x') + '</button><h2>' + ico('bellFill') + 'Notifications sur les téléphones</h2>' + body(); m.scrollTop = sc; } };
+  B.act('nfOpen', open);
+  B.act('nfTo', el => { N.to[el.dataset.id] = el.value.trim().replace(/^notify\./, ''); B.save(); redraw(); });
+  B.act('nfWho', el => { N.rules[el.dataset.arg].who = el.value; B.save(); });
+  B.act('nfRule', el => { const r = N.rules[el.dataset.arg]; r.on = !r.on; B.save(); el.classList.toggle('on', r.on); });
+  B.act('nfGarage', el => { N.garageMin = Math.max(1, +el.value || 10); B.save(); });
+  B.act('nfTrash', el => { N.trashAt = el.value || '18:30'; B.save(); });
+  B.act('nfSender', el => { const on = !isSender(); try { localStorage.setItem('betaos.notifier', on ? '1' : '0'); } catch (e) { } el.classList.toggle('on', on); B.toast(on ? 'Cet écran enverra les notifications' : 'Cet écran n’envoie plus de notifications', 'bellFill'); });
+  B.act('nfTest', async el => {
+    const u = S.users.find(x => x.id === el.dataset.id);
+    try { await HA.req('/api/services/notify/' + svcOf(u), { title: 'Bêta OS', message: 'Bonjour ' + u.name + ' ! Les notifications fonctionnent 🎉', data: { url: site(), clickAction: site() } }); B.toast('Notification envoyée à ' + u.name, 'send'); }
+    catch (e) { B.toast('Échec : ' + e.message + ' — vérifiez le service', 'info'); }
+  });
+
+  /* ---------- export en automatisations Home Assistant ---------- */
+  function yaml() {
+    const q = s => '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+    const to = rule => S.users.filter(u => svcOf(u) && (N.rules[rule].who !== 'admins' || u.admin)).map(u => 'notify.' + svcOf(u));
+    const act = (rule, title, msg, extra) => to(rule).map(s => '      - service: ' + s + '\n        data:\n          title: ' + q(title) + '\n          message: ' + q(msg) + '\n          data:\n            url: ' + q(site() + '#' + (extra && extra.go || 'accueil')) + '\n            clickAction: ' + q(site() + '#' + (extra && extra.go || 'accueil')) +
+      (extra && extra.image ? '\n            image: ' + q(extra.image) : '') + (extra && extra.critical ? '\n            ttl: 0\n            priority: high\n            push:\n              interruption-level: critical\n              sound:\n                name: default\n                critical: 1\n                volume: 1' : '')).join('\n');
+    const out = [], A = (id, alias, trig, rule, title, msg, extra) => { if (!N.rules[rule].on || !to(rule).length || !trig) return; out.push('- id: beta_os_' + id + '\n  alias: ' + q('Bêta OS – ' + alias) + '\n  mode: single\n  trigger:\n' + trig + '\n  action:\n' + act(rule, title, msg, extra)); };
+    const bell = S.settings.haDoorbell;
+    if (bell) A('sonnette', 'Sonnette', bell.startsWith('event.') ? '    - platform: state\n      entity_id: ' + bell : '    - platform: state\n      entity_id: ' + bell + '\n      to: "on"', 'doorbell', 'Sonnette', 'Quelqu’un sonne à la porte', { image: camImg('cam.sonnette'), go: 'exterieur' });
+    const g = HA.entity('rdc.garage.door');
+    if (g && g !== '-') A('garage', 'Garage resté ouvert', '    - platform: state\n      entity_id: ' + g + '\n      to: "open"\n      for:\n        minutes: ' + N.garageMin, 'garage', 'Garage ouvert', 'La porte du garage est ouverte depuis ' + N.garageMin + ' min', { go: 'absence' });
+    Object.values(DATA.DEVICES).forEach(d => {
+      const e = HA.entity(d.id), k = B.kindOf ? B.kindOf(d) : d.type; if (!e || e === '-') return;
+      if (k === 'leak') A('fuite_' + d.id.replace(/\W/g, '_'), 'Fuite ' + d.room, '    - platform: state\n      entity_id: ' + e + '\n      to: "on"', 'leak', 'Fuite d’eau !', d.name + ' — ' + d.room, { critical: 1, go: 'absence' });
+      if (d.type === 'alarm') A('alarme_' + d.id.replace(/\W/g, '_'), 'Alarme déclenchée', '    - platform: state\n      entity_id: ' + e + '\n      to: "triggered"', 'alarm', 'ALARME DÉCLENCHÉE', d.name + ' — vérifiez les caméras', { critical: 1, go: 'exterieur' });
+      if (d.type === 'app') A('fin_' + d.id.replace(/\W/g, '_'), d.name + ' terminé', '    - platform: state\n      entity_id: ' + e + '\n      from: "on"\n      to: "off"', 'appliance', d.name + ' terminé', 'Le cycle est fini (' + d.room + ')', { go: 'rdc' });
+    });
+    if (N.rules.person.on) Object.keys(S.settings.haMotion || {}).forEach(cid => { const m = S.settings.haMotion[cid]; if (m) A('mouvement_' + cid.replace(/\W/g, '_'), 'Mouvement ' + (DATA.CAMS[cid] || {}).name, '    - platform: state\n      entity_id: ' + m + '\n      to: "on"', 'person', 'Mouvement détecté', ((DATA.CAMS[cid] || {}).name || 'Caméra') + ' — maison en absence', { image: camImg(cid), go: 'absence' }); });
+    return out.length ? '# Bêta OS — automatisations de notifications (à coller dans automations.yaml)\n# Généré le ' + new Date().toLocaleString('fr-FR') + '\n' + out.join('\n') + '\n' : '';
+  }
+  B.act('nfYaml', () => {
+    const y = yaml();
+    if (!y) return B.toast('Choisissez au moins un destinataire et reliez les appareils à Home Assistant', 'info');
+    B.modal('<h2>' + ico('homeFill') + 'Automatisations Home Assistant</h2><ol class="steps"><li>Home Assistant › Paramètres › Automatisations › ⋮ › <b>Modifier en YAML</b> (une par une), ou ajoutez tout d’un coup à la fin de <code>automations.yaml</code> (File editor / Studio Code Server).</li><li>Outils de développement › YAML › <b>Recharger les automatisations</b>.</li><li>Désactivez ensuite « Cet écran envoie » pour ces alertes si vous ne voulez pas de doublons (sonnette, garage, fuite, alarme, machines).</li></ol>' +
+      '<textarea class="yaml" readonly spellcheck="false">' + esc(y) + '</textarea><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" data-act="nfYamlDl">' + ico('download') + 'Télécharger</button><button class="btn pri" data-act="nfYamlCopy">' + ico('files') + 'Copier</button></div>', 'wide');
+  });
+  B.act('nfYamlCopy', () => { const t = document.querySelector('textarea.yaml'); if (!t) return; t.select(); (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(() => B.toast('Copié', 'check'), () => { document.execCommand('copy'); B.toast('Copié', 'check'); }); });
+  B.act('nfYamlDl', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([yaml()], { type: 'text/yaml' })); a.download = 'beta-os-notifications.yaml'; a.click(); });
+
+  /* ---------- accès : carte dans Connexions + Paramètres ---------- */
+  const conn0 = B.RENDER.conn;
+  if (conn0) B.RENDER.conn = s => conn0(s).replace('<div class="csave">', '<div class="ccard tile wide2"><div class="cch">' + B.badge('chart') + '<div><b>Notifications sur les téléphones</b><small>Via l’application Home Assistant · ' + S.users.filter(u => svcOf(u)).length + ' destinataire(s)' + (isSender() ? ' · cet écran émet' : '') + '</small></div></div><div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn sm pri" data-act="nfOpen">' + ico('bellFill') + 'Configurer</button><button type="button" class="btn sm" data-act="nfYaml">' + ico('download') + 'Automatisations HA</button></div></div><div class="csave">');
+  const sfx1 = B.RENDER.sfx;
+  if (sfx1) B.RENDER.sfx = s => sfx1(s).replace('<button class="btn sm" data-act="nightCfg">', '<button class="btn sm" data-act="nfOpen">' + ico('bellFill') + 'Notifs</button><button class="btn sm" data-act="nightCfg">');
+})();
