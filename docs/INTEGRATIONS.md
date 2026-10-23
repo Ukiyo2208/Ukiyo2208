@@ -31,10 +31,12 @@ Python est retenu car les meilleures bibliothèques existent dans ce langage
 | TV Philips | API JointSpace (port 1926) | Local | Appairage par PIN affiché sur la TV | ✅ |
 | Apple HomePod | pyatv (AirPlay / Companion) | Local | Appairage au premier lancement | ✅ Média + volume |
 | Siemens lave-linge | Home Connect API | Cloud officiel | Compte developer.home-connect.com, activer « démarrage à distance » | ✅ Officielle |
+| Philips Hue lumières | API locale du Hue Bridge (CLIP v2, événements en temps réel) | Local | Appuyer sur le bouton du Bridge pour générer une clé | ✅ Officielle |
 | Govee lumières | Govee API (clé dans l'app) + API LAN | Cloud / Local | Demander la clé API, activer « Contrôle LAN » par lampe | ✅ Officielle |
 | Roborock aspirateur | python-roborock | Cloud + local | Compte Roborock | ⚠️ Non officielle |
 | Segway Navimow tondeuse | Navimow OpenAPI (accès développeur via l'app) | Cloud | Demande d'accès développeur dans l'app Navimow | ⚠️ À vérifier selon modèle |
 | Verisure alarme | API GraphQL Verisure (vsure) | Cloud | Compte Verisure + code SMS (2FA) | ⚠️ Non officielle |
+| Schneider borne de recharge | Selon modèle : OCPP, Modbus TCP ou cloud Wiser | Local / Cloud | Préciser le modèle exact (EVlink Home, Pro AC…) | ❓ |
 | Ford voiture | FordConnect API (lecture seule) | Cloud | App sur le portail développeur Ford, compte FordPass dédié | ❌ Fragile |
 
 ## Sécurité
