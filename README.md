@@ -128,3 +128,13 @@ Au tout premier démarrage, un assistant propose 4 façons de commencer :
 Les profils (prénom, avatar, administrateur, code) sont créés dans l'assistant.
 **Paramètres › Maison & sauvegarde › Réinitialiser** relance l'assistant, en gardant ou non les connexions.
 **Cet écran** (menu du téléphone › Personnaliser, ou Paramètres › Général) : page de départ et boutons épinglés, propres à chaque appareil.
+
+## Carte (7.3)
+
+Menu › Outils › **Carte** :
+- **Famille** : position de chaque utilisateur. Elle vient de l'application Home Assistant (person.* / device_tracker.*), ou du partage depuis le téléphone. Distance de la maison, voiture et zone de la maison.
+- **Trajets** : enregistrement en direct par GPS (moto, voiture, vélo…), import et export **GPX** (Calimoto, Strava, Komoot…). Distance, durée, vitesses moyenne et maximale, kilomètres du mois.
+- **Véhicules** : nom, couleur et kilomètres totaux de chacun.
+- Bêta IA : « où est Sarah ? », « combien de km à moto ce mois ? ».
+
+Les positions et les trajets restent sur l'appareil. Seul le fond de carte (OpenStreetMap / CARTO) vient d'internet. La bibliothèque Leaflet est incluse dans le projet (assets/vendor/leaflet, licence BSD-2).

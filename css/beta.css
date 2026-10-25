@@ -1918,3 +1918,45 @@ html.fluid .logo .bmark { width: 44px; height: 44px; }
 html.fluid .ftop .logo .bmark { width: 40px; height: 40px; }
 html.fluid .ftop .logo .name { font-size: 28px !important; }
 .logo .name span { background: linear-gradient(90deg, #3fd8ff, #3f8cff 55%, #b46bff); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 0 10px rgba(80, 140, 255, .55)); padding-right: 2px; }
+/* ===== v7.3 — Carte ===== */
+.mapslot { position: relative; flex: 1; min-height: 0; margin-top: 8px; border-radius: 14px; overflow: hidden; background: #0b1630; border: 1px solid rgba(90, 160, 255, .25); }
+.maplayer { z-index: 20; border-radius: 14px; overflow: hidden; background: #0b1630; }
+.leaflet-container { background: #0b1630; font-family: inherit; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: rgba(10, 22, 52, .95); color: #eaf2ff; border: 1px solid rgba(90, 160, 255, .35); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
+.leaflet-popup-content { margin: 10px 14px; font-size: 13px; line-height: 1.45; } .leaflet-popup-content b { font-size: 14.5px; font-weight: 500; } .leaflet-popup-content small { color: #a9bcdc; }
+.leaflet-container a.leaflet-popup-close-button { color: #cfe3ff; }
+.leaflet-control-attribution { background: rgba(5, 12, 32, .7) !important; color: #8ea3c6 !important; font-size: 10px; } .leaflet-control-attribution a { color: #8fd8ff !important; }
+.leaflet-bar a { background: rgba(10, 22, 52, .9); color: #cfe3ff; border-color: rgba(90, 160, 255, .3); } .leaflet-bar a:hover { background: rgba(30, 70, 150, .9); }
+.mapav .mav { width: 46px; height: 46px; border-radius: 50%; padding: 3px; background: var(--ring); box-shadow: 0 0 14px rgba(47, 182, 255, .6); }
+.mapav .mav img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #050c22; }
+.mapav i { position: absolute; left: 50%; bottom: 0; width: 10px; height: 10px; margin-left: -5px; transform: rotate(45deg); background: #2fb6ff; }
+.mapav .old { position: absolute; right: 0; top: 0; width: 12px; height: 12px; border-radius: 50%; background: #ffb35c; border: 2px solid #050c22; }
+.maphome span, .mapcar span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; font-size: 19px; color: #fff; background: linear-gradient(135deg, #2fd3ff, #1f6bff); box-shadow: 0 0 14px rgba(47, 182, 255, .8); border: 2px solid #fff; }
+.mapcar span { background: linear-gradient(135deg, #8fd8ff, #3a5bff); font-size: 17px; }
+.mside { display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 0; }
+.mtabs { align-self: stretch; } .mtabs button { flex: 1; }
+.mfam .li { grid-template-columns: 44px minmax(0, 1fr) 20px; width: 100%; text-align: left; }
+.mfam img { width: 40px; height: 40px; border-radius: 50%; padding: 2px; background: var(--ring); object-fit: cover; }
+.mfam b { font-weight: 500; display: block; } .mfam small { display: block; font-size: 12px; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mshare { gap: 10px; align-items: center; font-size: 13.5px; } .mshare small { display: block; color: var(--soft); font-size: 11.5px; } .mshare b { font-weight: 500; }
+.mtools { gap: 8px; flex-wrap: wrap; }
+.vfilt { display: flex; gap: 6px; flex-wrap: wrap; }
+.vfilt button { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border-radius: 14px; font-size: 12px; background: rgba(20, 44, 96, .5); border: 1px solid rgba(90, 160, 255, .25); }
+.vfilt button .ico { color: var(--c, #8fd8ff); font-size: 14px; } .vfilt button.on { border-color: #2fd3ff; background: rgba(30, 110, 230, .35); }
+.mstat { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; color: var(--soft); } .mstat b { color: #fff; font-weight: 500; } .mstat .ico { color: #ff6fae; }
+.mtrips { flex: 1; min-height: 0; }
+.list .li.mtrip { grid-template-columns: 40px minmax(0, 1fr); cursor: pointer; align-items: start; padding-top: 10px; padding-bottom: 10px; }
+.mtrip.on { background: rgba(30, 90, 200, .3); border-color: rgba(47, 182, 255, .5) !important; }
+.mtrip b { font-weight: 500; display: block; } .mtrip small { display: block; font-size: 12px; color: var(--soft); } .mtrip small.cy { color: #6fd2ff; }
+.mrec { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 10px 12px; border-radius: 12px; background: rgba(255, 60, 80, .12); border: 1px solid rgba(255, 90, 106, .4); }
+.mrec b { font-weight: 500; display: block; font-size: 13.5px; } .mrec small { color: var(--soft); font-size: 12px; }
+.mrec .dot.red { animation: lkpulse 1.2s infinite; }
+.list .li.mveh { grid-template-columns: 40px minmax(0, 1fr) 40px; }
+.mveh input:not([type=color]) { width: 100%; background: none; border: 0; border-bottom: 1px solid rgba(90, 160, 255, .3); color: #fff; font-size: 14.5px; padding: 2px 0; }
+.mveh small { color: var(--soft); font-size: 12px; } .mveh input[type=color] { width: 34px; height: 34px; border: 0; background: none; padding: 0; }
+.mpriv { display: flex; gap: 6px; align-items: flex-start; font-size: 11.5px; margin: auto 0 0; line-height: 1.4; } .mpriv .ico { flex: none; color: #2ff0b0; }
+html.fluid .mapslot { height: 58vh; flex: none; }
+/* barre du haut sur téléphone avec le nom « Bêta home » */
+html.fluid .ftop .logo { min-width: 0; gap: 8px; }
+html.fluid .ftop .fright { flex-shrink: 0; }
+@media (max-width: 430px) { html.fluid .wxchip span { display: none; } html.fluid .wxchip { padding: 0 12px; } html.fluid .ftop .logo .name { font-size: 26px !important; } }
