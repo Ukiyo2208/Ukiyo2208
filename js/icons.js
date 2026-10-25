@@ -1,4 +1,4 @@
-/* Bêta OS — bibliothèque d'icônes SVG (trait 24×24, couleur = currentColor) */
+/* Bêta home — bibliothèque d'icônes SVG (trait 24×24, couleur = currentColor) */
 (function () {
   const P = {
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',

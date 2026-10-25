@@ -1,4 +1,4 @@
-/* Bêta OS — pages Étage 1, Étage 2, RDC, Extérieur (fidèles aux maquettes) */
+/* Bêta home — pages Étage 1, Étage 2, RDC, Extérieur (fidèles aux maquettes) */
 (function () {
   const B = window.BOS, { S, DATA, esc, dev, T, RENDER, box, px } = B;
   const A = 'assets/';

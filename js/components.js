@@ -1,4 +1,4 @@
-/* Bêta OS — composants (chrome, tuiles d'appareils, caméras, médias) */
+/* Bêta home — composants (chrome, tuiles d'appareils, caméras, médias) */
 (function () {
   const B = window.BOS, { S, DATA, esc, F, dev, setDev, T, RENDER, act, WX, Music } = B;
   const px = (x, y, w, h) => 'left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px';
@@ -54,14 +54,14 @@
   act('closeModalNav', el => { B.closeModal(); location.hash = el.getAttribute('href').slice(1); });
   /* en-tête mobile : logo + météo + accès IA */
   function fluidTop() {
-    return '<div class="ftop">' + '<a href="#accueil" class="logo">' + toriiSVG('torii') + '<span class="word"><span class="name">Bêta <span>OS</span></span></span></a>' +
+    return '<div class="ftop">' + '<a href="#accueil" class="logo">' + '<img class="bmark" src="assets/logo-mark.png" alt="">' + '<span class="word"><span class="name">Bêta <span>home</span></span></span></a>' +
       '<div class="fright"><button class="fsearch" data-act="search" aria-label="Rechercher">' + ico('search2') + '</button>' + T({ t: 'wxchip', keys: ['weather', 'clock'] }) + '</div></div>';
   }
   RENDER.wxchip = () => '<button class="wxchip" data-act="weather" aria-label="Météo">' + ico(B.wxIcon(WX.now.code, B.isNight())) + '<b>' + WX.now.temp + '°</b>' + (B.wxAlerts().length || (B.haAlert && B.haAlert()) ? ico('alert', 'wa') : '') + '<span>' + F.time(new Date()) + '</span></button>';
 
   function logo(style, small) {
-    return '<a href="#accueil" class="logo abs hide-fluid ' + (small ? '' : 'big') + '" style="' + style + '">' + toriiSVG('torii') +
-      '<span class="word"><span class="name">Bêta <span>' + (small ? 'OS' : 'os') + '</span></span><span class="tag">MAISON INTELLIGENTE</span></span></a>';
+    return '<a href="#accueil" class="logo abs hide-fluid ' + (small ? '' : 'big') + '" style="' + style + '">' + '<img class="bmark" src="assets/logo-mark.png" alt="">' +
+      '<span class="word"><span class="name">Bêta <span>home</span></span><span class="tag">MAISON INTELLIGENTE</span></span></a>';
   }
   /* badge d'icône (pastille dégradée) pour les titres de widgets */
   const BADGES = {

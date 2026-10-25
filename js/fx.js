@@ -1,4 +1,4 @@
-/* Bêta OS — ambiances (jour / nuit), saisons, particules et sons discrets */
+/* Bêta home — ambiances (jour / nuit), saisons, particules et sons discrets */
 (function () {
   const B = window.BOS, { S, WX } = B;
   const SEASONS = { printemps: 'Printemps', ete: 'Été', automne: 'Automne', hiver: 'Hiver' };

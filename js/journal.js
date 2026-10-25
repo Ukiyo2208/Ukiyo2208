@@ -1,4 +1,4 @@
-/* Bêta OS — journal des actions (qui, quoi, quand, météo, saison), export CSV et suggestions
+/* Bêta home — journal des actions (qui, quoi, quand, météo, saison), export CSV et suggestions
    de routines/automatismes tirées des habitudes de chaque utilisateur. */
 (function () {
   const B = window.BOS, { S, DATA, esc, F, T, RENDER, box, WX } = B;
@@ -112,7 +112,7 @@
       '<select class="search" data-change="jF" data-k="p">' + [[1, 'Aujourd’hui'], [7, '7 jours'], [30, '30 jours'], [365, 'Tout']].map(o => '<option value="' + o[0] + '"' + (flt.p === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>' +
       '<input class="search" placeholder="Rechercher…" value="' + esc(flt.q) + '" data-change="jF" data-k="q"></div>' +
       '<div class="jtable scroll">' + (list.length ? list.map(e => { const d = new Date(e.t), day = F.dayMonth(d); const h = day !== lastDay ? '<div class="jday">' + day + '</div>' : ''; lastDay = day;
-        return h + '<div class="jrow"><span class="jt">' + F.time(d) + '</span><span class="ju">' + esc(e.un || '') + '</span><span class="jd"><b>' + esc(e.n) + '</b> ' + esc(e.txt) + '<small>' + esc(e.r || '') + '</small></span><span class="jw" title="' + esc(e.wx || '') + '">' + ico(B.wxIcon(e.wc || 0, e.night)) + (e.temp != null ? e.temp + '°' : '') + '</span><span class="js">' + esc(SEASON[e.se] || '') + '</span><span class="jsrc">' + esc(SRC[e.src] || e.src) + '</span></div>'; }).join('') : '<p class="muted" style="padding:10px">Aucune action pour ces filtres. Chaque geste dans Bêta OS (et chaque changement venant de Home Assistant) s’inscrit ici.</p>') + '</div>' +
+        return h + '<div class="jrow"><span class="jt">' + F.time(d) + '</span><span class="ju">' + esc(e.un || '') + '</span><span class="jd"><b>' + esc(e.n) + '</b> ' + esc(e.txt) + '<small>' + esc(e.r || '') + '</small></span><span class="jw" title="' + esc(e.wx || '') + '">' + ico(B.wxIcon(e.wc || 0, e.night)) + (e.temp != null ? e.temp + '°' : '') + '</span><span class="js">' + esc(SEASON[e.se] || '') + '</span><span class="jsrc">' + esc(SRC[e.src] || e.src) + '</span></div>'; }).join('') : '<p class="muted" style="padding:10px">Aucune action pour ces filtres. Chaque geste dans Bêta home (et chaque changement venant de Home Assistant) s’inscrit ici.</p>') + '</div>' +
       '<div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="jCsv">' + ico('download') + 'Exporter (CSV)</button><button class="btn sm" data-act="jJson">' + ico('files') + 'Exporter (JSON)</button>' +
       (B.isAdmin && B.isAdmin() ? '<span style="flex:1"></span><button class="btn sm" data-act="jDemo">' + ico('sparkle') + 'Simuler 3 semaines</button><button class="btn sm dan" data-act="jClear">' + ico('trash') + 'Vider</button>' : '') + '</div>';
   };
@@ -137,9 +137,9 @@
   B.act('jCsv', () => {
     const head = ['Date', 'Heure', 'Jour', 'Utilisateur', 'Niveau', 'Pièce', 'Appareil', 'Action', 'Origine', 'Météo', 'Température', 'Saison', 'Nuit'];
     const rows = S.journal.slice().reverse().map(e => { const d = new Date(e.t); return [F.ymd(d), F.time(d), F.JOURS[d.getDay()], e.un, e.f, e.r, e.n, e.txt, SRC[e.src] || e.src, e.wx, e.temp, SEASON[e.se] || e.se, e.night ? 'oui' : 'non'].map(csvCell).join(';'); });
-    download('journal-beta-os-' + F.ymd(new Date()) + '.csv', '﻿' + head.join(';') + '\n' + rows.join('\n'), 'text/csv');
+    download('journal-beta-home-' + F.ymd(new Date()) + '.csv', '﻿' + head.join(';') + '\n' + rows.join('\n'), 'text/csv');
   });
-  B.act('jJson', () => download('journal-beta-os-' + F.ymd(new Date()) + '.json', JSON.stringify(S.journal, null, 1), 'application/json'));
+  B.act('jJson', () => download('journal-beta-home-' + F.ymd(new Date()) + '.json', JSON.stringify(S.journal, null, 1), 'application/json'));
   B.act('jClear', () => { if (!confirm('Effacer tout le journal ?')) return; S.journal = []; B.save(); B.emit('journal'); });
   B.act('jMake', el => {
     const s = analyze().find(x => x.key === el.dataset.arg); if (!s) return;

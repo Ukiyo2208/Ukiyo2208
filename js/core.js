@@ -1,4 +1,4 @@
-/* Bêta OS — noyau : état, rendu réactif, scène, routeur, météo, Home Assistant, musique */
+/* Bêta home — noyau : état, rendu réactif, scène, routeur, météo, Home Assistant, musique */
 (function () {
   const DATA = window.BETA_DATA;
   const KEY = 'betaos.v5';
@@ -136,7 +136,7 @@
     st.style.setProperty('--bg', bg);
     $('.backdrop').style.setProperty('--bg', bg);
     st.innerHTML = '<div class="page enter">' + r.render() + '</div>';
-    document.title = (r.title || 'Bêta OS') + ' · Bêta OS';
+    document.title = (r.title || 'Bêta home') + ' · Bêta home';
     current = name;
     fit();
     if (r.after) r.after();

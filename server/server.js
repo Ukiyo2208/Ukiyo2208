@@ -1,5 +1,5 @@
 // Serveur Bêta — à lancer sur le NAS (Docker). Node.js 20+, aucune dépendance.
-// - sert l'application Bêta OS
+// - sert l'application Bêta home
 // - garde les sauvegardes, le journal partagé et des données clé/valeur
 // - relaie les services que le navigateur ne peut pas joindre (Nextcloud, NAS, test des mails)
 'use strict';

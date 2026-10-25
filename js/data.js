@@ -1,4 +1,4 @@
-/* Bêta OS — données par défaut (profils, appareils, médias, agenda, mails) */
+/* Bêta home — données par défaut (profils, appareils, médias, agenda, mails) */
 (function () {
   const A = 'assets/';
 

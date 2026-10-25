@@ -1,6 +1,6 @@
-/* Bêta OS 6.4 — notifications sur les téléphones via Home Assistant (application Home Assistant
+/* Bêta home 6.4 — notifications sur les téléphones via Home Assistant (application Home Assistant
    « Companion », service notify.mobile_app_…). Deux façons de faire :
-   1. Bêta OS envoie lui-même (depuis l'écran choisi comme « émetteur », ex. la tablette du salon) ;
+   1. Bêta home envoie lui-même (depuis l'écran choisi comme « émetteur », ex. la tablette du salon) ;
    2. recommandé : on exporte des automatisations Home Assistant qui tournent 24 h/24, site ouvert ou non. */
 (function () {
   const B = window.BOS, { S, DATA, esc, F, dev } = B;
@@ -31,7 +31,7 @@
     if (o.image) data.image = o.image;
     if (o.url) data.url = data.clickAction = o.url;
     if (o.actions) data.actions = o.actions;
-    if (o.critical) data.push = { sound: { name: 'default', critical: 1, volume: 1 }, 'interruption-level': 'critical' }, data.ttl = 0, data.priority = 'high', data.channel = 'Alertes Bêta OS';
+    if (o.critical) data.push = { sound: { name: 'default', critical: 1, volume: 1 }, 'interruption-level': 'critical' }, data.ttl = 0, data.priority = 'high', data.channel = 'Alertes Bêta home';
     else if (o.urgent) data.push = { 'interruption-level': 'time-sensitive' };
     let n = 0;
     for (const u of users) { try { await HA.req('/api/services/notify/' + svcOf(u), { title, message, data }); n++; } catch (e) { HA.lastError = 'notification : ' + e.message; } }
@@ -94,7 +94,7 @@
         '<button type="button" class="sw sm' + (c.on ? ' on' : '') + '" data-act="nfRule" data-arg="' + r[0] + '" aria-label="' + r[2] + '"></button></div>'; }).join('') + '</div>' +
       '<div class="grid2" style="margin-top:10px"><label class="field">Garage ouvert depuis (min)<input type="number" min="1" max="120" value="' + N.garageMin + '" data-change="nfGarage"></label><label class="field">Rappel poubelles à<input type="time" value="' + N.trashAt + '" data-change="nfTrash"></label></div></section>' +
       '<section class="wide"><h4>' + ico('homeFill') + 'Qui envoie</h4>' +
-      '<label class="row" style="gap:10px;font-size:14px"><button type="button" class="sw sm' + (isSender() ? ' on' : '') + '" data-act="nfSender" aria-label="Cet écran envoie"></button><span><b>Cet écran envoie les notifications</b><br><small class="muted">À activer sur un seul appareil toujours allumé (tablette murale). Les alertes partent tant que Bêta OS y est ouvert.</small></span></label>' +
+      '<label class="row" style="gap:10px;font-size:14px"><button type="button" class="sw sm' + (isSender() ? ' on' : '') + '" data-act="nfSender" aria-label="Cet écran envoie"></button><span><b>Cet écran envoie les notifications</b><br><small class="muted">À activer sur un seul appareil toujours allumé (tablette murale). Les alertes partent tant que Bêta home y est ouvert.</small></span></label>' +
       '<div class="nfrec">' + ico('sparkle') + '<span><b>Recommandé : automatisations Home Assistant.</b> Elles tournent 24 h/24 dans Home Assistant, même si aucun écran n’est allumé (sonnette, garage, fuite, alarme, machines). Les poubelles et la météo restent envoyées par l’écran émetteur.</span><button class="btn sm pri" data-act="nfYaml">' + ico('download') + 'Créer les automatisations</button></div></section></div>';
   }
   async function open() { if (svcs === null) await loadSvcs(); B.modal('<h2>' + ico('bellFill') + 'Notifications sur les téléphones</h2>' + body(), 'wide nfmodal'); }
@@ -109,7 +109,7 @@
   B.act('nfSender', el => { const on = !isSender(); try { localStorage.setItem('betaos.notifier', on ? '1' : '0'); } catch (e) { } el.classList.toggle('on', on); B.toast(on ? 'Cet écran enverra les notifications' : 'Cet écran n’envoie plus de notifications', 'bellFill'); });
   B.act('nfTest', async el => {
     const u = S.users.find(x => x.id === el.dataset.id);
-    try { await HA.req('/api/services/notify/' + svcOf(u), { title: 'Bêta OS', message: 'Bonjour ' + u.name + ' ! Les notifications fonctionnent 🎉', data: { url: site(), clickAction: site() } }); B.toast('Notification envoyée à ' + u.name, 'send'); }
+    try { await HA.req('/api/services/notify/' + svcOf(u), { title: 'Bêta home', message: 'Bonjour ' + u.name + ' ! Les notifications fonctionnent 🎉', data: { url: site(), clickAction: site() } }); B.toast('Notification envoyée à ' + u.name, 'send'); }
     catch (e) { B.toast('Échec : ' + e.message + ' — vérifiez le service', 'info'); }
   });
 
@@ -119,7 +119,7 @@
     const to = rule => S.users.filter(u => svcOf(u) && (N.rules[rule].who !== 'admins' || u.admin)).map(u => 'notify.' + svcOf(u));
     const act = (rule, title, msg, extra) => to(rule).map(s => '      - service: ' + s + '\n        data:\n          title: ' + q(title) + '\n          message: ' + q(msg) + '\n          data:\n            url: ' + q(site() + '#' + (extra && extra.go || 'accueil')) + '\n            clickAction: ' + q(site() + '#' + (extra && extra.go || 'accueil')) +
       (extra && extra.image ? '\n            image: ' + q(extra.image) : '') + (extra && extra.critical ? '\n            ttl: 0\n            priority: high\n            push:\n              interruption-level: critical\n              sound:\n                name: default\n                critical: 1\n                volume: 1' : '')).join('\n');
-    const out = [], A = (id, alias, trig, rule, title, msg, extra) => { if (!N.rules[rule].on || !to(rule).length || !trig) return; out.push('- id: beta_os_' + id + '\n  alias: ' + q('Bêta OS – ' + alias) + '\n  mode: single\n  trigger:\n' + trig + '\n  action:\n' + act(rule, title, msg, extra)); };
+    const out = [], A = (id, alias, trig, rule, title, msg, extra) => { if (!N.rules[rule].on || !to(rule).length || !trig) return; out.push('- id: beta_os_' + id + '\n  alias: ' + q('Bêta home – ' + alias) + '\n  mode: single\n  trigger:\n' + trig + '\n  action:\n' + act(rule, title, msg, extra)); };
     const bell = S.settings.haDoorbell;
     if (bell) A('sonnette', 'Sonnette', bell.startsWith('event.') ? '    - platform: state\n      entity_id: ' + bell : '    - platform: state\n      entity_id: ' + bell + '\n      to: "on"', 'doorbell', 'Sonnette', 'Quelqu’un sonne à la porte', { image: camImg('cam.sonnette'), go: 'exterieur' });
     const g = HA.entity('rdc.garage.door');
@@ -131,7 +131,7 @@
       if (d.type === 'app') A('fin_' + d.id.replace(/\W/g, '_'), d.name + ' terminé', '    - platform: state\n      entity_id: ' + e + '\n      from: "on"\n      to: "off"', 'appliance', d.name + ' terminé', 'Le cycle est fini (' + d.room + ')', { go: 'rdc' });
     });
     if (N.rules.person.on) Object.keys(S.settings.haMotion || {}).forEach(cid => { const m = S.settings.haMotion[cid]; if (m) A('mouvement_' + cid.replace(/\W/g, '_'), 'Mouvement ' + (DATA.CAMS[cid] || {}).name, '    - platform: state\n      entity_id: ' + m + '\n      to: "on"', 'person', 'Mouvement détecté', ((DATA.CAMS[cid] || {}).name || 'Caméra') + ' — maison en absence', { image: camImg(cid), go: 'absence' }); });
-    return out.length ? '# Bêta OS — automatisations de notifications (à coller dans automations.yaml)\n# Généré le ' + new Date().toLocaleString('fr-FR') + '\n' + out.join('\n') + '\n' : '';
+    return out.length ? '# Bêta home — automatisations de notifications (à coller dans automations.yaml)\n# Généré le ' + new Date().toLocaleString('fr-FR') + '\n' + out.join('\n') + '\n' : '';
   }
   B.act('nfYaml', () => {
     const y = yaml();
@@ -140,7 +140,7 @@
       '<textarea class="yaml" readonly spellcheck="false">' + esc(y) + '</textarea><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" data-act="nfYamlDl">' + ico('download') + 'Télécharger</button><button class="btn pri" data-act="nfYamlCopy">' + ico('files') + 'Copier</button></div>', 'wide');
   });
   B.act('nfYamlCopy', () => { const t = document.querySelector('textarea.yaml'); if (!t) return; t.select(); (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(() => B.toast('Copié', 'check'), () => { document.execCommand('copy'); B.toast('Copié', 'check'); }); });
-  B.act('nfYamlDl', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([yaml()], { type: 'text/yaml' })); a.download = 'beta-os-notifications.yaml'; a.click(); });
+  B.act('nfYamlDl', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([yaml()], { type: 'text/yaml' })); a.download = 'beta-home-notifications.yaml'; a.click(); });
 
   /* ---------- accès : carte dans Connexions + Paramètres ---------- */
   const conn0 = B.RENDER.conn;

@@ -1,4 +1,4 @@
-/* Bêta OS 6.7 — diffusion de la musique (« caster ») : sur ce téléphone, sur un appareil précis,
+/* Bêta home 6.7 — diffusion de la musique (« caster ») : sur ce téléphone, sur un appareil précis,
    sur tout un étage ou sur toute la maison, via les lecteurs Home Assistant (TV, enceintes, Music Assistant).
    Widget musique des étages = celui de l'accueil, limité aux appareils de l'étage. */
 (function () {

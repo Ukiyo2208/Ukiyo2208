@@ -1,5 +1,5 @@
 # Serveur Bêta pour NAS UGREEN (UGOS Pro › Docker › Projet › Créer)
-# Placez ce fichier dans le dossier « server » de Bêta OS, puis lancez le projet.
+# Placez ce fichier dans le dossier « server » de Bêta home, puis lancez le projet.
 services:
   beta-os:
     build:
@@ -10,7 +10,7 @@ services:
     ports:
       - "8090:8090"
     environment:
-      - BETA_KEY=changez-moi-par-une-longue-phrase   # même clé dans Bêta OS › Connexions
+      - BETA_KEY=changez-moi-par-une-longue-phrase   # même clé dans Bêta home › Connexions
       - BACKUP_KEEP=30                                # nombre de sauvegardes gardées
       - TZ=Europe/Paris
     volumes:

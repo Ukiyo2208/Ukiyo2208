@@ -1,4 +1,6 @@
-# Bêta OS 6 — Maison intelligente
+![Bêta home](assets/banner.jpg)
+
+# Bêta home — Maison intelligente
 
 Tableau de bord domotique au thème « Japon nocturne » (glassmorphism bleu néon), reproduit d'après les maquettes de référence :
 écran verrouillé, Accueil, Extérieur, RDC, Étage 1 — plus Étage 2, Énergie, Multimédia, NAS, Calendrier, Mails, Bêta IA et Paramètres.
@@ -25,7 +27,7 @@ mode fluide (cartes empilées + dock de navigation en bas).
 - Calendrier mensuel (ajout/modification/suppression, import .ics), mails de démonstration, NAS.
 - Bêta IA : assistant local en français (« éteins le RDC », « ferme les volets étage 1 », « mets 21 degrés », « météo »…), dictée vocale si le navigateur la permet.
 - **Home Assistant** (optionnel) : Paramètres › Home Assistant → URL + jeton longue durée, puis « Associer les entités ».
-  Ajouter l'origine de Bêta OS à `http: cors_allowed_origins` dans `configuration.yaml`. Sans configuration, tout fonctionne en mode démo.
+  Ajouter l'origine de Bêta home à `http: cors_allowed_origins` dans `configuration.yaml`. Sans configuration, tout fonctionne en mode démo.
 - Sauvegarde/restauration JSON des réglages (stockés dans le navigateur).
 
 ## Structure
@@ -106,7 +108,7 @@ Connexions › « Notifications sur les téléphones » › Configurer :
 
 Page **Voiture** (menu › Domotique) : batterie ou carburant, autonomie, recharge, verrouillage, position, portes, fenêtres, pneus, batterie 12 V, kilométrage, et les commandes verrouiller, ouvrir, préchauffer/clim et actualiser.
 - Données réelles via l'intégration **FordPass** (HACS) de Home Assistant : Voiture › Réglages › « Relier FordPass » détecte les entités. Sans elle, la page est en mode démo.
-- **Départs automatiques** : pour chaque rendez-vous avec un **lieu** (nouveau champ dans le calendrier), Bêta OS calcule le trajet (OpenStreetMap), l'heure de départ (trajet + marge) et, quelques minutes avant, lance le préchauffage (froid) ou la clim (chaud) si la voiture est à la maison.
+- **Départs automatiques** : pour chaque rendez-vous avec un **lieu** (nouveau champ dans le calendrier), Bêta home calcule le trajet (OpenStreetMap), l'heure de départ (trajet + marge) et, quelques minutes avant, lance le préchauffage (froid) ou la clim (chaud) si la voiture est à la maison.
 - Une notification Home Assistant part avec un bouton **Itinéraire** (Plans, Google Maps ou Waze) qui s'affiche dans CarPlay / Android Auto.
 - Réglable par rendez-vous : Auto / Toujours / Jamais.
 
@@ -120,7 +122,7 @@ Réglages (roue dentée) : choix de la voix française, vitesse, et lecture des 
 Au tout premier démarrage, un assistant propose 4 façons de commencer :
 - **Démo** : la maison d'exemple ;
 - **Manuel** : vous choisissez vos niveaux, puis créez les pièces (modèle, image, appareils à cocher avec leur nombre) ;
-- **Assisté** : Bêta OS lit Home Assistant (étages, zones, appareils, caméras) et propose un placement que vous vérifiez ;
+- **Assisté** : Bêta home lit Home Assistant (étages, zones, appareils, caméras) et propose un placement que vous vérifiez ;
 - **Automatique** : tout est repris tel quel de Home Assistant.
 
 Les profils (prénom, avatar, administrateur, code) sont créés dans l'assistant.

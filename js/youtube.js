@@ -1,4 +1,4 @@
-/* Bêta OS — compte YouTube (playlists, titres aimés, recherche) et enceintes Home Assistant / Music Assistant
+/* Bêta home — compte YouTube (playlists, titres aimés, recherche) et enceintes Home Assistant / Music Assistant
    (pour écouter YouTube Music avec votre abonnement, sur vos vraies enceintes). */
 (function () {
   const B = window.BOS, { S, esc } = B;
@@ -17,13 +17,13 @@
     /* adresse de retour après la connexion Google : la page elle-même, sans le #… */
     redirectUri() { return location.origin + location.pathname.replace(/index\.html$/, ''); },
     /* Connexion par redirection (et non par fenêtre pop-up) : sur iPhone, dans Sitecase ou une
-       appli, la fenêtre pop-up de Google ne peut pas revenir vers Bêta OS et reste blanche. */
+       appli, la fenêtre pop-up de Google ne peut pas revenir vers Bêta home et reste blanche. */
     connect() {
       const cid = S.settings.ytClient;
       if (!cid) return this.setupModal();
       // Google n'accepte que https:// ou http://localhost comme adresse de retour
       const okProto = location.protocol === 'https:' || (location.protocol === 'http:' && /^(localhost|127\.0\.0\.1)$/.test(location.hostname));
-      if (!okProto) return B.modal('<h2>' + ico('youtube') + 'Adresse non acceptée par Google</h2><p style="font-size:14px;line-height:1.55;margin:0 0 10px">Bêta OS est ouvert depuis <code>' + esc(location.href.split('#')[0]) + '</code>. Google n’autorise la connexion que depuis une adresse <b>https://</b> (site hébergé) ou <b>http://localhost</b>.</p><p style="font-size:14px;line-height:1.55;margin:0">Hébergez le dossier Bêta OS en https (NAS UGREEN avec reverse proxy, GitHub Pages, Netlify…), ouvrez-le depuis cette adresse, puis déclarez-la chez Google.</p>', 'sm');
+      if (!okProto) return B.modal('<h2>' + ico('youtube') + 'Adresse non acceptée par Google</h2><p style="font-size:14px;line-height:1.55;margin:0 0 10px">Bêta home est ouvert depuis <code>' + esc(location.href.split('#')[0]) + '</code>. Google n’autorise la connexion que depuis une adresse <b>https://</b> (site hébergé) ou <b>http://localhost</b>.</p><p style="font-size:14px;line-height:1.55;margin:0">Hébergez le dossier Bêta home en https (NAS UGREEN avec reverse proxy, GitHub Pages, Netlify…), ouvrez-le depuis cette adresse, puis déclarez-la chez Google.</p>', 'sm');
       const q = new URLSearchParams({ client_id: cid, redirect_uri: this.redirectUri(), response_type: 'token', scope: SCOPE, include_granted_scopes: 'true', state: 'yt:' + (B.current || 'musique'), prompt: this.token ? 'select_account' : 'consent' });
       B.save();
       location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + q;
@@ -78,10 +78,10 @@
     },
     setupModal() {
       B.modal('<h2>' + ico('youtube') + 'Connecter mon compte YouTube</h2>' +
-        '<p style="font-size:14px;line-height:1.55;margin:0 0 12px">Bêta OS peut lire <b>vos playlists</b> (YouTube et YouTube Music), <b>vos titres aimés</b> et faire des <b>recherches</b>. Google demande pour cela un identifiant gratuit, à créer une seule fois :</p>' +
-        '<ol class="steps"><li>Ouvrez <b>console.cloud.google.com</b>, créez un projet « Bêta OS ».</li><li>« API et services » › Bibliothèque › activez <b>YouTube Data API v3</b> (et <b>Google Calendar API</b> pour l’agenda).</li><li>« Écran de consentement OAuth » : type Externe, ajoutez votre adresse Gmail comme utilisateur test.</li><li>« Identifiants » › Créer › <b>ID client OAuth</b> › Application Web. Dans « Origines JavaScript autorisées » : <code>' + esc(location.origin && location.origin !== 'null' ? location.origin : 'https://…') + '</code><br>Dans « <b>URI de redirection autorisés</b> » : <code>' + esc(Y.redirectUri()) + '</code></li><li>Copiez l’ID client (se termine par <code>.apps.googleusercontent.com</code>) ci-dessous.</li></ol>' +
+        '<p style="font-size:14px;line-height:1.55;margin:0 0 12px">Bêta home peut lire <b>vos playlists</b> (YouTube et YouTube Music), <b>vos titres aimés</b> et faire des <b>recherches</b>. Google demande pour cela un identifiant gratuit, à créer une seule fois :</p>' +
+        '<ol class="steps"><li>Ouvrez <b>console.cloud.google.com</b>, créez un projet « Bêta home ».</li><li>« API et services » › Bibliothèque › activez <b>YouTube Data API v3</b> (et <b>Google Calendar API</b> pour l’agenda).</li><li>« Écran de consentement OAuth » : type Externe, ajoutez votre adresse Gmail comme utilisateur test.</li><li>« Identifiants » › Créer › <b>ID client OAuth</b> › Application Web. Dans « Origines JavaScript autorisées » : <code>' + esc(location.origin && location.origin !== 'null' ? location.origin : 'https://…') + '</code><br>Dans « <b>URI de redirection autorisés</b> » : <code>' + esc(Y.redirectUri()) + '</code></li><li>Copiez l’ID client (se termine par <code>.apps.googleusercontent.com</code>) ci-dessous.</li></ol>' +
         '<form data-submit="ytClientSave" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><input class="search" name="cid" required placeholder="123456-abc.apps.googleusercontent.com" value="' + esc(S.settings.ytClient || '') + '"><button class="btn pri">' + ico('check') + 'Connecter</button></form>' +
-        '<p class="muted" style="font-size:12.5px;line-height:1.5;margin:12px 0 0">Google exige une adresse en https (ou http://localhost) : ouvrez Bêta OS depuis votre NAS en https. Votre mot de passe n’est jamais vu par Bêta OS. La lecture se fait avec le lecteur officiel YouTube : sur iPhone, la lecture écran éteint reste réservée à YouTube Premium dans l’app YouTube ; pour écouter YouTube Music en continu avec votre abonnement, utilisez l’onglet <b>Enceintes</b> (Music Assistant).</p>', 'sm');
+        '<p class="muted" style="font-size:12.5px;line-height:1.5;margin:12px 0 0">Google exige une adresse en https (ou http://localhost) : ouvrez Bêta home depuis votre NAS en https. Votre mot de passe n’est jamais vu par Bêta home. La lecture se fait avec le lecteur officiel YouTube : sur iPhone, la lecture écran éteint reste réservée à YouTube Premium dans l’app YouTube ; pour écouter YouTube Music en continu avec votre abonnement, utilisez l’onglet <b>Enceintes</b> (Music Assistant).</p>', 'sm');
     },
 
     /* ---------- interface (onglet YouTube) ---------- */

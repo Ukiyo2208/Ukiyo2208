@@ -1,4 +1,4 @@
-/* Bêta OS — page « Connexions » (tous les services au même endroit) et client du serveur Bêta (NAS) :
+/* Bêta home — page « Connexions » (tous les services au même endroit) et client du serveur Bêta (NAS) :
    sauvegardes automatiques, journal partagé, relais vers les services que le navigateur ne peut pas joindre. */
 (function () {
   const B = window.BOS, { S, esc, T, RENDER, box, F } = B;
@@ -73,7 +73,7 @@
       card('google', 'music', 'Google / YouTube', 'Playlists, titres aimés, recherche', fld('s', 'ytClient', 'ID client OAuth', s.ytClient, { ph: '….apps.googleusercontent.com' }), '<button type="button" class="btn sm" data-act="ytDiag">' + ico('info') + 'Infos</button>') +
       card('weather', 'weather', 'Météo', 'Open-Meteo, sans compte', '<div class="grid2">' + fld('s', 'city', 'Ville', s.city) + fld('s', 'lat', 'Latitude', s.lat) + fld('s', 'lon', 'Longitude', s.lon) + '</div>') +
       '<div class="ccard tile wide2"><div class="cch">' + B.badge('link') + '<div><b>Adresses IP des appareils</b><small>Pense-bête du réseau (box, NAS, caméras, PC…)</small></div></div><div class="iplist">' + K.ips.map((x, i) => '<div class="row"><input class="search" name="ip' + i + 'n" value="' + esc(x.name) + '" placeholder="Nom"><input class="search" name="ip' + i + 'a" value="' + esc(x.ip) + '" placeholder="192.168.1.x"><button type="button" class="sq" data-act="cIpDel" data-arg="' + i + '" aria-label="Retirer">' + ico('trash') + '</button></div>').join('') + '</div><div class="row" style="margin-top:8px"><button type="button" class="btn sm" data-act="cIpAdd">' + ico('plus') + 'Ajouter</button></div></div>' +
-      '<div class="ccard tile wide2"><div class="cch">' + B.badge('shield') + '<div><b>Verisure (alarme et serrure)</b><small>Passe par l’intégration officielle Verisure de Home Assistant</small></div></div><p class="muted" style="margin:0;font-size:13px;line-height:1.5">Dans Home Assistant : Paramètres › Appareils › Ajouter une intégration › Verisure. Ajoutez ensuite l’alarme et la serrure dans Bêta OS (Pièces › Gérer › Appareils, types « Alarme » et « Serrure »). Les droits par utilisateur s’appliquent : par défaut seuls les administrateurs commandent la porte du garage.</p></div>' +
+      '<div class="ccard tile wide2"><div class="cch">' + B.badge('shield') + '<div><b>Verisure (alarme et serrure)</b><small>Passe par l’intégration officielle Verisure de Home Assistant</small></div></div><p class="muted" style="margin:0;font-size:13px;line-height:1.5">Dans Home Assistant : Paramètres › Appareils › Ajouter une intégration › Verisure. Ajoutez ensuite l’alarme et la serrure dans Bêta home (Pièces › Gérer › Appareils, types « Alarme » et « Serrure »). Les droits par utilisateur s’appliquent : par défaut seuls les administrateurs commandent la porte du garage.</p></div>' +
       RENDER.cbackup() +
       '<div class="csave"><button class="btn pri">' + ico('check') + 'Enregistrer toutes les connexions</button></div></form>';
   };
@@ -92,10 +92,10 @@
   B.act('cIpAdd', () => { K.ips.push({ name: '', ip: '' }); B.save(); B.emit('conn'); });
   B.act('cIpDel', el => { K.ips.splice(+el.dataset.arg, 1); B.save(); B.emit('conn'); });
   B.act('cServerHelp', () => B.modal('<h2>' + ico('nas') + 'Installer le serveur Bêta sur le NAS</h2><ol class="steps">' +
-    '<li>Copiez le dossier <code>server</code> de Bêta OS sur le NAS (avec le reste de Bêta OS).</li>' +
+    '<li>Copiez le dossier <code>server</code> de Bêta home sur le NAS (avec le reste de Bêta home).</li>' +
     '<li>UGOS Pro › <b>Docker</b> › Projet › Créer, choisissez le fichier <code>server/docker-compose.yml</code>.</li>' +
     '<li>Dans ce fichier, changez <code>BETA_KEY</code> (votre clé secrète) puis lancez le projet.</li>' +
-    '<li>Bêta OS est alors servi sur <code>http://IP-du-NAS:8090</code> ; ajoutez le reverse proxy https d’UGOS pour l’ouvrir en https.</li>' +
+    '<li>Bêta home est alors servi sur <code>http://IP-du-NAS:8090</code> ; ajoutez le reverse proxy https d’UGOS pour l’ouvrir en https.</li>' +
     '<li>Ici, mettez l’adresse et la même clé, puis « Tester ».</li></ol><p class="muted" style="font-size:12.5px;margin:12px 0 0;line-height:1.5">Le serveur garde les sauvegardes (30 jours), le journal partagé entre tous les appareils, et relaie Nextcloud et les mails que le navigateur ne peut pas joindre directement.</p>', 'sm'));
 
   RENDER.cbackup = () => {

@@ -1,4 +1,4 @@
-/* Bêta OS 7 — installation : assistant de premier démarrage (Démo, Manuel, Assisté, Automatique),
+/* Bêta home 7 — installation : assistant de premier démarrage (Démo, Manuel, Assisté, Automatique),
    réinitialisation, création de pièces à partir de modèles en cochant les appareils, import complet
    depuis Home Assistant (étages, zones, appareils) et réglages propres à chaque écran. */
 (function () {
@@ -17,7 +17,7 @@
   }
 
   /* ======================= MODÈLES DE PIÈCES ======================= */
-  // appareils proposés : type (catalogue Home Assistant de Bêta OS) → nombre
+  // appareils proposés : type (catalogue Home Assistant de Bêta home) → nombre
   const TPL = [
     ['salon', 'Salon', 'sofaFill', 'rdc-salon', { light: 2, cover: 1, tv: 1, speaker: 1, clim: 1, plug: 1 }],
     ['sejour', 'Séjour / salle à manger', 'umbrella', 'rdc-sejour', { light: 2, cover: 1, speaker: 0 }],
@@ -153,9 +153,9 @@
   /* ======================= ASSISTANT DE DÉMARRAGE ======================= */
   let W = null; // état de l'assistant
   const MODES = [
-    ['demo', 'sparkle', 'Démo', 'Une maison d’exemple toute prête, pour découvrir Bêta OS sans rien brancher.'],
+    ['demo', 'sparkle', 'Démo', 'Une maison d’exemple toute prête, pour découvrir Bêta home sans rien brancher.'],
     ['manual', 'edit', 'Manuel', 'Vous créez vos étages et vos pièces (avec modèles et images), puis cochez les appareils.'],
-    ['scan', 'search2', 'Assisté', 'Bêta OS lit Home Assistant et propose un placement ; vous validez ou corrigez.'],
+    ['scan', 'search2', 'Assisté', 'Bêta home lit Home Assistant et propose un placement ; vous validez ou corrigez.'],
     ['auto', 'bolt', 'Automatique', 'Mode « flemmard » : étages, pièces et appareils repris tels quels de Home Assistant.']
   ];
   const AV = DATA.AVATARS.flatMap(g => g.items);
@@ -163,7 +163,7 @@
     const w = W, steps = w.mode === 'demo' ? ['hello', 'mode'] : ['hello', 'mode', 'users', w.mode === 'manual' ? 'floors' : 'ha'].concat(w.mode === 'scan' ? ['review'] : []);
     const st = steps[w.step] || 'hello', last = w.step >= steps.length - 1;
     let h = '';
-    if (st === 'hello') h = '<div class="sw-hero"><img src="' + A + 'icon-512.png" alt=""><h2>Bienvenue dans Bêta OS</h2><p>Le tableau de bord de votre maison. En quelques étapes, on le prépare pour <b>votre</b> maison.</p>' +
+    if (st === 'hello') h = '<div class="sw-hero"><img src="' + A + 'icon-512.png" alt=""><h2>Bienvenue dans Bêta home</h2><p>Le tableau de bord de votre maison. En quelques étapes, on le prépare pour <b>votre</b> maison.</p>' +
       '<label class="field" style="max-width:260px;margin:6px auto 0">Langue<select data-change="swLang"><option value="fr" selected>Français</option><option value="en" disabled>English (bientôt)</option></select></label></div>';
     if (st === 'mode') h = '<h3>Comment voulez-vous commencer ?</h3><div class="sw-modes">' + MODES.map(m => '<button class="sw-mode' + (w.mode === m[0] ? ' on' : '') + '" data-act="swMode" data-arg="' + m[0] + '">' + ico(m[1]) + '<b>' + m[2] + '</b><small>' + m[3] + '</small></button>').join('') + '</div>' +
       (w.mode === 'scan' || w.mode === 'auto' ? '<p class="muted" style="font-size:12.5px;margin:10px 0 0">Il faudra l’adresse de Home Assistant et un jeton d’accès (profil › Sécurité › Jetons longue durée).</p>' : '');
@@ -231,8 +231,8 @@
   if (!S.setup.done) setTimeout(startWizard, 300);
 
   /* ======================= RÉINITIALISATION ======================= */
-  B.act('resetCfg', () => B.modal('<h2>' + ico('refresh') + 'Réinitialiser Bêta OS</h2><div style="display:flex;flex-direction:column;gap:10px;font-size:14px">' +
-    '<p style="margin:0;line-height:1.5">Bêta OS repart de zéro et l’assistant de démarrage se relance (Démo, Manuel, Assisté ou Automatique).</p>' +
+  B.act('resetCfg', () => B.modal('<h2>' + ico('refresh') + 'Réinitialiser Bêta home</h2><div style="display:flex;flex-direction:column;gap:10px;font-size:14px">' +
+    '<p style="margin:0;line-height:1.5">Bêta home repart de zéro et l’assistant de démarrage se relance (Démo, Manuel, Assisté ou Automatique).</p>' +
     '<button class="btn" data-act="exportCfg">' + ico('download') + 'D’abord, télécharger une sauvegarde</button>' +
     '<button class="btn pri" data-act="resetGo" data-arg="keep">' + ico('link') + 'Réinitialiser en gardant mes connexions</button>' +
     '<button class="btn dan" data-act="resetGo" data-arg="all">' + ico('trash') + 'Tout effacer</button>' +
@@ -277,5 +277,5 @@
   // Paramètres › Général : accès aux réglages de l'écran
   const sg0 = B.RENDER.sgen;
   B.RENDER.sgen = s => sg0(s).replace('<button type="button" class="btn sm" data-act="obStart">', '<button type="button" class="btn sm" data-act="screenCfg">' + ico('monitor') + 'Cet écran</button><button type="button" class="btn sm" data-act="setupAgain">' + ico('sparkle') + 'Assistant</button><button type="button" class="btn sm" data-act="obStart">');
-  B.act('setupAgain', () => { if (!isAdmin()) return B.toast('Réservé aux administrateurs', 'lock'); B.modal('<h2>' + ico('sparkle') + 'Assistant de démarrage</h2><p style="font-size:14px;line-height:1.5;margin:0 0 12px">Pour repartir avec un autre mode (Démo, Manuel, Assisté, Automatique), réinitialisez Bêta OS : vous pouvez garder vos connexions.</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="closeModal">Annuler</button><button class="btn pri" data-act="resetCfg">' + ico('refresh') + 'Réinitialiser…</button></div>', 'sm'); });
+  B.act('setupAgain', () => { if (!isAdmin()) return B.toast('Réservé aux administrateurs', 'lock'); B.modal('<h2>' + ico('sparkle') + 'Assistant de démarrage</h2><p style="font-size:14px;line-height:1.5;margin:0 0 12px">Pour repartir avec un autre mode (Démo, Manuel, Assisté, Automatique), réinitialisez Bêta home : vous pouvez garder vos connexions.</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="closeModal">Annuler</button><button class="btn pri" data-act="resetCfg">' + ico('refresh') + 'Réinitialiser…</button></div>', 'sm'); });
 })();

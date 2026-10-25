@@ -1,4 +1,4 @@
-/* Bêta OS 6.3 — écran verrouillé : carte « Maison » intelligente (les alertes d'abord, ce qui est
+/* Bêta home 6.3 — écran verrouillé : carte « Maison » intelligente (les alertes d'abord, ce qui est
    normal s'efface) et carte météo complète ; collectes des déchets dans le calendrier. */
 (function () {
   const B = window.BOS, { S, DATA, esc, F, RENDER, dev, WX } = B;

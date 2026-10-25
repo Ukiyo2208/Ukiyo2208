@@ -1,4 +1,4 @@
-/* Bêta OS 6.6 — mode vocal : on parle à Bêta IA, elle répond à voix haute, puis réécoute
+/* Bêta home 6.6 — mode vocal : on parle à Bêta IA, elle répond à voix haute, puis réécoute
    (conversation continue). Reconnaissance : celle du navigateur (Safari/Chrome) ; voix : synthèse
    vocale de l'appareil, en français. */
 (function () {

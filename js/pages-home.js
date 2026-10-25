@@ -1,4 +1,4 @@
-/* Bêta OS — Accueil (tableau de bord) et écran de verrouillage */
+/* Bêta home — Accueil (tableau de bord) et écran de verrouillage */
 (function () {
   const B = window.BOS, { S, DATA, esc, F, dev, T, RENDER, box, px, WX, Music } = B;
   const A = 'assets/';
@@ -260,7 +260,7 @@
   }
   B.route('verrou', { title: 'Verrouillé', bg: A + 'bg/lock.jpg', render: () => {
     return '<div class="lk">' +
-      '<div class="logo lk-logo abs hide-fluid" style="' + px(52, 24, 330, 84) + '">' + toriiSVG('torii') + '<span class="word"><span class="name">Bêta <span>os</span></span><span class="tag">MAISON INTELLIGENTE</span></span></div>' +
+      '<div class="logo lk-logo abs hide-fluid" style="' + px(52, 24, 330, 84) + '">' + '<img class="bmark" src="assets/logo-mark.png" alt="">' + '<span class="word"><span class="name">Bêta <span>home</span></span><span class="tag">MAISON INTELLIGENTE</span></span></div>' +
       '<div class="lk-kata abs" style="' + px(36, 128, 30, 180) + '">スマートホーム</div>' +
       T({ t: 'lkclock', style: box([75, 125, 400, 322]), keys: ['clock', 'weather'] }) +
       T({ t: 'lkhouse', style: box([75, 340, 400, 675]), keys: ['house', 'events', 'clock'] }) +

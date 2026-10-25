@@ -1,4 +1,4 @@
-/* Bêta OS 6.1 — recherche globale, mode nuit automatique, Bêta IA plus futée,
+/* Bêta home 6.1 — recherche globale, mode nuit automatique, Bêta IA plus futée,
    écran Absence & sécurité et visite guidée au premier lancement de chaque profil. */
 (function () {
   const B = window.BOS, { S, DATA, esc, F, T, RENDER, dev, setDev, box } = B;
@@ -113,7 +113,7 @@
   B.act('nightSave', el => { const f = new FormData(el); Object.assign(N(), { on: !!f.get('on'), from: f.get('from') || '23:00', to: f.get('to') || '06:30', idle: Math.max(10, +f.get('idle') || 60), dim: +f.get('dim') || 75, mute: !!f.get('mute') }); B.save(); B.closeModal(); arm(); document.documentElement.classList.toggle('nightmode', nightNow()); B.toast(N().on ? 'Mode nuit de ' + N().from + ' à ' + N().to : 'Mode nuit désactivé', 'moon'); });
   B.act('nightTry', () => { B.closeModal(); forced = true; setTimeout(sleep, 300); });
   B.nightSleep = () => { forced = true; sleep(); };
-  /* fond d'écran du téléphone : celui de Bêta OS ou une photo à soi */
+  /* fond d'écran du téléphone : celui de Bêta home ou une photo à soi */
   const mbg = () => { if (S.settings.mbg) document.documentElement.style.setProperty('--mbg', 'url("' + S.settings.mbg + '")'); else document.documentElement.style.removeProperty('--mbg'); };
   mbg();
   B.act('mbgPick', el => {
@@ -126,9 +126,9 @@
     };
     img.src = url;
   });
-  B.act('mbgReset', () => { delete S.settings.mbg; B.save(); mbg(); B.emit('sfx'); B.toast('Fond d’écran Bêta OS rétabli', 'photo'); });
+  B.act('mbgReset', () => { delete S.settings.mbg; B.save(); mbg(); B.emit('sfx'); B.toast('Fond d’écran Bêta home rétabli', 'photo'); });
   const sfx0 = RENDER.sfx;
-  RENDER.sfx = s => sfx0(s).replace('<div class="row" style="margin-top:auto;gap:8px;flex-wrap:wrap">', '<div class="row" style="margin-top:auto;gap:8px;flex-wrap:wrap"><label class="btn sm" style="cursor:pointer" title="Fond d’écran sur téléphone">' + ico('photo') + 'Fond tél.<input type="file" accept="image/*" data-change="mbgPick" hidden></label>' + (S.settings.mbg ? '<button class="btn sm" data-act="mbgReset" title="Fond Bêta OS">' + ico('refresh') + '</button>' : '') + '<button class="btn sm" data-act="nightCfg">' + ico('moon') + 'Mode nuit' + (N().on ? ' · ' + N().from + '–' + N().to : ' · off') + '</button>');
+  RENDER.sfx = s => sfx0(s).replace('<div class="row" style="margin-top:auto;gap:8px;flex-wrap:wrap">', '<div class="row" style="margin-top:auto;gap:8px;flex-wrap:wrap"><label class="btn sm" style="cursor:pointer" title="Fond d’écran sur téléphone">' + ico('photo') + 'Fond tél.<input type="file" accept="image/*" data-change="mbgPick" hidden></label>' + (S.settings.mbg ? '<button class="btn sm" data-act="mbgReset" title="Fond Bêta home">' + ico('refresh') + '</button>' : '') + '<button class="btn sm" data-act="nightCfg">' + ico('moon') + 'Mode nuit' + (N().on ? ' · ' + N().from + '–' + N().to : ' · off') + '</button>');
 
   /* ======================= BÊTA IA PLUS FUTÉE ======================= */
   const VERB = /^(?:et\s+)?(allume|eteins|eteint|eteindre|ferme|fermer|ouvre|ouvrir|baisse|monte|leve|descend|mets|met|regle|lance|joue|coupe|active|desactive|arrete|stop|demarre|passe|augmente|diminue)\b/;
@@ -317,7 +317,7 @@
   const STEPS = () => {
     const u = B.user(), adm = isAdmin();
     const st = [
-      () => '<div class="ob-hero"><img src="' + esc(u.avatar) + '" alt="" style="--ring:' + esc(u.ring) + '"><h2>Bienvenue ' + esc(u.name) + ' !</h2><p>Bêta OS pilote toute la maison depuis cet écran. On fait le tour en une minute ?</p></div>',
+      () => '<div class="ob-hero"><img src="' + esc(u.avatar) + '" alt="" style="--ring:' + esc(u.ring) + '"><h2>Bienvenue ' + esc(u.name) + ' !</h2><p>Bêta home pilote toute la maison depuis cet écran. On fait le tour en une minute ?</p></div>',
       () => '<h3>' + ico('user') + 'Votre profil</h3><div style="display:flex;flex-direction:column;gap:12px"><label class="field">Prénom affiché<input value="' + esc(u.name) + '" data-change="uName" data-id="' + u.id + '"></label>' +
         '<label class="field">Où êtes-vous en ce moment ?<select data-change="uPlace" data-id="' + u.id + '">' + Object.keys(DATA.PLACES).map(k => '<option value="' + k + '"' + (u.place === k ? ' selected' : '') + '>' + DATA.PLACES[k].label + '</option>').join('') + '</select></label>' +
         '<button class="btn" data-act="pickAvatar" data-arg="' + u.id + '">' + ico('user') + 'Choisir un autre avatar</button></div>',
@@ -347,7 +347,7 @@
   B.act('obStart', obStart);
   B.act('obNext', () => { step++; obShow(); });
   B.act('obPrev', () => { step--; obShow(); });
-  B.act('obDone', () => { S.onboard[B.user().id] = Date.now(); B.save(); B.closeModal(); B.toast('Bonne découverte de Bêta OS !', 'sparkle'); });
+  B.act('obDone', () => { S.onboard[B.user().id] = Date.now(); B.save(); B.closeModal(); B.toast('Bonne découverte de Bêta home !', 'sparkle'); });
   B.act('obGo', el => { S.onboard[B.user().id] = Date.now(); B.save(); B.closeModal(); B.go(el.dataset.arg); });
   B.act('obNight', el => { N().on = !N().on; B.save(); el.classList.toggle('on', N().on); arm(); });
   // au premier passage de chaque profil existant (pas l'invité)

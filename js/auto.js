@@ -1,5 +1,5 @@
-/* Bêta OS — routines (Je pars, Je rentre, Bonne nuit, Réveil) et automatismes simples « Quand… alors… ».
-   Ils s'exécutent tant que Bêta OS est ouvert (tablette murale). */
+/* Bêta home — routines (Je pars, Je rentre, Bonne nuit, Réveil) et automatismes simples « Quand… alors… ».
+   Ils s'exécutent tant que Bêta home est ouvert (tablette murale). */
 (function () {
   const B = window.BOS, { S, DATA, esc, dev, setDev, T, RENDER, box, F, WX } = B;
   const A = 'assets/', BG = A + 'bg/generic.jpg';
@@ -134,7 +134,7 @@
     '<div><b>' + esc(sentence(a)) + '</b><small>' + (S.autoRuns[a.id] ? 'Dernière fois : ' + new Date(S.autoRuns[a.id]).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : 'Pas encore déclenché') + '</small></div>' +
     '<div class="row" style="gap:6px"><button class="sw sm' + (a.on ? ' on' : '') + '" data-act="autoToggle" data-arg="' + a.id + '" role="switch" aria-label="Activer"></button><button class="sq" data-act="autoEdit" data-arg="' + a.id + '" aria-label="Modifier">' + ico('edit') + '</button><button class="sq" data-act="autoDel" data-arg="' + a.id + '" aria-label="Supprimer">' + ico('trash') + '</button></div></div>').join('') + '</div>' +
     '<div class="row" style="margin-top:12px;flex-wrap:wrap"><button class="btn pri" data-act="autoEdit">' + ico('plus') + 'Nouvel automatisme</button><button class="btn" data-act="testDoorbell">' + ico('bellFill') + 'Tester la sonnette</button></div>' +
-    '<p class="muted" style="font-size:12px;margin:10px 0 0;line-height:1.45">Ces automatismes tournent tant que Bêta OS est ouvert (idéal sur la tablette murale). Pour qu’ils fonctionnent même tablette éteinte, recréez-les dans Home Assistant.</p>';
+    '<p class="muted" style="font-size:12px;margin:10px 0 0;line-height:1.45">Ces automatismes tournent tant que Bêta home est ouvert (idéal sur la tablette murale). Pour qu’ils fonctionnent même tablette éteinte, recréez-les dans Home Assistant.</p>';
   const DN = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
   function daysTxt(d) { if (!d || d.length === 7) return 'tous les jours'; if (d.join() === '1,2,3,4,5') return 'en semaine'; if (d.join() === '0,6') return 'le week-end'; return d.map(i => DN[i]).join(' '); }
   B.act('autoToggle', el => { const a = S.autos.find(x => x.id === el.dataset.arg); a.on = !a.on; B.save(); B.emit('autos'); });

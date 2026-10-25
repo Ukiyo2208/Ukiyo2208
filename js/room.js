@@ -1,4 +1,4 @@
-/* Bêta OS — panneau de pièce « ⋯ » : toutes les commandes de la pièce, avec des widgets façon Home Assistant
+/* Bêta home — panneau de pièce « ⋯ » : toutes les commandes de la pièce, avec des widgets façon Home Assistant
    (cadran de thermostat, roue de couleurs, volet interactif). */
 (function () {
   const B = window.BOS, { S, DATA, esc, dev, setDev } = B;

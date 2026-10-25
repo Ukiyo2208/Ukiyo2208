@@ -1,4 +1,4 @@
-/* Bêta OS — moteur musique : radios en direct, YouTube (vidéos & playlists), fichiers du NAS / liens audio.
+/* Bêta home — moteur musique : radios en direct, YouTube (vidéos & playlists), fichiers du NAS / liens audio.
    La lecture continue quand on change de page (application monopage). */
 (function () {
   const B = window.BOS, { S, DATA, esc } = B;
@@ -328,9 +328,9 @@
     session() {
       if (!('mediaSession' in navigator)) return;
       const i = this.info();
-      // logo Bêta OS carré sur l'écran verrouillé, le Centre de contrôle et CarPlay
+      // logo Bêta home carré sur l'écran verrouillé, le Centre de contrôle et CarPlay
       const icon = new URL('assets/icon-512.png', location.href).href;
-      try { navigator.mediaSession.metadata = new MediaMetadata({ title: i.title, artist: i.artist, album: i.live ? i.station : 'Bêta OS', artwork: [{ src: icon, sizes: '512x512', type: 'image/png' }] }); } catch (e) { }
+      try { navigator.mediaSession.metadata = new MediaMetadata({ title: i.title, artist: i.artist, album: i.live ? i.station : 'Bêta home', artwork: [{ src: icon, sizes: '512x512', type: 'image/png' }] }); } catch (e) { }
       try {
         navigator.mediaSession.setActionHandler('play', () => this.resume());
         navigator.mediaSession.setActionHandler('pause', () => this.pause());

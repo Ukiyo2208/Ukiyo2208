@@ -1,4 +1,4 @@
-/* Bêta OS 6.5 — voiture (Ford via l'intégration FordPass de Home Assistant) :
+/* Bêta home 6.5 — voiture (Ford via l'intégration FordPass de Home Assistant) :
    état, commandes, et départs automatiques selon l'agenda (préchauffage / clim + itinéraire sur le téléphone). */
 (function () {
   const B = window.BOS, { S, esc, F, T, RENDER, box, WX } = B;
@@ -114,7 +114,7 @@
       if (what && home) { B.src = 'auto'; cmd('start', true); B.src = null; }
       const msg = 'Départ à ' + F.time(new Date(x.dep)) + ' pour « ' + x.e.title + ' »' + (x.t && x.t.min ? ' (' + x.t.min + ' min de route)' : '') + (what && home ? ' · ' + what + ' lancé (' + temp + ' °C dehors)' : '');
       B.toast(msg, 'carFill');
-      if (B.notifySend) B.notifySend('car', '🚗 ' + x.e.title, msg, { url: navUrl(x.e.place), go: 'voiture', urgent: 1, tag: 'car-' + x.e.id, actions: [{ action: 'URI', title: 'Itinéraire', uri: navUrl(x.e.place) }, { action: 'URI', title: 'Bêta OS', uri: location.origin + location.pathname.replace(/index\.html$/, '') + '#voiture' }] });
+      if (B.notifySend) B.notifySend('car', '🚗 ' + x.e.title, msg, { url: navUrl(x.e.place), go: 'voiture', urgent: 1, tag: 'car-' + x.e.id, actions: [{ action: 'URI', title: 'Itinéraire', uri: navUrl(x.e.place) }, { action: 'URI', title: 'Bêta home', uri: location.origin + location.pathname.replace(/index\.html$/, '') + '#voiture' }] });
     });
     Object.keys(C.done).forEach(k => { if (now - C.done[k] > 3 * 864e5) delete C.done[k]; });
   }, 60e3);
@@ -150,7 +150,7 @@
       const p = pref(x.e), m = x.m === 'heat' ? ['flame', 'Préchauffage', '#ff8a3c'] : x.m === 'cool' ? ['snow', 'Clim', '#2fd3ff'] : ['carFill', 'Aucun', '#93a8cc'];
       return '<div class="li ctrip"><span class="aico" style="color:' + m[2] + '">' + ico(m[0]) + '</span><div><b>' + esc(x.e.title) + '</b><small>' + F.dayMonth(new Date(x.e.date + 'T12:00')) + ' · ' + x.e.time + ' · ' + esc(x.e.place || '') + '</small><small class="cy">Départ ' + F.time(new Date(x.dep)) + (x.t && x.t.min ? ' · ' + x.t.min + ' min' + (x.t.km ? ' · ' + String(x.t.km).replace('.', ',') + ' km' : '') : x.t && x.t.err ? ' · trajet : ' + esc(x.t.err) : ' · calcul du trajet…') + ' · ' + m[1] + '</small></div>' +
         '<div class="row" style="gap:6px"><a class="sq" href="' + esc(navUrl(x.e.place || '')) + '" target="_blank" rel="noopener" title="Itinéraire">' + ico('pin') + '</a><button class="btn sm" data-act="carPref" data-arg="' + x.e.id + '">' + (p === 'auto' ? 'Auto' : p === 'on' ? 'Toujours' : 'Jamais') + '</button></div></div>';
-    }).join('') : '<p class="muted" style="margin:16px 4px;line-height:1.5">Aucun départ prévu dans les 3 jours. Ajoutez un <b>lieu</b> à vos rendez-vous dans le calendrier : Bêta OS calcule l’heure de départ et prépare la voiture.</p>') + '</div>';
+    }).join('') : '<p class="muted" style="margin:16px 4px;line-height:1.5">Aucun départ prévu dans les 3 jours. Ajoutez un <b>lieu</b> à vos rendez-vous dans le calendrier : Bêta home calcule l’heure de départ et prépare la voiture.</p>') + '</div>';
   };
   RENDER.carcfg = () => '<form class="ccfg" data-submit="carSave">' +
     '<label class="row" style="gap:10px;font-size:14px"><button type="button" class="sw sm' + (A.on ? ' on' : '') + '" data-act="carAuto" aria-label="Automatique"></button>Préparer la voiture avant mes rendez-vous</label>' +
@@ -173,7 +173,7 @@
     return out;
   }
   B.act('carLink', () => {
-    if (!HA.enabled()) return B.modal('<h2>' + ico('carFill') + 'Relier FordPass</h2><ol class="steps"><li>Dans Home Assistant, installez <b>HACS</b> puis l’intégration <b>FordPass</b> (recherchez « FordPass » dans HACS).</li><li>Redémarrez Home Assistant, puis Paramètres › Appareils › Ajouter une intégration › FordPass : connectez votre compte Ford (le même que l’application FordPass). Suivez la méthode de connexion indiquée par l’intégration : Ford la change de temps en temps.</li><li>Reliez Home Assistant dans Bêta OS (Connexions), puis revenez ici.</li></ol><p class="muted" style="font-size:12.5px;margin:10px 0 0;line-height:1.5">Gardez un rafraîchissement raisonnable (≥ 5 min) : trop de demandes peuvent décharger la batterie 12 V.</p>', 'sm');
+    if (!HA.enabled()) return B.modal('<h2>' + ico('carFill') + 'Relier FordPass</h2><ol class="steps"><li>Dans Home Assistant, installez <b>HACS</b> puis l’intégration <b>FordPass</b> (recherchez « FordPass » dans HACS).</li><li>Redémarrez Home Assistant, puis Paramètres › Appareils › Ajouter une intégration › FordPass : connectez votre compte Ford (le même que l’application FordPass). Suivez la méthode de connexion indiquée par l’intégration : Ford la change de temps en temps.</li><li>Reliez Home Assistant dans Bêta home (Connexions), puis revenez ici.</li></ol><p class="muted" style="font-size:12.5px;margin:10px 0 0;line-height:1.5">Gardez un rafraîchissement raisonnable (≥ 5 min) : trop de demandes peuvent décharger la batterie 12 V.</p>', 'sm');
     const g = Object.assign(guess(), C.ent), ents = Object.keys(HA.states).sort();
     B.modal('<h2>' + ico('carFill') + 'Relier la voiture</h2><form data-submit="carLinkSave"><div class="carmap">' + FIELDS.map(([k, label, , doms]) => '<label class="field">' + label + '<select name="' + k + '"><option value="">—</option>' + ents.filter(e => doms.includes(e.split('.')[0])).map(e => '<option value="' + e + '"' + (g[k] === e ? ' selected' : '') + '>' + esc(((HA.states[e].attributes || {}).friendly_name || e)) + ' · ' + e + '</option>').join('') + '</select></label>').join('') + '</div>' +
       '<div class="row" style="justify-content:flex-end;margin-top:12px;gap:8px"><button type="button" class="btn" data-act="carUnlink">Revenir à la démo</button><button class="btn pri">' + ico('check') + 'Enregistrer</button></div></form>', 'wide');

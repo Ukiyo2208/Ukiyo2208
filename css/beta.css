@@ -1,5 +1,5 @@
 /* =========================================================
-   Bêta OS v5 — Maison intelligente · thème Japon nocturne
+   Bêta home v5 — Maison intelligente · thème Japon nocturne
    Mise en page calée sur les maquettes de référence :
    chaque écran est une « scène » (1536×1024 ou 1672×941)
    mise à l'échelle de l'écran ; mode fluide sur smartphone.
@@ -1906,3 +1906,15 @@ html.fluid .modal .box.setup { min-height: 92vh; }
 .pinc .ico { font-size: 16px; color: #8fd8ff; }
 .pinc.on { border-color: #2fd3ff; background: rgba(30, 110, 230, .35); color: #fff; box-shadow: 0 0 10px rgba(47, 182, 255, .3); }
 .pinc b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #2fd3ff; color: #04102a; font-size: 11px; }
+/* ===== Bêta home — logo ===== */
+.logo .bmark { width: 50px; height: 50px; flex: none; filter: saturate(1.15) drop-shadow(0 0 8px rgba(60, 150, 255, .5)); }
+.logo .name { font-size: 34px !important; }
+.logo.big .name { font-size: 42px !important; }
+.lk-logo .name { font-size: 46px !important; }
+.logo { gap: 10px; }
+.logo.big .bmark { width: 62px; height: 62px; }
+.lk-logo .bmark { width: 76px; height: 76px; }
+html.fluid .logo .bmark { width: 44px; height: 44px; }
+html.fluid .ftop .logo .bmark { width: 40px; height: 40px; }
+html.fluid .ftop .logo .name { font-size: 28px !important; }
+.logo .name span { background: linear-gradient(90deg, #3fd8ff, #3f8cff 55%, #b46bff); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 0 10px rgba(80, 140, 255, .55)); padding-right: 2px; }

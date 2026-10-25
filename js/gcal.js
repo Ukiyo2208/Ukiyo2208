@@ -1,4 +1,4 @@
-/* Bêta OS — Google Agenda : synchronisation dans les deux sens avec le compte Google
+/* Bêta home — Google Agenda : synchronisation dans les deux sens avec le compte Google
    déjà utilisé pour YouTube. L'import / export .ics reste disponible à côté. */
 (function () {
   const B = window.BOS, { S, F, esc, RENDER } = B;
@@ -100,7 +100,7 @@
   };
   const day0 = RENDER.calday;
   RENDER.calday = s => day0(s).split('<div class="li"').map((c, i) => { if (!i) return c; const m = c.match(/data-act="calEdit" data-arg="([^"]+)"/), e = m && S.events.find(x => x.id === m[1]); return e && e.src === 'google' ? c.replace('<b>', '<b>' + gIco) : c; }).join('<div class="li"');
-  B.act('gcalConnect', () => B.modal('<h2>' + ico('calendar') + 'Relier Google Agenda</h2><p style="font-size:14px;line-height:1.55;margin:0 0 10px">Bêta OS utilise le même compte Google que YouTube. Vos événements Google apparaissent dans l’agenda et ceux que vous ajoutez ici partent dans Google Agenda.</p>' +
+  B.act('gcalConnect', () => B.modal('<h2>' + ico('calendar') + 'Relier Google Agenda</h2><p style="font-size:14px;line-height:1.55;margin:0 0 10px">Bêta home utilise le même compte Google que YouTube. Vos événements Google apparaissent dans l’agenda et ceux que vous ajoutez ici partent dans Google Agenda.</p>' +
     '<ol class="steps"><li>Google Cloud › « API et services » › Bibliothèque › activez <b>Google Calendar API</b>.</li><li>« Écran de consentement OAuth » › Accès aux données : ajoutez le champ d’application <code>…/auth/calendar.events</code> (facultatif en mode test).</li><li>Revenez ici et touchez « Se connecter » : Google vous demandera d’autoriser l’agenda.</li></ol>' +
     '<p class="muted" style="font-size:12.5px;margin:10px 0 14px">Les fichiers .ics restent utilisables : « Ajouter un fichier .ics » importe un agenda sans compte.</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="closeModal">Plus tard</button><button class="btn pri" data-act="gcalGo">' + gIco + 'Se connecter</button></div>', 'sm'));
   B.act('gcalGo', () => { B.closeModal(); Y.token = null; B.ACT.ytConnect ? B.ACT.ytConnect() : Y.connect(); });

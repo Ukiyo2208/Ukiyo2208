@@ -1,4 +1,4 @@
-/* Bêta OS 7.1 — Bêta IA s'adapte à la maison : elle lit la liste réelle des étages, pièces et
+/* Bêta home 7.1 — Bêta IA s'adapte à la maison : elle lit la liste réelle des étages, pièces et
    appareils (ceux de la démo comme ceux créés ou importés de Home Assistant) à chaque question.
    « allume la lampe de chevet », « éteins la prise du bureau », « ferme les volets du grenier »,
    « mets la clim de la chambre à 22 », « la télé du salon est allumée ? », « état de la cuisine ». */

@@ -1,4 +1,4 @@
-/* Bêta OS — la maison : niveaux, pièces et appareils (tous les types Home Assistant),
+/* Bêta home — la maison : niveaux, pièces et appareils (tous les types Home Assistant),
    pages d'étage automatiques, mode édition, droits par utilisateur, import depuis Home Assistant. */
 (function () {
   const B = window.BOS, { S, DATA, esc, dev, setDev, T, RENDER, box, px } = B;
@@ -386,10 +386,10 @@
   function importBody() {
     if (!imp || imp.loading) return '<p class="muted">Lecture de vos appareils Home Assistant…</p>';
     if (imp.err) return '<p class="muted">' + esc(imp.err) + '</p>';
-    if (!imp.list.length) return '<p class="muted">Tous vos appareils Home Assistant sont déjà dans Bêta OS.</p>';
+    if (!imp.list.length) return '<p class="muted">Tous vos appareils Home Assistant sont déjà dans Bêta home.</p>';
     const all = floors(true).flatMap(f => rooms(f.id, true).map(r => [f, r]));
     const match = area => { const n = (area || '').toLowerCase(); const hit = all.find(([f, r]) => r.name.toLowerCase() === n || r.label.toLowerCase() === n); return hit ? hit[1].key : ''; };
-    return '<p class="muted" style="margin:0 0 10px;font-size:13px">' + imp.list.length + ' appareils pas encore dans Bêta OS. Les zones Home Assistant sont associées aux pièces du même nom ; « Nouvelle pièce » crée la zone comme pièce.</p><form data-submit="haImportGo"><div class="implist">' +
+    return '<p class="muted" style="margin:0 0 10px;font-size:13px">' + imp.list.length + ' appareils pas encore dans Bêta home. Les zones Home Assistant sont associées aux pièces du même nom ; « Nouvelle pièce » crée la zone comme pièce.</p><form data-submit="haImportGo"><div class="implist">' +
       imp.list.map((x, i) => '<label class="imrow"><input type="checkbox" name="on' + i + '"' + (match(x.area) ? ' checked' : '') + '><span><b>' + esc(x.name) + '</b><small>' + esc(x.e) + (x.area ? ' · zone « ' + esc(x.area) + ' »' : '') + '</small></span><select name="k' + i + '">' + typeOpts(x.kind) + '</select>' +
         '<select name="r' + i + '"><option value="new:' + esc(x.area || 'Divers') + '">Nouvelle pièce : ' + esc(x.area || 'Divers') + '</option>' + all.map(([f, r]) => '<option value="' + esc(r.key) + '"' + (match(x.area) === r.key ? ' selected' : '') + '>' + esc(f.name + ' · ' + r.label) + '</option>').join('') + '</select></label>').join('') +
       '</div><div class="row" style="justify-content:flex-end;margin-top:12px;gap:8px;flex-wrap:wrap"><select class="search" name="newfloor" style="flex:0 0 200px" aria-label="Niveau des nouvelles pièces">' + floorOpts(imp.target || 'rdc') + '</select><button class="btn pri">' + ico('download') + 'Importer la sélection</button></div></form>';

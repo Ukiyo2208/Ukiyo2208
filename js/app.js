@@ -1,4 +1,4 @@
-/* Bêta OS — démarrage */
+/* Bêta home — démarrage */
 (function () {
   const B = window.BOS;
   // préchargement des fonds pour des transitions sans flash

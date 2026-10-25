@@ -1,4 +1,4 @@
-/* Bêta OS — Énergie, Musique, Plex, NAS, Calendrier, Mails, Bêta IA, Paramètres */
+/* Bêta home — Énergie, Musique, Plex, NAS, Calendrier, Mails, Bêta IA, Paramètres */
 (function () {
   const B = window.BOS, { S, DATA, esc, F, dev, setDev, T, RENDER, box, px, WX, Music } = B;
   const A = 'assets/', BG = A + 'bg/generic.jpg';
@@ -175,7 +175,7 @@
   };
   RENDER.pserver = () => {
     const s = S.settings, st = B.Plex.real ? ['', 'Connecté · ' + B.Plex.real.length + ' titres'] : B.Plex.error ? ['off', 'Erreur : ' + B.Plex.error] : ['wait', 'Bibliothèque de démonstration'];
-    return '<form data-submit="plexSave" style="display:flex;flex-direction:column;gap:10px;flex:1" title="Avec l’adresse et le jeton, Bêta OS affiche votre vraie bibliothèque. Le jeton reste sur cet appareil."><span class="tag2 ' + st[0] + '" style="align-self:flex-start">' + esc(st[1]) + '</span>' +
+    return '<form data-submit="plexSave" style="display:flex;flex-direction:column;gap:10px;flex:1" title="Avec l’adresse et le jeton, Bêta home affiche votre vraie bibliothèque. Le jeton reste sur cet appareil."><span class="tag2 ' + st[0] + '" style="align-self:flex-start">' + esc(st[1]) + '</span>' +
       '<div class="grid2"><label class="field">Adresse du serveur Plex<input name="server" placeholder="http://192.168.1.20:32400" value="' + esc(s.plexServer || '') + '"></label><label class="field">Jeton Plex (X-Plex-Token)<input name="token" type="password" value="' + esc(s.plexToken || '') + '"></label></div>' +
       '<label class="field">Lien « Ouvrir dans Plex »<input name="url" value="' + esc(s.plexUrl) + '"></label>' +
       '<div class="row" style="margin-top:auto"><button class="btn pri">' + ico('check') + 'Enregistrer et actualiser</button></div></form>';
@@ -283,8 +283,8 @@
   });
   B.act('icsExport', () => {
     const z = d => d.replace(/[-:]/g, '');
-    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Beta OS//FR'].concat(...S.events.map(e => { const a = new Date(e.date + 'T' + e.time), b = new Date(+a + e.dur * 6e4), f = d => F.ymd(d).replace(/-/g, '') + 'T' + F.time(d).replace(':', '') + '00'; return ['BEGIN:VEVENT', 'UID:' + (e.uid || e.id + '@beta-os'), 'DTSTART:' + f(a), 'DTEND:' + f(b), 'SUMMARY:' + e.title.replace(/,/g, '\\,'), 'END:VEVENT']; }), ['END:VCALENDAR']);
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/calendar' })); a.download = 'agenda-beta-os.ics'; a.click(); void z;
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Beta home//FR'].concat(...S.events.map(e => { const a = new Date(e.date + 'T' + e.time), b = new Date(+a + e.dur * 6e4), f = d => F.ymd(d).replace(/-/g, '') + 'T' + F.time(d).replace(':', '') + '00'; return ['BEGIN:VEVENT', 'UID:' + (e.uid || e.id + '@beta-os'), 'DTSTART:' + f(a), 'DTEND:' + f(b), 'SUMMARY:' + e.title.replace(/,/g, '\\,'), 'END:VEVENT']; }), ['END:VCALENDAR']);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/calendar' })); a.download = 'agenda-beta-home.ics'; a.click(); void z;
   });
   B.route('calendrier', { title: 'Calendrier', bg: BG, render: () => head('calendrier', 'Calendrier', 'Agenda de la famille', 'calendar', () => {
     const now = new Date(), nx = S.events.filter(e => new Date(e.date + 'T' + e.time) >= now).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
@@ -339,7 +339,7 @@
   B.act('mailAllRead', () => { S.mails.forEach(m => m.read = true); mailsChanged(); });
   B.act('mailUnread', el => { S.mails.find(x => x.id === el.dataset.arg).read = false; mailsChanged(); });
   B.act('mailDel', el => { S.mails = S.mails.filter(x => x.id !== el.dataset.arg); S.openMail = null; mailsChanged(); B.toast('Message supprimé', 'trash'); });
-  /* réception d'un nouveau message : si c'est une invitation, Bêta OS propose de l'ajouter à l'agenda */
+  /* réception d'un nouveau message : si c'est une invitation, Bêta home propose de l'ajouter à l'agenda */
   function receiveMail(m) {
     S.mails.unshift(m); mailsChanged();
     const inv = detectInvite(m);
@@ -484,7 +484,7 @@
       '<div class="row" style="flex-wrap:wrap"><span class="tag2 ' + st[0] + '">' + esc(st[1]) + '</span>' + (B.HA.enabled() ? '<span class="tag2 wait">' + n + ' appareil' + (n > 1 ? 's' : '') + ' relié' + (n > 1 ? 's' : '') + '</span>' : '') + '</div>' +
       '<label class="field">Adresse de Home Assistant<input name="url" placeholder="http://homeassistant.local:8123" value="' + esc(s.haUrl) + '"></label>' +
       '<label class="field">Jeton d’accès longue durée<input name="token" type="password" placeholder="Profil HA › Sécurité › Jetons d’accès longue durée" value="' + esc(s.haToken) + '"></label>' +
-      '<p class="muted" style="font-size:12.5px;margin:0;line-height:1.5">Autorisez Bêta OS dans <code>configuration.yaml</code> : <code>http: cors_allowed_origins:</code> avec l’adresse de Bêta OS. Le jeton reste sur cet appareil.</p>' +
+      '<p class="muted" style="font-size:12.5px;margin:0;line-height:1.5">Autorisez Bêta home dans <code>configuration.yaml</code> : <code>http: cors_allowed_origins:</code> avec l’adresse de Bêta home. Le jeton reste sur cet appareil.</p>' +
       '<div class="row" style="margin-top:auto;flex-wrap:wrap"><button class="btn pri">' + ico('check') + 'Enregistrer et tester</button><button type="button" class="btn" data-act="haWizard">' + ico('sparkle') + 'Assistant d’association</button><button type="button" class="btn sm" data-act="haMap">' + ico('edit') + 'À la main</button></div></form>';
   };
   B.act('haSave', async el => {
@@ -558,10 +558,10 @@
     '<div class="tile" style="padding:12px 14px;display:flex;align-items:center;gap:12px">' + B.badge('home') + '<div style="flex:1"><b style="font-weight:500">Pièces & appareils</b><div class="muted" style="font-size:12.5px">' + (isAdmin() ? 'Ajouter, retirer ou masquer' : 'Réservé aux administrateurs') + '</div></div>' + (isAdmin() ? '<button class="btn sm pri" data-act="roomsManager">' + ico('edit') + 'Gérer</button>' : ico('lock').replace('class="ico', 'style="font-size:20px;color:#93a8cc" class="ico')) + '</div>' +
     '<a class="tile" href="#pieces" style="padding:12px 14px;display:flex;align-items:center;gap:12px">' + B.badge('folder') + '<div style="flex:1"><b style="font-weight:500">Toutes les pièces</b><div class="muted" style="font-size:12.5px">Vue d’ensemble, pièces ajoutées comprises</div></div>' + ico('chevR') + '</a>' +
     '<div class="row" style="flex-wrap:wrap;margin-top:auto"><button class="btn sm" data-act="exportCfg">' + ico('download') + 'Exporter</button><label class="btn sm" style="cursor:pointer">' + ico('upload') + 'Importer<input type="file" accept="application/json" data-change="importCfg" hidden></label><button class="btn sm dan" data-act="resetCfg">' + ico('refresh') + 'Réinitialiser</button></div>' +
-    '<span class="muted" style="font-size:12px">Bêta OS 6.7 · réglages gardés sur cet appareil</span></div>';
-  B.act('exportCfg', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' })); a.download = 'beta-os-sauvegarde.json'; a.click(); });
-  B.act('importCfg', el => { const f = el.files[0]; if (!f) return; f.text().then(t => { try { const j = JSON.parse(t); if (j.v !== 5) throw 0; localStorage.setItem('betaos.v5', JSON.stringify(j)); location.reload(); } catch (e) { B.toast('Ce fichier n’est pas une sauvegarde Bêta OS', 'info'); } }); });
-  B.act('resetCfg', () => { if (confirm('Remettre Bêta OS à zéro ? Vos réglages, favoris et agenda seront effacés.')) { localStorage.removeItem('betaos.v5'); location.reload(); } });
+    '<span class="muted" style="font-size:12px">Bêta home 6.7 · réglages gardés sur cet appareil</span></div>';
+  B.act('exportCfg', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' })); a.download = 'beta-home-sauvegarde.json'; a.click(); });
+  B.act('importCfg', el => { const f = el.files[0]; if (!f) return; f.text().then(t => { try { const j = JSON.parse(t); if (j.v !== 5) throw 0; localStorage.setItem('betaos.v5', JSON.stringify(j)); location.reload(); } catch (e) { B.toast('Ce fichier n’est pas une sauvegarde Bêta home', 'info'); } }); });
+  B.act('resetCfg', () => { if (confirm('Remettre Bêta home à zéro ? Vos réglages, favoris et agenda seront effacés.')) { localStorage.removeItem('betaos.v5'); location.reload(); } });
   B.route('parametres', { title: 'Paramètres', bg: BG, render: () => head('parametres', 'Paramètres', 'Profils, connexions et préférences', 'gearFill', () => [{ icon: 'homeFill', v: B.HA.enabled() ? (B.HA.wsOk ? 'Temps réel' : B.HA.online ? 'Relié' : 'Erreur') : 'Démo', l: 'Home Assistant', cls: 'c' }, { icon: 'family', v: S.users.length, l: 'Profils' }, { icon: 'wand', v: S.routines.length, l: 'Routines', go: 'routines' }, { icon: 'info', v: '6.7', l: 'Version' }], ['ha', 'users']) +
     card([105, 235, 760, 640], 'Profils (4 maximum)', 'users', T({ t: 'sprof', keys: ['sprof'] })) +
     card([770, 235, 1522, 640], 'Connexions', 'link', T({ t: 'sconn', keys: ['ha', 'conn', 'plex'] })) +

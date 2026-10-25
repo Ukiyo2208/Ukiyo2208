@@ -1,4 +1,4 @@
-/* Bêta OS — Home Assistant : temps réel (WebSocket), assistant d'association, caméras en direct, énergie réelle,
+/* Bêta home — Home Assistant : temps réel (WebSocket), assistant d'association, caméras en direct, énergie réelle,
    pièces et appareils personnalisés. Tout reste facultatif : sans Home Assistant, la maison fonctionne en démo. */
 (function () {
   const B = window.BOS, { S, DATA, esc, dev, setDev } = B, HA = B.HA;
