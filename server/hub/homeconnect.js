@@ -29,5 +29,5 @@ module.exports = {
     }
     return out;
   },
-  async command() { throw new Error('Home Connect : lecture seule dans Bêta OS (lancez le programme depuis la machine)'); }
+  async command() { throw new Error('Home Connect : lecture seule dans Bêta home (lancez le programme depuis la machine)'); }
 };

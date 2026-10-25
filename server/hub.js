@@ -51,8 +51,8 @@ module.exports = function hub(DATA, send, readBody) {
 
   // retour de la page de connexion de la marque (ouverte dans le navigateur, sans la clé Bêta)
   async function callback(req, res, url) {
-    const st = pending[url.searchParams.get('state') || ''], page = (t, ok) => send(res, ok ? 200 : 400, '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><body style="font:16px system-ui;background:#050c20;color:#fff;display:grid;place-items:center;height:90vh;text-align:center"><div><h2>' + (ok ? '✅ ' : '⚠️ ') + String(t).replace(/[<>&"]/g, '') + '</h2><p>Vous pouvez fermer cette page et revenir dans Bêta OS.</p></div>', 'text/html; charset=utf-8');
-    if (!st || Date.now() - st.at > 15 * 6e4) return page('Lien expiré, recommencez depuis Bêta OS', false);
+    const st = pending[url.searchParams.get('state') || ''], page = (t, ok) => send(res, ok ? 200 : 400, '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><body style="font:16px system-ui;background:#050c20;color:#fff;display:grid;place-items:center;height:90vh;text-align:center"><div><h2>' + (ok ? '✅ ' : '⚠️ ') + String(t).replace(/[<>&"]/g, '') + '</h2><p>Vous pouvez fermer cette page et revenir dans Bêta home.</p></div>', 'text/html; charset=utf-8');
+    if (!st || Date.now() - st.at > 15 * 6e4) return page('Lien expiré, recommencez depuis Bêta home', false);
     delete pending[url.searchParams.get('state')];
     if (url.searchParams.get('error')) return page('Connexion refusée : ' + url.searchParams.get('error'), false);
     try { await oauthToken(BRANDS[st.brand], { grant_type: 'authorization_code', code: url.searchParams.get('code'), redirect_uri: st.redirect }); update(st.brand, { status: 'ok', info: 'Compte relié' }); return page(BRANDS[st.brand].name + ' est relié', true); }

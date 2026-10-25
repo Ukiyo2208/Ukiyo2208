@@ -13,7 +13,7 @@ function state(d) {
   const kind = KIND[d.uiClass];
   if (kind === 'light' || kind === 'plug') return { on: st(d, 'core:OnOffState') === 'on' };
   const cl = st(d, 'core:ClosureState'), oc = st(d, 'core:OpenClosedState');
-  if (typeof cl === 'number') return { pos: 100 - cl };                 // Somfy : 100 = fermé ; Bêta OS : 100 = ouvert
+  if (typeof cl === 'number') return { pos: 100 - cl };                 // Somfy : 100 = fermé ; Bêta home : 100 = ouvert
   if (oc) return { pos: oc === 'closed' ? 0 : 100 };
   return {};                                                           // moteurs RTS : pas de retour d'état
 }
@@ -28,7 +28,7 @@ module.exports = {
       const cookie = (login.headers['set-cookie'] || []).map(x => x.split(';')[0]).join('; ');
       if (!cookie) throw new Error('connexion Somfy refusée');
       const g = await json(CLOUD + '/config/' + b.pin + '/local/tokens/generate', { headers: { Cookie: cookie } });
-      await request(CLOUD + '/config/' + b.pin + '/local/tokens', { headers: { Cookie: cookie }, body: { label: 'Bêta OS', token: g.token, scope: 'devmode' } });
+      await request(CLOUD + '/config/' + b.pin + '/local/tokens', { headers: { Cookie: cookie }, body: { label: 'Bêta home', token: g.token, scope: 'devmode' } });
       return { pin: b.pin, host: b.host || c.host || '', token: g.token };
     }
   },
@@ -46,6 +46,6 @@ module.exports = {
     else if ('pos' in p) cmd = p.pos >= 100 ? { name: 'open' } : p.pos <= 0 ? { name: 'close' } : { name: 'setClosure', parameters: [100 - Math.round(p.pos)] };
     else if ('on' in p) cmd = { name: p.on ? 'on' : 'off' };
     if (!cmd) return;
-    await api(c, '/exec/apply', { label: 'Bêta OS', actions: [{ deviceURL: id, commands: [cmd] }] });
+    await api(c, '/exec/apply', { label: 'Bêta home', actions: [{ deviceURL: id, commands: [cmd] }] });
   }
 };

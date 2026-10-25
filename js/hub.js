@@ -1,4 +1,4 @@
-/* Bêta OS — « Marques » : connexion directe aux appareils sans Home Assistant (via le serveur Bêta du NAS).
+/* Bêta home — « Marques » : connexion directe aux appareils sans Home Assistant (via le serveur Bêta du NAS).
    Une fiche par marque avec un petit tuto, test, import des appareils trouvés par l'API, commandes et états en direct. */
 (function () {
   const B = window.BOS, { S, DATA, esc, dev, setDev, T, RENDER, box } = B;
@@ -6,7 +6,7 @@
   const C = B.custom;
   const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   const isAdmin = () => !!(B.isAdmin ? B.isAdmin() : B.user() && B.user().admin);
-  const map = () => (S.settings.hubMap = S.settings.hubMap || {});   // appareil Bêta OS → { brand, id }
+  const map = () => (S.settings.hubMap = S.settings.hubMap || {});   // appareil Bêta home → { brand, id }
   const callback = () => B.Server.url() + '/api/hub/oauth/callback';
 
   /* ---------- catalogue des marques ---------- */
@@ -46,14 +46,14 @@
       steps: ['Les appareils Samsung doivent déjà être dans l’app <b>SmartThings</b>.',
         'Le serveur Bêta doit être joignable en <b>https</b> (reverse proxy d’UGOS Pro) : Samsung renvoie vers cette adresse.',
         'Sur un ordinateur, installez <b>SmartThings CLI</b> (github.com/SmartThingsCommunity/smartthings-cli) puis lancez <code>smartthings apps:create</code>.',
-        'Choisissez <b>OAuth-In App</b>, nom « Bêta OS », droits <code>r:devices:*</code> <code>x:devices:*</code> <code>r:locations:*</code>, adresse de retour : <code>{callback}</code>',
+        'Choisissez <b>OAuth-In App</b>, nom « Bêta home », droits <code>r:devices:*</code> <code>x:devices:*</code> <code>r:locations:*</code>, adresse de retour : <code>{callback}</code>',
         'Copiez le <b>Client ID</b> et le <b>Client secret</b> (affiché une seule fois), <b>Enregistrer</b>, puis <b>Se connecter</b> et autorisez avec votre compte Samsung.',
         '<b>Ajouter les appareils</b> : TV, lave-linge et clim arrivent avec leur pièce SmartThings.'],
       note: 'Gratuit. Le jeton se renouvelle tout seul (les jetons personnels SmartThings expirent en 24 h, d’où OAuth).' },
     { id: 'homeconnect', name: 'Siemens Home Connect', sub: 'Lave-linge (aussi Bosch, Neff)', icon: 'washer', ready: true, oauth: true,
       fields: [['clientId', 'Client ID'], ['clientSecret', 'Client secret', { pw: 1 }]],
       steps: ['Créez un compte gratuit sur <b>developer.home-connect.com</b>.',
-        'Applications › <b>Register Application</b> : nom « Bêta OS », flux <b>Authorization Code Grant Flow</b>, adresse de retour : <code>{callback}</code>',
+        'Applications › <b>Register Application</b> : nom « Bêta home », flux <b>Authorization Code Grant Flow</b>, adresse de retour : <code>{callback}</code>',
         'Copiez le <b>Client ID</b> et le <b>Client secret</b>, <b>Enregistrer</b>, puis <b>Se connecter</b> avec le compte de l’app Home Connect.',
         '<b>Ajouter les appareils</b>.'],
       note: 'Gratuit. Lecture de l’état (en cours, temps restant, terminé) toutes les 3 minutes à cause du quota de 1 000 appels par jour. Le départ à distance reste sur la machine.' },
@@ -143,7 +143,7 @@
     return BRANDS.map(b => {
       const s = status(b.id), x = H.list[b.id] || {}, n = nDev(b.id);
       return '<div class="ccard tile' + (b.ready ? '' : ' locked') + '"><div class="cch"><span class="bdg" style="--g1:' + (b.ready ? '#2fe0ff' : '#9fb4d8') + ';--g2:' + (b.ready ? '#1f7dff' : '#4a6aa8') + '">' + ico(b.icon) + '</span><div><b>' + esc(b.name) + '</b><small>' + esc(b.sub) + '</small></div><span class="tag2 ' + s[0] + '">' + esc(s[1]) + '</span></div>' +
-        '<p class="muted" style="margin:0;font-size:12.5px;line-height:1.45">' + (x.info && b.ready ? esc(x.info) + (n ? ' · ' + n + ' dans Bêta OS' : '') : esc(b.note || '')) + '</p>' +
+        '<p class="muted" style="margin:0;font-size:12.5px;line-height:1.45">' + (x.info && b.ready ? esc(x.info) + (n ? ' · ' + n + ' dans Bêta home' : '') : esc(b.note || '')) + '</p>' +
         '<div class="row" style="gap:8px;margin-top:auto;flex-wrap:wrap"><button type="button" class="btn sm' + (b.ready && s[1] !== 'Connecté' ? ' pri' : '') + '" data-act="hubOpen" data-arg="' + b.id + '">' + ico(b.ready ? 'gear' : 'info') + (b.ready ? 'Configurer' : 'Tuto') + '</button>' +
         (b.ready ? '<button type="button" class="btn sm" data-act="hubTest" data-arg="' + b.id + '">' + ico('refresh') + 'Tester</button>' : '') +
         (b.ready && x.status === 'ok' ? '<button type="button" class="btn sm" data-act="hubImport" data-arg="' + b.id + '">' + ico('download') + 'Appareils</button>' : '') + '</div></div>';
@@ -193,7 +193,7 @@
     try {
       const r = await call('/api/hub/' + id + '/oauth?redirect=' + encodeURIComponent(callback()));
       window.open(r.url, '_blank');
-      B.toast('Autorisez Bêta OS dans la page qui s’ouvre, puis revenez ici et cliquez « Tester »', 'link');
+      B.toast('Autorisez Bêta home dans la page qui s’ouvre, puis revenez ici et cliquez « Tester »', 'link');
     } catch (e) { B.toast(e.message, 'info'); }
   });
 
@@ -208,7 +208,7 @@
     imp = { id, list: list.filter(d => !linked.has(d.id) && B.KIND[d.kind]) };
     const all = B.floors(true).flatMap(f => B.roomsList(f.id, true).map(r => [f, r]));
     const match = room => { const n = (room || '').toLowerCase(); const hit = all.find(([f, r]) => r.name.toLowerCase() === n || r.label.toLowerCase() === n); return hit ? hit[1].key : ''; };
-    const body = !imp.list.length ? '<p class="muted">' + (list.length ? 'Tous les appareils ' + esc(BR(id).name) + ' sont déjà dans Bêta OS.' : 'Aucun appareil trouvé sur ce compte.') + '</p>' :
+    const body = !imp.list.length ? '<p class="muted">' + (list.length ? 'Tous les appareils ' + esc(BR(id).name) + ' sont déjà dans Bêta home.' : 'Aucun appareil trouvé sur ce compte.') + '</p>' :
       '<p class="muted" style="margin:0 0 10px;font-size:13px">' + imp.list.length + ' appareil(s) trouvé(s) par l’API. Les pièces de la marque sont associées aux pièces du même nom ; vérifiez puis importez.</p><form data-submit="hubImportGo"><div class="implist">' +
       imp.list.map((d, i) => '<label class="imrow"><input type="checkbox" name="on' + i + '" checked><span><b>' + esc(d.name) + '</b><small>' + esc(B.KIND[d.kind][0] + (d.info ? ' · ' + d.info : '')) + (d.room ? ' · pièce « ' + esc(d.room) + ' »' : '') + (d.error ? ' · ' + esc(d.error) : '') + '</small></span><select name="k' + i + '">' + kindOpts(d.kind) + '</select>' +
         '<select name="r' + i + '"><option value="new:' + esc(d.room || BR(id).name) + '">Nouvelle pièce : ' + esc(d.room || BR(id).name) + '</option>' + all.map(([f, r]) => '<option value="' + esc(r.key) + '"' + (match(d.room) === r.key ? ' selected' : '') + '>' + esc(f.name + ' · ' + r.label) + '</option>').join('') + '</select></label>').join('') +

@@ -1,7 +1,7 @@
 # Intégrations domotique — connexion directe, sans Home Assistant
 
 Architecture : le **serveur Bêta** (Node.js, Docker sur le NAS, voir `server/`) gagne un
-connecteur par marque, et Bêta OS ne parle qu'à ce serveur.
+connecteur par marque, et Bêta home ne parle qu'à ce serveur.
 
 ```
 Appareils / clouds des marques ──> Backend (connecteurs par marque) ──> API unique ──> Dashboard
@@ -15,7 +15,7 @@ Les connecteurs sont écrits en Node.js pour rester dans `server/server.js`. Pou
 marques dont seule une bibliothèque Python existe (HomePod via pyatv, Roborock, Verisure),
 un petit conteneur Python séparé pourra être ajouté au `docker-compose.yml`.
 
-## Avancement dans Bêta OS (page « Marques »)
+## Avancement dans Bêta home (page « Marques »)
 
 | Marque | État |
 |---|---|
