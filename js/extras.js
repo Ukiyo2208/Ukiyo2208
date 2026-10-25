@@ -366,10 +366,10 @@
     ['Pièces', 'rooms', id => /^(accueil|exterieur|rdc|etage1|etage2|pieces)$/.test(id) || /^niveau-/.test(id)],
     ['Domotique', 'homeFill', id => /^(ia|energie|voiture|routines|absence|journal)$/.test(id)],
     ['Outils', 'grid9', id => /^(musique|plex|nas|calendrier|mails)$/.test(id)],
-    ['Réglages', 'gearFill', id => /^(connexions|parametres)$/.test(id)]
+    ['Réglages', 'gearFill', id => /^(connexions|marques|parametres)$/.test(id)]
   ];
   B.act('moreNav', () => {
-    const items = PAGES().filter((n, i, a) => a.findIndex(x => x[0] === n[0]) === i && !(B.guest && B.guest() && /^(nas|calendrier|mails|parametres|connexions|journal)$/.test(n[0])));
+    const items = PAGES().filter((n, i, a) => a.findIndex(x => x[0] === n[0]) === i && !(B.guest && B.guest() && /^(nas|calendrier|mails|parametres|connexions|marques|journal)$/.test(n[0])));
     const unread = B.unread ? B.unread() : 0;
     const tile = n => '<a href="#' + n[0] + '" class="tile' + (n[0] === B.current ? ' on' : '') + '" data-act="closeModalNav">' + ico(n[3]) + '<span>' + n[1] + '</span>' + (n[0] === 'mails' && unread ? '<span class="badge">' + unread + '</span>' : '') + '</a>';
     const sec = g => { const l = items.filter(n => g[2](n[0])); return l.length || g[0] === 'Réglages' ? '<section class="navsec"><h4>' + ico(g[1]) + g[0] + '</h4><div class="navgrid">' + l.map(tile).join('') +

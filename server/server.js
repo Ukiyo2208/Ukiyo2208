@@ -19,12 +19,15 @@ const send = (res, code, body, type) => { res.writeHead(code, { 'Content-Type': 
 const cors = (req, res) => { res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*'); res.setHeader('Vary', 'Origin'); res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Beta-Key'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); };
 const readBody = req => new Promise((ok, ko) => { let n = 0; const ch = []; req.on('data', c => { n += c.length; if (n > 25e6) { ko(new Error('trop gros')); req.destroy(); } else ch.push(c); }); req.on('end', () => { try { const t = Buffer.concat(ch).toString('utf8'); ok(t ? JSON.parse(t) : null); } catch (e) { ko(new Error('JSON invalide')); } }); });
 const safe = s => /^[\w.-]{1,80}$/.test(s) && !s.includes('..');
+const HUB = require('./hub')(DATA, send, readBody);   // appareils connectés en direct (Somfy, Hue, SmartThings…)
 
 /* ---------- API ---------- */
 async function api(req, res, url) {
   const p = url.pathname, m = req.method;
-  if (p === '/api/ping') return send(res, 200, { ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now() });
+  if (p === '/api/ping') return send(res, 200, { ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now(), hub: true });
+  if (p === '/api/hub/oauth/callback') return HUB.callback(req, res, url);
   if (KEY && req.headers['x-beta-key'] !== KEY) return send(res, 401, { error: 'clé invalide' });
+  if (p === '/api/hub' || p.startsWith('/api/hub/')) return HUB.api(req, res, url);
 
   let r;
   if ((r = p.match(/^\/api\/store\/([\w-]+)$/))) {
