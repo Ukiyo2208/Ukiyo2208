@@ -11,6 +11,7 @@ from functools import wraps
 from flask import Flask, abort, g, jsonify, redirect, request, send_file, send_from_directory, session
 from waitress import serve
 
+import accounts
 import activity
 import agenda
 import archives
@@ -24,6 +25,7 @@ import files
 import forms
 import imagetool
 import links
+import mail
 import media
 import monitor
 import notes
@@ -604,12 +606,12 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mail):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,
                  paperasse=paperasse.search, recettes=recipes.search, agenda=agenda.search, **{"presse-papier": clipboard.search})
-COUNTERS.update(recettes=recipes.count, paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
+COUNTERS.update(mails=mail.count, recettes=recipes.count, paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
 
 
 if __name__ == "__main__":
@@ -634,6 +636,7 @@ if __name__ == "__main__":
     paperasse.start()
     agenda.start()
     translate.start()
+    mail.start()
     dav = agenda.radicale_app()
     if dav:  # serveur CalDAV des agendas (synchronisation des téléphones)
         from werkzeug.middleware.dispatcher import DispatcherMiddleware

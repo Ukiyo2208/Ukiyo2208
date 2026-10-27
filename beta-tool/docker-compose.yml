@@ -40,6 +40,9 @@ services:
       - VAULT_URL=${VAULT_URL:-}
       - WHISPER_MODEL=${WHISPER_MODEL:-small}
       - VPN_PASSWORD=${VPN_PASSWORD:-}            # même mot de passe que wg-easy (outil VPN)
+      - MS_CLIENT_ID=${MS_CLIENT_ID:-}            # connexion Microsoft (Outlook) : aussi réglable dans Réglages
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}    # connexion Google Agenda : aussi réglable dans Réglages
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       # - PAPERS_DIR=/documents/Paperasse          # dossier de Paperasse (par défaut dans Documents)
     # user: "1026:100"            # optionnel : propriétaire des fichiers (voir `id` sur le NAS)
     restart: unless-stopped

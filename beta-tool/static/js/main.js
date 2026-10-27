@@ -147,7 +147,7 @@ async function loadDashboard() {
         <p class="meta">${sizeStr(k.free)} libres sur ${sizeStr(k.total)}</p>
         <p class="hint" style="margin:0">${k.roots.map(esc).join(" · ")}</p></div>`;
     }).join("");
-    const labels = { recettes: ["Recettes", "utensils", "#/recettes"], paperasse: ["Papiers à valider", "receipt", "#/paperasse"], abonnements: ["Chaînes suivies", "rss", "#/abonnements"], documents: ["Documents", "briefcase", "#/work"], notes: ["Notes", "notebook", "#/notes"], partages: ["Partages actifs", "send", "#/drop"],
+    const labels = { mails: ["Mails non lus", "mail", "#/mails"], recettes: ["Recettes", "utensils", "#/recettes"], paperasse: ["Papiers à valider", "receipt", "#/paperasse"], abonnements: ["Chaînes suivies", "rss", "#/abonnements"], documents: ["Documents", "briefcase", "#/work"], notes: ["Notes", "notebook", "#/notes"], partages: ["Partages actifs", "send", "#/drop"],
                      questionnaires: ["Questionnaires", "form", "#/questionnaires"], liens: ["Liens courts", "link", "#/liens"] };
     const counts = Object.entries(d.counts).filter(([k, v]) => v != null && labels[k]).map(([k, v]) =>
       `<a class="stat" href="${labels[k][2]}">${icon(labels[k][1])}<b>${v}</b><span>${labels[k][0]}</span></a>`).join("");

@@ -6,11 +6,13 @@ import { pageHead, reloadConfig, setTheme } from "../main.js";
 import * as push from "../push.js";
 import { canvas as qrCanvas } from "../qrcode.js";
 import * as i18n from "../i18n.js";
+import { settingsTab as enligne } from "../accounts.js";
 
 const TABS = [
   ["general", "Général", "settings", true],
   ["outils", "Outils", "grid", true],
   ["comptes", "Comptes", "users", false],
+  ["enligne", "Comptes en ligne", "globe", false],
   ["notifications", "Notifications", "bell", false],
   ["maj", "Mises à jour", "refresh", true],
   ["apparence", "Apparence", "sun", false],
@@ -23,7 +25,7 @@ export async function render(root, parts) {
   root.innerHTML = pageHead({ name: "Réglages", icon: "settings", tile: "", desc: "Personnalise Bêta Tool : outils, comptes, mises à jour…" })
     + `<nav class="tabs">${tabs.map(([id, label, ic]) => `<a href="#/reglages/${id}" class="${id === tab ? "on" : ""}">${icon(ic)}${label}</a>`).join("")}</nav>
        <div id="set-body"></div>`;
-  await ({ general, outils, comptes, notifications, maj, apparence, apropos })[tab]($("#set-body"));
+  await ({ general, outils, comptes, enligne, notifications, maj, apparence, apropos })[tab]($("#set-body"));
 }
 
 // --- Général ----------------------------------------------------------------
@@ -226,7 +228,7 @@ async function twofa(el) {
 }
 
 // --- Notifications --------------------------------------------------------------
-const NOTIF_TOOLS = ["telecharger", "abonnements", "convertir", "video", "transcription", "image", "drop", "presse-papier", "questionnaires",
+const NOTIF_TOOLS = ["mails", "telecharger", "abonnements", "convertir", "video", "transcription", "image", "drop", "presse-papier", "questionnaires",
   "agenda", "paperasse", "recettes", "surveillance", "sauvegardes", "traduction", "reglages"];
 
 async function notifications(el) {

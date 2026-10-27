@@ -10,3 +10,5 @@ rembg[cpu]>=2.0.60
 openpyxl>=3.1
 radicale>=3.2
 sentencepiece>=0.2
+requests>=2.31
+cryptography>=42

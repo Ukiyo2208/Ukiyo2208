@@ -229,12 +229,8 @@ def rrule_kind(ev):
     return "custom"
 
 
-def write_event(user, cal_id, d, uid=None, file=None):
-    vobject = _vobj()
-    path = cal_path(user, cal_id)
-    title = str(d.get("title") or "").strip()[:200]
-    if not title:
-        raise ValueError("Donne un titre à l'événement")
+def parse_range(d):
+    """(début, fin, journée entière) d'un formulaire : dates (fin exclue) ou datetimes à l'heure locale."""
     allday = bool(d.get("allday"))
     try:
         if allday:
@@ -247,6 +243,16 @@ def write_event(user, cal_id, d, uid=None, file=None):
         raise ValueError("Date invalide") from None
     if e <= s:
         raise ValueError("La fin doit être après le début")
+    return s, e, allday
+
+
+def build_ics(d, by=None, uid=None):
+    """Nouvel événement au format iCalendar : (uid, texte)."""
+    vobject = _vobj()
+    title = str(d.get("title") or "").strip()[:200]
+    if not title:
+        raise ValueError("Donne un titre à l'événement")
+    s, e, allday = parse_range(d)
     from dateutil.tz import tzutc
     utc = tzutc()  # vobject ne reconnaît pas datetime.timezone.utc
     cal = vobject.iCalendar()
@@ -264,18 +270,23 @@ def write_event(user, cal_id, d, uid=None, file=None):
         ev.add("description").value = str(d["notes"])[:5000]
     if d.get("recur") in ("daily", "weekly", "monthly", "yearly"):
         ev.add("rrule").value = f"FREQ={d['recur'].upper()}"
+    elif d.get("recur") == "custom" and d.get("_rrule"):
+        ev.add("rrule").value = d["_rrule"]
     if str(d.get("reminder") or "").strip() not in ("", "None"):
         al = ev.add("valarm")
         al.add("action").value = "DISPLAY"
         al.add("description").value = title
         al.add("trigger").value = timedelta(minutes=-int(d["reminder"]))
-    ev.add("x-bt-by").value = user
-    if file and file.endswith(".ics") and "/" not in file:
-        old = file
-    else:
-        old = None
+    if by:
+        ev.add("x-bt-by").value = by
+    return uid, cal.serialize()
+
+
+def write_event(user, cal_id, d, uid=None, file=None):
+    path = cal_path(user, cal_id)
+    uid, data = build_ics(d, by=user, uid=uid)  # avant d'ouvrir le fichier : une erreur ne laisse pas de fichier vide
+    old = file if file and file.endswith(".ics") and "/" not in file else None
     fname = old or re.sub(r"[^\w.@-]", "_", uid) + ".ics"
-    data = cal.serialize()  # avant d'ouvrir le fichier : une erreur ne laisse pas de fichier vide
     with open(os.path.join(path, fname), "w", encoding="utf-8") as f:
         f.write(data)
     return {"uid": uid, "file": fname}
@@ -294,6 +305,8 @@ def find_file(user, uid):
 @bp.get("/api/agenda")
 def overview():
     cals = [{k: v for k, v in c.items() if k != "path"} for c in calendars(g.user["name"])]
+    import extcal
+    cals += extcal.calendars(g.user["name"])
     acc = sync_accounts().get(principal_of(g.user["name"]))
     return jsonify(calendars=cals, colors=COLORS, sync={"login": principal_of(g.user["name"]), "configured": bool(acc),
                                                          "created": acc.get("created") if acc else None},
@@ -310,6 +323,8 @@ def events():
     if (end - start).days > 400:
         raise ValueError("Période trop longue")
     out = list_events(g.user["name"], start, end)
+    import extcal
+    out += extcal.list_events(g.user["name"], start, end)
     try:  # échéances de Paperasse (lecture seule)
         import paperasse
         import settings
@@ -328,6 +343,9 @@ def events():
 @bp.post("/api/agenda/events")
 def create():
     d = request.get_json(silent=True) or {}
+    if str(d.get("cal") or "").startswith("x-"):
+        import extcal
+        return jsonify(extcal.create(g.user["name"], d["cal"], d))
     r = write_event(g.user["name"], d.get("cal") or "personnel", d)
     return jsonify(r)
 
@@ -335,7 +353,25 @@ def create():
 @bp.put("/api/agenda/events/<path:uid>")
 def update(uid):
     d = request.get_json(silent=True) or {}
+    import extcal
+    user = g.user["name"]
+    if uid.startswith("x-") or str(d.get("cal") or "").startswith("x-"):
+        old_cal = extcal.split_uid(uid)[0] if uid.startswith("x-") else find_file(user, uid)[0]["id"]
+        if not d.get("cal") or d["cal"] == old_cal:
+            return jsonify(extcal.update(user, uid, d))
+        # changement d'agenda entre Bêta Tool et un agenda raccordé : on recrée puis on supprime l'ancien
+        d = {**d, "recur": "" if d.get("recur") == "custom" else d.get("recur")}
+        r = extcal.create(user, d["cal"], d) if d["cal"].startswith("x-") else write_event(user, d["cal"], d)
+        if uid.startswith("x-"):
+            extcal.delete(user, uid)
+        else:
+            c, fname = find_file(user, uid)
+            os.remove(os.path.join(c["path"], fname))
+        return jsonify(r)
     c, fname = find_file(g.user["name"], uid)
+    if d.get("recur") == "custom":  # répétition personnalisée (créée sur le téléphone) : on la garde
+        ev = next((ev for f, ev in read_items(c["path"]) if f == fname and hasattr(ev, "rrule")), None)
+        d["_rrule"] = ev.rrule.value if ev is not None else None
     if d.get("cal") and d["cal"] != c["id"]:  # changement d'agenda : on déplace le fichier
         os.remove(os.path.join(c["path"], fname))
         return jsonify(write_event(g.user["name"], d["cal"], d, uid=uid))
@@ -344,6 +380,10 @@ def update(uid):
 
 @bp.delete("/api/agenda/events/<path:uid>")
 def delete(uid):
+    if uid.startswith("x-"):
+        import extcal
+        extcal.delete(g.user["name"], uid)
+        return jsonify(ok=True)
     c, fname = find_file(g.user["name"], uid)
     os.remove(os.path.join(c["path"], fname))
     return jsonify(ok=True)

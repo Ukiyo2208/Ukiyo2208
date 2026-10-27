@@ -29,7 +29,8 @@ fichier n'est envoyé à un service externe.
 | **Scanner** | Photo d'un document → bords détectés, page redressée et nettoyée (filtres « document »), PDF avec texte cherchable. |
 | **Paperasse** | Factures, fiches de paie, impôts… lus (OCR), reconnus, renommés et rangés par catégorie et année ; échéances avec rappels ; recherche dans le texte. |
 | **Stockage** | Carte de l'espace occupé, plus gros fichiers, doublons (comparaison du contenu), suggestions de rangement d'un dossier (avec annulation). |
-| **Agenda** | Agendas perso et agenda « Famille » partagé, rappels, synchronisés dans les deux sens avec les téléphones (CalDAV, Radicale). |
+| **Mails** | Boîtes iCloud, Gmail, Outlook, Orange, Free… (IMAP/SMTP) : lecture sûre (images pisteuses bloquées), réponses, pièces jointes vers le NAS ou Paperasse, notification des nouveaux mails. |
+| **Agenda** | Agendas perso et agenda « Famille » partagé, rappels, synchronisés dans les deux sens avec les téléphones (CalDAV, Radicale), plus tes agendas iCloud, Google, Outlook, Nextcloud et liens .ics raccordés. |
 | **Recettes** | Import depuis un lien (Marmiton, 750g…), portions ajustables, mode cuisine avec minuteurs, liste de courses partagée triée par rayon. |
 | **Traduction** | Textes, documents (Word, OpenDocument, PDF) et sous-titres traduits sur le NAS (Argos Translate), sans service en ligne. |
 | **VPN** | Accès à la maison depuis l'extérieur avec WireGuard (wg-easy) : appareils, QR codes, état des connexions. Optionnel. |
@@ -147,6 +148,40 @@ Le serveur CalDAV [Radicale](https://radicale.org) (GPL v3) est intégré à Bê
 L'agenda « Famille » est partagé par tous les comptes. Les fichiers sont dans `/data/agenda` (à sauvegarder).
 Hors de la maison, passe par une adresse en HTTPS ou par le VPN.
 
+## Mails et agendas raccordés (comptes en ligne)
+
+Chaque compte Bêta Tool raccorde ses propres boîtes mail et agendas (outil Mails, « Raccorder un agenda » dans
+l'Agenda, ou Réglages → Comptes en ligne). Rien n'est copié sur le NAS : les mails et événements restent chez le
+fournisseur, Bêta Tool les lit et y écrit directement. Les mots de passe et jetons sont chiffrés (AES-GCM) avec la clé
+`/data/accounts/cle.bin` (garde-la avec tes sauvegardes de `/data`).
+
+| Service | Mails | Agenda | Connexion |
+|---|---|---|---|
+| iCloud | oui | oui (lecture et écriture) | adresse Apple + **mot de passe pour app** ([account.apple.com](https://account.apple.com) → Connexion et sécurité) |
+| Gmail / Google | oui | lecture seule par l'adresse secrète iCal, ou lecture et écriture avec la connexion Google | **mot de passe d'application** ([myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), validation en deux étapes requise) |
+| Outlook, Hotmail, Microsoft 365 | oui | oui (lecture et écriture) | connexion Microsoft (code à saisir sur microsoft.com/devicelogin) ; sans elle : agenda publié en .ics, lecture seule |
+| Orange, Free, SFR, La Poste, Yahoo, autres | oui (réglages détectés automatiquement) | — | adresse + mot de passe (ou mot de passe d'application) |
+| Nextcloud, Synology Calendar, Fastmail… | — | oui (CalDAV) | adresse CalDAV + identifiant + mot de passe |
+| Lien .ics / webcal | — | lecture seule (jours fériés, vacances scolaires…) | l'adresse du lien |
+
+Les nouveaux mails de la boîte de réception sont vérifiés toutes les 2 minutes (`MAIL_POLL_SECONDS`) et envoyés en
+notification push.
+
+**Activer la connexion Microsoft (Outlook)** — une fois, par un administrateur, gratuit :
+1. [portal.azure.com](https://portal.azure.com) → Inscriptions d'applications → Nouvelle inscription « Bêta Tool »,
+   comptes « annuaire organisationnel et comptes Microsoft personnels », sans URI de redirection.
+2. Authentification → « Autoriser les flux clients publics » : Oui.
+3. Copie l'ID d'application (client) dans Réglages → Comptes en ligne (ou `MS_CLIENT_ID` dans `.env`).
+
+**Activer la connexion Google Agenda (lecture et écriture)** — une fois, par un administrateur :
+1. [console.cloud.google.com](https://console.cloud.google.com) → nouveau projet, active « Google Calendar API ».
+2. Écran de consentement OAuth (externe) avec la portée `…/auth/calendar`, puis **Publier l'application** (sinon
+   la connexion expire au bout de 7 jours ; Google affichera « application non validée », c'est normal pour un usage
+   familial).
+3. Identifiants → ID client OAuth de type « Application de bureau » ; copie l'ID et le secret dans Réglages → Comptes
+   en ligne (ou `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`). À la connexion, Google renvoie vers
+   `http://127.0.0.1:53682/…` (page d'erreur) : on colle cette adresse dans Bêta Tool, qui en extrait le code.
+
 ## Paperasse et Scanner
 
 Les documents sont rangés dans `Documents (Bêta Work)/Paperasse/<Catégorie>/<Année>/` (variable `PAPERS_DIR` pour un
@@ -247,6 +282,9 @@ au public : télécharger des contenus protégés pour d'autres engage ta respon
 5. Ouvre `http://IP-DU-NAS:8080`, puis va dans Réglages → Comptes pour créer ton compte administrateur.
 
 Les modèles d'IA (transcription ≈ 500 Mo pour `small`, détourage ≈ 180 Mo) se téléchargent au premier usage dans `/data/models`.
+
+**Passer à la version 2.2** (Mails, agendas raccordés) : Réglages → Mises à jour → glisse
+`beta-tool-update-2.2.0.zip`, depuis une 2.0 ou une 2.1.
 
 **Passer à la version 2.1** depuis une 2.0 : Réglages → Mises à jour → glisse `beta-tool-update-2.1.0.zip` (les
 nouvelles dépendances Radicale et SentencePiece sont installées automatiquement). Pour une installation neuve, utilise

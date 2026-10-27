@@ -2,6 +2,7 @@
 import { $, esc, icon, toast, modal, closePanel } from "../ui.js";
 import { api } from "../state.js";
 import { pageHead } from "../main.js";
+import { connect, editAccount, PROVIDER_ICON } from "../accounts.js";
 
 const DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 const RECUR = [["", "Ne se répète pas"], ["daily", "Tous les jours"], ["weekly", "Toutes les semaines"], ["monthly", "Tous les mois"], ["yearly", "Tous les ans"]];
@@ -26,6 +27,10 @@ export async function render(root, parts, query) {
         <div id="ag-cals"></div>
         <button class="btn ghost small wide" id="ag-addcal">${icon("plus")}Nouvel agenda</button>
         <label class="btn ghost small wide" style="margin-top:6px"><input type="file" accept=".ics,text/calendar" hidden id="ag-import">${icon("upload")}Importer un .ics</label>
+        <div class="card-title ag-ext-title">${icon("globe")}Agendas raccordés</div>
+        <div id="ag-ext"></div>
+        <button class="btn ghost small wide" id="ag-connect">${icon("plus")}Raccorder un agenda</button>
+        <p class="hint ag-ext-hint">iCloud, Google, Outlook, Nextcloud, jours fériés…</p>
       </aside>
       <div class="ag-main">
         <div class="ag-bar">
@@ -44,6 +49,7 @@ export async function render(root, parts, query) {
   $("#ag-sync").onclick = syncPanel;
   $("#ag-addcal").onclick = addCalendar;
   $("#ag-import").onchange = importIcs;
+  $("#ag-connect").onclick = () => connect({ want: "cal", onDone: reloadCals });
   $("#ag-view").onchange = e => { view = e.target.value; try { localStorage.setItem("bt-agenda-view", view); } catch {} paint(); };
   root.querySelectorAll("[data-nav]").forEach(b => b.onclick = () => {
     const n = +b.dataset.nav;
@@ -58,17 +64,41 @@ export async function render(root, parts, query) {
 const nextHour = () => `${String(Math.min(23, new Date().getHours() + 1)).padStart(2, "0")}:00`;
 
 function paintCals() {
-  const cals = [...info.calendars, { id: "_paperasse", name: "Échéances (Paperasse)", color: "#f59e0b", readonly: true }];
-  $("#ag-cals").innerHTML = cals.map(c => `<label class="ag-cal"><input type="checkbox" data-cal="${c.id}" ${hidden.has(c.id) ? "" : "checked"}>
-      <span class="ag-dot" style="background:${c.color}"></span><span class="grow">${esc(c.name)}${c.shared ? ` <small class="meta">· partagé</small>` : ""}</span>
-      ${c.readonly ? "" : `<button class="icon-btn plain" data-editcal="${c.id}" title="Modifier">${icon("settings")}</button>`}</label>`).join("");
-  $("#ag-cals").onchange = e => {
-    const id = e.target.dataset.cal;
-    e.target.checked ? hidden.delete(id) : hidden.add(id);
-    try { localStorage.setItem("bt-agenda-hidden", JSON.stringify([...hidden])); } catch {}
-    paint();
-  };
-  $("#ag-cals").onclick = e => { const b = e.target.closest("[data-editcal]"); if (b) { e.preventDefault(); editCalendar(info.calendars.find(c => c.id === b.dataset.editcal)); } };
+  const local = info.calendars.filter(c => !c.external);
+  const ext = info.calendars.filter(c => c.external);
+  const line = c => `<label class="ag-cal"><input type="checkbox" data-cal="${c.id}" ${hidden.has(c.id) ? "" : "checked"}>
+      <span class="ag-dot" style="background:${c.color}"></span><span class="grow">${esc(c.name)}${c.shared ? ` <small class="meta">· partagé</small>` : ""}
+      ${c.external ? `<small class="meta ag-acc">${icon(PROVIDER_ICON[c.provider] || "globe")}${esc(c.account_label || "")}${c.readonly ? " · lecture seule" : ""}</small>` : ""}</span>
+      ${c.error ? `<span class="ag-warn" title="${esc(c.error)}">${icon("alert")}</span>` : ""}
+      ${c.external ? `<button class="icon-btn plain" data-editacc="${c.account}" title="Réglages du compte">${icon("settings")}</button>`
+        : c.readonly ? "" : `<button class="icon-btn plain" data-editcal="${c.id}" title="Modifier">${icon("settings")}</button>`}</label>`;
+  $("#ag-cals").innerHTML = [...local, { id: "_paperasse", name: "Échéances (Paperasse)", color: "#f59e0b", readonly: true }].map(line).join("");
+  $("#ag-ext").innerHTML = ext.map(line).join("");
+  $(".ag-ext-hint").hidden = ext.length > 0;
+  for (const box of [$("#ag-cals"), $("#ag-ext")]) {
+    box.onchange = e => {
+      const id = e.target.dataset.cal;
+      e.target.checked ? hidden.delete(id) : hidden.add(id);
+      try { localStorage.setItem("bt-agenda-hidden", JSON.stringify([...hidden])); } catch {}
+      paint();
+    };
+    box.onclick = async e => {
+      const b = e.target.closest("[data-editcal]");
+      if (b) { e.preventDefault(); return editCalendar(info.calendars.find(c => c.id === b.dataset.editcal)); }
+      const a = e.target.closest("[data-editacc]");
+      if (a) {
+        e.preventDefault();
+        const acc = (await api("/api/accounts")).accounts.find(x => x.id === a.dataset.editacc);
+        if (acc) editAccount(acc, reloadCals);
+      }
+    };
+  }
+}
+
+async function reloadCals() {
+  info = await api("/api/agenda");
+  paintCals();
+  paint();
 }
 
 async function paint() {
@@ -88,6 +118,10 @@ async function paint() {
   }
   $("#ag-title").textContent = title.charAt(0).toUpperCase() + title.slice(1);
   const evs = (await api(`/api/agenda/events?start=${iso(start)}&end=${iso(end)}`)).filter(e => !hidden.has(e.cal));
+  if (info.calendars.some(c => c.external)) {  // erreurs des agendas raccordés (mot de passe changé…)
+    const fresh = await api("/api/agenda").catch(() => null);
+    if (fresh && JSON.stringify(fresh.calendars.map(c => c.error)) !== JSON.stringify(info.calendars.map(c => c.error))) { info = fresh; paintCals(); }
+  }
   ({ mois: month, semaine: week, liste: upcoming })[view](body, evs, start);
   body.onclick = e => {
     const ev = e.target.closest("[data-ev]");
@@ -118,7 +152,8 @@ function month(body, evs, start) {
   body.querySelectorAll("[data-more]").forEach(b => b.onclick = e => {
     e.stopPropagation();
     const key = b.dataset.more;
-    const list = evs.map((x, n) => [x, n]).filter(([x]) => x.start.slice(0, 10) <= key && x.end.slice(0, 10) >= key);
+    const list = evs.map((x, n) => [x, n]).filter(([x]) => x.start.slice(0, 10) <= key && (x.end.slice(0, 10) > key || x.start.slice(0, 10) === key
+      || (!x.allday && x.end.slice(0, 10) === key && x.end.slice(11) !== "00:00:00")));
     const mm = modal(new Date(key + "T12:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }),
       `<div class="ag-daylist">${list.map(([x, n]) => chip(x, n)).join("")}</div>`, { ic: "calendar" });
     mm.onclick = ev2 => { const c = ev2.target.closest("[data-ev]"); if (c) { closePanel(); setTimeout(() => open(evs[+c.dataset.ev]), 250); } };
@@ -132,7 +167,7 @@ function week(body, evs, start) {
   body.innerHTML = `<div class="ag-week">
     <div class="ag-wrow ag-whead"><span></span>${days.map(d => `<span class="${sameDay(d, today) ? "today" : ""}">${DAYS[(d.getDay() + 6) % 7]} <b>${d.getDate()}</b></span>`).join("")}</div>
     <div class="ag-wrow ag-allday"><span class="meta">Journée</span>${days.map(d => `<div data-day="${iso(d)}">${evs.map((e, n) => [e, n])
-      .filter(([e]) => e.allday && e.start.slice(0, 10) <= iso(d) && e.end.slice(0, 10) >= iso(d)).map(([e, n]) => chip(e, n, false)).join("")}</div>`).join("")}</div>
+      .filter(([e]) => e.allday && e.start.slice(0, 10) <= iso(d) && (e.end.slice(0, 10) > iso(d) || e.start.slice(0, 10) === iso(d))).map(([e, n]) => chip(e, n, false)).join("")}</div>`).join("")}</div>
     <div class="ag-wscroll"><div class="ag-wgrid" style="height:${(H1 - H0) * PX}px">
       <div class="ag-hours">${[...Array(H1 - H0)].map((_, h) => `<span style="top:${h * PX}px">${H0 + h}h</span>`).join("")}</div>
       ${days.map(d => `<div class="ag-col ${sameDay(d, today) ? "today" : ""}">
@@ -179,13 +214,27 @@ function upcoming(body, evs) {
 }
 
 function open(e) {
-  if (e.readonly) { if (e.link) location.hash = e.link; return; }
+  if (e.readonly) { if (e.link) location.hash = e.link; else details(e); return; }
   edit(e);
+}
+
+function details(e) {
+  const c = info.calendars.find(x => x.id === e.cal);
+  const d1 = new Date(e.start), d2 = new Date(e.end);
+  const day = d => d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  const when = e.allday ? (iso(d1) === iso(addDays(d2, -1)) || iso(d1) === iso(d2) ? day(d1) : `${day(d1)} → ${day(addDays(d2, -1))}`)
+    : `${day(d1)}, ${hm(e.start)} – ${hm(e.end)}`;
+  modal(e.title, `<div class="ag-details">
+    <p>${icon("clock")}<span>${when.charAt(0).toUpperCase() + when.slice(1)}</span></p>
+    ${e.location ? `<p>${icon("pin")}<span>${esc(e.location)}</span></p>` : ""}
+    ${c ? `<p><span class="ag-dot" style="background:${c.color}"></span><span>${esc(c.name)} <small class="meta">· ${esc(c.account_label || "")}</small></span></p>` : ""}
+    ${e.notes ? `<p class="ag-notes">${esc(e.notes)}</p>` : ""}
+    <p class="hint">${icon("lock")} Agenda en lecture seule : modifie cet événement chez ${esc(c?.account_label || "ton fournisseur")}.</p></div>`, { ic: "calendar" });
 }
 
 function edit(e) {
   const isNew = !e.uid;
-  const cals = info.calendars;
+  const cals = info.calendars.filter(c => !c.readonly);
   const allday = !!e.allday;
   const sd = (e.start || iso(new Date()) + "T09:00").slice(0, 16), ed = (e.end || "").slice(0, 16);
   const endDefault = ed || (() => { const d = new Date(sd); d.setHours(d.getHours() + 1); return iso(d) + "T" + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); })();
@@ -198,7 +247,7 @@ function edit(e) {
       <div><label class="field">Fin</label><input type="datetime-local" name="end" value="${endDefault}" data-t><input type="date" name="endd" value="${endDay}" data-d></div>
     </div>
     <div class="grid2">
-      <div><label class="field">Agenda</label><select name="cal" style="width:100%">${cals.map(c => `<option value="${c.id}" ${c.id === (e.cal || "personnel") ? "selected" : ""}>${esc(c.name)}${c.shared ? " (partagé)" : ""}</option>`).join("")}</select></div>
+      <div><label class="field">Agenda</label><select name="cal" style="width:100%">${cals.map(c => `<option value="${c.id}" ${c.id === (e.cal || "personnel") ? "selected" : ""}>${esc(c.name)}${c.shared ? " (partagé)" : c.external ? ` (${esc(c.account_label)})` : ""}</option>`).join("")}</select></div>
       <div><label class="field">Rappel</label><select name="reminder" style="width:100%">${REMIND.map(([v, l]) => `<option value="${v}" ${String(e.reminder ?? (isNew ? "30" : "")) === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
       <div><label class="field">Répétition</label><select name="recur" style="width:100%">${RECUR.map(([v, l]) => `<option value="${v}" ${(e.recur || "") === v ? "selected" : ""}>${l}</option>`).join("")}
         ${e.recur === "custom" ? `<option value="custom" selected>Personnalisée (gardée)</option>` : ""}</select></div>
@@ -224,8 +273,9 @@ function edit(e) {
     ev.preventDefault();
     const day = f.allday.checked;
     const data = { title: f.title.value, allday: day, start: day ? f.startd.value : f.start.value, end: day ? f.endd.value : f.end.value,
-      cal: f.cal.value, reminder: f.reminder.value, recur: f.recur.value === "custom" ? e.recur : f.recur.value, location: f.location.value, notes: f.notes.value };
-    if (f.recur.value === "custom") data.recur = "";
+      cal: f.cal.value, reminder: f.reminder.value, recur: f.recur.value === "custom" ? e.recur : f.recur.value, location: f.location.value, notes: f.notes.value,
+      orig_start: e.start };
+    if (f.recur.value === "custom") data.recur = "custom";  // répétition personnalisée : gardée telle quelle
     try {
       await api(isNew ? "/api/agenda/events" : `/api/agenda/events/${encodeURIComponent(e.uid)}`, { method: isNew ? "POST" : "PUT", json: data });
       closePanel();

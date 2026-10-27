@@ -26,6 +26,7 @@ TOOLS = {
     "traduction": (["/api/translate"], True),
     "questionnaires": (["/api/forms", "/f/", "/api/public/forms"], True),
     "notes": (["/api/notes"], True),
+    "mails": (["/api/mail"], True),
     "agenda": (["/api/agenda", "/dav"], True),
     "recettes": (["/api/recipes", "/api/shopping"], True),
     "qr": ([], True),

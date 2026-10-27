@@ -53,8 +53,10 @@ export const TOOLS = [
   { id: "sauvegardes", name: "Sauvegardes", icon: "shield", tile: "bleu-vert", cat: "fichiers", load: () => import("./tools/backup.js"), admin: true,
     desc: "Copie automatique de tes dossiers chaque nuit, avec historique.", chips: ["Planifié", "Incrémental", "Rapport"] },
 
+  { id: "mails", name: "Mails", icon: "mail", tile: "bleu-vert", cat: "maison", load: () => import("./tools/mail.js"),
+    desc: "Tes boîtes mail iCloud, Gmail, Outlook, Orange… réunies, avec notifications.", chips: ["iCloud", "Gmail", "Outlook"] },
   { id: "agenda", name: "Agenda", icon: "calendar", tile: "", cat: "maison", load: () => import("./tools/agenda.js"),
-    desc: "Agenda perso et agenda Famille partagé, synchronisés avec vos téléphones.", chips: ["Famille", "Rappels", "iPhone / Android"] },
+    desc: "Agenda Famille partagé, synchronisé avec vos téléphones, et tes agendas iCloud, Google, Outlook.", chips: ["Famille", "iCloud / Google", "Outlook"] },
   { id: "recettes", name: "Recettes", icon: "utensils", tile: "rose", cat: "maison", load: () => import("./tools/recipes.js"),
     desc: "Ton carnet de recettes, importées d'un lien, et la liste de courses partagée.", chips: ["Import", "Mode cuisine", "Courses"] },
   { id: "presse-papier", name: "Presse-papier", icon: "clipboard", tile: "bleu-vert", cat: "utilitaires", load: () => import("./tools/clipboard.js"),

@@ -12,7 +12,7 @@ MAX = 4000
 # Titre des notifications push, par outil
 TITLES = {"telecharger": "Téléchargeur", "convertir": "Convertisseur", "video": "Compresseur vidéo", "transcription": "Transcription",
           "image": "Studio Image", "drop": "Bêta Drop", "questionnaires": "Questionnaires", "sauvegardes": "Sauvegardes",
-          "abonnements": "Abonnements", "surveillance": "Surveillance", "agenda": "Agenda", "paperasse": "Paperasse",
+          "abonnements": "Abonnements", "mails": "Mails", "surveillance": "Surveillance", "agenda": "Agenda", "paperasse": "Paperasse",
           "presse-papier": "Presse-papier", "recettes": "Recettes", "reglages": "Bêta Tool", "traduction": "Traduction",
           "scanner": "Scanner", "stockage": "Stockage"}
 
