@@ -28,6 +28,7 @@ import forms
 import imagetool
 import links
 import mail
+import mailrules
 import media
 import monitor
 import notes
@@ -618,7 +619,7 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mail, contacts, api):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,

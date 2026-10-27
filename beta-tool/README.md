@@ -195,11 +195,29 @@ adresse au hasard, extension de domaine inhabituelle, liens trompeurs ou vers un
 - « C'est un faux mail » / « Ce mail est fiable » retiennent l'expéditeur ; les contacts ne sont jamais signalés.
 Le rangement automatique se désactive par boîte (Réglages → Comptes en ligne).
 
+### Règles de tri et newsletters
+
+- **Règles** (bouton « Règles » dans Mails) : conditions sur l'expéditeur, l'objet, le texte, les destinataires,
+  « c'est une newsletter », « pièce jointe », « l'expéditeur est dans tel carnet » ; actions : ranger dans un dossier
+  (créé au besoin), marquer comme lu, suivre, ne pas notifier, envoyer les pièces jointes à Paperasse, corbeille.
+  Elles s'appliquent aux nouveaux mails (après le filtre anti-faux mails) et, à la demande, aux 300 derniers reçus.
+- **Se désabonner** : en haut d'une newsletter, un bandeau utilise l'en-tête `List-Unsubscribe` — en un clic quand
+  l'expéditeur accepte la désinscription automatique (RFC 8058), sinon par mail, sinon en ouvrant sa page de
+  désinscription (lien repéré dans le mail). « Supprimer ses anciens mails » met ensuite les siens à la corbeille.
+  Jamais proposé sur un faux mail (se désabonner confirmerait ton adresse).
+
 ## Contacts
 
 Les carnets d'adresses sont des collections CardDAV du serveur Radicale de l'Agenda (`/data/agenda`), avec le même
 identifiant et le même mot de passe de synchronisation. iPhone : Réglages → Contacts → Comptes → Ajouter un compte →
 Autre → Compte CardDAV. Android : DAVx⁵ (même compte que l'agenda). Le carnet « Famille » est partagé par tous.
+
+**Récupérer des contacts existants** (bouton « Récupérer des contacts ») : Bêta Tool cherche les fichiers `.vcf` et
+`.csv` dans les dossiers qu'il voit (sauvegardes de téléphone, exports iCloud / Google / Outlook), ou copie les
+contacts d'un autre serveur CardDAV. Les doublons (même mail, même téléphone ou même nom) sont fusionnés, et
+« Doublons » nettoie un carnet existant. Sur un **NAS UGREEN** (UGOS Pro), monte le dossier qui contient la
+sauvegarde des contacts, par exemple `- /volume1/Sauvegardes:/media/sauvegardes` dans `docker-compose.yml` et
+`EXTRA_ROOTS=Sauvegardes=/media/sauvegardes` dans `.env`.
 
 ## API (Home Assistant, Raccourcis, scripts…)
 
@@ -322,6 +340,9 @@ au public : télécharger des contenus protégés pour d'autres engage ta respon
 5. Ouvre `http://IP-DU-NAS:8080`, puis va dans Réglages → Comptes pour créer ton compte administrateur.
 
 Les modèles d'IA (transcription ≈ 500 Mo pour `small`, détourage ≈ 180 Mo) se téléchargent au premier usage dans `/data/models`.
+
+**Passer à la version 2.4** (règles de tri, désabonnement, récupération des contacts) : Réglages → Mises à jour →
+glisse `beta-tool-update-2.4.0.zip`.
 
 **Passer à la version 2.3** (Contacts, filtre anti-faux mails, API) : Réglages → Mises à jour → glisse
 `beta-tool-update-2.3.0.zip`, depuis une 2.0, 2.1 ou 2.2.

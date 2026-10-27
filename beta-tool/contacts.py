@@ -356,31 +356,14 @@ def delete_book(bid):
 
 @bp.post("/api/contacts/import")
 def import_vcf():
-    """Importe un fichier .vcf (export iCloud, Google Contacts, Outlook…) dans un carnet."""
-    vobject = _vobj()
+    """Importe un fichier .vcf ou .csv (export iCloud, Google Contacts, Outlook, sauvegarde du téléphone…) en fusionnant les doublons."""
     f = request.files.get("file")
     if not f:
         raise ValueError("Aucun fichier")
     user = g.user["name"]
-    path = book_path(user, request.form.get("book") or books(user)[0]["id"])
-    text = f.read().decode("utf-8", "replace")
-    n = 0
-    try:
-        for card in vobject.readComponents(text):
-            if card.name != "VCARD":
-                continue
-            if not getattr(card, "uid", None):
-                card.add("uid").value = str(uuid.uuid4())
-            if not getattr(card, "fn", None):
-                card.add("fn").value = "(sans nom)"
-            with open(os.path.join(path, re.sub(r"[^\w.@-]", "_", str(card.uid.value))[:120] + ".vcf"), "w", encoding="utf-8") as out:
-                out.write(card.serialize())
-            n += 1
-    except Exception:  # noqa: BLE001
-        if not n:
-            raise ValueError("Fichier .vcf illisible") from None
-    _cache.clear()
-    return jsonify(imported=n)
+    cards, rows = parse_file(f.filename or "contacts.vcf", f.read())
+    r = import_cards(user, request.form.get("book") or books(user)[0]["id"], cards, rows)
+    return jsonify(r | {"imported": r["added"] + r["merged"]})
 
 
 @bp.get("/api/contacts/export")
@@ -419,3 +402,306 @@ def sync_info():
 def sync_password():
     ensure(g.user["name"])
     return jsonify(login=agenda.principal_of(g.user["name"]), password=agenda.new_sync_password(g.user["name"]))
+
+
+# --- Récupérer des contacts : fichiers du NAS (sauvegardes de téléphone…), CSV, autre serveur CardDAV ---------
+
+def _digits(phone):
+    d = re.sub(r"\D", "", phone or "")
+    return d[-9:] if len(d) >= 9 else d  # 06 12… et +33 6 12… se ressemblent
+
+
+def _key_index(items):
+    idx = {}
+    for c in items:
+        for e in c["emails"]:
+            idx.setdefault("m:" + e["value"].lower(), c)
+        for p in c["phones"]:
+            if _digits(p["value"]):
+                idx.setdefault("t:" + _digits(p["value"]), c)
+        if c["first"] or c["last"]:
+            idx.setdefault("n:" + f"{c['first']} {c['last']}".strip().lower(), c)
+    return idx
+
+
+def _keys(c):
+    return (["m:" + e["value"].lower() for e in c["emails"]] + ["t:" + _digits(p["value"]) for p in c["phones"] if _digits(p["value"])]
+            + (["n:" + f"{c['first']} {c['last']}".strip().lower()] if c["first"] or c["last"] else []))
+
+
+def _merge_into(user, book, existing, new):
+    """Ajoute à un contact existant ce que l'autre fiche apporte (mails, téléphones, adresses, champs vides)."""
+    d = {k: existing[k] for k in ("first", "last", "org", "title", "birthday", "notes", "url")}
+    changed = False
+    for k in ("org", "title", "birthday", "notes", "url"):
+        if not d[k] and new.get(k):
+            d[k], changed = new[k], True
+    d["emails"], d["phones"], d["addresses"] = list(existing["emails"]), list(existing["phones"]), list(existing["addresses"])
+    for e in new["emails"]:
+        if e["value"].lower() not in {x["value"].lower() for x in d["emails"]}:
+            d["emails"].append(e); changed = True
+    for p in new["phones"]:
+        if _digits(p["value"]) and _digits(p["value"]) not in {_digits(x["value"]) for x in d["phones"]}:
+            d["phones"].append(p); changed = True
+    for a in new["addresses"]:
+        if (a.get("street") or a.get("city")) and (a.get("street"), a.get("city")) not in {(x["street"], x["city"]) for x in d["addresses"]}:
+            d["addresses"].append(a); changed = True
+    if changed:
+        bd = d["birthday"]
+        d["birthday"] = bd if re.fullmatch(r"\d{4}-\d{2}-\d{2}|\d{2}-\d{2}", bd or "") else ""
+        write(user, book["id"], d, cid=existing["id"], fname=existing["file"], old_path=os.path.join(book["path"], existing["file"]))
+    return changed
+
+
+def import_cards(user, book_id, cards=(), rows=()):
+    """Importe des fiches vCard (objets vobject) et/ou des fiches simples (dict) dans un carnet, en fusionnant les doublons.
+    Renvoie {added, merged, same}."""
+    vobject = _vobj()
+    all_books = {b["id"]: b for b in books(user)}
+    book = all_books[book_id]
+    idx = _key_index([c for b in all_books.values() for c in read_book(b)])  # un contact déjà dans un autre carnet y est complété
+    added = merged = same = 0
+    pending = [(c, None) for c in cards] + [(None, r) for r in rows]
+    for card, row in pending:
+        if card is not None:
+            if not getattr(card, "fn", None):
+                card.add("fn").value = "(sans nom)"
+            try:
+                info = to_dict(card, book, "x.vcf")
+            except Exception:  # noqa: BLE001
+                continue
+        else:
+            info = {"first": row.get("first", ""), "last": row.get("last", ""), "org": row.get("org", ""), "title": row.get("title", ""),
+                    "emails": row.get("emails", []), "phones": row.get("phones", []), "addresses": row.get("addresses", []),
+                    "birthday": row.get("birthday", ""), "notes": row.get("notes", ""), "url": "", "name": ""}
+            if not (info["first"] or info["last"] or info["org"]):
+                continue
+        hit = next((idx[k] for k in _keys(info) if k in idx), None)
+        if hit:
+            if _merge_into(user, all_books.get(hit.get("book"), book), hit, info):
+                merged += 1
+            else:
+                same += 1
+            continue
+        if card is not None:  # fiche gardée telle quelle (photo, champs du téléphone)
+            if not getattr(card, "uid", None):
+                card.add("uid").value = str(uuid.uuid4())
+            fname = re.sub(r"[^\w.@-]", "_", str(card.uid.value))[:120] + ".vcf"
+            with open(os.path.join(book["path"], fname), "w", encoding="utf-8") as out:
+                out.write(card.serialize())
+            info["id"], info["file"] = str(card.uid.value), fname
+        else:
+            r = write(user, book_id, info)
+            info["id"], info["file"] = r["id"], re.sub(r"[^\w.@-]", "_", r["id"])[:120] + ".vcf"
+        for k in _keys(info):
+            idx.setdefault(k, info)
+        added += 1
+    _cache.clear()
+    return {"added": added, "merged": merged, "same": same}
+
+
+CSV_MAP = {  # Google Contacts, Outlook, téléphones Android, tableurs en français
+    "first": ["first name", "given name", "prénom", "prenom", "firstname"],
+    "last": ["last name", "family name", "nom", "lastname", "surname", "nom de famille"],
+    "org": ["organization 1 - name", "company", "organisation", "entreprise", "société", "organization name"],
+    "title": ["organization 1 - title", "job title", "fonction", "title"],
+    "birthday": ["birthday", "anniversaire", "date de naissance"],
+    "notes": ["notes", "note"],
+}
+
+
+def parse_csv(text):
+    import csv
+    sample = text[:5000]
+    dialect = csv.Sniffer().sniff(sample, delimiters=",;\t") if sample.strip() else csv.excel
+    out = []
+    for row in csv.DictReader(io.StringIO(text), dialect=dialect):
+        low = {str(k or "").strip().lower(): str(v or "").strip() for k, v in row.items()}
+        rec = {k: next((low[c] for c in cols if low.get(c)), "") for k, cols in CSV_MAP.items()}
+        if not (rec["first"] or rec["last"]) and low.get("name"):
+            parts = low["name"].split()
+            rec["first"], rec["last"] = " ".join(parts[:-1]) or parts[0], parts[-1] if len(parts) > 1 else ""
+        rec["emails"] = [{"type": "WORK" if "work" in k or "travail" in k or "business" in k else "HOME", "value": v.split(" ::: ")[0]}
+                         for k, v in low.items() if v and "@" in v and ("mail" in k or "courriel" in k) and "type" not in k]
+        rec["phones"] = [{"type": "CELL" if any(w in k for w in ("mobile", "cell", "portable")) else "WORK" if any(w in k for w in ("work", "business", "travail", "bureau")) else "HOME",
+                          "value": v.split(" ::: ")[0]} for k, v in low.items()
+                         if v and re.search(r"phone|tél|tel|mobile|portable", k) and "type" not in k and len(re.sub(r"\D", "", v)) >= 6]
+        bd = rec["birthday"]
+        m = re.match(r"(\d{1,2})/(\d{1,2})/(\d{4})", bd)
+        rec["birthday"] = f"{m[3]}-{int(m[2]):02d}-{int(m[1]):02d}" if m else bd[:10] if re.match(r"\d{4}-\d{2}-\d{2}", bd) else ""
+        out.append(rec)
+    return out
+
+
+def parse_file(name, data):
+    """(fiches vCard, lignes CSV) d'un fichier .vcf ou .csv."""
+    text = data.decode("utf-8-sig", "replace") if isinstance(data, bytes) else data
+    if name.lower().endswith(".csv"):
+        return [], parse_csv(text)
+    vobject = _vobj()
+    cards = []
+    try:
+        for card in vobject.readComponents(text, ignoreUnreadable=True):
+            if card.name == "VCARD":
+                cards.append(card)
+    except Exception:  # noqa: BLE001
+        if not cards:
+            raise ValueError("Fichier de contacts illisible") from None
+    return cards, []
+
+
+@bp.get("/api/contacts/scan")
+def scan_nas():
+    """Fichiers de contacts présents sur le NAS (sauvegardes de téléphone, exports…)."""
+    import roots
+    found, seen_dirs, t0 = [], 0, time.time()
+    for r in roots.all_roots():
+        base = os.path.realpath(r["path"])
+        for dirpath, dirnames, filenames in os.walk(base):
+            seen_dirs += 1
+            dirnames[:] = [d for d in dirnames if not d.startswith((".", "@", "#")) and dirpath.count(os.sep) - base.count(os.sep) < 8]
+            if seen_dirs > 30000 or time.time() - t0 > 20:
+                dirnames[:] = []
+                break
+            for fn in filenames:
+                low = fn.lower()
+                if low.endswith((".vcf", ".vcard")) or (low.endswith(".csv") and re.search(r"contact|carnet|adress|annuaire", low)):
+                    p = os.path.join(dirpath, fn)
+                    try:
+                        st = os.stat(p)
+                        if st.st_size > 50 * 1024 ** 2:
+                            continue
+                        with open(p, "rb") as f:
+                            head = f.read(min(st.st_size, 5 * 1024 ** 2))
+                        n = head.count(b"BEGIN:VCARD") if not low.endswith(".csv") else max(0, head.count(b"\n") - 1)
+                    except OSError:
+                        continue
+                    if n:
+                        found.append({"root": r["id"], "root_label": r["label"], "path": roots.relative(r["id"], p), "name": fn,
+                                      "size": st.st_size, "mtime": st.st_mtime, "count": n})
+    found.sort(key=lambda f: -f["mtime"])
+    return jsonify(files=found[:200], roots=[r["label"] for r in roots.all_roots()])
+
+
+@bp.post("/api/contacts/import-path")
+def import_path():
+    import roots
+    d = request.get_json(silent=True) or {}
+    path = roots.resolve(d.get("root"), d.get("path"))
+    if not os.path.isfile(path) or not path.lower().endswith((".vcf", ".vcard", ".csv")):
+        raise ValueError("Ce n'est pas un fichier de contacts (.vcf ou .csv)")
+    with open(path, "rb") as f:
+        cards, rows = parse_file(path, f.read())
+    user = g.user["name"]
+    return jsonify(import_cards(user, d.get("book") or books(user)[0]["id"], cards, rows))
+
+
+@bp.post("/api/contacts/carddav-import")
+def carddav_import():
+    """Copie les contacts d'un autre serveur CardDAV (Nextcloud, Radicale dans Docker, Synology Contacts…)."""
+    import requests
+    import xml.etree.ElementTree as ET
+    from urllib.parse import urljoin
+    d = request.get_json(silent=True) or {}
+    url, auth_ = str(d.get("url") or "").strip(), (str(d.get("username") or ""), str(d.get("password") or ""))
+    if not re.match(r"https?://", url):
+        raise ValueError("Adresse du serveur invalide (https://…)")
+    ns = {"d": "DAV:", "c": "urn:ietf:params:xml:ns:carddav"}
+
+    def call(method, target, body, depth):
+        try:
+            r = requests.request(method, target, data=body.encode(), auth=auth_, timeout=30,
+                                 headers={"Depth": str(depth), "Content-Type": "application/xml; charset=utf-8"})
+        except requests.RequestException as e:
+            raise ValueError(f"Serveur injoignable ({e.__class__.__name__})") from None
+        if r.status_code == 401:
+            raise ValueError("Identifiant ou mot de passe refusé")
+        if r.status_code != 207:
+            raise ValueError(f"Le serveur ne répond pas en CardDAV ({r.status_code}) : vérifie l'adresse")
+        return ET.fromstring(r.content)
+
+    prop = lambda p: f'<?xml version="1.0"?><d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:carddav"><d:prop>{p}</d:prop></d:propfind>'
+    root = call("PROPFIND", url, prop("<d:current-user-principal/><d:resourcetype/>"), 0)
+    href = root.findtext(".//d:current-user-principal/d:href", None, ns)
+    books_found = []
+    if root.find(".//d:resourcetype/c:addressbook", ns) is not None:
+        books_found = [url]
+    else:
+        principal = urljoin(url, href) if href else url
+        home_root = call("PROPFIND", principal, prop("<c:addressbook-home-set/>"), 0)
+        home = urljoin(principal, home_root.findtext(".//c:addressbook-home-set/d:href", "", ns) or principal)
+        listing = call("PROPFIND", home, prop("<d:resourcetype/><d:displayname/>"), 1)
+        for resp in listing.findall("d:response", ns):
+            if resp.find(".//d:resourcetype/c:addressbook", ns) is not None:
+                books_found.append(urljoin(home, resp.findtext("d:href", "", ns)))
+    if not books_found:
+        raise ValueError("Aucun carnet d'adresses trouvé sur ce serveur")
+    vobject = _vobj()
+    cards = []
+    query = ('<?xml version="1.0"?><c:addressbook-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:carddav">'
+             '<d:prop><c:address-data/></d:prop></c:addressbook-query>')
+    for b in books_found:
+        for resp in call("REPORT", b, query, 1).findall("d:response", ns):
+            data = resp.findtext(".//c:address-data", "", ns)
+            if data:
+                try:
+                    cards.append(vobject.readOne(data))
+                except Exception:  # noqa: BLE001
+                    pass
+    user = g.user["name"]
+    return jsonify(import_cards(user, d.get("book") or books(user)[0]["id"], cards) | {"books": len(books_found)})
+
+
+def duplicates(user, book_id=None):
+    groups, seen = [], set()
+    for b in books(user):
+        if book_id and b["id"] != book_id:
+            continue
+        items = read_book(b)
+        parent = {c["id"]: c["id"] for c in items}
+
+        def find_(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+        owner = {}
+        for c in items:
+            for k in _keys(c):
+                if k in owner:
+                    parent[find_(c["id"])] = find_(owner[k])
+                else:
+                    owner[k] = c["id"]
+        by = {}
+        for c in items:
+            by.setdefault(find_(c["id"]), []).append(c)
+        for grp in by.values():
+            if len(grp) > 1 and grp[0]["id"] not in seen:
+                seen.update(c["id"] for c in grp)
+                groups.append({"book": b["id"], "book_name": b["name"], "contacts": grp})
+    return groups
+
+
+@bp.get("/api/contacts/duplicates")
+def list_duplicates():
+    groups = duplicates(g.user["name"], request.args.get("book") or None)
+    return jsonify([{"book_name": gr["book_name"], "names": [c["name"] for c in gr["contacts"]],
+                     "detail": " · ".join(sorted({e["value"] for c in gr["contacts"] for e in c["emails"]} | {p["value"] for c in gr["contacts"] for p in c["phones"]}))[:200]}
+                    for gr in groups])
+
+
+@bp.post("/api/contacts/dedupe")
+def dedupe():
+    """Fusionne les doublons (même mail, même téléphone ou même nom) : une seule fiche avec toutes les infos."""
+    user = g.user["name"]
+    n = 0
+    for gr in duplicates(user, (request.get_json(silent=True) or {}).get("book") or None):
+        book = next(b for b in books(user) if b["id"] == gr["book"])
+        keep, *others = sorted(gr["contacts"], key=lambda c: -(len(c["emails"]) + len(c["phones"]) + len(c["addresses"]) + bool(c["photo"])))
+        for o in others:
+            _merge_into(user, book, keep, o)
+            keep = next((c for c in read_book(book) if c["id"] == keep["id"]), keep)
+            os.remove(os.path.join(book["path"], o["file"]))
+            n += 1
+    _cache.clear()
+    return jsonify(merged=n)

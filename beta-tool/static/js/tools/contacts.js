@@ -22,8 +22,9 @@ export async function render(el, parts) {
         <div class="card-title">${icon("users")}Carnets</div>
         <nav class="ml-folders" id="ct-books"></nav>
         <button class="btn ghost small wide" id="ct-addbook">${icon("plus")}Nouveau carnet</button>
-        <label class="btn ghost small wide" style="margin-top:6px"><input type="file" accept=".vcf,text/vcard" hidden id="ct-import">${icon("upload")}Importer un .vcf</label>
-        <a class="btn ghost small wide" id="ct-export" style="margin-top:6px">${icon("download")}Exporter</a>
+        <button class="btn ghost small wide" style="margin-top:6px" id="ct-fetch">${icon("download")}Récupérer des contacts</button>
+        <button class="btn ghost small wide" style="margin-top:6px" id="ct-dupes">${icon("users")}Doublons</button>
+        <a class="btn ghost small wide" id="ct-export" style="margin-top:6px">${icon("upload")}Exporter (.vcf)</a>
       </aside>
       <section class="ml-list card">
         <div class="ml-bar"><button class="icon-btn plain ml-only-mobile" id="ct-menu" title="Carnets">${icon("menu")}</button>
@@ -36,7 +37,8 @@ export async function render(el, parts) {
   $("#ct-sync").onclick = syncPanel;
   $("#ct-addbook").onclick = addBook;
   $("#ct-menu").onclick = () => $(".ct-layout").dataset.pane = "side";
-  $("#ct-import").onchange = importVcf;
+  $("#ct-fetch").onclick = fetchPanel;
+  $("#ct-dupes").onclick = dupesPanel;
   let t = null;
   $("#ct-q").oninput = e => { clearTimeout(t); t = setTimeout(() => { query = e.target.value.trim(); load(); }, 250); };
   await load();
@@ -205,15 +207,78 @@ function editBook(b) {
   });
 }
 
-async function importVcf(e) {
-  const file = e.target.files[0];
-  e.target.value = "";
-  if (!file) return;
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("book", book || books.find(b => !b.shared)?.id || "");
-  try { const r = await api("/api/contacts/import", { method: "POST", body: fd }); toast(`${r.imported} contact${r.imported > 1 ? "s" : ""} importé${r.imported > 1 ? "s" : ""}`); load(); }
-  catch (err) { toast(err.message, "err"); }
+const bookSelect = () => `<select name="book">${books.map(b => `<option value="${b.id}" ${b.id === (book || books.find(x => !x.shared)?.id) ? "selected" : ""}>${esc(b.name)}${b.shared ? " (partagé)" : ""}</option>`).join("")}</select>`;
+const report = r => `${r.added} ajouté${r.added > 1 ? "s" : ""}, ${r.merged} complété${r.merged > 1 ? "s" : ""}${r.same ? `, ${r.same} déjà présent${r.same > 1 ? "s" : ""}` : ""}`;
+
+/** Récupérer des contacts : fichiers trouvés sur le NAS, fichier de l'ordinateur, autre serveur CardDAV. */
+function fetchPanel() {
+  const m = modal("Récupérer des contacts", `<div class="ct-fetch">
+    <div class="row ct-into"><span class="meta">Dans le carnet</span>${bookSelect()}<small class="meta">Les doublons (même mail, téléphone ou nom) sont fusionnés.</small></div>
+    <nav class="tabs small"><a class="on" data-t="nas">${icon("nas")}Sur le NAS</a><a data-t="file">${icon("upload")}Fichier</a><a data-t="dav">${icon("server")}Autre serveur</a></nav>
+    <div data-p="nas"><p class="meta"><span class="spinner"></span>Je cherche les fichiers de contacts (.vcf, .csv) sur le NAS…</p></div>
+    <div data-p="file" hidden><p class="hint" style="margin-top:0">Un fichier .vcf ou .csv : export d'iCloud (icloud.com → Contacts → Exporter), de Google Contacts, d'Outlook, ou sauvegarde du téléphone.</p>
+      <label class="btn"><input type="file" accept=".vcf,.vcard,.csv,text/vcard,text/csv" hidden id="ct-file">${icon("upload")}Choisir le fichier</label></div>
+    <div data-p="dav" hidden><form><p class="hint" style="margin-top:0">Copie les contacts d'un autre serveur CardDAV : Radicale ou Baïkal installé dans Docker sur ton NAS UGREEN, Nextcloud, Synology Contacts…</p>
+      <label class="field">Adresse du serveur</label><input type="url" name="url" required placeholder="http://192.168.1.20:5232/ ou https://cloud.exemple.fr/remote.php/dav">
+      <div class="grid2"><div><label class="field">Identifiant</label><input type="text" name="username" autocomplete="off"></div>
+        <div><label class="field">Mot de passe</label><input type="password" name="password" autocomplete="new-password"></div></div>
+      <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn">${icon("download")}Copier les contacts</button></div></form></div></div>`, { ic: "download", large: true });
+  const target = () => m.querySelector("[name=book]").value;
+  m.querySelector(".tabs").onclick = e => {
+    const t = e.target.closest("[data-t]");
+    if (!t) return;
+    m.querySelectorAll(".tabs a").forEach(a => a.classList.toggle("on", a === t));
+    m.querySelectorAll("[data-p]").forEach(p => { p.hidden = p.dataset.p !== t.dataset.t; });
+  };
+  const done = async r => { toast(`Contacts récupérés : ${report(r)}`); await load(); };
+  api("/api/contacts/scan").then(r => {
+    const el = m.querySelector("[data-p=nas]");
+    el.innerHTML = r.files.length ? `<p class="hint" style="margin-top:0">Fichiers trouvés dans ${esc(r.roots.join(", "))} :</p><div class="ct-files">${r.files.map((f, i) => `<div class="acc-row">
+        <span class="tile ${f.name.toLowerCase().endsWith(".csv") ? "vert" : "violet"}">${icon("users")}</span>
+        <div class="grow"><b>${esc(f.name)}</b><small class="meta">${esc(f.root_label)} / ${esc(f.path)}</small>
+          <small class="meta">≈ ${f.count} contact${f.count > 1 ? "s" : ""} · ${new Date(f.mtime * 1000).toLocaleDateString("fr-FR")}</small></div>
+        <button class="btn small" data-imp="${i}">${icon("download")}Importer</button></div>`).join("")}</div>`
+      : `<div class="empty">${icon("search")}<b>Aucun fichier de contacts trouvé</b>Bêta Tool ne voit que les dossiers montés dans docker-compose.yml (${esc(r.roots.join(", "))}).
+        Sur un NAS UGREEN, ajoute le dossier où ton téléphone sauvegarde ses contacts (ex. <code>/volume1/Sauvegardes</code>) dans EXTRA_ROOTS, ou utilise l'onglet « Fichier ».</div>`;
+    el.onclick = async e => {
+      const b = e.target.closest("[data-imp]");
+      if (!b) return;
+      const f = r.files[+b.dataset.imp];
+      b.disabled = true; b.innerHTML = `<span class="spinner"></span>Import…`;
+      try { const res = await api("/api/contacts/import-path", { json: { root: f.root, path: f.path, book: target() } }); b.innerHTML = `${icon("check")}${report(res)}`; done(res); }
+      catch (err) { toast(err.message, "err"); b.disabled = false; b.innerHTML = `${icon("download")}Importer`; }
+    };
+  }).catch(err => { m.querySelector("[data-p=nas]").innerHTML = `<p class="hint">${icon("alert")} ${esc(err.message)}</p>`; });
+  m.querySelector("#ct-file").onchange = async e => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("book", target());
+    try { done(await api("/api/contacts/import", { method: "POST", body: fd })); closePanel(); }
+    catch (err) { toast(err.message, "err"); }
+  };
+  m.querySelector("[data-p=dav] form").onsubmit = async e => {
+    e.preventDefault();
+    const f = e.target, btn = f.querySelector(".btn");
+    btn.disabled = true; btn.innerHTML = `<span class="spinner"></span>Copie…`;
+    try { const r = await api("/api/contacts/carddav-import", { json: { url: f.url.value, username: f.username.value, password: f.password.value, book: target() } }); done(r); closePanel(); }
+    catch (err) { toast(err.message, "err"); btn.disabled = false; btn.innerHTML = `${icon("download")}Copier les contacts`; }
+  };
+}
+
+async function dupesPanel() {
+  const groups = await api(`/api/contacts/duplicates${book ? "?book=" + encodeURIComponent(book) : ""}`);
+  const m = modal("Doublons", groups.length ? `<p class="hint" style="margin-top:0">Ces fiches ont le même mail, le même téléphone ou le même nom. La fusion garde une seule fiche avec toutes les infos.</p>
+    <div class="ct-files">${groups.map(gr => `<div class="acc-row"><span class="tile ambre">${icon("users")}</span><div class="grow"><b>${gr.names.map(esc).join(" · ")}</b>
+      <small class="meta">${esc(gr.book_name)} · ${esc(gr.detail)}</small></div></div>`).join("")}</div>
+    <div class="modal-foot"><button type="button" class="btn ghost" data-close>Annuler</button><button class="btn" data-merge>${icon("check")}Fusionner ${groups.length} groupe${groups.length > 1 ? "s" : ""}</button></div>`
+    : `<div class="empty">${icon("check")}<b>Aucun doublon</b>Tous tes contacts sont uniques.</div>`, { ic: "users", large: true });
+  m.querySelector("[data-merge]")?.addEventListener("click", async () => {
+    const r = await api("/api/contacts/dedupe", { json: { book } });
+    closePanel(); toast(`${r.merged} fiche${r.merged > 1 ? "s" : ""} fusionnée${r.merged > 1 ? "s" : ""}`); load();
+  });
 }
 
 async function syncPanel() {

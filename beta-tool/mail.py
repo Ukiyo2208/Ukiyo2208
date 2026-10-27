@@ -498,6 +498,31 @@ def body_of(msg):
     return text_to_html(text), text, False
 
 
+# --- Newsletters : désabonnement -------------------------------------------------------------
+
+UNSUB_WORDS = re.compile(r"d[ée]sabonn|d[ée]sinscri|unsubscribe|opt.?out|ne (plus|pas) recevoir|g[ée]rer (mes|vos|tes) (abonnements|pr[ée]f[ée]rences)|"
+                         r"se d[ée]sinscrire|abmelden|darse de baja", re.I)
+
+
+def unsubscribe_info(msg, html_body):
+    """Moyens de se désabonner : en-tête List-Unsubscribe (un clic RFC 8058, mailto, lien) ou lien du mail."""
+    head = str(msg["List-Unsubscribe"] or "")
+    urls = re.findall(r"<\s*(https?://[^>\s]+)\s*>", head)
+    mails = re.findall(r"<\s*mailto:([^>\s]+)\s*>", head, re.I)
+    one_click = bool(urls) and "one-click" in str(msg["List-Unsubscribe-Post"] or "").lower()
+    link = None
+    for text, href in phishing.links(html_body):
+        if href.startswith(("http://", "https://")) and (UNSUB_WORDS.search(text) or UNSUB_WORDS.search(href)):
+            link = href
+            break
+    if not (urls or mails or link):
+        return None
+    sender = phishing.parseaddr(str(msg["From"] or ""))[1].lower()
+    return {"one_click": one_click, "http": urls[0] if urls else None, "mailto": mails[0] if mails else None, "link": link,
+            "newsletter": bool(msg["List-Id"] or msg["List-Unsubscribe"] or str(msg["Precedence"] or "").lower() in ("bulk", "list")),
+            "sender": sender}
+
+
 def read(acc, c, folder, uid):
     raw = raw_message(acc, c, folder, uid)
     msg = email.message_from_bytes(raw, policy=email.policy.default)
@@ -515,8 +540,17 @@ def read(acc, c, folder, uid):
             "to": addr_list(msg["To"]), "cc": addr_list(msg["Cc"]), "reply_to": addr_list(msg["Reply-To"]), "date": ts,
             "message_id": msg["Message-ID"] or "", "references": msg["References"] or "", "html": body, "text": text[:200000],
             "remote_images": remote, "attachments": walk_parts(msg),
-            "unsubscribe": bool(msg["List-Unsubscribe"]),
+            "unsubscribe": None if v["level"] == "phishing" else _unsub_public(acc, msg, body),
             "security": {"level": v["level"], "reasons": v["reasons"], "score": v["score"], "trusted": bool(v.get("trusted"))}}
+
+
+def _unsub_public(acc, msg, body):
+    info = unsubscribe_info(msg, body)
+    if not info:
+        return None
+    done = store.load("mail/desabonnements", {}).get(acc["owner"], {}).get(info["sender"])
+    return {"one_click": info["one_click"], "auto": bool(info["one_click"] or info["mailto"]), "link": info["http"] or info["link"],
+            "done": done["at"] if done else None, "sender": info["sender"]}
 
 
 # --- Envoi -----------------------------------------------------------------------------
@@ -621,12 +655,13 @@ _unread = {}  # compte → mails non lus dans la boîte de réception (pour le t
 
 
 def screen(acc, c, uids):
-    """Analyse les nouveaux mails de la boîte de réception ; range les faux dans Indésirables. Renvoie les uid déplacés."""
+    """Nouveaux mails de la boîte de réception : faux mails rangés dans Indésirables, puis règles de tri.
+    Renvoie (uid sortis de la boîte, uid à ne pas notifier)."""
     if not uids:
-        return set()
+        return set(), set()
     trusted, blocked = trust_lists(acc["owner"])
     typ, data = c.uid("FETCH", ",".join(uids), "(UID BODY.PEEK[]<0.400000>)")  # les premiers 400 Ko suffisent
-    fakes = set()
+    fakes, others = set(), []
     for meta, raw in _fetch_parts(data) if typ == "OK" else []:
         uid = re.search(r"UID (\d+)", meta)
         if not uid:
@@ -639,22 +674,32 @@ def screen(acc, c, uids):
         remember(acc["id"], (msg["Message-ID"] or "").strip(), v)
         if v["level"] == "phishing":
             fakes.add(uid[1])
-    if not fakes or acc["mail"].get("filter") is False:
-        return set()
-    junk = role_folder(acc, c, "junk")
-    if not junk:
-        return set()
-    select(c, "INBOX", readonly=False)
-    ids = ",".join(sorted(fakes, key=int))
-    if "MOVE" in caps(c):
-        typ, _ = c.uid("MOVE", ids, q(junk))
-    else:
-        typ, _ = c.uid("COPY", ids, q(junk))
+        else:
+            others.append((uid[1], msg))
+    moved = set()
+    junk = role_folder(acc, c, "junk") if fakes and acc["mail"].get("filter") is not False else None
+    if junk:
+        select(c, "INBOX", readonly=False)
+        ids = ",".join(sorted(fakes, key=int))
+        if "MOVE" in caps(c):
+            typ, _ = c.uid("MOVE", ids, q(junk))
+        else:
+            typ, _ = c.uid("COPY", ids, q(junk))
+            if typ == "OK":
+                c.uid("STORE", ids, "+FLAGS", "(\\Deleted)")
+                c.uid("EXPUNGE", ids) if "UIDPLUS" in caps(c) else c.expunge()
+        select(c, "INBOX")
         if typ == "OK":
-            c.uid("STORE", ids, "+FLAGS", "(\\Deleted)")
-            c.uid("EXPUNGE", ids) if "UIDPLUS" in caps(c) else c.expunge()
-    select(c, "INBOX")
-    return fakes if typ == "OK" else set()
+            moved |= fakes
+    silent = set(fakes)  # un faux mail ne déclenche jamais de notification
+    try:
+        import mailrules
+        gone, quiet = mailrules.run(acc, c, "INBOX", others)
+        moved |= gone
+        silent |= quiet
+    except Exception as e:  # noqa: BLE001
+        print("règles", acc.get("label"), e, flush=True)
+    return moved, silent
 
 
 def poll_once(state):
@@ -676,8 +721,8 @@ def poll_once(state):
                 select(c, "INBOX")
                 typ, data = c.uid("SEARCH", f"UID {prev['next']}:* UNSEEN")
                 uids = [u.decode() for u in (data[0].split() if typ == "OK" and data[0] else []) if int(u) >= prev["next"]][-20:]
-                moved = screen(acc, c, uids)
-                news = [n for n in summaries(c, [u for u in uids if u not in moved], acc)]
+                moved, silent = screen(acc, c, uids)
+                news = [n for n in summaries(c, [u for u in uids if u not in moved and u not in silent], acc)]
             if moved:
                 _unread[acc["id"]] = max(0, _unread.get(acc["id"], 0) - len(moved))
             if not news or not acc["mail"].get("notify", True):
@@ -914,6 +959,92 @@ def verdict(acc_id):
     if msgid:
         store.update("mail/verdicts", {}, lambda data: data.get(acc_id, {}).pop(msgid, None))
     return jsonify(ok=True, moved=bool(dest and dest != folder), sender=sender)
+
+
+@bp.post("/api/mail/<acc_id>/unsubscribe")
+def unsubscribe(acc_id):
+    """Se désabonner d'une newsletter : en un clic (RFC 8058) ou par mail si l'expéditeur le permet,
+    sinon on renvoie le lien à ouvrir (la page de l'expéditeur demande souvent une confirmation)."""
+    acc = account(acc_id)
+    d = request.get_json(silent=True) or {}
+    folder, uid = d.get("folder") or "INBOX", str(int(d["uid"]))
+    with session(acc) as c:
+        select(c, folder)
+        msg = email.message_from_bytes(raw_message(acc, c, folder, uid), policy=email.policy.default)
+    v = judge(msg, *trust_lists(acc["owner"]))
+    if v["level"] == "phishing":
+        raise ValueError("C'est probablement un faux mail : ne te désabonne pas, ça confirmerait ton adresse. Range-le dans Indésirables.")
+    hp = msg.get_body(preferencelist=("html",))
+    try:
+        html_body = hp.get_content() if hp is not None else ""
+    except (LookupError, KeyError):
+        html_body = ""
+    info = unsubscribe_info(msg, html_body)
+    if not info:
+        raise ValueError("Je ne trouve pas de moyen de se désabonner dans ce mail")
+    method = None
+    if info["one_click"]:
+        import requests
+        try:
+            r = requests.post(info["http"], data="List-Unsubscribe=One-Click", timeout=20, allow_redirects=True,
+                              headers={"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "BetaTool/2 (unsubscribe)"})
+            if r.status_code < 400:
+                method = "un clic"
+        except requests.RequestException:
+            pass
+    if not method and info["mailto"]:
+        from urllib.parse import parse_qs, unquote, urlparse
+        target = urlparse("mailto:" + info["mailto"])
+        qs = parse_qs(target.query)
+        m = EmailMessage()
+        m["From"] = acc.get("email") or acc["mail"]["username"]
+        m["To"] = unquote(target.path)
+        m["Subject"] = (qs.get("subject") or ["unsubscribe"])[0]
+        m["Date"] = email.utils.formatdate(localtime=True)
+        m["Message-ID"] = email.utils.make_msgid()
+        m.set_content((qs.get("body") or ["unsubscribe"])[0])
+        smtp_send(acc, m)
+        method = "mail"
+    if not method:
+        return jsonify(ok=False, open=info["http"] or info["link"])
+    store.update("mail/desabonnements", {}, lambda data: data.setdefault(acc["owner"], {}).__setitem__(
+        info["sender"], {"at": time.time(), "method": method, "account": acc["id"]}))
+    return jsonify(ok=True, method=method, sender=info["sender"])
+
+
+@bp.post("/api/mail/<acc_id>/unsubscribed")
+def mark_unsubscribed(acc_id):
+    """L'utilisateur a confirmé sur la page de l'expéditeur."""
+    acc = account(acc_id)
+    sender = str((request.get_json(silent=True) or {}).get("sender") or "").lower()[:200]
+    if sender:
+        store.update("mail/desabonnements", {}, lambda data: data.setdefault(acc["owner"], {}).__setitem__(
+            sender, {"at": time.time(), "method": "lien", "account": acc["id"]}))
+    return jsonify(ok=True)
+
+
+@bp.post("/api/mail/<acc_id>/cleanup")
+def cleanup_sender(acc_id):
+    """Met à la corbeille tous les mails d'un expéditeur dans un dossier (après un désabonnement)."""
+    acc = account(acc_id)
+    d = request.get_json(silent=True) or {}
+    folder, sender = d.get("folder") or "INBOX", str(d.get("sender") or "").strip()
+    if not re.fullmatch(r"[^@\s\"]+@[^@\s\"]+", sender):
+        raise ValueError("Expéditeur invalide")
+    with session(acc) as c:
+        trash = role_folder(acc, c, "trash")
+        select(c, folder, readonly=False)
+        typ, data = c.uid("SEARCH", "FROM", f'"{sender}"')
+        uids = data[0].split() if typ == "OK" and data and data[0] else []
+        if uids and trash and trash != folder:
+            ids = b",".join(uids).decode()
+            if "MOVE" in caps(c):
+                _ok(*c.uid("MOVE", ids, q(trash)), "déplacement")
+            else:
+                _ok(*c.uid("COPY", ids, q(trash)), "déplacement")
+                c.uid("STORE", ids, "+FLAGS", "(\\Deleted)")
+                c.uid("EXPUNGE", ids) if "UIDPLUS" in caps(c) else c.expunge()
+    return jsonify(ok=True, moved=len(uids) if trash and trash != folder else 0)
 
 
 @bp.post("/api/mail/<acc_id>/folders")

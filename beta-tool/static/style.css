@@ -1688,3 +1688,30 @@ a.ct-row[href]:hover { outline: 1px solid var(--accent); }
 .tk-token { display: flex; gap: 8px; align-items: center; padding: 12px; border-radius: 12px; background: var(--surface-2); }
 .tk-token code { flex: 1; overflow-wrap: anywhere; font-size: .9rem; }
 .acc-row small.meta { display: block; }
+
+/* --- Mails : newsletters et règles --------------------------------------------- */
+.ml-unsub { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 18px 4px; padding: 10px 12px; border-radius: 12px;
+  background: var(--accent-soft); border: 1px solid var(--border); font-size: .9rem; }
+.ml-unsub > svg.i { color: var(--accent); flex: none; }
+.ml-unsub.done { background: rgb(16 185 129 / .1); }
+.ml-unsub.done > svg.i { color: var(--ok); }
+.ml-unsub .grow { min-width: 200px; }
+.ml-rule { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); margin-bottom: 8px; }
+.ml-rule.off { opacity: .55; }
+.ml-rule .grow { min-width: 0; }
+.ml-rule small { display: block; overflow-wrap: anywhere; }
+.ml-rule [data-up] svg.i { transform: rotate(-90deg); }
+.ml-rule [disabled] { opacity: .3; }
+.ml-cond { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+.ml-cond select { flex: 0 1 auto; }
+.ml-cond input { flex: 1 1 160px; min-width: 0; }
+select.inline { display: inline-block; width: auto; padding: 4px 8px; margin: 0 4px; }
+.ml-acts { display: grid; gap: 8px; }
+.ml-acts .check { flex-wrap: wrap; }
+.ml-acts input[name=folder] { flex: 1 1 200px; margin-left: 8px; padding: 6px 10px; }
+.ct-into { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.ct-into select { width: auto; }
+.tabs.small a { padding: 6px 12px; cursor: pointer; }
+.ct-files { display: grid; gap: 8px; max-height: 52vh; overflow: auto; }
+.ct-files small { display: block; overflow-wrap: anywhere; }
+.ml-acts .check input[name=folder] { width: auto; height: auto; min-height: 36px; appearance: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); }

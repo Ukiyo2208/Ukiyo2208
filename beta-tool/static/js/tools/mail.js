@@ -24,7 +24,7 @@ const addr = list => (list || []).map(a => a.name ? `${a.name} <${a.email}>` : a
 export async function render(el, parts, q) {
   root = el;
   ({ accounts: accs } = await api("/api/mail"));
-  root.innerHTML = pageHead("mails", accs.length ? `<button class="btn ghost" id="ml-acc">${icon("settings")}Comptes</button><button class="btn" id="ml-write">${icon("edit")}Écrire</button>` : "")
+  root.innerHTML = pageHead("mails", accs.length ? `<button class="btn ghost" id="ml-rules">${icon("sliders")}Règles</button><button class="btn ghost" id="ml-acc">${icon("settings")}Comptes</button><button class="btn" id="ml-write">${icon("edit")}Écrire</button>` : "")
     + `<div id="ml-body"></div>`;
   if (!accs.length) return empty();
   acc = accs.find(a => a.id === parts[0]) || accs.find(a => a.id === acc?.id) || accs[0];
@@ -48,6 +48,7 @@ export async function render(el, parts, q) {
     </div>`;
   $("#ml-write").onclick = () => compose({});
   $("#ml-acc").onclick = () => location.hash = "#/reglages/enligne";
+  $("#ml-rules").onclick = rulesPanel;
   $("#ml-add").onclick = () => connect({ want: "mail", onDone: a => { acc = a; render(root, [a.id]); } });
   $("#ml-menu").onclick = () => $(".ml-layout").dataset.pane = "side";
   $("#ml-refresh").onclick = () => { loadFolders(); loadList(); };
@@ -257,13 +258,15 @@ async function openMessage(uid, images = false) {
       ${inTrash ? "" : `<button class="icon-btn plain" data-r="archive" title="Archiver">${icon("archive")}</button>`}
       <button class="icon-btn plain" data-r="trash" title="${inTrash ? "Supprimer définitivement" : "Corbeille"}">${icon("trash")}</button>
       <button class="icon-btn plain" data-r="unread" title="Marquer comme non lu">${icon("mail")}</button>
-      <button class="icon-btn plain" data-r="move" title="Déplacer">${icon("move")}</button></div>
+      <button class="icon-btn plain" data-r="move" title="Déplacer">${icon("move")}</button>
+      <button class="icon-btn plain" data-r="rule" title="Créer une règle pour ces mails">${icon("sliders")}</button></div>
     <div class="ml-rhead"><h2>${esc(d.subject)}</h2>
       <div class="ml-from"><span class="ml-av big" style="--h:${hue(who(d.from))}">${initial(who(d.from))}</span>
         <div class="grow"><b>${esc(who(d.from))}</b> <small class="meta">${esc(d.from[0]?.email || "")}</small>
           ${d.from[0]?.email && !d.security?.trusted && d.security?.level !== "phishing" ? `<button class="ml-addct" data-r="addcontact" title="Ajouter aux contacts">${icon("plus")}Contact</button>` : ""}
           <small class="meta ml-to">À : ${esc(addr(d.to)) || "—"}${d.cc.length ? ` · Cc : ${esc(addr(d.cc))}` : ""}</small></div>
         <small class="meta">${d.date ? new Date(d.date * 1000).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}</small></div></div>
+    ${unsubBanner(d.unsubscribe)}
     ${secBanner(d.security)}
     ${d.remote_images && !images && d.security?.level !== "phishing" ? `<div class="ml-imgs">${icon("eye")}<span class="grow">Images distantes bloquées pour protéger ta vie privée (elles servent souvent à savoir si tu as ouvert le mail).</span><button class="btn ghost small" data-r="images">Afficher les images</button></div>` : ""}
     ${d.attachments.length ? `<div class="ml-atts">${d.attachments.map(a => `<div class="ml-att">${icon(a.type === "application/pdf" ? "pdf" : a.type.startsWith("image/") ? "image" : "file")}
@@ -298,6 +301,32 @@ async function openMessage(uid, images = false) {
     const r = b.dataset.r;
     if (r === "back") return showReader(null);
     if (r === "images") return openMessage(d.uid, true);
+    if (r === "unsub") {
+      b.disabled = true;
+      try {
+        const res = await api(`/api/mail/${acc.id}/unsubscribe`, { json: { folder, uid: d.uid } });
+        if (res.ok) { toast(`Désabonné ${res.method === "mail" ? "(demande envoyée par mail)" : "en un clic"} : tu ne devrais plus recevoir ces mails`); d.unsubscribe.done = Date.now() / 1000; }
+        else { window.open(res.open, "_blank", "noopener"); d.unsubscribe.pending = true; }
+        $(".ml-unsub").outerHTML = unsubBanner(d.unsubscribe);
+      } catch (err) { toast(err.message, "err"); b.disabled = false; }
+      return;
+    }
+    if (r === "unsubok") {
+      await api(`/api/mail/${acc.id}/unsubscribed`, { json: { sender: d.unsubscribe.sender } });
+      d.unsubscribe.done = Date.now() / 1000; d.unsubscribe.pending = false;
+      $(".ml-unsub").outerHTML = unsubBanner(d.unsubscribe);
+      return;
+    }
+    if (r === "cleanup") {
+      if (!confirm(`Mettre à la corbeille tous les mails de ${d.unsubscribe.sender} de ce dossier ?`)) return;
+      try {
+        const res = await api(`/api/mail/${acc.id}/cleanup`, { json: { folder, sender: d.unsubscribe.sender } });
+        toast(`${res.moved} mail${res.moved > 1 ? "s" : ""} mis à la corbeille`);
+        showReader(null); loadList(); loadFolders();
+      } catch (err) { toast(err.message, "err"); }
+      return;
+    }
+    if (r === "rule") return ruleFor(d);
     if (r === "addcontact") {
       const f = d.from[0], parts = (f.name || "").replace(/["']/g, "").trim().split(/\s+/);
       const { edit } = await import("./contacts.js");
@@ -318,6 +347,132 @@ async function openMessage(uid, images = false) {
     if (r === "move") return moveDialog([d.uid]);
     act(r, [d.uid]);
   };
+}
+
+// --- Règles de tri ----------------------------------------------------------------------------
+
+const FIELDS = [["from", "L'expéditeur"], ["subject", "L'objet"], ["body", "Le texte"], ["to", "Les destinataires"],
+  ["newsletter", "C'est une newsletter"], ["attachment", "Il y a une pièce jointe"], ["book", "L'expéditeur est dans le carnet"]];
+const OPS = [["contains", "contient"], ["not_contains", "ne contient pas"], ["is", "est exactement"], ["ends", "vient du domaine"]];
+const ACTS = [["move", "Ranger dans le dossier"], ["read", "Marquer comme lu"], ["star", "Suivre (étoile)"], ["silent", "Ne pas me notifier"],
+  ["paperasse", "Envoyer les pièces jointes à Paperasse"], ["trash", "Mettre à la corbeille"]];
+
+async function rulesPanel() {
+  const items = await api("/api/mail/rules");
+  const text = r => `Si ${r.conditions.map(c => {
+      const f = FIELDS.find(x => x[0] === c.field)?.[1] || c.field;
+      if (c.field === "newsletter" || c.field === "attachment") return (c.value === "no" ? "ce n'est pas : " : "") + f.toLowerCase();
+      if (c.field === "book") return `${f.toLowerCase()} « ${c.value === "any" ? "n'importe lequel" : c.value === "none" ? "aucun" : c.value.replace(/^contacts-/, "")} »`;
+      return `${f.toLowerCase()} ${OPS.find(o => o[0] === c.op)?.[1]} « ${c.value} »`;
+    }).join(r.match === "any" ? " ou " : " et ")} → ${r.actions.map(a => a.type === "move" ? `ranger dans « ${a.folder} »` : ACTS.find(x => x[0] === a.type)?.[1].toLowerCase()).join(", ")}`;
+  const m = modal("Règles de tri", `<div class="ml-rules">
+    <p class="hint" style="margin-top:0">Elles s'appliquent toutes seules aux nouveaux mails de la boîte de réception, dans l'ordre, juste après le filtre anti-faux mails.</p>
+    ${items.length ? items.map((r, i) => `<div class="ml-rule ${r.on ? "" : "off"}">
+      <label class="switch" title="Activer"><input type="checkbox" data-on="${r.id}" ${r.on ? "checked" : ""}><span></span></label>
+      <div class="grow"><b>${esc(r.name)}</b><small class="meta">${esc(text(r))}${r.account && r.account !== "*" ? ` · ${esc(accs.find(a => a.id === r.account)?.label || "")}` : ""}</small></div>
+      <button class="icon-btn plain" data-up="${r.id}" ${i ? "" : "disabled"} title="Monter">${icon("arrow")}</button>
+      <button class="icon-btn plain" data-edit="${r.id}" title="Modifier">${icon("edit")}</button>
+      <button class="icon-btn plain" data-del="${r.id}" title="Supprimer">${icon("trash")}</button></div>`).join("")
+      : `<div class="empty">${icon("sliders")}<b>Aucune règle</b>Exemples : ranger les newsletters dans un dossier, envoyer les factures EDF à Paperasse, marquer comme lus les mails du club…</div>`}
+    <div class="modal-foot"><button class="btn ghost" data-a="apply" ${items.length ? "" : "disabled"}>${icon("refresh")}Appliquer aux mails déjà reçus</button><span class="grow"></span>
+      <button class="btn" data-a="new">${icon("plus")}Nouvelle règle</button></div></div>`, { ic: "sliders", large: true });
+  m.onchange = async e => { const t = e.target.closest("[data-on]"); if (t) { await api(`/api/mail/rules/${t.dataset.on}`, { method: "PUT", json: { on: t.checked } }); t.closest(".ml-rule").classList.toggle("off", !t.checked); } };
+  m.onclick = async e => {
+    const b = e.target.closest("[data-a],[data-edit],[data-del],[data-up]");
+    if (!b) return;
+    if (b.dataset.a === "new") { closePanel(); return setTimeout(() => ruleEditor({}), 250); }
+    if (b.dataset.edit) { closePanel(); return setTimeout(() => ruleEditor(items.find(r => r.id === b.dataset.edit)), 250); }
+    if (b.dataset.del && confirm("Supprimer cette règle ?")) { await api(`/api/mail/rules/${b.dataset.del}`, { method: "DELETE" }); closePanel(); return setTimeout(rulesPanel, 250); }
+    if (b.dataset.up) { await api(`/api/mail/rules/${b.dataset.up}`, { method: "PUT", json: { move: "up" } }); closePanel(); return setTimeout(rulesPanel, 250); }
+    if (b.dataset.a === "apply") {
+      b.disabled = true; b.innerHTML = `<span class="spinner"></span>Tri en cours…`;
+      try {
+        const r = await api("/api/mail/rules/apply", { json: { account: acc.id } });
+        toast(`${r.matched} mail${r.matched > 1 ? "s" : ""} concerné${r.matched > 1 ? "s" : ""}, ${r.moved} rangé${r.moved > 1 ? "s" : ""}`);
+        closePanel(); loadList(); loadFolders();
+      } catch (err) { toast(err.message, "err"); b.disabled = false; }
+    }
+  };
+}
+
+function ruleFor(d) {
+  const f = d.from[0] || {};
+  ruleEditor({ name: f.name || f.email, account: acc.id, conditions: [{ field: "from", op: "is", value: f.email || "" }],
+    actions: [{ type: "move", folder: d.unsubscribe ? "Newsletters" : "" }] });
+}
+
+async function ruleEditor(r) {
+  let books = [];
+  try { books = (await api("/api/contacts?q=%00")).books; } catch {}
+  const folderNames = folders.filter(f => f.role !== "inbox").map(f => f.name);
+  const condRow = (c = { field: "from", op: "contains", value: "" }) => `<div class="ml-cond">
+    <select data-k="field">${FIELDS.map(([v, l]) => `<option value="${v}" ${c.field === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <select data-k="op">${OPS.map(([v, l]) => `<option value="${v}" ${c.op === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <select data-k="yn"><option value="yes" ${c.value !== "no" ? "selected" : ""}>oui</option><option value="no" ${c.value === "no" ? "selected" : ""}>non</option></select>
+    <select data-k="book"><option value="any">n'importe lequel</option><option value="none" ${c.value === "none" ? "selected" : ""}>aucun (inconnu)</option>
+      ${books.map(b => `<option value="${b.id}" ${c.value === b.id ? "selected" : ""}>${esc(b.name)}</option>`).join("")}</select>
+    <input type="text" data-k="value" value="${esc(["newsletter", "attachment", "book"].includes(c.field) ? "" : c.value)}" placeholder="ex. edf.fr, facture">
+    <button type="button" class="icon-btn plain" data-rm>${icon("x")}</button></div>`;
+  const has = t => (r.actions || []).find(a => a.type === t);
+  const m = modal(r.id ? "Modifier la règle" : "Nouvelle règle", `<form class="ml-rform">
+    <div class="grid2"><div><label class="field">Nom</label><input type="text" name="name" value="${esc(r.name || "")}" placeholder="Ex. Newsletters, Factures EDF"></div>
+      <div><label class="field">Boîte mail</label><select name="account" style="width:100%"><option value="*">Toutes mes boîtes</option>
+        ${accs.map(a => `<option value="${a.id}" ${(r.account || "*") === a.id ? "selected" : ""}>${esc(a.label)}</option>`).join("")}</select></div></div>
+    <label class="field">Quand <select name="match" class="inline"><option value="all">toutes les conditions</option><option value="any" ${r.match === "any" ? "selected" : ""}>au moins une condition</option></select> sont vraies</label>
+    <div id="ml-conds">${(r.conditions?.length ? r.conditions : [undefined]).map(condRow).join("")}</div>
+    <button type="button" class="btn ghost small" data-addc>${icon("plus")}Condition</button>
+    <p class="hint">Plusieurs mots séparés par des virgules : il suffit d'un seul (ex. « facture, échéance »).</p>
+    <label class="field">Alors</label>
+    <div class="ml-acts">${ACTS.map(([v, l]) => `<label class="check"><input type="checkbox" name="act" value="${v}" ${has(v) ? "checked" : ""}> ${l}
+      ${v === "move" ? `<input type="text" name="folder" list="ml-fnames" value="${esc(has("move")?.folder || "")}" placeholder="Dossier (créé s'il n'existe pas)">` : ""}</label>`).join("")}</div>
+    <datalist id="ml-fnames">${folderNames.map(n => `<option value="${esc(n)}">`).join("")}<option value="Newsletters"><option value="Factures"></datalist>
+    <div class="modal-foot"><button type="button" class="btn ghost" data-close>Annuler</button><button class="btn">${icon("check")}Enregistrer</button></div></form>`, { ic: "sliders", large: true });
+  const f = m.querySelector("form");
+  const sync = () => m.querySelectorAll(".ml-cond").forEach(row => {
+    const field = row.querySelector("[data-k=field]").value;
+    row.querySelector("[data-k=op]").hidden = ["newsletter", "attachment", "book"].includes(field);
+    row.querySelector("[data-k=value]").hidden = ["newsletter", "attachment", "book"].includes(field);
+    row.querySelector("[data-k=yn]").hidden = !["newsletter", "attachment"].includes(field);
+    row.querySelector("[data-k=book]").hidden = field !== "book";
+  });
+  sync();
+  m.addEventListener("change", sync);
+  m.addEventListener("click", e => {
+    if (e.target.closest("[data-addc]")) { m.querySelector("#ml-conds").insertAdjacentHTML("beforeend", condRow()); sync(); }
+    const rm = e.target.closest("[data-rm]");
+    if (rm && m.querySelectorAll(".ml-cond").length > 1) rm.closest(".ml-cond").remove();
+  });
+  f.folder.addEventListener("input", () => { f.querySelector("[name=act][value=move]").checked = !!f.folder.value.trim(); });
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const conditions = [...m.querySelectorAll(".ml-cond")].map(row => {
+      const field = row.querySelector("[data-k=field]").value;
+      const value = ["newsletter", "attachment"].includes(field) ? row.querySelector("[data-k=yn]").value
+        : field === "book" ? row.querySelector("[data-k=book]").value : row.querySelector("[data-k=value]").value;
+      return { field, op: row.querySelector("[data-k=op]").value, value };
+    });
+    const actions = [...f.querySelectorAll("[name=act]:checked")].map(x => ({ type: x.value, folder: x.value === "move" ? f.folder.value : "" }));
+    const body = { name: f.name.value, account: f.account.value, match: f.match.value, conditions, actions, on: r.on ?? true };
+    try {
+      await api(r.id ? `/api/mail/rules/${r.id}` : "/api/mail/rules", { method: r.id ? "PUT" : "POST", json: body });
+      closePanel();
+      toast(r.id ? "Règle enregistrée" : "Règle créée : elle s'applique aux prochains mails");
+      setTimeout(rulesPanel, 250);
+    } catch (err) { toast(err.message, "err"); }
+  };
+}
+
+// --- Newsletters ---------------------------------------------------------------------------
+
+function unsubBanner(u) {
+  if (!u) return "";
+  const when = u.done ? new Date(u.done * 1000).toLocaleDateString("fr-FR", { day: "numeric", month: "long" }) : "";
+  return `<div class="ml-unsub ${u.done ? "done" : ""}">${icon(u.done ? "check" : "mail")}
+    <span class="grow">${u.done ? `Tu t'es désabonné de cette newsletter le ${when}.` : u.pending ? "Confirme le désabonnement sur la page qui vient de s'ouvrir, puis reviens ici."
+      : `Newsletter : tu peux arrêter de la recevoir${u.auto ? " en un clic" : ""}.`}</span>
+    ${u.done ? `<button class="btn ghost small" data-r="cleanup">${icon("trash")}Supprimer ses anciens mails</button>`
+      : u.pending ? `<button class="btn small" data-r="unsubok">${icon("check")}C'est fait</button><a class="btn ghost small" href="${esc(u.link || "#")}" target="_blank" rel="noopener">${icon("external")}Rouvrir</a>`
+      : `<button class="btn small" data-r="unsub">${icon("x")}Se désabonner</button>`}</div>`;
 }
 
 // --- Faux mails ----------------------------------------------------------------------------
