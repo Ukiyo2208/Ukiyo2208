@@ -57,6 +57,7 @@ export async function render(el, parts, q) {
   paintAccounts();
   await Promise.all([loadFolders(), loadList()]);
   if (q?.uid) openMessage(q.uid);
+  if (q?.to) compose({ to: q.to });
   clearInterval(timer);
   timer = setInterval(() => {
     if (!$("#ml-items")) return clearInterval(timer);
@@ -144,7 +145,7 @@ function paintList() {
     return `<div class="ml-item ${m.seen ? "" : "unread"} ${current === m.uid ? "on" : ""} ${selected.has(m.uid) ? "sel" : ""}" data-i="${i}">
       <label class="ml-check" title="Sélectionner"><input type="checkbox" data-sel="${m.uid}" ${selected.has(m.uid) ? "checked" : ""}><span class="ml-av" style="--h:${hue(name)}">${initial(name.replace("À : ", ""))}</span></label>
       <div class="grow ml-lines"><div class="ml-l1"><b class="grow">${esc(name)}</b><small class="meta">${when(m.date)}</small></div>
-        <div class="ml-l2"><span class="grow">${m.answered ? icon("back") : ""}${esc(m.subject)}</span>${m.attach ? icon("link", "ml-pj") : ""}
+        <div class="ml-l2"><span class="grow">${m.answered ? icon("back") : ""}${esc(m.subject)}</span>${secBadge(m.security)}${m.attach ? icon("link", "ml-pj") : ""}
           <button class="icon-btn plain ml-star ${m.flagged ? "on" : ""}" data-star="${m.uid}" title="${m.flagged ? "Ne plus suivre" : "Suivre"}">${icon("star")}</button></div></div></div>`;
   }).join("") + (more ? `<button class="btn ghost small wide" id="ml-more">Afficher plus (${total - msgs.length} restants)</button>` : "");
   list.onclick = e => {
@@ -260,9 +261,11 @@ async function openMessage(uid, images = false) {
     <div class="ml-rhead"><h2>${esc(d.subject)}</h2>
       <div class="ml-from"><span class="ml-av big" style="--h:${hue(who(d.from))}">${initial(who(d.from))}</span>
         <div class="grow"><b>${esc(who(d.from))}</b> <small class="meta">${esc(d.from[0]?.email || "")}</small>
+          ${d.from[0]?.email && !d.security?.trusted && d.security?.level !== "phishing" ? `<button class="ml-addct" data-r="addcontact" title="Ajouter aux contacts">${icon("plus")}Contact</button>` : ""}
           <small class="meta ml-to">À : ${esc(addr(d.to)) || "—"}${d.cc.length ? ` · Cc : ${esc(addr(d.cc))}` : ""}</small></div>
         <small class="meta">${d.date ? new Date(d.date * 1000).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}</small></div></div>
-    ${d.remote_images && !images ? `<div class="ml-imgs">${icon("eye")}<span class="grow">Images distantes bloquées pour protéger ta vie privée (elles servent souvent à savoir si tu as ouvert le mail).</span><button class="btn ghost small" data-r="images">Afficher les images</button></div>` : ""}
+    ${secBanner(d.security)}
+    ${d.remote_images && !images && d.security?.level !== "phishing" ? `<div class="ml-imgs">${icon("eye")}<span class="grow">Images distantes bloquées pour protéger ta vie privée (elles servent souvent à savoir si tu as ouvert le mail).</span><button class="btn ghost small" data-r="images">Afficher les images</button></div>` : ""}
     ${d.attachments.length ? `<div class="ml-atts">${d.attachments.map(a => `<div class="ml-att">${icon(a.type === "application/pdf" ? "pdf" : a.type.startsWith("image/") ? "image" : "file")}
       <a class="grow" href="/api/mail/${acc.id}/part?folder=${encodeURIComponent(folder)}&uid=${d.uid}&n=${a.n}&inline=1" target="_blank" rel="noopener" title="Ouvrir"><b>${esc(a.name)}</b><small class="meta">${sizeStr(a.size)}</small></a>
       <a class="icon-btn plain" href="/api/mail/${acc.id}/part?folder=${encodeURIComponent(folder)}&uid=${d.uid}&n=${a.n}" title="Télécharger">${icon("download")}</a>
@@ -295,17 +298,53 @@ async function openMessage(uid, images = false) {
     const r = b.dataset.r;
     if (r === "back") return showReader(null);
     if (r === "images") return openMessage(d.uid, true);
+    if (r === "addcontact") {
+      const f = d.from[0], parts = (f.name || "").replace(/["']/g, "").trim().split(/\s+/);
+      const { edit } = await import("./contacts.js");
+      return edit({ first: parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0] || "", last: parts.length > 1 ? parts.at(-1) : "", emails: [{ type: "HOME", value: f.email }] },
+        () => { toast(`${f.name || f.email} ajouté aux contacts : ses mails ne seront plus signalés`); openMessage(d.uid); });
+    }
+    if (r === "fiable" || r === "faux") {
+      try {
+        const res = await api(`/api/mail/${acc.id}/verdict`, { json: { folder, uid: d.uid, verdict: r } });
+        toast(r === "faux" ? `Rangé dans Indésirables. Les prochains mails de ${res.sender} iront aussi.` : `${res.sender} est marqué comme fiable${res.moved ? " : remis dans la boîte de réception" : ""}`);
+        if (res.moved) { msgs = msgs.filter(m => m.uid !== String(d.uid)); showReader(null); }
+        else { const m = msgs.find(x => x.uid === String(d.uid)); if (m) delete m.security; openMessage(d.uid); }
+        paintList(); loadFolders();
+      } catch (err) { toast(err.message, "err"); }
+      return;
+    }
     if (["reply", "replyall", "forward"].includes(r)) return compose({ mode: r, msg: d });
     if (r === "move") return moveDialog([d.uid]);
     act(r, [d.uid]);
   };
 }
 
+// --- Faux mails ----------------------------------------------------------------------------
+
+function secBadge(sec) {
+  if (!sec) return "";
+  return sec.level === "phishing" ? `<span class="ml-sec bad" title="${esc(sec.reasons.join(" · "))}">${icon("alert")}Faux mail ?</span>`
+    : `<span class="ml-sec warn" title="${esc(sec.reasons.join(" · "))}">${icon("alert")}Suspect</span>`;
+}
+
+function secBanner(sec) {
+  if (!sec || sec.level === "ok") return "";
+  const fake = sec.level === "phishing", inJunk = role() === "junk";
+  return `<div class="ml-alert ${fake ? "bad" : "warn"}">
+    <div class="ml-alert-head">${icon("shield")}<b>${fake ? (inJunk ? "Bêta Tool a rangé ce mail ici : c'est très probablement un faux" : "Faux mail probable : ne clique sur rien, ne réponds pas")
+      : "Attention, ce mail pourrait être suspect"}</b></div>
+    <ul>${sec.reasons.map(r => `<li>${esc(r.charAt(0).toUpperCase() + r.slice(1))}</li>`).join("")}</ul>
+    ${fake ? `<p class="meta">Les liens et les images de ce mail sont désactivés. En cas de doute, va directement sur le site officiel ou appelle le service client.</p>` : ""}
+    <div class="row">${inJunk && fake ? "" : `<button class="btn small danger" data-r="faux">${icon("alert")}C'est un faux mail</button>`}
+      <button class="btn ghost small" data-r="fiable">${icon("check")}Ce mail est fiable</button></div></div>`;
+}
+
 // --- Rédaction --------------------------------------------------------------------------
 
-function compose({ mode = "", msg = null }) {
+async function compose({ mode = "", msg = null, to: preset = "" }) {
   const me = (acc.email || "").toLowerCase();
-  let to = "", cc = "", subject = "";
+  let to = preset, cc = "", subject = "";
   if (msg) {
     subject = (mode === "forward" ? "Tr : " : "Re : ") + msg.subject.replace(/^((re|tr|fwd?)\s*:\s*)+/i, "");
     if (mode !== "forward") {
@@ -313,7 +352,9 @@ function compose({ mode = "", msg = null }) {
       if (mode === "replyall") cc = addr([...msg.to, ...msg.cc].filter(a => a.email.toLowerCase() !== me && !msg.from.some(f => f.email === a.email)));
     }
   }
-  const known = [...new Map(msgs.flatMap(m => [...m.from, ...m.to]).filter(a => a.email).map(a => [a.email.toLowerCase(), a])).values()].slice(0, 200);
+  const fromContacts = await api("/api/contacts/suggest").catch(() => []);  // carnets d'adresses d'abord, puis les adresses récentes
+  const known = [...new Map([...fromContacts.map(c => ({ name: c.name, email: c.email })), ...msgs.flatMap(m => [...m.from, ...m.to])]
+    .filter(a => a.email).map(a => [a.email.toLowerCase(), a])).values()].slice(0, 600);
   const m = modal(mode === "forward" ? "Transférer" : mode ? "Répondre" : "Nouveau mail", `<form class="ml-compose">
     <datalist id="ml-known">${known.map(a => `<option value="${esc(a.name ? `${a.name} <${a.email}>` : a.email)}">`).join("")}</datalist>
     ${accs.length > 1 ? `<div class="ml-crow"><label>De</label><select name="from">${accs.map(a => `<option value="${a.id}" ${a.id === acc.id ? "selected" : ""}>${esc(a.label)}</option>`).join("")}</select></div>` : ""}

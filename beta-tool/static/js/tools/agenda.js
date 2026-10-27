@@ -1,6 +1,6 @@
 // Outil « Agenda » : vues mois / semaine / à venir, agendas partagés, synchronisation des téléphones.
 import { $, esc, icon, toast, modal, closePanel } from "../ui.js";
-import { api } from "../state.js";
+import { api, enabled } from "../state.js";
 import { pageHead } from "../main.js";
 import { connect, editAccount, PROVIDER_ICON } from "../accounts.js";
 
@@ -72,7 +72,8 @@ function paintCals() {
       ${c.error ? `<span class="ag-warn" title="${esc(c.error)}">${icon("alert")}</span>` : ""}
       ${c.external ? `<button class="icon-btn plain" data-editacc="${c.account}" title="Réglages du compte">${icon("settings")}</button>`
         : c.readonly ? "" : `<button class="icon-btn plain" data-editcal="${c.id}" title="Modifier">${icon("settings")}</button>`}</label>`;
-  $("#ag-cals").innerHTML = [...local, { id: "_paperasse", name: "Échéances (Paperasse)", color: "#f59e0b", readonly: true }].map(line).join("");
+  $("#ag-cals").innerHTML = [...local, ...(enabled("contacts") ? [{ id: "_anniversaires", name: "Anniversaires (Contacts)", color: "#ec4899", readonly: true }] : []),
+    { id: "_paperasse", name: "Échéances (Paperasse)", color: "#f59e0b", readonly: true }].map(line).join("");
   $("#ag-ext").innerHTML = ext.map(line).join("");
   $(".ag-ext-hint").hidden = ext.length > 0;
   for (const box of [$("#ag-cals"), $("#ag-ext")]) {

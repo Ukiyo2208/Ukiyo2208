@@ -13,11 +13,13 @@ from waitress import serve
 
 import accounts
 import activity
+import api
 import agenda
 import archives
 import auth
 import backup
 import clipboard
+import contacts
 import converter
 import downloader
 import drop
@@ -101,7 +103,7 @@ def share_target():
 # Accessibles sans être connecté : page de connexion, ressources de la page, pages publiques
 # (partages /d/, questionnaires /f/, liens courts /s/) et leurs API publiques.
 PUBLIC = ("/login", "/login/code", "/style.css", "/js/i18n.js", "/i18n/", "/vendor/fonts/", "/brand/", "/manifest.webmanifest", "/sw.js", "/api/auth/mode",
-          "/d/", "/f/", "/s/", "/public/", "/api/public/", "/statut", "/.well-known/")
+          "/d/", "/f/", "/s/", "/public/", "/api/public/", "/statut", "/.well-known/", "/api/v1/openapi.json")
 
 
 def admin_only(fn):
@@ -116,7 +118,17 @@ def admin_only(fn):
 @app.before_request
 def gatekeeper():
     g.user = auth.current()
+    g.api_scopes = None
     path = request.path
+    if path == "/api/v1" or path.startswith("/api/v1/"):  # API externe : jeton personnel (ou session du navigateur)
+        header = request.headers.get("Authorization", "")
+        if header.startswith("Bearer "):
+            found = api.resolve(header[7:].strip())
+            if not found:
+                return jsonify(error="Jeton invalide, expiré ou révoqué"), 401
+            g.user, g.api_scopes = found
+        elif g.user:
+            g.api_scopes = "*"
     tool = settings.blocked(path)
     if tool:
         return jsonify(error="Cet outil est désactivé dans les réglages"), 404
@@ -606,12 +618,12 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mail):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mail, contacts, api):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,
-                 paperasse=paperasse.search, recettes=recipes.search, agenda=agenda.search, **{"presse-papier": clipboard.search})
-COUNTERS.update(mails=mail.count, recettes=recipes.count, paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
+                 paperasse=paperasse.search, recettes=recipes.search, agenda=agenda.search, contacts=contacts.search, **{"presse-papier": clipboard.search})
+COUNTERS.update(mails=mail.count, contacts=contacts.count, recettes=recipes.count, paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
 
 
 if __name__ == "__main__":
@@ -641,7 +653,7 @@ if __name__ == "__main__":
     if dav:  # serveur CalDAV des agendas (synchronisation des téléphones)
         from werkzeug.middleware.dispatcher import DispatcherMiddleware
         def dav_gate(environ, start_response):
-            if not settings.enabled("agenda"):
+            if not (settings.enabled("agenda") or settings.enabled("contacts")):
                 start_response("404 Not Found", [("Content-Type", "text/plain")])
                 return [b"Agenda desactive"]
             return dav(environ, start_response)

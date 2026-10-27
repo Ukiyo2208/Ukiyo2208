@@ -55,6 +55,8 @@ export const TOOLS = [
 
   { id: "mails", name: "Mails", icon: "mail", tile: "bleu-vert", cat: "maison", load: () => import("./tools/mail.js"),
     desc: "Tes boîtes mail iCloud, Gmail, Outlook, Orange… réunies, avec notifications.", chips: ["iCloud", "Gmail", "Outlook"] },
+  { id: "contacts", name: "Contacts", icon: "users", tile: "violet", cat: "maison", load: () => import("./tools/contacts.js"),
+    desc: "Tes carnets d'adresses Perso, Pro et Famille, synchronisés avec vos téléphones.", chips: ["Perso / Pro", "iPhone / Android", "Anniversaires"] },
   { id: "agenda", name: "Agenda", icon: "calendar", tile: "", cat: "maison", load: () => import("./tools/agenda.js"),
     desc: "Agenda Famille partagé, synchronisé avec vos téléphones, et tes agendas iCloud, Google, Outlook.", chips: ["Famille", "iCloud / Google", "Outlook"] },
   { id: "recettes", name: "Recettes", icon: "utensils", tile: "rose", cat: "maison", load: () => import("./tools/recipes.js"),

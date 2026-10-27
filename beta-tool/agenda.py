@@ -320,11 +320,25 @@ def events():
         end = datetime.fromisoformat(request.args["end"][:10])
     except (KeyError, ValueError):
         raise ValueError("Période invalide") from None
+    return jsonify(all_events(g.user["name"], start, end))
+
+
+def all_events(user, start, end):
+    """Tous les événements de la période : agendas Bêta Tool, raccordés, anniversaires, échéances."""
     if (end - start).days > 400:
         raise ValueError("Période trop longue")
-    out = list_events(g.user["name"], start, end)
+    if end <= start:
+        raise ValueError("Période invalide")
+    out = list_events(user, start, end)
     import extcal
-    out += extcal.list_events(g.user["name"], start, end)
+    out += extcal.list_events(user, start, end)
+    try:  # anniversaires des contacts (lecture seule)
+        import contacts
+        import settings
+        if settings.enabled("contacts"):
+            out += contacts.birthdays(user, start, end)
+    except Exception:  # noqa: BLE001
+        pass
     try:  # échéances de Paperasse (lecture seule)
         import paperasse
         import settings
@@ -337,7 +351,7 @@ def events():
     except Exception:  # noqa: BLE001
         pass
     out.sort(key=lambda e: (e["start"], not e["allday"]))
-    return jsonify(out)
+    return out
 
 
 @bp.post("/api/agenda/events")

@@ -240,7 +240,8 @@ export function editAccount(a, after = () => {}) {
     <label class="field">Nom affiché</label><input type="text" name="label" value="${esc(a.label)}">
     ${a.mail ? `<label class="field">Ton nom (expéditeur)</label><input type="text" name="name" value="${esc(a.mail.name || "")}" placeholder="Ex. Léa Martin">
       <label class="field">Signature</label><textarea name="signature" rows="3" placeholder="Ex. Léa · 06 12 34 56 78">${esc(a.mail.signature || "")}</textarea>
-      <label class="check"><input type="checkbox" name="notify" ${a.mail.notify !== false ? "checked" : ""}> Me prévenir des nouveaux mails</label>` : ""}
+      <label class="check"><input type="checkbox" name="notify" ${a.mail.notify !== false ? "checked" : ""}> Me prévenir des nouveaux mails</label>
+      <label class="check"><input type="checkbox" name="filter" ${a.mail.filter !== false ? "checked" : ""}> Ranger les faux mails dans Indésirables</label>` : ""}
     ${a.cal && a.cal.kind !== "ics" ? `<label class="field" style="margin-top:12px">Agendas affichés</label><div class="acc-cals">${(a.cal.calendars || []).map(c => `<label class="check">
       <input type="checkbox" name="cal-${c.id}" ${c.on !== false ? "checked" : ""}><span class="ag-dot" style="background:${c.color}"></span>${esc(c.name)}${c.ro ? ` <small class="meta">lecture seule</small>` : ""}</label>`).join("")}</div>
       <button type="button" class="btn ghost small" data-a="refresh">${icon("refresh")}Actualiser la liste</button>` : ""}
@@ -250,7 +251,7 @@ export function editAccount(a, after = () => {}) {
   f.onsubmit = async e => {
     e.preventDefault();
     const body = { label: f.label.value };
-    if (a.mail) Object.assign(body, { name: f.name.value, signature: f.signature.value, notify: f.notify.checked });
+    if (a.mail) Object.assign(body, { name: f.name.value, signature: f.signature.value, notify: f.notify.checked, filter: f.filter.checked });
     if (a.cal) body.calendars = Object.fromEntries((a.cal.calendars || []).filter(c => f["cal-" + c.id]).map(c => [c.id, { on: f["cal-" + c.id].checked }]));
     try { await api(`/api/accounts/${a.id}`, { method: "PUT", json: body }); closePanel(); toast("Enregistré"); after(); }
     catch (err) { toast(err.message, "err"); }

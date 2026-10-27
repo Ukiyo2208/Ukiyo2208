@@ -29,7 +29,8 @@ fichier n'est envoyé à un service externe.
 | **Scanner** | Photo d'un document → bords détectés, page redressée et nettoyée (filtres « document »), PDF avec texte cherchable. |
 | **Paperasse** | Factures, fiches de paie, impôts… lus (OCR), reconnus, renommés et rangés par catégorie et année ; échéances avec rappels ; recherche dans le texte. |
 | **Stockage** | Carte de l'espace occupé, plus gros fichiers, doublons (comparaison du contenu), suggestions de rangement d'un dossier (avec annulation). |
-| **Mails** | Boîtes iCloud, Gmail, Outlook, Orange, Free… (IMAP/SMTP) : lecture sûre (images pisteuses bloquées), réponses, pièces jointes vers le NAS ou Paperasse, notification des nouveaux mails. |
+| **Mails** | Boîtes iCloud, Gmail, Outlook, Orange, Free… (IMAP/SMTP) : lecture sûre (images pisteuses bloquées), filtre anti-faux mails, réponses, pièces jointes vers le NAS ou Paperasse, notification des nouveaux mails. |
+| **Contacts** | Carnets Perso, Pro, Famille (partagé) et autres, synchronisés avec les téléphones (CardDAV), import/export .vcf, anniversaires dans l'Agenda. |
 | **Agenda** | Agendas perso et agenda « Famille » partagé, rappels, synchronisés dans les deux sens avec les téléphones (CalDAV, Radicale), plus tes agendas iCloud, Google, Outlook, Nextcloud et liens .ics raccordés. |
 | **Recettes** | Import depuis un lien (Marmiton, 750g…), portions ajustables, mode cuisine avec minuteurs, liste de courses partagée triée par rayon. |
 | **Traduction** | Textes, documents (Word, OpenDocument, PDF) et sous-titres traduits sur le NAS (Argos Translate), sans service en ligne. |
@@ -182,6 +183,45 @@ notification push.
    en ligne (ou `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`). À la connexion, Google renvoie vers
    `http://127.0.0.1:53682/…` (page d'erreur) : on colle cette adresse dans Bêta Tool, qui en extrait le code.
 
+### Filtre anti-faux mails
+
+Chaque nouveau mail de la boîte de réception est analysé sur le NAS (`phishing.py`) : expéditeur qui se fait passer
+pour une marque (Orange, EDF, Ameli, impôts, La Poste, banques, Amazon, PayPal…) sans écrire depuis son vrai domaine,
+domaine qui l'imite (`orangeservicelclient.jp`), échecs SPF / DKIM / DMARC signalés par le serveur de réception,
+adresse au hasard, extension de domaine inhabituelle, liens trompeurs ou vers une adresse IP, formules typiques
+(compte suspendu, colis bloqué, frais à payer…), pièces jointes dangereuses.
+- **Faux mail certain** : rangé dans *Indésirables*, sans pastille ni notification ; ses liens et images sont désactivés.
+- **Doute** : reste dans la boîte de réception avec un badge « Suspect » et la liste des raisons.
+- « C'est un faux mail » / « Ce mail est fiable » retiennent l'expéditeur ; les contacts ne sont jamais signalés.
+Le rangement automatique se désactive par boîte (Réglages → Comptes en ligne).
+
+## Contacts
+
+Les carnets d'adresses sont des collections CardDAV du serveur Radicale de l'Agenda (`/data/agenda`), avec le même
+identifiant et le même mot de passe de synchronisation. iPhone : Réglages → Contacts → Comptes → Ajouter un compte →
+Autre → Compte CardDAV. Android : DAVx⁵ (même compte que l'agenda). Le carnet « Famille » est partagé par tous.
+
+## API (Home Assistant, Raccourcis, scripts…)
+
+Chaque membre crée des jetons dans **Réglages → API**, avec seulement les droits utiles (`mails:read`, `mails:send`,
+`agenda:read`, `agenda:write`, `contacts:read`, `contacts:write`) et une durée. Seule l'empreinte du jeton est gardée.
+
+```bash
+curl -H "Authorization: Bearer bt_…" http://IP-DU-NAS:8080/api/v1/mail/unread
+curl -H "Authorization: Bearer bt_…" "http://IP-DU-NAS:8080/api/v1/events?start=2026-11-01&end=2026-11-08"
+curl -X POST -H "Authorization: Bearer bt_…" -H "Content-Type: application/json" \
+     -d '{"title":"Dentiste","start":"2026-11-03T09:30","cal":"famille"}' http://IP-DU-NAS:8080/api/v1/events
+```
+La description complète (OpenAPI 3) est sur `/api/v1/openapi.json`. Les jetons ne fonctionnent que sur `/api/v1`.
+
+### Et un serveur mail à la maison ?
+
+Bêta Tool lit et envoie tes mails chez ton fournisseur ; il n'héberge pas d'adresses. Héberger ses propres adresses
+(`toi@tondomaine.fr`) sur le NAS est possible avec un logiciel open source comme Stalwart ou Mailcow, mais demande un
+nom de domaine (≈ 10 €/an), une adresse IP fixe, un relais d'envoi (les box Orange, Free, SFR bloquent le port 25 et
+les IP de particuliers sont souvent refusées par Gmail et Outlook) et une surveillance régulière : pour une famille,
+garder iCloud, Gmail ou Orange et les lire dans Bêta Tool reste plus simple et plus fiable.
+
 ## Paperasse et Scanner
 
 Les documents sont rangés dans `Documents (Bêta Work)/Paperasse/<Catégorie>/<Année>/` (variable `PAPERS_DIR` pour un
@@ -282,6 +322,9 @@ au public : télécharger des contenus protégés pour d'autres engage ta respon
 5. Ouvre `http://IP-DU-NAS:8080`, puis va dans Réglages → Comptes pour créer ton compte administrateur.
 
 Les modèles d'IA (transcription ≈ 500 Mo pour `small`, détourage ≈ 180 Mo) se téléchargent au premier usage dans `/data/models`.
+
+**Passer à la version 2.3** (Contacts, filtre anti-faux mails, API) : Réglages → Mises à jour → glisse
+`beta-tool-update-2.3.0.zip`, depuis une 2.0, 2.1 ou 2.2.
 
 **Passer à la version 2.2** (Mails, agendas raccordés) : Réglages → Mises à jour → glisse
 `beta-tool-update-2.2.0.zip`, depuis une 2.0 ou une 2.1.

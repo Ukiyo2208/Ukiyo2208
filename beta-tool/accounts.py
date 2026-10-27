@@ -410,6 +410,8 @@ def edit(acc_id):
         if a.get("mail"):
             if "notify" in d:
                 a["mail"]["notify"] = bool(d["notify"])
+            if "filter" in d:
+                a["mail"]["filter"] = bool(d["filter"])
             if "signature" in d:
                 a["mail"]["signature"] = str(d["signature"] or "")[:2000]
             if d.get("name") is not None:

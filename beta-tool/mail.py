@@ -27,6 +27,7 @@ from flask import Blueprint, Response, g, jsonify, request
 
 import accounts
 import activity
+import phishing
 import store
 
 bp = Blueprint("mail", __name__)
@@ -297,12 +298,65 @@ def _fetch_parts(data):
     return out
 
 
-def summaries(c, uids):
+# --- Faux mails (voir phishing.py) ------------------------------------------------------
+
+def trust_lists(user):
+    """(expéditeurs de confiance, expéditeurs signalés comme faux) : contacts, choix de l'utilisateur, ses propres adresses."""
+    d = store.load("mail/expediteurs", {}).get(user, {})
+    trusted = set(d.get("fiables", [])) | {a.get("email", "").lower() for a in accounts.of(user) if a.get("email")}
+    try:
+        import contacts
+        trusted |= contacts.emails(user)
+    except Exception:  # noqa: BLE001
+        pass
+    return trusted, set(d.get("faux", []))
+
+
+def verdicts(acc_id):
+    return store.load("mail/verdicts", {}).get(acc_id, {})
+
+
+def remember(acc_id, msgid, v):
+    if not msgid:
+        return
+
+    def go(d):
+        box = d.setdefault(acc_id, {})
+        box[msgid] = {"level": v["level"], "score": v["score"], "reasons": v["reasons"], "at": time.time()}
+        if len(box) > 3000:  # garde les plus récents
+            for k in sorted(box, key=lambda k: box[k]["at"])[:1000]:
+                box.pop(k)
+    store.update("mail/verdicts", {}, go)
+
+
+def judge(msg, trusted=(), blocked=()):
+    """Analyse complète d'un mail (en-têtes, texte, liens, pièces jointes)."""
+    auth = (msg.get_all("Authentication-Results") or [""])[0]
+    html_part = msg.get_body(preferencelist=("html",))
+    text_part = msg.get_body(preferencelist=("plain",))
+    get = lambda p: p.get_content() if p is not None else ""
+    try:
+        html_body = get(html_part)
+    except (LookupError, KeyError):
+        html_body = ""
+    try:
+        text_body = get(text_part)
+    except (LookupError, KeyError):
+        text_body = ""
+    atts = [dec(p.get_filename()) for p in msg.walk() if not p.is_multipart() and p.get_filename()]
+    return phishing.analyze(str(msg["From"] or ""), dec(msg["Subject"]), text_body[:20000], html_body[:200000],
+                            str(msg["Reply-To"] or ""), str(auth), atts, trusted, blocked)
+
+
+def summaries(c, uids, acc=None):
     if not uids:
         return []
-    typ, data = c.uid("FETCH", ",".join(uids), "(UID FLAGS RFC822.SIZE BODY.PEEK[HEADER.FIELDS (FROM TO CC SUBJECT DATE CONTENT-TYPE)])")
+    typ, data = c.uid("FETCH", ",".join(uids), "(UID FLAGS RFC822.SIZE BODY.PEEK[HEADER.FIELDS (FROM TO CC SUBJECT DATE CONTENT-TYPE "
+                                               "REPLY-TO MESSAGE-ID AUTHENTICATION-RESULTS)])")
     _ok(typ, data, "lecture")
     out = {}
+    trusted, blocked = trust_lists(acc["owner"]) if acc else ((), ())
+    known = verdicts(acc["id"]) if acc else {}
     for meta, head in _fetch_parts(data):
         uid = re.search(r"UID (\d+)", meta)
         if not uid:
@@ -318,6 +372,12 @@ def summaries(c, uids):
         out[uid[1]] = {"uid": uid[1], "from": addr_list(h["From"])[:1], "to": addr_list(h["To"]), "subject": dec(h["Subject"]) or "(sans objet)",
                        "date": ts, "seen": "\\Seen" in flags, "flagged": "\\Flagged" in flags, "answered": "\\Answered" in flags,
                        "size": int(size[1]) if size else 0, "attach": "multipart/mixed" in ctype or "multipart/report" in ctype}
+        v = known.get((h["Message-ID"] or "").strip())  # verdict complet déjà calculé, sinon analyse des seuls en-têtes
+        if not v or phishing.parseaddr(dec(h["From"]))[1].lower() in trusted:
+            v = phishing.analyze(dec(h["From"]), dec(h["Subject"]), reply_to=h["Reply-To"] or "",
+                                 auth=(h.get_all("Authentication-Results") or [""])[0], trusted=trusted, blocked=blocked)
+        if v["level"] != "ok":
+            out[uid[1]]["security"] = {"level": v["level"], "reasons": v["reasons"]}
     return [out[u] for u in uids if u in out]
 
 
@@ -442,6 +502,11 @@ def read(acc, c, folder, uid):
     raw = raw_message(acc, c, folder, uid)
     msg = email.message_from_bytes(raw, policy=email.policy.default)
     body, text, remote = body_of(msg)
+    trusted, blocked = trust_lists(acc["owner"])
+    v = judge(msg, trusted, blocked)
+    remember(acc["id"], (msg["Message-ID"] or "").strip(), v)
+    if v["level"] == "phishing":  # liens désactivés : on ne clique pas par erreur dans un faux mail
+        body = re.sub(r"(<a\b[^>]*?)\shref\s*=\s*([\"']).*?\2", r"\1", body, flags=re.I | re.S)
     try:
         ts = email.utils.parsedate_to_datetime(msg["Date"]).timestamp() if msg["Date"] else 0
     except (TypeError, ValueError):
@@ -450,7 +515,8 @@ def read(acc, c, folder, uid):
             "to": addr_list(msg["To"]), "cc": addr_list(msg["Cc"]), "reply_to": addr_list(msg["Reply-To"]), "date": ts,
             "message_id": msg["Message-ID"] or "", "references": msg["References"] or "", "html": body, "text": text[:200000],
             "remote_images": remote, "attachments": walk_parts(msg),
-            "unsubscribe": bool(msg["List-Unsubscribe"])}
+            "unsubscribe": bool(msg["List-Unsubscribe"]),
+            "security": {"level": v["level"], "reasons": v["reasons"], "score": v["score"], "trusted": bool(v.get("trusted"))}}
 
 
 # --- Envoi -----------------------------------------------------------------------------
@@ -554,6 +620,43 @@ def build(acc, d, files, original=None):
 _unread = {}  # compte → mails non lus dans la boîte de réception (pour le tableau de bord)
 
 
+def screen(acc, c, uids):
+    """Analyse les nouveaux mails de la boîte de réception ; range les faux dans Indésirables. Renvoie les uid déplacés."""
+    if not uids:
+        return set()
+    trusted, blocked = trust_lists(acc["owner"])
+    typ, data = c.uid("FETCH", ",".join(uids), "(UID BODY.PEEK[]<0.400000>)")  # les premiers 400 Ko suffisent
+    fakes = set()
+    for meta, raw in _fetch_parts(data) if typ == "OK" else []:
+        uid = re.search(r"UID (\d+)", meta)
+        if not uid:
+            continue
+        msg = email.message_from_bytes(raw, policy=email.policy.default)
+        try:
+            v = judge(msg, trusted, blocked)
+        except Exception:  # noqa: BLE001  mail tronqué ou mal formé
+            continue
+        remember(acc["id"], (msg["Message-ID"] or "").strip(), v)
+        if v["level"] == "phishing":
+            fakes.add(uid[1])
+    if not fakes or acc["mail"].get("filter") is False:
+        return set()
+    junk = role_folder(acc, c, "junk")
+    if not junk:
+        return set()
+    select(c, "INBOX", readonly=False)
+    ids = ",".join(sorted(fakes, key=int))
+    if "MOVE" in caps(c):
+        typ, _ = c.uid("MOVE", ids, q(junk))
+    else:
+        typ, _ = c.uid("COPY", ids, q(junk))
+        if typ == "OK":
+            c.uid("STORE", ids, "+FLAGS", "(\\Deleted)")
+            c.uid("EXPUNGE", ids) if "UIDPLUS" in caps(c) else c.expunge()
+    select(c, "INBOX")
+    return fakes if typ == "OK" else set()
+
+
 def poll_once(state):
     for acc in accounts.everyone():
         if not acc.get("mail"):
@@ -568,13 +671,16 @@ def poll_once(state):
                 nxt, val = int(st.get("UIDNEXT", 0)), st.get("UIDVALIDITY")
                 prev = state.get(acc["id"])
                 state[acc["id"]] = {"next": nxt, "validity": val}
-                if not prev or prev.get("validity") != val or nxt <= prev["next"] or not acc["mail"].get("notify", True):
+                if not prev or prev.get("validity") != val or nxt <= prev["next"]:
                     continue
                 select(c, "INBOX")
                 typ, data = c.uid("SEARCH", f"UID {prev['next']}:* UNSEEN")
-                uids = [u for u in (data[0].split() if typ == "OK" and data[0] else []) if int(u) >= prev["next"]]
-                news = summaries(c, [u.decode() for u in uids][-20:])
-            if not news:
+                uids = [u.decode() for u in (data[0].split() if typ == "OK" and data[0] else []) if int(u) >= prev["next"]][-20:]
+                moved = screen(acc, c, uids)
+                news = [n for n in summaries(c, [u for u in uids if u not in moved], acc)]
+            if moved:
+                _unread[acc["id"]] = max(0, _unread.get(acc["id"], 0) - len(moved))
+            if not news or not acc["mail"].get("notify", True):
                 continue
             link = f"#/mails/{acc['id']}"
             if len(news) > 3:
@@ -582,7 +688,9 @@ def poll_once(state):
                 continue
             for n in news:
                 who = (n["from"][0]["name"] or n["from"][0]["email"]) if n["from"] else "?"
-                activity.log(acc["owner"], "mails", f"{who} : {n['subject']}", f"{link}?uid={n['uid']}", title=f"Nouveau mail · {acc['label']}")
+                sus = n.get("security", {}).get("level") == "suspect"
+                activity.log(acc["owner"], "mails", f"{'⚠️ ' if sus else ''}{who} : {n['subject']}", f"{link}?uid={n['uid']}",
+                             title=f"{'Mail suspect' if sus else 'Nouveau mail'} · {acc['label']}")
         except Exception as e:  # noqa: BLE001
             print("mails", acc.get("label"), e, flush=True)
 
@@ -626,7 +734,7 @@ def folders_route(acc_id):
     with session(acc) as c:
         fl = folders(acc, c)
         for f in fl[:40]:
-            if f["role"] in ("inbox", "junk", "drafts") or not f["role"]:
+            if f["role"] in ("inbox", "drafts") or not f["role"]:  # pas de pastille sur Indésirables ni Corbeille
                 typ, data = c.status(q(f["name"]), "(UNSEEN)")
                 if typ == "OK":
                     m = re.search(rb"UNSEEN (\d+)", data[0])
@@ -647,7 +755,7 @@ def messages(acc_id):
         total = select(c, folder)
         uids = search_uids(c, query, request.args.get("unread") == "1") if total else []
         chunk = [u.decode() for u in uids[page * PAGE:(page + 1) * PAGE]]
-        items = summaries(c, chunk)
+        items = summaries(c, chunk, acc)
     return jsonify(messages=items, total=len(uids), page=page, more=len(uids) > (page + 1) * PAGE)
 
 
@@ -769,6 +877,45 @@ def action(acc_id):
     return jsonify(ok=True)
 
 
+@bp.post("/api/mail/<acc_id>/verdict")
+def verdict(acc_id):
+    """« Ce mail est fiable » (l'expéditeur ne sera plus signalé) ou « C'est un faux mail » (Indésirables, et les suivants aussi)."""
+    acc = account(acc_id)
+    d = request.get_json(silent=True) or {}
+    folder, uid, choice = d.get("folder") or "INBOX", str(int(d["uid"])), d.get("verdict")
+    if choice not in ("fiable", "faux"):
+        raise ValueError("Choix inconnu")
+    with session(acc) as c:
+        select(c, folder)
+        msg = email.message_from_bytes(raw_message(acc, c, folder, uid), policy=email.policy.default)
+        sender = phishing.parseaddr(str(msg["From"] or ""))[1].lower()
+        fl = folders(acc, c)
+        roles = {f["role"]: f["name"] for f in fl if f["role"]}
+        dest = roles.get("junk") if choice == "faux" else (roles.get("inbox") if folder == roles.get("junk") else None)
+        if dest and dest != folder:
+            select(c, folder, readonly=False)
+            if "MOVE" in caps(c):
+                _ok(*c.uid("MOVE", uid, q(dest)), "déplacement")
+            else:
+                _ok(*c.uid("COPY", uid, q(dest)), "déplacement")
+                c.uid("STORE", uid, "+FLAGS", "(\\Deleted)")
+                c.uid("EXPUNGE", uid) if "UIDPLUS" in caps(c) else c.expunge()
+    if sender:
+        def go(data):
+            lists = data.setdefault(acc["owner"], {"fiables": [], "faux": []})
+            keep, drop = ("fiables", "faux") if choice == "fiable" else ("faux", "fiables")
+            lists.setdefault(keep, [])
+            lists.setdefault(drop, [])
+            if sender not in lists[keep]:
+                lists[keep].append(sender)
+            lists[drop] = [x for x in lists[drop] if x != sender]
+        store.update("mail/expediteurs", {}, go)
+    msgid = (msg["Message-ID"] or "").strip()
+    if msgid:
+        store.update("mail/verdicts", {}, lambda data: data.get(acc_id, {}).pop(msgid, None))
+    return jsonify(ok=True, moved=bool(dest and dest != folder), sender=sender)
+
+
 @bp.post("/api/mail/<acc_id>/folders")
 def create_folder(acc_id):
     acc = account(acc_id)
@@ -781,21 +928,19 @@ def create_folder(acc_id):
     return jsonify(ok=True)
 
 
-@bp.post("/api/mail/<acc_id>/send")
-def send(acc_id):
-    acc = account(acc_id)
-    d = request.form.to_dict()
+def send_message(acc, d, files=()):
+    """Envoie un mail (d : to, cc, bcc, subject, text, et pour une réponse mode / ref_uid / ref_folder).
+    Renvoie un avertissement si le mail est parti sans être rangé dans « Envoyés »."""
     original = None
     if d.get("ref_uid") and d.get("mode"):
         with session(acc) as c:
             select(c, d.get("ref_folder") or "INBOX")
             original = email.message_from_bytes(raw_message(acc, c, d.get("ref_folder") or "INBOX", str(int(d["ref_uid"]))), policy=email.policy.default)
-    msg, bcc = build(acc, d, request.files.getlist("files"), original)
+    msg, bcc = build(acc, d, files, original)
     if bcc:
         msg["Bcc"] = bcc
     smtp_send(acc, msg)
     del msg["Bcc"]  # pas de copie cachée visible dans « Envoyés »
-    warn = None
     try:
         with session(acc) as c:
             if not acc["mail"].get("auto_sent"):
@@ -806,6 +951,12 @@ def send(acc_id):
                 select(c, d.get("ref_folder") or "INBOX", readonly=False)
                 c.uid("STORE", str(int(d["ref_uid"])), "+FLAGS", "(\\Answered)")
     except Exception:  # noqa: BLE001
-        warn = "Mail envoyé, mais pas rangé dans « Envoyés »"
+        return "Mail envoyé, mais pas rangé dans « Envoyés »"
+    return None
+
+
+@bp.post("/api/mail/<acc_id>/send")
+def send(acc_id):
+    warn = send_message(account(acc_id), request.form.to_dict(), request.files.getlist("files"))
     return jsonify(ok=True, warning=warn)
 
