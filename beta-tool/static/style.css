@@ -1950,3 +1950,33 @@ select.inline { display: inline-block; width: auto; padding: 4px 8px; margin: 0 
   .bg-tabs label:has(input:checked) span { display: inline; }
   .bg-sugg { grid-template-columns: 1fr; }
 }
+
+/* ---------- Comptes enfants ---------- */
+.child-lock { max-width: 460px; margin: 60px auto; padding: 36px 28px; text-align: center; display: grid; justify-items: center; gap: 10px; }
+.child-lock h2 { margin: 6px 0 0; }
+.child-lock p { margin: 0; color: var(--muted); }
+.child-clock { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 60; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
+  border-radius: 99px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow, 0 4px 14px rgb(0 0 0 / .1)); font-weight: 600; font-size: .85rem; }
+.child-clock svg.i { width: 15px; height: 15px; }
+.child-clock.low { color: var(--err); border-color: var(--err); }
+.fm-child { display: grid; gap: 12px; }
+.fm-tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 4px 12px; }
+.fm-week { display: flex; align-items: flex-end; gap: 6px; height: 70px; margin-top: 6px; }
+.fm-week span { flex: 1; display: grid; grid-template-rows: 1fr auto; height: 100%; text-align: center; font-size: .7rem; color: var(--muted); }
+.fm-week i { align-self: end; display: block; min-height: 2px; border-radius: 4px 4px 0 0; background: var(--accent); }
+.fm-hours { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fm-hours input[type=time] { width: auto; flex: 1 1 110px; }
+/* ---------- Accès sécurisé ---------- */
+.ac-hero { display: flex; align-items: center; gap: 16px; padding: 18px 20px; }
+.ac-hero h2 { margin: 0 0 2px; font-size: 1.25rem; }
+.ac-check { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 6px; }
+.ac-check li { display: flex; gap: 8px; align-items: flex-start; }
+.ac-check li svg.i { width: 18px; height: 18px; flex: none; margin-top: 2px; }
+.ac-check li.ok svg.i { color: var(--ok); }
+.ac-check li.no svg.i { color: var(--warn); }
+.ac-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+.ac-grid .card-title .tile { width: 34px; height: 34px; border-radius: 10px; box-shadow: none; }
+.ac-grid .card-title .tile svg.i { width: 17px; height: 17px; }
+.ac-steps { padding-left: 20px; display: grid; gap: 8px; font-size: .92rem; line-height: 1.5; }
+.ac-steps ul { padding-left: 18px; margin: 6px 0 0; display: grid; gap: 4px; }
+@media (max-width: 640px) { .ac-grid { grid-template-columns: 1fr; } }

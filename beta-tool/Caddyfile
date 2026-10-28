@@ -1,0 +1,13 @@
+# Accès sécurisé à la maison : Caddy crée sa propre autorité de certification (« tls internal »).
+# Aucun certificat public, aucun port ouvert sur la box : seuls les appareils de la maison qui font
+# confiance au certificat (Réglages › Accès sécurisé) voient l'adresse en https:// sans alerte.
+{
+	local_certs
+	skip_install_trust
+}
+
+{$BETA_HOST}, localhost {
+	tls internal
+	encode gzip
+	reverse_proxy beta-tool:8080
+}

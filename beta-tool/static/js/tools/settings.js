@@ -8,11 +8,16 @@ import { canvas as qrCanvas } from "../qrcode.js";
 import * as i18n from "../i18n.js";
 import { settingsTab as enligne } from "../accounts.js";
 import { settingsTab as apiTab } from "../apitokens.js";
+import { settingsTab as famille } from "../famille.js";
+import { card as passkeysCard } from "../passkeys.js";
+import { settingsTab as acces } from "../acces.js";
 
 const TABS = [
   ["general", "Général", "settings", true],
   ["outils", "Outils", "grid", true],
   ["comptes", "Comptes", "users", false],
+  ["famille", "Famille", "heart", true],
+  ["acces", "Accès sécurisé", "lock", true],
   ["enligne", "Comptes en ligne", "globe", false],
   ["api", "API", "code", false],
   ["notifications", "Notifications", "bell", false],
@@ -22,12 +27,12 @@ const TABS = [
 ];
 
 export async function render(root, parts) {
-  const tabs = TABS.filter(t => !t[3] || isAdmin());
+  const tabs = TABS.filter(t => (!t[3] || isAdmin()) && !(state.config.child && ["enligne", "api"].includes(t[0])));
   const tab = tabs.find(t => t[0] === parts[0])?.[0] || (isAdmin() ? "general" : "comptes");
   root.innerHTML = pageHead({ name: "Réglages", icon: "settings", tile: "", desc: "Personnalise Bêta Tool : outils, comptes, mises à jour…" })
     + `<nav class="tabs">${tabs.map(([id, label, ic]) => `<a href="#/reglages/${id}" class="${id === tab ? "on" : ""}">${icon(ic)}${label}</a>`).join("")}</nav>
        <div id="set-body"></div>`;
-  await ({ general, outils, comptes, enligne, api: apiTab, notifications, maj, apparence, apropos })[tab]($("#set-body"));
+  await ({ general, outils, comptes, famille, acces, enligne, api: apiTab, notifications, maj, apparence, apropos })[tab]($("#set-body"));
 }
 
 // --- Général ----------------------------------------------------------------
@@ -86,7 +91,8 @@ async function comptes(el) {
       <div class="grid2"><input type="password" name="old" placeholder="Mot de passe actuel" required autocomplete="current-password">
         <input type="password" name="new" placeholder="Nouveau mot de passe (6 caractères min.)" required autocomplete="new-password"></div>
       <button class="btn">${icon("check")}Changer</button></form>
-    <div class="card" id="twofa"></div>`;
+    <div class="card" id="twofa"></div>
+    <div class="card" id="passkeys"></div>`;
   if (isAdmin()) {
     if (mode === "accounts") {
       const users = await api("/api/users");
@@ -95,7 +101,7 @@ async function comptes(el) {
           <span class="avatar">${esc(u.name[0].toUpperCase())}</span>
           <div class="txt"><b>${esc(u.name)}${u.name === state.config.user.name ? " (toi)" : ""}</b><small>Créé le ${esc(u.created || "?")}${u.twofa ? ` · <span class="pill-ok">${icon("shield")}Double authentification</span>` : ""}</small></div>
           ${u.twofa && u.name !== state.config.user.name ? `<button class="icon-btn plain" data-a="twofa" title="Désactiver sa double authentification (téléphone perdu)">${icon("shield")}</button>` : ""}
-          <select data-a="role"><option value="member" ${u.role === "member" ? "selected" : ""}>Membre</option><option value="admin" ${u.role === "admin" ? "selected" : ""}>Administrateur</option></select>
+          <select data-a="role"><option value="member" ${u.role === "member" ? "selected" : ""}>Membre</option><option value="admin" ${u.role === "admin" ? "selected" : ""}>Administrateur</option><option value="child" ${u.role === "child" ? "selected" : ""}>Enfant</option></select>
           <button class="icon-btn plain" data-a="pw" title="Changer le mot de passe">${icon("key")}</button>
           <button class="icon-btn plain" data-a="del" title="Supprimer">${icon("trash")}</button>
         </div>`).join("")}</div>`;
@@ -109,12 +115,13 @@ async function comptes(el) {
       <div class="grid2">
         <input type="text" name="name" placeholder="Identifiant (ex. Bastien)" required autocomplete="off">
         <input type="password" name="password" placeholder="Mot de passe (6 caractères min.)" required autocomplete="new-password">
-        ${mode === "accounts" ? `<select name="role" style="width:100%"><option value="member">Membre : utilise les outils</option><option value="admin">Administrateur : gère aussi les réglages</option></select>` : ""}
+        ${mode === "accounts" ? `<select name="role" style="width:100%"><option value="member">Membre : utilise les outils</option><option value="admin">Administrateur : gère aussi les réglages</option><option value="child">Enfant : outils, heures et temps limités</option></select>` : ""}
       </div>
       <button class="btn">${icon("plus")}Créer le compte</button></form>
       <div class="card"><div class="card-title">${icon("help")}Rôles</div>
         <dl class="kv"><dt>Administrateur</dt><dd>Tous les outils + Réglages (outils, comptes, mises à jour) et Sauvegardes.</dd>
-        <dt>Membre</dt><dd>Tous les outils activés. Ses notes, partages, questionnaires et liens lui sont propres.</dd></dl></div>`;
+        <dt>Membre</dt><dd>Tous les outils activés. Ses notes, partages, questionnaires et liens lui sont propres.</dd>
+        <dt>Enfant</dt><dd>Seulement les outils choisis, aux heures permises et avec un temps d'écran par jour (onglet <a href="#/reglages/famille">Famille</a>).</dd></dl></div>`;
   }
   el.innerHTML = html || `<div class="card"><p>Rien à régler ici.</p></div>`;
   $("#pw-form")?.addEventListener("submit", async e => {
@@ -134,6 +141,7 @@ async function comptes(el) {
     } catch (err) { toast(err.message, "err"); }
   });
   if ($("#twofa")) twofa($("#twofa"));
+  if ($("#passkeys")) passkeysCard($("#passkeys"));
   el.querySelectorAll("[data-user]").forEach(row => {
     const name = row.dataset.user;
     row.querySelector("[data-a=twofa]")?.addEventListener("click", () => {

@@ -25,6 +25,7 @@
     <input type="text" name="username" id="username" placeholder="Identifiant" autocomplete="username" autocapitalize="none" hidden>
     <input type="password" name="password" placeholder="Mot de passe" autocomplete="current-password" required>
     <button class="btn wide">Se connecter</button>
+    <button type="button" class="btn ghost wide" id="pk-btn" hidden style="margin-top:10px">🔑 Avec une clé d'accès</button>
     <p class="msg" id="err" style="margin:12px 0 0"></p>
   </form>
   <form class="card" method="post" action="/login/code" id="code-form" hidden>
@@ -54,6 +55,35 @@
     else { document.getElementById("lead").textContent = "Entre le mot de passe pour accéder à tes outils."; document.querySelector("[name=password]").focus(); }
     if (m.site) document.querySelector("h1").firstChild.textContent = m.site;
   });
+</script>
+<script>
+  // Clés d'accès : empreinte, visage ou code de l'appareil (seulement sur une adresse sécurisée)
+  const b64 = b => btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const unb64 = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+  let pkAbort = null;
+  async function passkey(conditional) {
+    const o = await (await fetch("/api/auth/passkey/options", { method: "POST" })).json();
+    if (!o.available) return;
+    if (pkAbort) pkAbort.abort();
+    pkAbort = new AbortController();
+    const cred = await navigator.credentials.get({ mediation: conditional ? "conditional" : "optional", signal: pkAbort.signal,
+      publicKey: { challenge: unb64(o.challenge), rpId: o.rpId, timeout: o.timeout, userVerification: o.userVerification, allowCredentials: [] } });
+    const r = cred.response;
+    const res = await fetch("/api/auth/passkey", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: cred.id,
+      clientDataJSON: b64(r.clientDataJSON), authenticatorData: b64(r.authenticatorData), signature: b64(r.signature), userHandle: r.userHandle ? b64(r.userHandle) : null }) });
+    if (res.ok) return location.replace("/");
+    document.getElementById("err").textContent = (await res.json()).error || "Connexion refusée";
+  }
+  if (window.PublicKeyCredential && isSecureContext && new URLSearchParams(location.search).get("etape") !== "code") {
+    fetch("/api/auth/mode").then(r => r.json()).then(m => {
+      if (m.mode !== "accounts") return;
+      const btn = document.getElementById("pk-btn");
+      btn.hidden = false;
+      btn.onclick = () => passkey(false).catch(e => { if (e.name !== "AbortError" && e.name !== "NotAllowedError") document.getElementById("err").textContent = e.message; });
+      document.getElementById("username").setAttribute("autocomplete", "username webauthn");
+      PublicKeyCredential.isConditionalMediationAvailable?.().then(ok => ok && passkey(true).catch(() => {}));
+    });
+  }
 </script>
 <script type="module">import { apply, preferred } from "/js/i18n.js"; apply(preferred());</script>
 </body>

@@ -181,7 +181,7 @@ def _check(name, password):
 def add(name, password, role="member"):
     name = (name or "").strip()
     _check(name, password)
-    if role not in ("admin", "member"):
+    if role not in ("admin", "member", "child"):
         raise ValueError("Rôle inconnu")
 
     def go(data):
@@ -215,7 +215,7 @@ def set_password(name, password):
 
 
 def set_role(name, role):
-    if role not in ("admin", "member"):
+    if role not in ("admin", "member", "child"):
         raise ValueError("Rôle inconnu")
 
     def go(data):

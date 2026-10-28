@@ -2,11 +2,13 @@
 studio PDF, décompresseur, Bêta Work…)."""
 
 import mimetypes
+import re
 import os
 import secrets
 import shutil
 from datetime import timedelta
 from functools import wraps
+from urllib.parse import urlparse
 
 from flask import Flask, abort, g, jsonify, redirect, request, send_file, send_from_directory, session
 from waitress import serve
@@ -25,6 +27,7 @@ import contacts
 import converter
 import downloader
 import drop
+import famille
 import files
 import forms
 import imagetool
@@ -44,6 +47,7 @@ import translate
 import vault
 import videotool
 import vpn
+import passkeys
 import paperasse
 import pdftools
 import push
@@ -109,7 +113,7 @@ def share_target():
 
 # Accessibles sans être connecté : page de connexion, ressources de la page, pages publiques
 # (partages /d/, questionnaires /f/, liens courts /s/) et leurs API publiques.
-PUBLIC = ("/login", "/login/code", "/style.css", "/js/i18n.js", "/i18n/", "/vendor/fonts/", "/brand/", "/manifest.webmanifest", "/sw.js", "/api/auth/mode",
+PUBLIC = ("/login", "/login/code", "/style.css", "/js/i18n.js", "/i18n/", "/vendor/fonts/", "/brand/", "/manifest.webmanifest", "/sw.js", "/api/auth/mode", "/api/auth/passkey", "/ca.crt",
           "/d/", "/f/", "/s/", "/public/", "/api/public/", "/statut", "/.well-known/", "/api/v1/openapi.json")
 
 
@@ -139,6 +143,9 @@ def gatekeeper():
     tool = settings.blocked(path)
     if tool:
         return jsonify(error="Cet outil est désactivé dans les réglages"), 404
+    refused = famille.gate(g.user, path)
+    if refused:  # compte enfant : outil non autorisé, hors des heures permises ou temps écoulé
+        return jsonify(error=refused, child=True), 403
     if g.user or path.startswith(PUBLIC):
         return None
     # ONLYOFFICE appelle ces routes lui-même ; elles sont protégées par une signature
@@ -187,7 +194,8 @@ def logout():
 @app.get("/api/config")
 def config():
     s = settings.get()
-    return jsonify(storage=settings.storage_name(), site=s["site_name"], tools=s["tools"], user=g.user,
+    child = famille.state(g.user["name"]) if g.user.get("role") == "child" else None
+    return jsonify(storage=settings.storage_name(), site=s["site_name"], tools=famille.allowed_tools(g.user, s["tools"]), user=g.user, child=child,
                    mode=auth.mode(), version=updater.current_version(), prefs=user_prefs(g.user["name"]))
 
 
@@ -364,6 +372,28 @@ def restart():
 @app.get("/api/activity")
 def activity_list():
     return jsonify(activity.recent(g.user["name"], int(request.args.get("since", 0) or 0)))
+
+
+CADDY_CA = os.environ.get("CADDY_CA", "/caddy/caddy/pki/authorities/local/root.crt")
+
+
+@app.get("/ca.crt")
+def home_ca():
+    """Certificat de la maison (profil « https ») à installer une fois sur chaque appareil."""
+    if not os.path.exists(CADDY_CA):
+        return "Certificat introuvable : active le profil https et monte le dossier de Caddy dans /caddy (voir docker-compose.yml).", 404
+    return send_file(CADDY_CA, mimetype="application/x-x509-ca-cert", as_attachment=True, download_name="beta-tool-maison.crt")
+
+
+@app.get("/api/security")
+@admin_only
+def security_status():
+    import passkeys
+    o = passkeys.origin()
+    host = urlparse(o).hostname or ""
+    return jsonify(origin=o, https=o.startswith("https://"), secure=passkeys.secure_ok(), ip=bool(re.match(r"^[\d.]+$|^\[?[0-9a-f:]+\]?$", host)),
+                   tailscale=host.endswith(".ts.net"), ca=os.path.exists(CADDY_CA), accounts=auth.mode() == "accounts",
+                   twofa=sum(1 for u in auth.users() if u.get("totp")), passkeys=sum(len(u.get("passkeys", [])) for u in auth.users()), users=len(auth.users()))
 
 
 @app.get("/api/dashboard")
@@ -625,7 +655,7 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,

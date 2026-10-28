@@ -16,7 +16,7 @@ export function targetsFor(ext) {
 }
 
 export function init() {
-  fetch("/api/convert/formats").then(r => r.json()).then(list => {
+  fetch("/api/convert/formats").then(r => r.ok ? r.json() : []).then(list => {
     engines = list;
     $("#cv-formats").innerHTML = list.map(e =>
       `<dt>${esc(e.label)}</dt><dd>${e.inputs.map(esc).join(", ")} → ${e.outputs.map(esc).join(", ")} <small>(${esc(e.tool)})</small></dd>`).join("");

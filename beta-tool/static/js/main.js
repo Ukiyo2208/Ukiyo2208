@@ -39,7 +39,7 @@ function buildNav() {
   const u = state.config.user;
   $("#side-user").innerHTML = `
     <div class="me"><span class="avatar">${esc((u.name[0] || "?").toUpperCase())}</span>
-      <span><b>${esc(state.config.mode === "open" ? "Accès libre" : u.name)}</b><small>${u.role === "admin" ? "Administrateur" : "Membre"} · v${esc(state.config.version)}</small></span>
+      <span><b>${esc(state.config.mode === "open" ? "Accès libre" : u.name)}</b><small>${u.role === "admin" ? "Administrateur" : u.role === "child" ? "Enfant" : "Membre"} · v${esc(state.config.version)}</small></span>
       ${state.config.mode !== "open" ? `<form method="post" action="/logout"><button class="icon-btn plain" title="Se déconnecter">${icon("logout")}</button></form>` : ""}
     </div>
     <div class="theme-switch" role="group" aria-label="Thème">
@@ -149,10 +149,11 @@ async function loadDashboard() {
     }).join("");
     const labels = { taches: ["Tâches du jour", "check", "#/taches"], inventaire: ["Objets à surveiller", "archive", "#/inventaire"], colis: ["Colis en route", "send", "#/colis"], mails: ["Mails non lus", "mail", "#/mails"], contacts: ["Contacts", "users", "#/contacts"], recettes: ["Recettes", "utensils", "#/recettes"], paperasse: ["Papiers à valider", "receipt", "#/paperasse"], abonnements: ["Chaînes suivies", "rss", "#/abonnements"], documents: ["Documents", "briefcase", "#/work"], notes: ["Notes", "notebook", "#/notes"], partages: ["Partages actifs", "send", "#/drop"],
                      questionnaires: ["Questionnaires", "form", "#/questionnaires"], liens: ["Liens courts", "link", "#/liens"] };
-    const counts = Object.entries(d.counts).filter(([k, v]) => v != null && labels[k]).map(([k, v]) =>
+    const toolOf = { documents: "work", partages: "drop", liens: "liens", questionnaires: "questionnaires" };
+    const counts = Object.entries(d.counts).filter(([k, v]) => v != null && labels[k] && state.config.tools[toolOf[k] || k] !== false).map(([k, v]) =>
       `<a class="stat" href="${labels[k][2]}">${icon(labels[k][1])}<b>${v}</b><span>${labels[k][0]}</span></a>`).join("");
     const acts = d.activity.length ? d.activity.map(activityRow).join("") : `<p class="hint">Rien pour l'instant.</p>`;
-    $("#dash").innerHTML = `<div class="dash-col">${disks}<div id="pins-slot"></div></div>` + (counts ? `<div class="card widget"><div class="w-head">${icon("chart")}<b>En bref</b></div><div class="stats">${counts}</div></div>` : "")
+    $("#dash").innerHTML = `<div class="dash-col">${state.config.child ? "" : disks}<div id="pins-slot"></div></div>` + (counts ? `<div class="card widget"><div class="w-head">${icon("chart")}<b>En bref</b></div><div class="stats">${counts}</div></div>` : "")
       + `<div class="card widget"><div class="w-head">${icon("clock")}<b>Activité récente</b></div><div class="acts">${acts}</div></div>`;
   } catch { $("#dash").innerHTML = ""; }
   $$(".pins-fallback").forEach(el => el.remove());
@@ -187,6 +188,7 @@ async function route() {
   $$("#nav a, #tabbar a, #sheet a").forEach(a => a.classList.toggle("active", a.dataset.route === current.top));
   closePanel();
   if (prev.top !== current.top) window.scrollTo(0, 0);
+  if (state.config.child?.blocked) return childLock();
   const t = current.tool;
   if (t && !visible(t)) return disabledPage(t);
   if (t && TOOLS.includes(t) && t.view) {  // en-têtes écrits dans index.html : on y ajoute l'épingle
@@ -227,11 +229,45 @@ async function route() {
 }
 addEventListener("hashchange", route);
 
+// --- Compte enfant : heures permises et temps d'écran -----------------------
+function childLock() {
+  const c = state.config.child;
+  $$("main > section").forEach(s => { s.hidden = s.dataset.view !== "dyn"; });
+  $("#dyn-root").dataset.tool = "";
+  $("#dyn-root").innerHTML = `<div class="child-lock card"><span class="tile violet">${icon("clock")}</span><h2>À plus tard !</h2><p>${esc(c.blocked)}</p>
+    <small class="meta">${c.used ? `Aujourd'hui : ${c.used} min` : ""}</small></div>`;
+}
+
+function childClock() {
+  let lastInput = Date.now();
+  ["pointerdown", "keydown", "scroll", "touchstart"].forEach(ev => addEventListener(ev, () => { lastInput = Date.now(); }, { passive: true, capture: true }));
+  const pill = document.createElement("div");
+  pill.className = "child-clock";
+  document.body.append(pill);
+  const paint = c => {
+    pill.hidden = c.remaining == null || !!c.blocked;
+    pill.innerHTML = `${icon("clock")}${c.remaining} min`;
+    pill.classList.toggle("low", c.remaining != null && c.remaining <= 10);
+    pill.title = `Temps d'écran restant aujourd'hui (${c.used} min utilisées)`;
+  };
+  paint(state.config.child);
+  setInterval(async () => {
+    if (document.visibilityState !== "visible" || Date.now() - lastInput > 120000) return;
+    try {
+      const c = await api("/api/famille/ping", { json: {} });
+      const was = state.config.child.blocked;
+      state.config.child = c;
+      paint(c);
+      if (!!was !== !!c.blocked) route();
+    } catch {}
+  }, 60000);
+}
+
 function disabledPage(t) {
   $$("main > section").forEach(s => { s.hidden = s.dataset.view !== "dyn"; });
   $("#dyn-root").dataset.tool = "";
   $("#dyn-root").innerHTML = `<div class="empty" style="padding:80px 20px">${icon(t.icon)}<b>${esc(t.name)} est désactivé</b>
-    ${isAdmin() ? `<a class="btn small" href="#/reglages/outils">${icon("settings")}Gérer les outils</a>` : "Demande à un administrateur de l'activer."}</div>`;
+    ${isAdmin() ? `<a class="btn small" href="#/reglages/outils">${icon("settings")}Gérer les outils</a>` : state.config.child ? "Cet outil n'est pas autorisé sur ton compte : demande à un parent." : "Demande à un administrateur de l'activer."}</div>`;
 }
 
 /** En-tête standard d'un outil chargé à la demande. */
@@ -464,6 +500,7 @@ export async function reloadConfig() {
   downloader.init();
   converter.init();
   route();
+  if (state.config.child) childClock();
   pollActivity(true);
   setInterval(pollActivity, 15000);
   addEventListener("focus", () => pollActivity());
