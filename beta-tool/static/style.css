@@ -1715,3 +1715,76 @@ select.inline { display: inline-block; width: auto; padding: 4px 8px; margin: 0 
 .ct-files { display: grid; gap: 8px; max-height: 52vh; overflow: auto; }
 .ct-files small { display: block; overflow-wrap: anywhere; }
 .ml-acts .check input[name=folder] { width: auto; height: auto; min-height: 36px; appearance: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); }
+
+/* --- Agenda : répétitions personnalisées, poubelles ------------------------------------- */
+.ag-rep { display: grid; gap: 10px; margin: 10px 0 4px; padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+.ag-rep .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ag-rep input[type=number] { width: 70px; }
+.ag-rep select, .ag-rep input[type=date] { width: auto; }
+.ag-days { display: flex; gap: 6px; }
+.ag-days label { cursor: pointer; }
+.ag-days input { display: none; }
+.ag-days span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border-strong); font-weight: 600; }
+.ag-days input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.ag-month { display: grid; gap: 6px; }
+.ag-bin { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.ag-bin select { flex: 1 1 150px; width: auto; }
+
+/* --- Ma journée ----------------------------------------------------------------- */
+.jr-hero { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.jr-hero .grow { min-width: 260px; }
+.jr-nav { display: flex; align-items: center; gap: 6px; }
+.jr-nav h2 { margin: 0; font-size: 1.5rem; }
+.jr-fete { margin: 8px 0 0; }
+.jr-sum { margin: 8px 0 0; color: var(--muted); }
+.jr-weather { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-radius: 16px; background: var(--surface-2); }
+.jr-weather small { display: block; }
+.jr-wicon { font-size: 2.6rem; line-height: 1; }
+.jr-bins { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; padding: 12px 16px; border-radius: 14px; background: rgb(245 158 11 / .12); border: 1px solid rgb(245 158 11 / .4); }
+.jr-bins > svg.i { color: var(--warn); flex: none; }
+.jr-bday { background: rgb(236 72 153 / .1); border-color: rgb(236 72 153 / .35); }
+.jr-bday > svg.i { color: #ec4899; }
+.jr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.jr-card { margin: 0; }
+.jr-card .card-title { display: flex; align-items: center; gap: 8px; }
+.jr-more { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: .84rem; font-weight: 550; color: var(--accent); text-decoration: none; }
+.jr-more svg.i { width: 14px; height: 14px; }
+.jr-list { display: grid; gap: 6px; }
+.jr-item { display: flex; gap: 12px; align-items: flex-start; padding: 9px 12px; border-radius: 12px; background: var(--surface-2); color: var(--text); text-decoration: none; }
+.jr-item small { display: block; }
+.jr-item.late { border-left: 3px solid var(--err); }
+.jr-time { min-width: 46px; color: var(--accent); }
+.jr-big { margin: 0 0 8px; font-size: 1.1rem; }
+.jr-big b { font-size: 1.8rem; }
+.jr-empty { margin: 4px 0; }
+
+/* --- Colis -------------------------------------------------------------------------- */
+.cl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+.cl-card { margin: 0; display: grid; gap: 14px; }
+.cl-card.livre { opacity: .85; }
+.cl-head { display: flex; gap: 12px; align-items: center; }
+.cl-head .grow { min-width: 0; }
+.cl-head small { display: block; overflow-wrap: anywhere; }
+.cl-status { padding: 4px 10px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); font-weight: 650; font-size: .82rem; white-space: nowrap; }
+.cl-card.livre .cl-status { background: rgb(16 185 129 / .15); color: var(--ok); }
+.cl-card.incident .cl-status { background: rgb(239 68 68 / .15); color: var(--err); }
+.cl-track { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.cl-track span { display: grid; justify-items: center; gap: 6px; position: relative; }
+.cl-track span::before { content: ""; position: absolute; top: 6px; left: -50%; right: 50%; height: 3px; background: var(--border-strong); }
+.cl-track span:first-child::before { display: none; }
+.cl-track span.on::before { background: var(--accent); }
+.cl-track i { width: 15px; height: 15px; border-radius: 50%; background: var(--surface-solid); border: 3px solid var(--border-strong); z-index: 1; }
+.cl-track span.on i { border-color: var(--accent); background: var(--accent); }
+.cl-track span.now i { box-shadow: 0 0 0 5px var(--accent-soft); }
+.cl-track small { font-size: .7rem; color: var(--muted); text-align: center; }
+.cl-track span.on small { color: var(--text); }
+.cl-steps p { margin: 4px 0; font-size: .86rem; }
+.cl-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.ct-gtitle { display: flex; align-items: center; justify-content: space-between; margin: 10px 0 2px 10px; }
+.ct-gtitle .icon-btn { width: 26px; height: 26px; }
+.ct-gempty { margin: 2px 0 6px 24px; font-size: .84rem; }
+.ct-gbar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 6px; border-radius: 12px; background: var(--accent-soft); }
+.ct-gmembers { display: grid; gap: 6px; max-height: 40vh; overflow: auto; padding: 4px 2px; }
+.ct-gmembers .check small { margin-left: 6px; }
+.ct-gsearch { margin-bottom: 8px; }
+.ct-ggroups { display: flex; flex-wrap: wrap; gap: 6px 16px; }

@@ -198,11 +198,11 @@ def apply_fields(ev, d, orig_start):
     _set(ev, "summary", title)
     _set(ev, "location", str(d.get("location") or "")[:300])
     _set(ev, "description", str(d.get("notes") or "")[:5000])
-    kind = agenda.rrule_kind(ev)
-    want = d.get("recur") or ""
-    if want in ("daily", "weekly", "monthly", "yearly") and want != kind:
-        _set(ev, "rrule", f"FREQ={want.upper()}")
-    elif not want and kind and kind != "custom":
+    rule = agenda.rrule_from(d, s)
+    if rule:
+        if not hasattr(ev, "rrule") or ev.rrule.value.upper() != rule.upper():
+            _set(ev, "rrule", rule)
+    elif rule == "" and hasattr(ev, "rrule"):
         ev.remove(ev.rrule)
     for al in list(getattr(ev, "valarm_list", [])):
         ev.remove(al)
@@ -329,12 +329,32 @@ def _graph_body(d, s, e, allday):
     return body
 
 
-def _recurrence(kind, s):
-    day = s if isinstance(s, date) else s.date()
-    pat = {"daily": {"type": "daily", "interval": 1}, "weekly": {"type": "weekly", "interval": 1, "daysOfWeek": [day.strftime("%A").lower()]},
-           "monthly": {"type": "absoluteMonthly", "interval": 1, "dayOfMonth": day.day},
-           "yearly": {"type": "absoluteYearly", "interval": 1, "dayOfMonth": day.day, "month": day.month}}[kind]
-    return {"pattern": pat, "range": {"type": "noEnd", "startDate": day.isoformat()}}
+GRAPH_DAYS = {"MO": "monday", "TU": "tuesday", "WE": "wednesday", "TH": "thursday", "FR": "friday", "SA": "saturday", "SU": "sunday"}
+
+
+def _recurrence(rule, s):
+    """RRULE (format de l'Agenda) → récurrence Microsoft Graph."""
+    day = s if isinstance(s, date) and not isinstance(s, datetime) else s.date()
+    rep = agenda.parse_rrule(rule) or {"freq": rule.split("=")[1].split(";")[0], "interval": 1, "byday": [], "monthly": "date", "until": None, "count": None}
+    n, f = rep["interval"], rep["freq"]
+    wd = agenda.DAYS[day.weekday()]
+    if f == "DAILY":
+        pat = {"type": "daily", "interval": n}
+    elif f == "WEEKLY":
+        pat = {"type": "weekly", "interval": n, "daysOfWeek": [GRAPH_DAYS[x] for x in (rep["byday"] or [wd])], "firstDayOfWeek": "monday"}
+    elif f == "MONTHLY" and rep.get("monthly") == "nth":
+        idx = {1: "first", 2: "second", 3: "third", 4: "fourth", -1: "last"}.get(rep.get("nth"), "first")
+        pat = {"type": "relativeMonthly", "interval": n, "daysOfWeek": [GRAPH_DAYS[wd]], "index": idx}
+    elif f == "MONTHLY":
+        pat = {"type": "absoluteMonthly", "interval": n, "dayOfMonth": day.day}
+    else:
+        pat = {"type": "absoluteYearly", "interval": n, "dayOfMonth": day.day, "month": day.month}
+    rng = {"type": "noEnd", "startDate": day.isoformat()}
+    if rep.get("until"):
+        rng = {"type": "endDate", "startDate": day.isoformat(), "endDate": rep["until"]}
+    elif rep.get("count"):
+        rng = {"type": "numbered", "startDate": day.isoformat(), "numberOfOccurrences": rep["count"]}
+    return {"pattern": pat, "range": rng}
 
 
 def graph_write(acc, c, d, ref=None, orig_start=None):
@@ -348,14 +368,17 @@ def graph_write(acc, c, d, ref=None, orig_start=None):
             ms_aware = ms.replace(tzinfo=agenda.LOCAL_TZ)
             body["start"] = {"dateTime": ms_aware.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S"), "timeZone": "UTC"}
             body["end"] = {"dateTime": (ms_aware + (e - s)).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S"), "timeZone": "UTC"}
-        elif d.get("recur") in ("daily", "weekly", "monthly", "yearly"):
-            body["recurrence"] = _recurrence(d["recur"], s)
-        elif not d.get("recur") and cur.get("recurrence") and d.get("recur") != "custom":
-            body["recurrence"] = None
+        else:
+            rule = agenda.rrule_from(d, s)
+            if rule:
+                body["recurrence"] = _recurrence(rule, s)
+            elif rule == "" and cur.get("recurrence"):
+                body["recurrence"] = None
         _graph(acc, "PATCH", f"/me/events/{ref}", json=body)
     else:
-        if d.get("recur") in ("daily", "weekly", "monthly", "yearly"):
-            body["recurrence"] = _recurrence(d["recur"], s)
+        rule = agenda.rrule_from(d, s)
+        if rule:
+            body["recurrence"] = _recurrence(rule, s)
         _graph(acc, "POST", f"/me/calendars/{c['gid']}/events", json=body)
 
 
@@ -429,14 +452,17 @@ def google_write(acc, c, d, ref=None, orig_start=None):
             ms = datetime.fromisoformat(cur["start"]["dateTime"].replace("Z", "+00:00")) + delta
             body["start"] = {"dateTime": ms.isoformat(), "timeZone": cur["start"].get("timeZone")} if cur["start"].get("timeZone") else {"dateTime": ms.isoformat()}
             body["end"] = {**body["start"], "dateTime": (ms + (e - s)).isoformat()}
-        elif d.get("recur") in ("daily", "weekly", "monthly", "yearly"):
-            body["recurrence"] = [f"RRULE:FREQ={d['recur'].upper()}"]
-        elif not d.get("recur") and cur.get("recurrence"):
-            body["recurrence"] = []
+        else:
+            rule = agenda.rrule_from(d, s)
+            if rule:
+                body["recurrence"] = [f"RRULE:{rule}"]
+            elif rule == "" and cur.get("recurrence"):
+                body["recurrence"] = []
         _google(acc, "PATCH", f"{path}/{quote(ref, safe='')}", json=body)
     else:
-        if d.get("recur") in ("daily", "weekly", "monthly", "yearly"):
-            body["recurrence"] = [f"RRULE:FREQ={d['recur'].upper()}"]
+        rule = agenda.rrule_from(d, s)
+        if rule:
+            body["recurrence"] = [f"RRULE:{rule}"]
         _google(acc, "POST", path, json=body)
 
 

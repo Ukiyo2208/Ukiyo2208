@@ -19,6 +19,7 @@ import archives
 import auth
 import backup
 import clipboard
+import colis
 import contacts
 import converter
 import downloader
@@ -26,8 +27,10 @@ import drop
 import files
 import forms
 import imagetool
+import journee
 import links
 import mail
+import mailplus
 import mailrules
 import media
 import monitor
@@ -619,12 +622,12 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,
                  paperasse=paperasse.search, recettes=recipes.search, agenda=agenda.search, contacts=contacts.search, **{"presse-papier": clipboard.search})
-COUNTERS.update(mails=mail.count, contacts=contacts.count, recettes=recipes.count, paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
+COUNTERS.update(colis=colis.count, mails=mail.count, contacts=contacts.count, recettes=recipes.count, paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
 
 
 if __name__ == "__main__":
@@ -650,6 +653,9 @@ if __name__ == "__main__":
     agenda.start()
     translate.start()
     mail.start()
+    journee.start()
+    colis.start()
+    mailplus.start()
     dav = agenda.radicale_app()
     if dav:  # serveur CalDAV des agendas (synchronisation des téléphones)
         from werkzeug.middleware.dispatcher import DispatcherMiddleware

@@ -541,7 +541,17 @@ def read(acc, c, folder, uid):
             "message_id": msg["Message-ID"] or "", "references": msg["References"] or "", "html": body, "text": text[:200000],
             "remote_images": remote, "attachments": walk_parts(msg),
             "unsubscribe": None if v["level"] == "phishing" else _unsub_public(acc, msg, body),
+            "invite": None if v["level"] == "phishing" else _invite(acc, msg),
             "security": {"level": v["level"], "reasons": v["reasons"], "score": v["score"], "trusted": bool(v.get("trusted"))}}
+
+
+def _invite(acc, msg):
+    try:
+        import mailplus
+        return mailplus.invite_info(acc, msg)
+    except Exception as e:  # noqa: BLE001
+        print("invitation", e, flush=True)
+        return None
 
 
 def _unsub_public(acc, msg, body):
@@ -654,6 +664,9 @@ def build(acc, d, files, original=None):
 _unread = {}  # compte → mails non lus dans la boîte de réception (pour le tableau de bord)
 
 
+AFTER_SCREEN = []  # fonctions (compte, uid, message) appelées pour chaque nouveau mail légitime
+
+
 def screen(acc, c, uids):
     """Nouveaux mails de la boîte de réception : faux mails rangés dans Indésirables, puis règles de tri.
     Renvoie (uid sortis de la boîte, uid à ne pas notifier)."""
@@ -676,6 +689,11 @@ def screen(acc, c, uids):
             fakes.add(uid[1])
         else:
             others.append((uid[1], msg))
+            for hook in AFTER_SCREEN:  # colis, invitations, répondeur…
+                try:
+                    hook(acc, uid[1], msg)
+                except Exception as e:  # noqa: BLE001
+                    print("mails", hook.__module__, e, flush=True)
     moved = set()
     junk = role_folder(acc, c, "junk") if fakes and acc["mail"].get("filter") is not False else None
     if junk:
@@ -1059,15 +1077,17 @@ def create_folder(acc_id):
     return jsonify(ok=True)
 
 
-def send_message(acc, d, files=()):
+def send_message(acc, d, files=(), info=None):
     """Envoie un mail (d : to, cc, bcc, subject, text, et pour une réponse mode / ref_uid / ref_folder).
-    Renvoie un avertissement si le mail est parti sans être rangé dans « Envoyés »."""
+    Renvoie un avertissement si le mail est parti sans être rangé dans « Envoyés » ; info reçoit l'identifiant du mail."""
     original = None
     if d.get("ref_uid") and d.get("mode"):
         with session(acc) as c:
             select(c, d.get("ref_folder") or "INBOX")
             original = email.message_from_bytes(raw_message(acc, c, d.get("ref_folder") or "INBOX", str(int(d["ref_uid"]))), policy=email.policy.default)
     msg, bcc = build(acc, d, files, original)
+    if info is not None:
+        info["msgid"], info["subject"] = msg["Message-ID"], str(msg["Subject"] or "")
     if bcc:
         msg["Bcc"] = bcc
     smtp_send(acc, msg)
@@ -1088,6 +1108,13 @@ def send_message(acc, d, files=()):
 
 @bp.post("/api/mail/<acc_id>/send")
 def send(acc_id):
-    warn = send_message(account(acc_id), request.form.to_dict(), request.files.getlist("files"))
+    import mailplus
+    acc, d, files = account(acc_id), request.form.to_dict(), request.files.getlist("files")
+    if d.get("send_at"):  # envoi programmé
+        return jsonify(mailplus.schedule(acc, d, files))
+    info = {}
+    warn = send_message(acc, d, files, info)
+    if d.get("follow_days"):
+        mailplus.follow(acc, info, d)
     return jsonify(ok=True, warning=warn)
 

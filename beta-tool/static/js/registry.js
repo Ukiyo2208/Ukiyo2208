@@ -53,8 +53,12 @@ export const TOOLS = [
   { id: "sauvegardes", name: "Sauvegardes", icon: "shield", tile: "bleu-vert", cat: "fichiers", load: () => import("./tools/backup.js"), admin: true,
     desc: "Copie automatique de tes dossiers chaque nuit, avec historique.", chips: ["Planifié", "Incrémental", "Rapport"] },
 
+  { id: "journee", name: "Ma journée", icon: "sun", tile: "ambre", cat: "maison", load: () => import("./tools/journee.js"),
+    desc: "Météo, rendez-vous, poubelles, mails, colis et papiers du jour, sur une page et en notification le matin.", chips: ["Météo", "Résumé", "Notification"] },
   { id: "mails", name: "Mails", icon: "mail", tile: "bleu-vert", cat: "maison", load: () => import("./tools/mail.js"),
     desc: "Tes boîtes mail iCloud, Gmail, Outlook, Orange… réunies, avec notifications.", chips: ["iCloud", "Gmail", "Outlook"] },
+  { id: "colis", name: "Colis", icon: "send", tile: "ambre", cat: "maison", load: () => import("./tools/colis.js"),
+    desc: "Tes colis repérés tout seuls dans tes mails, avec leur avancement jusqu'à la livraison.", chips: ["Colissimo", "Amazon", "Mondial Relay"] },
   { id: "contacts", name: "Contacts", icon: "users", tile: "violet", cat: "maison", load: () => import("./tools/contacts.js"),
     desc: "Tes carnets d'adresses Perso, Pro et Famille, synchronisés avec vos téléphones.", chips: ["Perso / Pro", "iPhone / Android", "Anniversaires"] },
   { id: "agenda", name: "Agenda", icon: "calendar", tile: "", cat: "maison", load: () => import("./tools/agenda.js"),

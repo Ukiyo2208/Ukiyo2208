@@ -9,7 +9,7 @@ const TYPES = {
   addresses: [["HOME", "Domicile"], ["WORK", "Travail"], ["OTHER", "Autre"]],
 };
 const label = (field, t) => (TYPES[field].find(x => x[0] === t) || TYPES[field].at(-1))[1];
-let books = [], items = [], book = "", query = "", current = null, root = null;
+let books = [], items = [], groups = [], book = "", group = "", query = "", current = null, root = null;
 const hue = s => [...(s || "")].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
 const initials = c => ((c.first || "").charAt(0) + (c.last || "").charAt(0)).toUpperCase() || (c.name || "?").charAt(0).toUpperCase();
 
@@ -29,6 +29,7 @@ export async function render(el, parts) {
       <section class="ml-list card">
         <div class="ml-bar"><button class="icon-btn plain ml-only-mobile" id="ct-menu" title="Carnets">${icon("menu")}</button>
           <div class="ml-search grow">${icon("search")}<input type="search" id="ct-q" placeholder="Nom, téléphone, mail, entreprise…"></div></div>
+        <div class="ct-gbar" id="ct-gbar" hidden></div>
         <div id="ct-items" class="ml-items"></div>
       </section>
       <section class="ml-read card" id="ct-card"><div class="empty">${icon("user")}<b>Choisis un contact</b>Sa fiche s'affiche ici.</div></section>
@@ -46,7 +47,7 @@ export async function render(el, parts) {
 }
 
 async function load() {
-  ({ books, contacts: items } = await api(`/api/contacts?book=${encodeURIComponent(book)}&q=${encodeURIComponent(query)}`));
+  ({ books, contacts: items, groups } = await api(`/api/contacts?book=${encodeURIComponent(book)}&group=${encodeURIComponent(group)}&q=${encodeURIComponent(query)}`));
   paintBooks();
   paintList();
 }
@@ -57,16 +58,72 @@ function paintBooks() {
     + books.map(b => `<button class="ml-folder ${b.id === book ? "on" : ""}" data-book="${b.id}">${icon(b.shared ? "home" : /pro/i.test(b.name) ? "briefcase" : "user")}
       <span class="grow">${esc(b.name)}${b.shared ? ` <small class="meta">· partagé</small>` : ""}</span><span class="count">${b.count}</span>
       <span class="ct-bedit" data-bedit="${b.id}" title="Renommer">${icon("edit")}</span></button>`).join("");
+  const shown = groups.filter(gr => !book || gr.book === book);
+  $("#ct-books").innerHTML += `<div class="ct-gtitle"><small class="meta">Groupes</small><button class="icon-btn plain" data-gnew title="Nouveau groupe">${icon("plus")}</button></div>`
+    + (shown.length ? shown.map(gr => `<button class="ml-folder ${gr.id === group ? "on" : ""}" data-group="${gr.id}" style="--d:1">${icon("users")}
+      <span class="grow">${esc(gr.name)}</span><span class="count">${gr.members.length}</span>
+      <span class="ct-bedit" data-gedit="${gr.id}" title="Modifier le groupe">${icon("edit")}</span></button>`).join("") : `<p class="meta ct-gempty">Aucun groupe</p>`);
   $("#ct-export").href = `/api/contacts/export${book ? "?book=" + encodeURIComponent(book) : ""}`;
   $("#ct-books").onclick = e => {
     const ed = e.target.closest("[data-bedit]");
     if (ed) { e.stopPropagation(); return editBook(books.find(b => b.id === ed.dataset.bedit)); }
+    const ge = e.target.closest("[data-gedit]");
+    if (ge) { e.stopPropagation(); return groupPanel(groups.find(x => x.id === ge.dataset.gedit)); }
+    if (e.target.closest("[data-gnew]")) return groupPanel(null);
+    const gb = e.target.closest("[data-group]");
+    if (gb) { group = gb.dataset.group === group ? "" : gb.dataset.group; $(".ct-layout").dataset.pane = "list"; return load(); }
     const b = e.target.closest("[data-book]");
     if (!b) return;
     book = b.dataset.book;
+    group = "";
     $(".ct-layout").dataset.pane = "list";
     load();
   };
+  paintGroupBar();
+}
+
+/** Bandeau du groupe affiché : écrire à tout le groupe. */
+function paintGroupBar() {
+  const bar = $("#ct-gbar"), gr = groups.find(x => x.id === group);
+  if (!bar) return;
+  bar.hidden = !gr;
+  if (!gr) return;
+  const mails = items.filter(c => gr.members.includes(c.id) && c.emails[0]).map(c => c.emails[0].value);
+  bar.innerHTML = `${icon("users")}<b class="grow">${esc(gr.name)}</b>
+    ${mails.length ? `<a class="btn small" href="#/mails?to=${encodeURIComponent(mails.join(", "))}">${icon("mail")}Écrire au groupe</a>` : ""}
+    <button class="icon-btn plain" data-gx title="Voir tous les contacts">${icon("x")}</button>`;
+  bar.querySelector("[data-gx]").onclick = () => { group = ""; load(); };
+}
+
+function groupPanel(gr) {
+  const bookId = gr?.book || book || books.find(b => !b.shared)?.id;
+  const people = [...items].length && !group ? items : null;
+  (people ? Promise.resolve(people) : api(`/api/contacts?book=${encodeURIComponent(bookId)}`).then(r => r.contacts)).then(all => {
+    const list = all.filter(c => c.book === bookId);
+    const m = modal(gr ? gr.name : "Nouveau groupe", `<form>
+      <div class="grid2"><div><label class="field">Nom</label><input type="text" name="name" value="${esc(gr?.name || "")}" required placeholder="Ex. Club de foot, Parents de l'école"></div>
+        <div><label class="field">Carnet</label><select name="book" ${gr ? "disabled" : ""} style="width:100%">${books.map(b => `<option value="${b.id}" ${b.id === bookId ? "selected" : ""}>${esc(b.name)}</option>`).join("")}</select></div></div>
+      <label class="field">Membres</label><input type="search" class="ct-gsearch" placeholder="Filtrer…">
+      <div class="ct-gmembers">${list.map(c => `<label class="check"><input type="checkbox" name="m" value="${c.id}" ${gr?.members.includes(c.id) ? "checked" : ""}> ${esc(c.name)}
+        <small class="meta">${esc(c.emails[0]?.value || c.phones[0]?.value || "")}</small></label>`).join("") || `<p class="meta">Aucun contact dans ce carnet.</p>`}</div>
+      <div class="modal-foot">${gr ? `<button type="button" class="btn danger ghost" data-a="del">${icon("trash")}Supprimer</button>` : ""}<span class="grow"></span>
+        <button type="button" class="btn ghost" data-close>Annuler</button><button class="btn">${icon("check")}Enregistrer</button></div></form>`, { ic: "users", large: true });
+    const f = m.querySelector("form");
+    m.querySelector(".ct-gsearch").oninput = e => { const q = e.target.value.toLowerCase(); m.querySelectorAll(".ct-gmembers label").forEach(l => { l.hidden = !l.textContent.toLowerCase().includes(q); }); };
+    f.onsubmit = async e => {
+      e.preventDefault();
+      const members = [...f.querySelectorAll("[name=m]:checked")].map(x => x.value);
+      try {
+        await api(gr ? `/api/contacts/groups/${gr.id}` : "/api/contacts/groups", { method: gr ? "PUT" : "POST", json: { name: f.name.value, book: f.book.value, members } });
+        closePanel(); toast(gr ? "Groupe enregistré" : "Groupe créé"); load();
+      } catch (err) { toast(err.message, "err"); }
+    };
+    m.querySelector("[data-a=del]")?.addEventListener("click", async () => {
+      if (!confirm(`Supprimer le groupe « ${gr.name} » ? Les contacts sont gardés.`)) return;
+      await api(`/api/contacts/groups/${gr.id}`, { method: "DELETE" });
+      closePanel(); if (group === gr.id) group = ""; load();
+    });
+  });
 }
 
 function paintList() {
@@ -141,7 +198,7 @@ function rows(field, list) {
 
 /** Fiche de contact (création ou modification). Exportée pour « Ajouter aux contacts » dans Mails. */
 export async function edit(c = {}, after) {
-  if (!books.length) ({ books } = await api("/api/contacts?q=%00"));
+  if (!books.length) ({ books, groups } = await api("/api/contacts?q=%00"));
   const isNew = !c.id;
   const parts = { phones: rows("phones", c.phones || []), emails: rows("emails", c.emails || []), addresses: rows("addresses", c.addresses || []) };
   const m = modal(isNew ? "Nouveau contact" : "Modifier le contact", `<form class="ct-form">
@@ -153,6 +210,7 @@ export async function edit(c = {}, after) {
       <div class="ct-list" data-f="${f}">${parts[f].html}</div><button type="button" class="btn ghost small" data-add="${f}">${icon("plus")}Ajouter</button>`).join("")}
     <div class="grid2"><div><label class="field">Anniversaire</label><input type="date" name="birthday" value="${esc(c.birthday?.length === 10 ? c.birthday : "")}"></div>
       <div><label class="field">Carnet</label><select name="book" style="width:100%">${books.map(b => `<option value="${b.id}" ${b.id === (c.book || books[0]?.id) ? "selected" : ""}>${esc(b.name)}${b.shared ? " (partagé)" : ""}</option>`).join("")}</select></div></div>
+    ${groups.length ? `<label class="field">Groupes</label><div class="ct-ggroups">${groups.map(gr => `<label class="check" data-gbook="${gr.book}"><input type="checkbox" name="grp" value="${gr.id}" ${(c.groups || []).includes(gr.id) ? "checked" : ""}> ${esc(gr.name)}</label>`).join("")}</div>` : ""}
     <label class="field">Site web</label><input type="url" name="url" value="${esc(c.url || "")}" placeholder="https://…">
     <label class="field">Notes</label><textarea name="notes" rows="2">${esc(c.notes || "")}</textarea>
     <div class="modal-foot"><span class="grow"></span><button type="button" class="btn ghost" data-close>Annuler</button><button class="btn">${icon("check")}Enregistrer</button></div></form>`, { ic: "user", large: true });
@@ -163,12 +221,16 @@ export async function edit(c = {}, after) {
     const rm = e.target.closest("[data-rm]");
     if (rm) rm.closest(".ct-erow").remove();
   });
+  const syncGroups = () => m.querySelectorAll("[data-gbook]").forEach(l => { l.hidden = l.dataset.gbook !== f.book.value; });
+  f.book.addEventListener("change", syncGroups);
+  syncGroups();
   f.first.focus();
   f.onsubmit = async e => {
     e.preventDefault();
     const collect = field => [...m.querySelectorAll(`[data-f=${field}] .ct-erow`)].map(r => Object.fromEntries([...r.querySelectorAll("[data-k]")].map(x => [x.dataset.k, x.value.trim()])));
     const body = { first: f.first.value, last: f.last.value, org: f.org.value, title: f.title.value, book: f.book.value, url: f.url.value, notes: f.notes.value,
       birthday: f.birthday.value || (c.birthday?.length === 5 ? c.birthday : ""), phones: collect("phones"), emails: collect("emails"), addresses: collect("addresses") };
+    if (groups.length) body.groups = [...f.querySelectorAll("[name=grp]:checked")].filter(x => x.closest("[data-gbook]").dataset.gbook === f.book.value).map(x => x.value);
     try {
       const r = await api(isNew ? "/api/contacts" : `/api/contacts/${encodeURIComponent(c.id)}`, { method: isNew ? "POST" : "PUT", json: body });
       closePanel();

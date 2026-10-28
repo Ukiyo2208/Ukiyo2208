@@ -215,8 +215,23 @@ def list_events(user, start, end):
                 out.append({"uid": text(ev, "uid"), "file": fname, "cal": c["id"], "color": c["color"], "title": text(ev, "summary") or "(sans titre)",
                             "start": s.isoformat(), "end": e.isoformat(), "allday": allday, "location": text(ev, "location"),
                             "notes": text(ev, "description"), "recur": rrule_kind(ev), "reminder": reminder_of(ev),
+                            **repeat_info(ev), "category": category_of(ev),
                             "shared": c["shared"], "by": text(ev, "x_bt_by")})
     return out
+
+
+def repeat_info(ev):
+    if not hasattr(ev, "rrule"):
+        return {}
+    start = ev.dtstart.value
+    start = start if isinstance(start, date) and not isinstance(start, datetime) else to_local(start)
+    return {"repeat": parse_rrule(ev.rrule.value), "recur_text": describe_rrule(ev.rrule.value, start), "rrule": ev.rrule.value}
+
+
+def category_of(ev):
+    cats = getattr(ev, "categories", None)
+    v = cats.value if cats is not None else []
+    return (v[0] if isinstance(v, list) and v else str(v or "")) or ""
 
 
 def rrule_kind(ev):
@@ -224,9 +239,108 @@ def rrule_kind(ev):
         return ""
     r = ev.rrule.value.upper()
     for k in ("DAILY", "WEEKLY", "MONTHLY", "YEARLY"):
-        if f"FREQ={k}" in r:
+        if r == f"FREQ={k}":
             return k.lower()
     return "custom"
+
+
+# --- Répétitions (RRULE) --------------------------------------------------------------------
+
+DAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
+DAY_FR = {"MO": "lundi", "TU": "mardi", "WE": "mercredi", "TH": "jeudi", "FR": "vendredi", "SA": "samedi", "SU": "dimanche"}
+NTH_FR = {1: "1er", 2: "2e", 3: "3e", 4: "4e", -1: "dernier"}
+FREQS = ("DAILY", "WEEKLY", "MONTHLY", "YEARLY")
+
+
+def build_rrule(rep, start):
+    """{freq, interval, byday[], monthly: "date"|"nth", until, count} → texte RRULE."""
+    freq = str(rep.get("freq") or "").upper()
+    if freq not in FREQS:
+        raise ValueError("Répétition inconnue")
+    parts = [f"FREQ={freq}"]
+    n = int(rep.get("interval") or 1)
+    if not 1 <= n <= 99:
+        raise ValueError("Intervalle de répétition invalide")
+    if n > 1:
+        parts.append(f"INTERVAL={n}")
+    day = start if isinstance(start, date) and not isinstance(start, datetime) else start.date()
+    if freq == "WEEKLY":
+        days = [x for x in rep.get("byday") or [] if x in DAYS]
+        if days:
+            parts.append("BYDAY=" + ",".join(sorted(days, key=DAYS.index)))
+    elif freq == "MONTHLY" and rep.get("monthly") == "nth":
+        nth = rep.get("nth") or ((day.day - 1) // 7 + 1)
+        nth = -1 if int(nth) >= 5 or int(nth) == -1 else int(nth)
+        parts.append(f"BYDAY={nth}{DAYS[day.weekday()]}")
+    if rep.get("until"):
+        try:
+            u = date.fromisoformat(str(rep["until"])[:10])
+        except ValueError:
+            raise ValueError("Date de fin invalide") from None
+        parts.append(f"UNTIL={u.strftime('%Y%m%d')}T235959Z" if isinstance(start, datetime) else f"UNTIL={u.strftime('%Y%m%d')}")
+    elif rep.get("count"):
+        c = int(rep["count"])
+        if not 1 <= c <= 999:
+            raise ValueError("Nombre de répétitions invalide")
+        parts.append(f"COUNT={c}")
+    return ";".join(parts)
+
+
+def parse_rrule(rule):
+    """Texte RRULE → {freq, interval, byday, monthly, nth, until, count} (None si trop complexe pour le formulaire)."""
+    kv = dict(p.split("=", 1) for p in str(rule or "").upper().split(";") if "=" in p)
+    freq = kv.get("FREQ")
+    if freq not in FREQS or set(kv) - {"FREQ", "INTERVAL", "BYDAY", "UNTIL", "COUNT", "WKST", "BYMONTHDAY", "BYMONTH"}:
+        return None
+    rep = {"freq": freq, "interval": int(kv.get("INTERVAL", 1)), "byday": [], "monthly": "date", "until": None, "count": None}
+    byday = [x for x in kv.get("BYDAY", "").split(",") if x]
+    if freq == "MONTHLY" and len(byday) == 1 and re.fullmatch(r"-?\d[A-Z]{2}", byday[0]):
+        rep["monthly"], rep["nth"] = "nth", int(byday[0][:-2])
+    elif byday:
+        if freq != "WEEKLY" or not all(x in DAYS for x in byday):
+            return None
+        rep["byday"] = byday
+    if kv.get("UNTIL"):
+        u = kv["UNTIL"][:8]
+        rep["until"] = f"{u[:4]}-{u[4:6]}-{u[6:8]}"
+    if kv.get("COUNT"):
+        rep["count"] = int(kv["COUNT"])
+    return rep
+
+
+def describe_rrule(rule, start=None):
+    """Répétition en français : « Toutes les 2 semaines le mardi », « Le 2e mardi de chaque mois »…"""
+    rep = parse_rrule(rule)
+    if not rep:
+        return "Répétition personnalisée"
+    n, f = rep["interval"], rep["freq"]
+    unit = {"DAILY": ("jour", "jours"), "WEEKLY": ("semaine", "semaines"), "MONTHLY": ("mois", "mois"), "YEARLY": ("an", "ans")}[f]
+    every = {"DAILY": "Tous les jours", "WEEKLY": "Toutes les semaines", "MONTHLY": "Tous les mois", "YEARLY": "Tous les ans"}[f] if n == 1 else \
+        f"{'Toutes les' if f == 'WEEKLY' else 'Tous les'} {n} {unit[1]}"
+    if f == "WEEKLY" and rep["byday"]:
+        names = [DAY_FR[d] for d in rep["byday"]]
+        every += " le " + (", ".join(names[:-1]) + " et " + names[-1] if len(names) > 1 else names[0])
+    if f == "MONTHLY" and rep.get("monthly") == "nth" and start is not None:
+        wd = DAY_FR[DAYS[start.weekday()]]
+        every = f"Le {NTH_FR.get(rep['nth'], str(rep['nth']) + 'e')} {wd} " + ("de chaque mois" if n == 1 else f"tous les {n} mois")
+    if rep["until"]:
+        every += f", jusqu'au {date.fromisoformat(rep['until']).strftime('%d/%m/%Y')}"
+    elif rep["count"]:
+        every += f", {rep['count']} fois"
+    return every
+
+
+def rrule_from(d, start):
+    """RRULE à écrire d'après le formulaire : texte, "" (aucune) ou None (garder celle qui existe)."""
+    rep = d.get("repeat")
+    if isinstance(rep, dict) and rep.get("freq"):
+        return build_rrule(rep, start)
+    recur = d.get("recur") or ""
+    if recur in ("daily", "weekly", "monthly", "yearly"):
+        return f"FREQ={recur.upper()}"
+    if recur == "custom":
+        return d.get("_rrule") or None
+    return ""
 
 
 def parse_range(d):
@@ -268,10 +382,11 @@ def build_ics(d, by=None, uid=None):
         ev.add("location").value = str(d["location"])[:300]
     if d.get("notes"):
         ev.add("description").value = str(d["notes"])[:5000]
-    if d.get("recur") in ("daily", "weekly", "monthly", "yearly"):
-        ev.add("rrule").value = f"FREQ={d['recur'].upper()}"
-    elif d.get("recur") == "custom" and d.get("_rrule"):
-        ev.add("rrule").value = d["_rrule"]
+    rule = rrule_from(d, s)
+    if rule:
+        ev.add("rrule").value = rule
+    if d.get("category"):
+        ev.add("categories").value = [str(d["category"])[:40]]
     if str(d.get("reminder") or "").strip() not in ("", "None"):
         al = ev.add("valarm")
         al.add("action").value = "DISPLAY"
@@ -485,13 +600,14 @@ def check_reminders(sent):
                 mins = reminder_of(ev)
                 if mins is None:
                     continue
-                for s, _, allday in occurrences(ev, now - timedelta(minutes=5), now + timedelta(minutes=mins + 2, days=1)):
-                    at = (s - timedelta(minutes=mins)) if not allday else s.replace(hour=8) - timedelta(minutes=mins)
+                for s, _, allday in occurrences(ev, now - timedelta(minutes=max(5, -mins + 5)), now + timedelta(minutes=max(mins, 0) + 2, days=1)):
+                    at = s - timedelta(minutes=mins)  # journée entière : depuis minuit, comme les téléphones (-480 = le jour même à 8h)
                     key = f"{text(ev, 'uid')}|{s.isoformat()}|{'' if c['shared'] else user}"
                     if not (at <= now < at + timedelta(minutes=10)) or key in sent:
                         continue
                     sent[key] = time.time()
-                    when = "aujourd'hui" if allday else s.strftime("à %Hh%M").replace("h00", "h")
+                    day = "aujourd'hui" if s.date() == now.date() else "demain" if s.date() == (now + timedelta(days=1)).date() else s.strftime("le %d/%m")
+                    when = day if allday else f"{day} " + s.strftime("à %Hh%M").replace("h00", "h")
                     where = f" · {text(ev, 'location')}" if text(ev, "location") else ""
                     activity.log("*" if c["shared"] else user, "agenda", f"{text(ev, 'summary')} · {when}{where}", "#/agenda",
                                  title=f"Rappel · {c['name']}")

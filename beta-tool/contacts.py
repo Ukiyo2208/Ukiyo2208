@@ -64,7 +64,7 @@ def books(user):
         props = agenda._props(path)
         if props.get("tag") == "VADDRESSBOOK":
             out.append({"id": d, "name": props.get("D:displayname") or d, "shared": os.path.islink(path), "path": path,
-                        "count": sum(1 for f in os.listdir(path) if f.endswith(".vcf"))})
+                        "count": sum(1 for f in os.listdir(path) if f.endswith(".vcf") and not f.startswith("group-"))})
     out.sort(key=lambda b: (b["shared"], b["name"].lower() != "perso", b["name"].lower()))
     return out
 
@@ -125,19 +125,104 @@ def _norm_bday(s):
     return f"{m[2]}-{m[3]}" if m[1] in ("--", "1604") else f"{m[1]}-{m[2]}-{m[3]}"
 
 
-def read_book(book):
+def is_group(card):
+    kind = card.contents.get("x-addressbookserver-kind") or card.contents.get("kind") or []
+    return any(str(k.value).lower() == "group" for k in kind)
+
+
+def _cards(book):
+    """(nom de fichier, fiche vCard) d'un carnet."""
     vobject = _vobj()
-    out = []
     for fname in os.listdir(book["path"]):
         if not fname.endswith(".vcf"):
             continue
         try:
             with open(os.path.join(book["path"], fname), encoding="utf-8") as f:
-                card = vobject.readOne(f.read())
-            out.append(to_dict(card, book, fname))
+                yield fname, vobject.readOne(f.read())
         except Exception:  # noqa: BLE001  fiche illisible : ignorée
             continue
+
+
+def read_book(book):
+    return [to_dict(card, book, fname) for fname, card in _cards(book) if not is_group(card)]
+
+
+# --- Groupes (« Club de foot », « Parents de l'école »…) ---------------------------------------------
+# Rangés comme sur iPhone/macOS : une fiche « groupe » avec la liste de ses membres (X-ADDRESSBOOKSERVER-MEMBER),
+# et pour Android (DAVx⁵ en mode catégories) le nom du groupe dans CATEGORIES de chaque membre.
+
+def _member_uid(prop):
+    v = str(prop.value)
+    return v.split(":", 2)[-1] if v.lower().startswith("urn:uuid:") else v
+
+
+def groups(user):
+    out = []
+    for b in books(user):
+        for fname, card in _cards(b):
+            if is_group(card):
+                members = [_member_uid(m) for m in card.contents.get("x-addressbookserver-member", []) + card.contents.get("member", [])]
+                out.append({"id": str(_val(card, "uid") or fname[:-4]), "name": str(_val(card, "fn") or "Groupe"), "book": b["id"],
+                            "book_name": b["name"], "file": fname, "members": members})
+    out.sort(key=lambda gr: gr["name"].lower())
     return out
+
+
+def save_group(user, book_id, name, members, gid=None):
+    vobject = _vobj()
+    b = next((x for x in books(user) if x["id"] == book_id), None)
+    if not b:
+        raise ValueError("Carnet introuvable")
+    name = str(name or "").strip()[:60]
+    if not name:
+        raise ValueError("Donne un nom au groupe")
+    old = next((gr for gr in groups(user) if gr["id"] == gid), None) if gid else None
+    card = vobject.vCard()
+    gid = gid or str(uuid.uuid4())
+    card.add("uid").value = gid
+    card.add("fn").value = name
+    card.add("n").value = vobject.vcard.Name(family=name)
+    card.add("x-addressbookserver-kind").value = "group"
+    valid = {c["id"] for c in read_book(b)}
+    members = [m for m in dict.fromkeys(members) if m in valid]
+    for m in members:
+        card.add("x-addressbookserver-member").value = f"urn:uuid:{m}"
+    card.add("rev").value = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    fname = old["file"] if old else "group-" + re.sub(r"[^\w.@-]", "_", gid)[:110] + ".vcf"
+    with open(os.path.join(b["path"], fname), "w", encoding="utf-8") as f:
+        f.write(card.serialize())
+    _sync_categories(b, old["name"] if old else None, name, set(members))
+    _cache.clear()
+    return {"id": gid}
+
+
+def _sync_categories(book, old_name, new_name, members):
+    """Recopie l'appartenance aux groupes dans CATEGORIES (lu par Android)."""
+    for fname, card in _cards(book):
+        if is_group(card):
+            continue
+        uid = str(_val(card, "uid") or fname[:-4])
+        prop = card.contents.get("categories", [None])[0]
+        cats = [c for c in (prop.value if prop is not None else []) if c]
+        new = [c for c in cats if c not in (old_name, new_name)] + ([new_name] if new_name and uid in members else [])
+        if new != cats:
+            if prop is not None:
+                card.remove(prop)
+            if new:
+                card.add("categories").value = new
+            with open(os.path.join(book["path"], fname), "w", encoding="utf-8") as f:
+                f.write(card.serialize())
+
+
+def set_member_groups(user, cid, book_id, group_ids):
+    """Met un contact dans les groupes cochés de son carnet (et le retire des autres)."""
+    for gr in groups(user):
+        if gr["book"] != book_id:
+            continue
+        inside, wanted = cid in gr["members"], gr["id"] in group_ids
+        if inside != wanted:
+            members = [m for m in gr["members"] if m != cid] + ([cid] if wanted else [])
+            save_group(user, book_id, gr["name"], members, gid=gr["id"])
 
 
 def all_contacts(user):
@@ -233,8 +318,22 @@ def write(user, book_id, d, cid=None, fname=None, old_path=None):
 
 # --- Anniversaires (affichés dans l'Agenda) ---------------------------------------------------
 
-def birthdays(user, start, end):
+def birthdays(user, start, end, with_names=True):
+    """Anniversaires et fêtes (prénom) des contacts sur la période, comme événements de l'Agenda."""
     out = []
+    if with_names:
+        import fetes
+        seen = set()
+        for c in all_contacts(user):
+            if not c["first"] or c["id"] in seen:
+                continue
+            seen.add(c["id"])
+            for y in range(start.year, end.year + 1):
+                d = fetes.date_in(c["first"], y)
+                if d and start.date() <= d < end.date():
+                    out.append({"uid": f"fete-{c['id']}-{y}", "cal": "_fetes", "color": "#a855f7", "allday": True, "readonly": True,
+                                "title": f"🌸 Fête de {c['name']}", "start": d.isoformat() + "T00:00:00", "end": d.isoformat() + "T23:59:00",
+                                "link": f"#/contacts/{c['id']}"})
     for c in all_contacts(user):
         b = c["birthday"]
         if not b:
@@ -273,14 +372,60 @@ def list_contacts():
                                                      *[f"{a['street']} {a['code']} {a['city']}" for a in c["addresses"]],
                                                      *[p["value"] for p in c["phones"]]]).lower()
                  or re.sub(r"\D", "", q) and re.sub(r"\D", "", q) in "".join(re.sub(r"\D", "", p["value"]) for p in c["phones"])]
-    light = [{k: v for k, v in c.items() if k != "photo"} | {"has_photo": bool(c["photo"])} for c in items]
-    return jsonify(books=[public_book(b) for b in books(user)], contacts=light)
+    grs = groups(user)
+    if request.args.get("group"):
+        gr = next((x for x in grs if x["id"] == request.args["group"]), None)
+        items = [c for c in items if gr and c["id"] in gr["members"]]
+    member_of = {}
+    for gr in grs:
+        for m in gr["members"]:
+            member_of.setdefault(m, []).append(gr["id"])
+    light = [{k: v for k, v in c.items() if k != "photo"} | {"has_photo": bool(c["photo"]), "groups": member_of.get(c["id"], [])} for c in items]
+    return jsonify(books=[public_book(b) for b in books(user)], contacts=light, groups=[{k: v for k, v in gr.items() if k != "file"} for gr in grs])
+
+
+@bp.post("/api/contacts/groups")
+def add_group():
+    d = request.get_json(silent=True) or {}
+    user = g.user["name"]
+    return jsonify(save_group(user, d.get("book") or books(user)[0]["id"], d.get("name"), d.get("members") or []))
+
+
+@bp.put("/api/contacts/groups/<gid>")
+def edit_group(gid):
+    d = request.get_json(silent=True) or {}
+    user = g.user["name"]
+    gr = next((x for x in groups(user) if x["id"] == gid), None)
+    if not gr:
+        raise ValueError("Groupe introuvable")
+    return jsonify(save_group(user, gr["book"], d.get("name") or gr["name"], d["members"] if "members" in d else gr["members"], gid=gid))
+
+
+@bp.delete("/api/contacts/groups/<gid>")
+def delete_group(gid):
+    user = g.user["name"]
+    gr = next((x for x in groups(user) if x["id"] == gid), None)
+    if not gr:
+        raise ValueError("Groupe introuvable")
+    b = next(x for x in books(user) if x["id"] == gr["book"])
+    os.remove(os.path.join(b["path"], gr["file"]))
+    _sync_categories(b, gr["name"], None, set())
+    _cache.clear()
+    return jsonify(ok=True)
 
 
 @bp.get("/api/contacts/suggest")
 def suggest():
-    """Adresses mail pour compléter les destinataires (Mails)."""
-    out = [{"name": c["name"], "email": e["value"], "book": c["book_name"]} for c in all_contacts(g.user["name"]) for e in c["emails"]]
+    """Adresses mail pour compléter les destinataires (Mails), groupes compris."""
+    user = g.user["name"]
+    people = all_contacts(user)
+    by_id = {c["id"]: c for c in people}
+    out = []
+    for gr in groups(user):
+        addrs = [by_id[m]["emails"][0]["value"] for m in gr["members"] if m in by_id and by_id[m]["emails"]]
+        if addrs:
+            out.append({"name": f"Groupe {gr['name']} ({len(addrs)})", "email": ", ".join(addrs), "book": gr["book_name"], "group": True})
+    out += [{"name": c["name"], "email": e["value"], "book": c["book_name"]} for c in people for e in c["emails"]]
     q = (request.args.get("q") or "").lower()
     return jsonify([x for x in out if not q or q in (x["name"] + " " + x["email"]).lower()][:500])
 
@@ -295,7 +440,11 @@ def get_contact(cid):
 def create_contact():
     d = request.get_json(silent=True) or {}
     user = g.user["name"]
-    return jsonify(write(user, d.get("book") or books(user)[0]["id"], d))
+    book_id = d.get("book") or books(user)[0]["id"]
+    r = write(user, book_id, d)
+    if d.get("groups"):
+        set_member_groups(user, r["id"], book_id, d["groups"])
+    return jsonify(r)
 
 
 @bp.put("/api/contacts/<cid>")
@@ -304,7 +453,10 @@ def update_contact(cid):
     user = g.user["name"]
     b, c = find(user, cid)
     target = d.get("book") or b["id"]
-    return jsonify(write(user, target, d, cid=cid, fname=c["file"], old_path=os.path.join(b["path"], c["file"])))
+    r = write(user, target, d, cid=cid, fname=c["file"], old_path=os.path.join(b["path"], c["file"]))
+    if "groups" in d:
+        set_member_groups(user, cid, target, d["groups"] or [])
+    return jsonify(r)
 
 
 @bp.delete("/api/contacts/<cid>")
