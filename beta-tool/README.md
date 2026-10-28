@@ -37,7 +37,7 @@ fichier n'est envoyé à un service externe.
 | **Tâches** | Listes perso ou partagées avec la maison, tâches confiées à quelqu'un (avec notification), dates et répétitions (la suivante revient toute seule). |
 | **Budget** | Relevés bancaires CSV / OFX / QIF importés sans doublons, rangés par catégorie, budgets par mois, charges fixes repérées, et **pistes d'économies** : assurances (loi Hamon, mutuelle, assurance de prêt), énergie, box et forfaits, abonnements, frais bancaires, doubles prélèvements, hausses de prix. |
 | **Inventaire** | Objets de la maison par pièce avec photo, prix, garantie, n° de série et facture (depuis Paperasse) ; péremptions (congélateur, pharmacie) ; liste avec valeur totale pour l'assurance habitation. |
-| **Colis** | Numéros de suivi repérés tout seuls dans les mails, avancement mis à jour par les mails du transporteur (clé La Poste optionnelle pour le suivi en direct). |
+| **Colis** | Numéros de suivi repérés tout seuls dans les mails, avancement mis à jour par les mails du transporteur, clé La Poste optionnelle pour le suivi en direct, et synchro avec l'appli **Parcel** (iPhone / Mac, Premium) : colis envoyés à Parcel, suivi et date de livraison prévue rapatriés, commandes Amazon comprises. |
 | **Téléphones** | Dossier WebDAV par compte pour sauvegarder photos, documents et SMS des téléphones (PhotoSync, FolderSync, SMS Backup & Restore), et lecture des SMS et appels sauvegardés. |
 | **Traduction** | Textes, documents (Word, OpenDocument, PDF) et sous-titres traduits sur le NAS (Argos Translate), sans service en ligne. |
 | **VPN** | Accès à la maison depuis l'extérieur avec WireGuard (wg-easy) : appareils, QR codes, état des connexions. Optionnel. |

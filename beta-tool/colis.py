@@ -36,6 +36,7 @@ CARRIERS = {
     "amazon": ("Amazon Logistics", "https://www.amazon.fr/progress-tracker/package/?trackingId={n}"),
     "fedex": ("FedEx", "https://www.fedex.com/fedextrack/?trknbr={n}"),
     "vinted": ("Vinted Go", "https://www.vinted.fr/"),
+    "parcel": ("Suivi Parcel", "https://web.parcelapp.net/"),
 }
 KEYWORDS = [("colissimo", r"colissimo|laposte|la poste"), ("chronopost", r"chronopost"), ("ups", r"\bups\b"), ("dhl", r"\bdhl\b"),
             ("dpd", r"\bdpd\b|predict"), ("gls", r"\bgls\b"), ("mondialrelay", r"mondial ?relay"), ("relaiscolis", r"relais ?colis"),
@@ -264,6 +265,8 @@ def start():
     mail.AFTER_SCREEN.append(on_mail)
     journee.SOURCES["parcels"] = ("colis", brief)
     threading.Thread(target=refresher, daemon=True).start()
+    import parcelapp
+    parcelapp.start()
 
 
 def brief(user, today):
@@ -273,7 +276,13 @@ def brief(user, today):
             continue
         if p["status"] == "livre" and time.time() - p.get("delivered", 0) > 86400:
             continue
-        out.append({"text": p["label"], "sub": LABEL[p["status"]] + f" · {CARRIERS.get(p['carrier'], ('',))[0]}".rstrip(" ·"), "link": "#/colis"})
+        sub = LABEL[p["status"]] + f" · {CARRIERS.get(p['carrier'], ('',))[0]}".rstrip(" ·")
+        if p.get("expected") and p["status"] != "livre":
+            try:
+                sub += " · prévu le " + time.strftime("%d/%m", time.strptime(p["expected"][:10], "%Y-%m-%d"))
+            except ValueError:
+                pass
+        out.append({"text": p["label"], "sub": sub, "link": "#/colis"})
     return out
 
 
@@ -290,7 +299,10 @@ def list_parcels():
     for p in parcels:
         if p["status"] == "livre" and not p["archived"] and time.time() - p.get("delivered", p["updated"]) > 10 * 86400:
             p["archived"] = True
-    return jsonify(parcels=[public(p) for p in parcels], carriers={k: v[0] for k, v in CARRIERS.items()}, laposte=bool(laposte_key()))
+    import parcelapp
+    pc = parcelapp.config(g.user["name"])
+    return jsonify(parcels=[public(p) for p in parcels], carriers={k: v[0] for k, v in CARRIERS.items()}, laposte=bool(laposte_key()),
+                   parcel={"on": bool(pc.get("key")), "push": pc.get("push", True), "last": pc.get("last"), "error": pc.get("error"), "count": pc.get("count")})
 
 
 @bp.post("/api/colis")
@@ -306,6 +318,12 @@ def add_parcel():
         raise ValueError("Ce colis est déjà suivi")
     p = {"id": uuid.uuid4().hex[:8], "carrier": carrier, "number": number, "label": str(d.get("label") or "Colis").strip()[:60], "status": "inconnu",
          "steps": [], "created": time.time(), "updated": time.time(), "archived": False, "link": None, "subject": ""}
+    import parcelapp
+    try:
+        if parcelapp.push(user, p):
+            p["parcel"] = True
+    except (ValueError, requests.RequestException):
+        pass
     save(user, [p] + parcels)
     laposte_refresh(user)
     return jsonify(public(next(x for x in load(user) if x["id"] == p["id"])))
@@ -378,6 +396,36 @@ def set_config():
     key = str((request.get_json(silent=True) or {}).get("laposte_key") or "").strip()[:200]
     store.update("colis/config", {}, lambda d: d.__setitem__("laposte_key", key))
     return jsonify(laposte=bool(key))
+
+
+@bp.put("/api/colis/parcel")
+def parcel_config():
+    """Clé de l'API Parcel (appli iPhone / Mac, Premium) du compte, et envoi automatique des colis."""
+    import parcelapp
+    user, d = g.user["name"], request.get_json(silent=True) or {}
+    if "key" in d:
+        key = str(d.get("key") or "").strip()[:200]
+        if key:
+            parcelapp._call("GET", "deliveries/", key, params={"filter_mode": "active"})  # vérifie la clé avant de la garder
+        parcelapp.set_config(user, key=key)
+        if key:
+            return jsonify(parcelapp.sync(user, force=True) | {"on": True})
+        return jsonify(on=False)
+    if "push" in d:
+        parcelapp.set_config(user, push=bool(d["push"]))
+    return jsonify(ok=True)
+
+
+@bp.post("/api/colis/parcel/sync")
+def parcel_sync():
+    import parcelapp
+    user = g.user["name"]
+    c = parcelapp.config(user)
+    if not c.get("key"):
+        raise ValueError("Ajoute d'abord ta clé Parcel")
+    if time.time() - c.get("last", 0) < 300:
+        raise ValueError("Synchronisé il y a moins de 5 minutes (Parcel limite à 20 requêtes par heure)")
+    return jsonify(parcelapp.sync(user, force=True))
 
 
 def count(user):

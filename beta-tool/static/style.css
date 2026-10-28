@@ -2023,3 +2023,5 @@ select.inline { display: inline-block; width: auto; padding: 4px 8px; margin: 0 
 .tp-msg span { white-space: pre-wrap; overflow-wrap: anywhere; }
 .tp-msg small { font-size: .7rem; opacity: .7; justify-self: end; }
 @media (max-width: 900px) { .tp-sms { grid-template-columns: 1fr; height: auto; } .tp-threads { max-height: 45vh; } .tp-conv { min-height: 60vh; } }
+.cl-expected { display: flex; align-items: center; gap: 6px; margin: 4px 0 0; font-size: .88rem; font-weight: 600; color: var(--accent); }
+.cl-expected svg.i { width: 15px; height: 15px; }

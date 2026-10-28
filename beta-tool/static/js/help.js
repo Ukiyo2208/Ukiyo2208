@@ -646,7 +646,8 @@ export const HELP = {
       ["Cherche dans tes mails", "« Chercher dans mes mails » repasse sur les mails récents."],
       ["Ajoute un numéro", "« Ajouter » pour un colis dont tu as le numéro."],
     ],
-    tips: ["Les faux mails de colis (frais de douane à payer…) ne créent jamais de colis.", "L'administrateur peut ajouter une clé gratuite La Poste pour un suivi en direct des Colissimo et Chronopost."],
+    tips: ["Appli Parcel (iPhone, Mac, Premium) : colle ta clé d'API dans « Appli Parcel » ; les colis de tes mails y sont ajoutés, et le suivi de Parcel (Amazon compris) revient ici avec la date de livraison prévue.",
+           "Les faux mails de colis (frais de douane à payer…) ne créent jamais de colis.", "L'administrateur peut ajouter une clé gratuite La Poste pour un suivi en direct des Colissimo et Chronopost."],
     faq: [],
   },
   taches: {
