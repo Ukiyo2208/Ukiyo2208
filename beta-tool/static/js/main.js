@@ -40,7 +40,7 @@ function buildNav() {
   $("#side-user").innerHTML = `
     <div class="me"><span class="avatar">${esc((u.name[0] || "?").toUpperCase())}</span>
       <span><b>${esc(state.config.mode === "open" ? "Accès libre" : u.name)}</b><small>${u.role === "admin" ? "Administrateur" : u.role === "child" ? "Enfant" : "Membre"} · v${esc(state.config.version)}</small></span>
-      ${state.config.mode !== "open" ? `<form method="post" action="/logout"><button class="icon-btn plain" title="Se déconnecter">${icon("logout")}</button></form>` : ""}
+      ${state.config.mode !== "open" ? `<form method="post" action="/logout" onsubmit="try{caches.delete('beta-tool-data-v1');indexedDB.deleteDatabase('beta-tool-offline')}catch(e){}"><button class="icon-btn plain" title="Se déconnecter">${icon("logout")}</button></form>` : ""}
     </div>
     <div class="theme-switch" role="group" aria-label="Thème">
       <button data-theme-set="auto" title="Automatique">${icon("monitor")}</button>
@@ -229,6 +229,34 @@ async function route() {
 }
 addEventListener("hashchange", route);
 
+// --- Mode hors ligne ----------------------------------------------------------
+function offlineMode() {
+  addEventListener("unhandledrejection", e => { if (!navigator.onLine && /fetch/i.test(e.reason?.message || "")) e.preventDefault(); });
+  const bar = document.createElement("div");
+  bar.className = "offline-bar";
+  bar.hidden = true;
+  document.body.append(bar);
+  let left = 0;
+  const paint = () => {
+    bar.hidden = navigator.onLine && !left;
+    bar.innerHTML = navigator.onLine ? `${icon("refresh")}Envoi de ${left} changement${left > 1 ? "s" : ""} fait${left > 1 ? "s" : ""} hors ligne…`
+      : `${icon("wifi")}Hors ligne : tu vois la dernière copie enregistrée.${left ? ` ${left} changement${left > 1 ? "s" : ""} en attente.` : " Tâches et courses restent modifiables."}`;
+  };
+  const replay = () => navigator.serviceWorker.controller?.postMessage("replay");
+  navigator.serviceWorker.addEventListener("message", e => {
+    if (e.data?.type === "offline-queue") { left = e.data.left; paint(); }
+    if (e.data?.type === "offline-sync") {
+      left = e.data.left; paint();
+      if (e.data.done) { toast(`${e.data.done} changement${e.data.done > 1 ? "s" : ""} fait${e.data.done > 1 ? "s" : ""} hors ligne envoyé${e.data.done > 1 ? "s" : ""}`); route(); }
+    }
+  });
+  addEventListener("online", () => { paint(); replay(); });
+  addEventListener("offline", paint);
+  addEventListener("focus", replay);
+  navigator.serviceWorker.ready.then(() => { navigator.serviceWorker.controller?.postMessage("queue-count"); replay(); });
+  paint();
+}
+
 // --- Compte enfant : heures permises et temps d'écran -----------------------
 function childLock() {
   const c = state.config.child;
@@ -324,6 +352,7 @@ document.addEventListener("click", e => {
   if (e.target.closest("[data-suggest]")) openSuggest();
   if (e.target.closest("[data-search]")) { e.preventDefault(); openPalette(); }
   if (e.target.closest("[data-bell]")) openNotifs();
+  if (e.target.closest("[data-voice]")) import("./voice.js").then(m => m.open());
   if (e.target.closest("[data-menu]")) { e.preventDefault(); openPanel($("#sheet")); }
   if (e.target.closest("#sheet a")) closePanel();
   if (e.target.closest("[data-close]")) closePanel();
@@ -501,8 +530,12 @@ export async function reloadConfig() {
   converter.init();
   route();
   if (state.config.child) childClock();
+  if (/[?&]voix=1/.test(location.hash)) { history.replaceState(null, "", "#/"); import("./voice.js").then(m => m.open()); }
   pollActivity(true);
   setInterval(pollActivity, 15000);
   addEventListener("focus", () => pollActivity());
-  if ("serviceWorker" in navigator && isSecureContext) navigator.serviceWorker.register("/sw.js").catch(() => {});
+  if ("serviceWorker" in navigator && isSecureContext) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    offlineMode();
+  }
 })();

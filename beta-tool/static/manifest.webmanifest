@@ -9,18 +9,82 @@
   "background_color": "#030816",
   "theme_color": "#030816",
   "icons": [
-    { "src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/brand/icon.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/brand/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/brand/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/brand/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/brand/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "share_target": {
     "action": "/share",
     "method": "GET",
-    "params": { "title": "title", "text": "text", "url": "url" }
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
   },
   "shortcuts": [
-    { "name": "Télécharger une vidéo", "url": "/#/telecharger", "icons": [{ "src": "/brand/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Fichiers", "url": "/#/fichiers", "icons": [{ "src": "/brand/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Nouvelle note", "url": "/#/notes/nouvelle", "icons": [{ "src": "/brand/icon-192.png", "sizes": "192x192" }] }
+    {
+      "name": "Ma journée",
+      "url": "/#/journee",
+      "icons": [
+        {
+          "src": "/brand/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Commande vocale",
+      "url": "/#/?voix=1",
+      "icons": [
+        {
+          "src": "/brand/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Tâches",
+      "url": "/#/taches",
+      "icons": [
+        {
+          "src": "/brand/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Liste de courses",
+      "url": "/#/recettes/courses",
+      "icons": [
+        {
+          "src": "/brand/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Télécharger une vidéo",
+      "url": "/#/telecharger",
+      "icons": [
+        {
+          "src": "/brand/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }

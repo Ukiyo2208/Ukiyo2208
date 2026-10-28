@@ -63,6 +63,8 @@ export const TOOLS = [
     desc: "Listes de choses à faire, perso ou partagées avec la maison, avec rappels et tâches qui reviennent.", chips: ["Partagées", "Répétées", "Rappels"] },
   { id: "budget", name: "Budget", icon: "chart", tile: "vert", cat: "maison", load: () => import("./tools/budget.js"),
     desc: "Tes relevés bancaires rangés par catégorie, tes charges fixes et des pistes d'économies (assurances, box, abonnements…).", chips: ["Relevés CSV / OFX", "Économies", "Assurances"] },
+  { id: "sauvegarde-tel", name: "Téléphones", icon: "phone", tile: "bleu-vert", cat: "maison", load: () => import("./tools/telephones.js"),
+    desc: "Sauvegarde les photos, documents et SMS de vos téléphones sur le NAS, et relis tes anciens SMS.", chips: ["Photos", "SMS", "WebDAV"] },
   { id: "inventaire", name: "Inventaire", icon: "archive", tile: "bleu", cat: "maison", load: () => import("./tools/inventaire.js"),
     desc: "Ce qu'il y a à la maison : photos, factures, garanties, péremptions, et la liste prête pour l'assurance.", chips: ["Garanties", "Assurance", "Congélateur"] },
   { id: "contacts", name: "Contacts", icon: "users", tile: "violet", cat: "maison", load: () => import("./tools/contacts.js"),

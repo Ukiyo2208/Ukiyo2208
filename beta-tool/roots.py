@@ -16,6 +16,7 @@ BUILTIN = [
     ("photos", "Photos", "PHOTOS_DIR", "/photos", "image"),
     ("depots", "Fichiers reçus", "RECEIVE_DIR", "/depots", "inbox"),
     ("sauvegardes", "Sauvegardes", "BACKUP_DIR", "/backup", "save"),
+    ("telephones", "Téléphones", "PHONES_DIR", "/phones", "phone"),
 ]
 
 

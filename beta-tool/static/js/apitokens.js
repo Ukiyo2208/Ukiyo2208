@@ -42,7 +42,31 @@ rest:
         value_template: "{{ value_json.total }}"`)}</pre></details>
       <details class="formats"><summary>${icon("phone")}Raccourcis iPhone</summary>
         <p class="hint">Action « Obtenir le contenu de l'URL » : adresse <code>${esc(d.base)}/events</code>, méthode GET (ou POST avec un corps JSON), en-tête <code>Authorization</code> = <code>Bearer bt_…</code>. Puis « Obtenir la valeur du dictionnaire » pour lire le résultat.</p></details>
+    </div>
+    <div class="card">
+      <div class="card-title">${icon("mic")}« Dis Siri, Bêta Tool » et widgets</div>
+      <p class="hint" style="margin-top:0">Crée d'abord un jeton avec le droit <b>Commandes vocales et widget</b>. Les phrases comprises sont les mêmes que le micro de l'appli :
+        « ajoute du lait à la liste de courses », « rendez-vous chez le dentiste mardi à 14h », « qu'est-ce que j'ai demain ? »…</p>
+      <details class="formats" open><summary>${icon("mic")}Siri (iPhone, iPad, Apple Watch, HomePod)</summary>
+        <ol class="ac-steps"><li>Appli <b>Raccourcis</b> › <b>+</b> › nomme le raccourci « Bêta Tool » (c'est la phrase à dire à Siri).</li>
+          <li>Ajoute l'action <b>Dicter le texte</b> (langue : français).</li>
+          <li>Ajoute <b>Obtenir le contenu de l'URL</b> : URL <code>${esc(d.base)}/command</code>, méthode <b>POST</b>, en-tête <code>Authorization</code> = <code>Bearer bt_…</code>,
+            corps <b>JSON</b> avec un champ texte <code>text</code> = <i>Texte dicté</i>.</li>
+          <li>Ajoute <b>Obtenir la valeur du dictionnaire</b> pour la clé <code>speech</code>, puis <b>Énoncer le texte</b>.</li>
+          <li>« Dis Siri, Bêta Tool »… « ajoute des piles à la liste de courses ».</li></ol></details>
+      <details class="formats"><summary>${icon("phone")}Google Assistant / Android</summary>
+        <p class="hint">Avec l'appli gratuite <b>HTTP Shortcuts</b> : crée un raccourci « POST » vers <code>${esc(d.base)}/command</code> avec l'en-tête <code>Authorization: Bearer bt_…</code>
+          et le corps <code>{"text": "{dictée}"}</code> (variable de type « texte saisi »), puis affiche ou lis le champ <code>speech</code>. Le raccourci se pose sur l'écran d'accueil.</p>
+        <pre class="tk-code">${esc(curl("/command", `-X POST -H "Content-Type: application/json" -d '{"text":"ajoute du lait à la liste de courses"}' `))}</pre></details>
+      <details class="formats"><summary>${icon("grid")}Widget d'écran d'accueil iPhone (Scriptable)</summary>
+        <p class="hint">Installe l'appli gratuite <b>Scriptable</b>, crée un script, colle le code ci-dessous en remplaçant <code>bt_…</code> par ton jeton,
+          puis ajoute un widget Scriptable (taille moyenne) sur l'écran d'accueil et choisis ce script.</p>
+        <pre class="tk-code" id="tk-widget">${esc(widgetScript(d.base))}</pre>
+        <button class="btn ghost small" id="tk-copyw">${icon("copy")}Copier le script</button></details>
+      <details class="formats"><summary>${icon("code")}Résumé du jour en JSON (Home Assistant, KWGT…)</summary>
+        <pre class="tk-code">${esc(curl("/widget"))}</pre></details>
     </div>`;
+  el.querySelector("#tk-copyw").onclick = async () => { await navigator.clipboard.writeText(widgetScript(d.base)); toast("Script copié"); };
   el.querySelector("#tk-new").onclick = () => create(el, d);
   el.onclick = async e => {
     const b = e.target.closest("[data-revoke]");
@@ -74,4 +98,31 @@ function create(el, d) {
       s.addEventListener("closed", () => settingsTab(el));
     } catch (err) { toast(err.message, "err"); }
   };
+}
+
+function widgetScript(base) {
+  return `// Bêta Tool : widget « Ma journée »
+const URL = "${base}/widget";
+const TOKEN = "bt_…"; // ton jeton (droit « Commandes vocales et widget »)
+const req = new Request(URL);
+req.headers = { Authorization: "Bearer " + TOKEN };
+let d;
+try { d = await req.loadJSON(); } catch (e) { d = null; }
+const w = new ListWidget();
+w.backgroundGradient = Object.assign(new LinearGradient(), { colors: [new Color("#0b1530"), new Color("#122a5c")], locations: [0, 1] });
+w.url = "${base.replace(/\/api\/v1$/, "")}/#/journee";
+const title = w.addText("Bêta Tool" + (d && d.weather ? "  " + d.weather.emoji + " " + d.weather.min + "°/" + d.weather.max + "°" : ""));
+title.font = Font.boldSystemFont(14); title.textColor = Color.white();
+w.addSpacer(6);
+if (!d) { const t = w.addText("Pas de connexion au NAS"); t.textColor = Color.gray(); }
+else {
+  for (const e of d.events.slice(0, 3)) { const t = w.addText((e.time ? e.time + "  " : "• ") + e.title); t.font = Font.systemFont(12); t.textColor = Color.white(); t.lineLimit = 1; }
+  if (!d.events.length) { const t = w.addText("Rien de prévu aujourd'hui"); t.font = Font.systemFont(12); t.textColor = Color.lightGray(); }
+  if (d.bins.length) { const t = w.addText("♻️ Ce soir : " + d.bins.join(", ")); t.font = Font.systemFont(11); t.textColor = new Color("#fbbf24"); }
+  w.addSpacer();
+  const line = [d.tasks_count ? d.tasks_count + " tâche(s)" : null, d.unread ? d.unread + " mail(s)" : null, d.parcels ? d.parcels + " colis" : null].filter(Boolean).join(" · ");
+  const f = w.addText(line || "Tout est à jour"); f.font = Font.mediumSystemFont(11); f.textColor = new Color("#93c5fd");
+}
+Script.setWidget(w);
+Script.complete();`;
 }

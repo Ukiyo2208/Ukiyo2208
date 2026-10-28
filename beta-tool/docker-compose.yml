@@ -16,6 +16,7 @@ services:
       - /volume1/documents/BetaWork:/documents       # Bêta Work
       - /volume1/photo:/photos                       # Album photo
       - /volume1/documents/Recus:/depots             # Bêta Drop : fichiers que l'on t'envoie
+      - /volume1/documents/Telephones:/phones        # Sauvegarde des téléphones (WebDAV : photos, SMS…)
       - /volume1/docker/beta-tool/data:/data         # Comptes, réglages, notes, mises à jour, modèles IA…
       - ./static/brand:/app/static/brand             # Icône et bannière
       # Accès sécurisé (profil « https ») : pour proposer le certificat de la maison au téléchargement

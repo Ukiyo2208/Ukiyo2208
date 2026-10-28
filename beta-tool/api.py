@@ -27,8 +27,9 @@ SCOPES = {
     "agenda:write": "Ajouter et modifier des événements",
     "contacts:read": "Lire les contacts",
     "contacts:write": "Ajouter et modifier des contacts",
+    "assistant:use": "Commandes vocales et widget (courses, tâches, rendez-vous, résumé du jour)",
 }
-TOOL_OF = {"mails": "mails", "agenda": "agenda", "contacts": "contacts"}
+TOOL_OF = {"mails": "mails", "agenda": "agenda", "contacts": "contacts", "assistant": None}
 
 
 # --- Jetons ------------------------------------------------------------------------------------
@@ -74,7 +75,7 @@ def need(scope):
             if scopes != "*" and scope not in (scopes or set()):
                 return jsonify(error=f"Ce jeton n'a pas le droit « {scope} »"), 403
             tool = TOOL_OF[scope.split(":")[0]]
-            if not settings.enabled(tool):
+            if tool and not settings.enabled(tool):
                 return jsonify(error="Cet outil est désactivé dans les réglages"), 404
             return fn(*a, **kw)
         return wrapper
@@ -293,6 +294,32 @@ def contact_delete(cid):
     return contacts.delete_contact(cid)
 
 
+# --- Assistant : commandes vocales et widget ----------------------------------------------------------
+
+@bp.post("/api/v1/command")
+@need("assistant:use")
+def v1_command():
+    """Phrase en langage courant (Siri, Google Assistant, Home Assistant…) → action + phrase à dire."""
+    import commande
+    d = request.get_json(silent=True) or {}
+    return jsonify(commande.run(g.user["name"], d.get("text") or request.args.get("text")))
+
+
+@bp.get("/api/v1/widget")
+@need("assistant:use")
+def v1_widget():
+    """Résumé compact pour un widget d'écran d'accueil (Scriptable, KWGT, Home Assistant…)."""
+    import journee
+    b = journee.build(g.user["name"])
+    w = b.get("weather") or {}
+    out = {"date": b["date"], "fete": b.get("fete"), "summary": journee.summary(b),
+           "weather": {k: w.get(k) for k in ("emoji", "label", "min", "max", "rain")} if w else None,
+           "events": [{"time": e.get("time") or "", "title": e["text"]} for e in (b.get("events") or [])[:4]],
+           "bins": b.get("bins") or [], "tasks": [t["text"] for t in (b.get("tasks") or [])[:4]], "tasks_count": len(b.get("tasks") or []),
+           "unread": (b.get("mail") or {}).get("unread"), "parcels": len(b.get("parcels") or []), "budget": b.get("budget")}
+    return jsonify(out)
+
+
 # --- Description OpenAPI ---------------------------------------------------------------------------
 
 def _op(summary, scope, params=(), body=None, tag=""):
@@ -332,6 +359,9 @@ def openapi():
                     "post": _op("Ajouter un événement", "agenda:write", body=event, tag="Agenda")},
         "/events/{uid}": {"put": _op("Modifier un événement", "agenda:write", [("uid", "path", True, "identifiant")], body=event, tag="Agenda"),
                           "delete": _op("Supprimer un événement", "agenda:write", [("uid", "path", True, "identifiant")], tag="Agenda")},
+        "/command": {"post": _op("Commande en langage courant ({\"text\": \"ajoute du lait à la liste de courses\"}) ; renvoie « speech » à lire", "assistant:use",
+                                 body={"type": "object", "properties": {"text": {"type": "string"}}}, tag="Assistant")},
+        "/widget": {"get": _op("Résumé du jour pour un widget", "assistant:use", tag="Assistant")},
         "/addressbooks": {"get": _op("Carnets d'adresses", "contacts:read", tag="Contacts")},
         "/contacts": {"get": _op("Contacts", "contacts:read", [("q", "query", False, "recherche"), ("book", "query", False, "id du carnet")], tag="Contacts"),
                       "post": _op("Ajouter un contact", "contacts:write", body=contact, tag="Contacts")},

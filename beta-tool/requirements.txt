@@ -12,3 +12,4 @@ radicale>=3.2
 sentencepiece>=0.2
 requests>=2.31
 cryptography>=42
+wsgidav>=4.3

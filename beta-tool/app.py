@@ -23,6 +23,7 @@ import backup
 import clipboard
 import budget
 import colis
+import commande
 import contacts
 import converter
 import downloader
@@ -43,6 +44,7 @@ import notes
 import photos
 import transcribe
 import taches
+import telephones
 import translate
 import vault
 import videotool
@@ -655,7 +657,7 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,
@@ -692,15 +694,21 @@ if __name__ == "__main__":
     taches.start()
     inventaire.start()
     budget.start()
+    mounts = {}
     dav = agenda.radicale_app()
     if dav:  # serveur CalDAV des agendas (synchronisation des téléphones)
-        from werkzeug.middleware.dispatcher import DispatcherMiddleware
         def dav_gate(environ, start_response):
             if not (settings.enabled("agenda") or settings.enabled("contacts")):
                 start_response("404 Not Found", [("Content-Type", "text/plain")])
                 return [b"Agenda desactive"]
             return dav(environ, start_response)
-        app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/dav": dav_gate})
+        mounts["/dav"] = dav_gate
+    webdav = telephones.webdav_app()
+    if webdav:  # dossiers WebDAV des sauvegardes de téléphones
+        mounts["/webdav"] = webdav
+    if mounts:
+        from werkzeug.middleware.dispatcher import DispatcherMiddleware
+        app.wsgi_app = DispatcherMiddleware(app.wsgi_app, mounts)
     app.secret_key = secret_key()
     app.permanent_session_lifetime = timedelta(days=30)
     max_upload = int(float(os.environ.get("MAX_UPLOAD_GB", "20")) * 1024 ** 3)
