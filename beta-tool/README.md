@@ -29,16 +29,23 @@ fichier n'est envoyé à un service externe.
 | **Scanner** | Photo d'un document → bords détectés, page redressée et nettoyée (filtres « document »), PDF avec texte cherchable. |
 | **Paperasse** | Factures, fiches de paie, impôts… lus (OCR), reconnus, renommés et rangés par catégorie et année ; échéances avec rappels ; recherche dans le texte. |
 | **Stockage** | Carte de l'espace occupé, plus gros fichiers, doublons (comparaison du contenu), suggestions de rangement d'un dossier (avec annulation). |
-| **Mails** | Boîtes iCloud, Gmail, Outlook, Orange, Free… (IMAP/SMTP) : lecture sûre (images pisteuses bloquées), filtre anti-faux mails, réponses, pièces jointes vers le NAS ou Paperasse, notification des nouveaux mails. |
-| **Contacts** | Carnets Perso, Pro, Famille (partagé) et autres, synchronisés avec les téléphones (CardDAV), import/export .vcf, anniversaires dans l'Agenda. |
-| **Agenda** | Agendas perso et agenda « Famille » partagé, rappels, synchronisés dans les deux sens avec les téléphones (CalDAV, Radicale), plus tes agendas iCloud, Google, Outlook, Nextcloud et liens .ics raccordés. |
+| **Mails** | Boîtes iCloud, Gmail, Outlook, Orange, Free… (IMAP/SMTP) : lecture sûre (images pisteuses bloquées), filtre anti-faux mails, réponses, pièces jointes vers le NAS ou Paperasse, notification des nouveaux mails, invitations (accepter / refuser), mail → agenda, envoi programmé, relances, réponse d'absence. |
+| **Contacts** | Carnets Perso, Pro, Famille (partagé) et autres, groupes, synchronisés avec les téléphones (CardDAV), import/export .vcf, anniversaires et fêtes dans l'Agenda. |
+| **Agenda** | Agendas perso et agenda « Famille » partagé, rappels, répétitions personnalisées (toutes les 2 semaines, 2e mardi du mois…), assistant poubelles, synchronisés dans les deux sens avec les téléphones (CalDAV, Radicale), plus tes agendas iCloud, Google, Outlook, Nextcloud et liens .ics raccordés. |
 | **Recettes** | Import depuis un lien (Marmiton, 750g…), portions ajustables, mode cuisine avec minuteurs, liste de courses partagée triée par rayon. |
+| **Ma journée** | Le résumé du jour sur une page et en notification le matin : météo, rendez-vous, poubelles à sortir, anniversaires et fêtes, tâches, mails importants, colis, papiers à payer, budget. |
+| **Tâches** | Listes perso ou partagées avec la maison, tâches confiées à quelqu'un (avec notification), dates et répétitions (la suivante revient toute seule). |
+| **Budget** | Relevés bancaires CSV / OFX / QIF importés sans doublons, rangés par catégorie, budgets par mois, charges fixes repérées, et **pistes d'économies** : assurances (loi Hamon, mutuelle, assurance de prêt), énergie, box et forfaits, abonnements, frais bancaires, doubles prélèvements, hausses de prix. |
+| **Inventaire** | Objets de la maison par pièce avec photo, prix, garantie, n° de série et facture (depuis Paperasse) ; péremptions (congélateur, pharmacie) ; liste avec valeur totale pour l'assurance habitation. |
+| **Colis** | Numéros de suivi repérés tout seuls dans les mails, avancement mis à jour par les mails du transporteur (clé La Poste optionnelle pour le suivi en direct). |
+| **Téléphones** | Dossier WebDAV par compte pour sauvegarder photos, documents et SMS des téléphones (PhotoSync, FolderSync, SMS Backup & Restore), et lecture des SMS et appels sauvegardés. |
 | **Traduction** | Textes, documents (Word, OpenDocument, PDF) et sous-titres traduits sur le NAS (Argos Translate), sans service en ligne. |
 | **VPN** | Accès à la maison depuis l'extérieur avec WireGuard (wg-easy) : appareils, QR codes, état des connexions. Optionnel. |
 
 Autour des outils : **tableau de bord** (espace disque, outils épinglés, activité récente), **recherche globale** (`Ctrl K`),
 **notifications push** sur le téléphone et l'ordinateur (même Bêta Tool fermé), **comptes utilisateurs** avec
-**double authentification**, **appli installable** sur le téléphone (avec « Partager vers Bêta Tool »), interface en
+**double authentification** et **clés d'accès** (empreinte, visage), **profils enfants** (outils, heures et temps d'écran),
+**commandes vocales** (micro de l'appli, Siri, Google Assistant) et **widget** d'écran d'accueil, **mode hors ligne**, **appli installable** sur le téléphone (avec « Partager vers Bêta Tool »), interface en
 **français ou anglais**, et une page **Réglages** pour activer ou désactiver chaque outil et installer les **mises à jour**.
 
 Chaque outil a un bouton **Aide** (tuto pas à pas, astuces, FAQ) et le site a un bouton **Suggestion**
@@ -222,7 +229,7 @@ sauvegarde des contacts, par exemple `- /volume1/Sauvegardes:/media/sauvegardes`
 ## API (Home Assistant, Raccourcis, scripts…)
 
 Chaque membre crée des jetons dans **Réglages → API**, avec seulement les droits utiles (`mails:read`, `mails:send`,
-`agenda:read`, `agenda:write`, `contacts:read`, `contacts:write`) et une durée. Seule l'empreinte du jeton est gardée.
+`agenda:read`, `agenda:write`, `contacts:read`, `contacts:write`, `assistant:use`) et une durée. Seule l'empreinte du jeton est gardée.
 
 ```bash
 curl -H "Authorization: Bearer bt_…" http://IP-DU-NAS:8080/api/v1/mail/unread
@@ -292,6 +299,50 @@ ouvre l'outil « Sauvegardes » (réservé aux administrateurs) : choisis les do
 4. Installe les applis Bitwarden et choisis « Auto-hébergé » à la connexion.
 
 Les données du coffre sont dans `/data/vault` : sauvegarde-les.
+
+## Accès sécurisé (HTTPS) sans rien ouvrir sur Internet
+
+HTTPS chiffre ce qui circule entre le téléphone et le NAS ; il ne rend **pas** Bêta Tool visible depuis Internet
+(c'est l'ouverture d'un port sur la box qui ferait ça). Il permet les clés d'accès, le mode hors ligne, l'appli
+installable et les notifications sur iPhone. Deux profils prêts à l'emploi dans `docker-compose.yml` :
+
+- **`https`** (à la maison seulement) : Caddy avec un certificat de la maison (`tls internal`). Mets dans `.env`
+  `BETA_HOST` = nom du NAS en `.local` (ex. `dxp4800.local`), ajoute `https` à `COMPOSE_PROFILES`, décommente la
+  ligne `/caddy:ro` du service beta-tool, puis installe une fois le certificat (`/ca.crt`) sur chaque appareil.
+  Adresse : `https://dxp4800.local:8443`.
+- **`tailscale`** (maison et dehors) : `https://beta.<ton-réseau>.ts.net` avec un vrai certificat, joignable seulement
+  par tes appareils connectés à Tailscale. Clé `TS_AUTHKEY` dans `.env`, MagicDNS et HTTPS Certificates activés dans
+  la console Tailscale.
+
+Le pas à pas (avec les réglages iPhone, Android, Windows, Mac) est dans **Réglages → Accès sécurisé**.
+
+## Comptes enfants, clés d'accès
+
+- **Clés d'accès** (Réglages → Comptes) : connexion par empreinte, visage ou code de l'appareil (WebAuthn), sans
+  mot de passe. Demande une adresse `https://` avec un nom (ou `localhost`).
+- **Comptes enfants** (rôle « Enfant », Réglages → Famille) : outils permis, heures en semaine et le week-end,
+  temps d'écran par jour (compté seulement quand la page est ouverte et utilisée), temps en plus d'un clic.
+
+## Commandes vocales et widgets
+
+Le micro en haut de l'écran comprend des phrases en français : « ajoute du lait à la liste de courses »,
+« rendez-vous chez le dentiste mardi à 14h », « rappelle-moi d'appeler le garage demain à 9h »,
+« qu'est-ce que j'ai demain ? », « où en sont mes colis ? », « combien j'ai dépensé ce mois-ci ? ».
+Avec un jeton ayant le droit `assistant:use` : `POST /api/v1/command {"text": "…"}` (Siri via Raccourcis, Google
+Assistant via HTTP Shortcuts, Home Assistant) et `GET /api/v1/widget` (résumé du jour ; script Scriptable pour un
+widget iPhone dans Réglages → API).
+
+## Sauvegarde des téléphones
+
+Chaque compte a son dossier WebDAV `https://<adresse>/webdav/<compte>/` (identifiant et mot de passe Bêta Tool),
+monté dans `/phones` (`docker-compose.yml`) et visible dans Fichiers → Téléphones. iPhone : PhotoSync ;
+Android : FolderSync, et SMS Backup & Restore pour les SMS et appels, relisibles dans l'outil Téléphones.
+
+## Mode hors ligne
+
+Avec une adresse en HTTPS, l'appli garde une copie de Ma journée, des tâches, des courses, de l'agenda, de
+l'inventaire, des colis et du budget sur l'appareil. Hors ligne, ajouter ou cocher une tâche ou un article de
+courses est mis en attente et envoyé au retour du réseau. Les mails ne sont jamais gardés sur l'appareil.
 
 ## Appli sur le téléphone
 
