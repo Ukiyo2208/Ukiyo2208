@@ -1788,3 +1788,20 @@ select.inline { display: inline-block; width: auto; padding: 4px 8px; margin: 0 
 .ct-gmembers .check small { margin-left: 6px; }
 .ct-gsearch { margin-bottom: 8px; }
 .ct-ggroups { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+
+/* ---------- Mails : invitations, options d'envoi, programmés ---------- */
+.ml-inv { margin: 6px 18px 4px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--accent-soft); }
+.ml-inv.cancel { background: rgb(239 68 68 / .08); }
+.ml-inv-head { display: flex; gap: 10px; align-items: flex-start; }
+.ml-inv-head > svg.i { color: var(--accent); flex: none; margin-top: 2px; }
+.ml-inv-head small { display: block; }
+.ml-inv p { margin: 8px 0 0; font-size: .9rem; }
+.ml-inv .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+.ml-inv select { width: auto; max-width: 100%; }
+.ml-copts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 8px 0; font-size: .88rem; }
+.ml-copts select, .ml-copts input[type=datetime-local] { width: auto; padding: 4px 8px; }
+.ml-copts .check { margin: 0; }
+.ml-dates { display: grid; gap: 8px; }
+.ml-sched .meta { display: block; }
+.ml-sched .ml-sacts { display: flex; gap: 6px; margin-top: 6px; }
+@media (max-width: 640px) { .ml-copts .grow { flex-basis: 100%; height: 0; } }

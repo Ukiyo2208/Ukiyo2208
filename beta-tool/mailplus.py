@@ -78,8 +78,15 @@ def invite_info(acc, msg):
             for _, e2 in agenda.read_items(c["path"]):
                 if agenda.text(e2, "uid") == uid:
                     in_agenda = c["name"]
+                    for a in getattr(e2, "attendee_list", []):
+                        if _addr(a) == me:
+                            my_status = (a.params.get("PARTSTAT") or [my_status])[0]
     except Exception:  # noqa: BLE001
         pass
+    answered = store.load("mail/invitations", {}).get(uid)
+    if answered:  # réponse donnée depuis Bêta Tool (aussi pour les agendas raccordés)
+        my_status = answered["status"]
+        in_agenda = in_agenda or answered.get("cal_name")
     organizer = getattr(ev, "organizer", None)
     who = (organizer.params.get("CN") or [""])[0] if organizer is not None else ""
     out = {"method": method, "uid": uid, "title": agenda.text(ev, "summary") or "(sans titre)", "location": agenda.text(ev, "location"),
@@ -157,6 +164,7 @@ def answer_invite(acc_id):
         return False
 
     if answer == "remove" or method == "CANCEL":
+        store.update("mail/invitations", {}, lambda x: x.pop(ev_uid, None))
         return jsonify(ok=True, removed=remove_existing())
     if answer not in PARTSTAT:
         raise ValueError("Réponse inconnue")
@@ -189,6 +197,11 @@ def answer_invite(acc_id):
                 f.write(cal.serialize())
     else:
         remove_existing()
+    cal_name = ""
+    if answer != "DECLINED":
+        import extcal
+        cal_name = next((c["name"] for c in agenda.calendars(user) + extcal.calendars(user) if c["id"] == (d.get("cal") or "personnel")), "")
+    store.update("mail/invitations", {}, lambda x: x.__setitem__(ev_uid, {"status": answer, "cal_name": cal_name, "at": time.time()}))
     if d.get("notify_organizer", True):
         try:
             sent = _reply(acc, cal, ev, answer, me)

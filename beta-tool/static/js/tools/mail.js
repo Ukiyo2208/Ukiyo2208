@@ -24,7 +24,7 @@ const addr = list => (list || []).map(a => a.name ? `${a.name} <${a.email}>` : a
 export async function render(el, parts, q) {
   root = el;
   ({ accounts: accs } = await api("/api/mail"));
-  root.innerHTML = pageHead("mails", accs.length ? `<button class="btn ghost" id="ml-rules">${icon("sliders")}Règles</button><button class="btn ghost" id="ml-acc">${icon("settings")}Comptes</button><button class="btn" id="ml-write">${icon("edit")}Écrire</button>` : "")
+  root.innerHTML = pageHead("mails", accs.length ? `<button class="btn ghost" id="ml-away">${icon("sun")}Absence</button><button class="btn ghost" id="ml-rules">${icon("sliders")}Règles</button><button class="btn ghost" id="ml-acc">${icon("settings")}Comptes</button><button class="btn" id="ml-write">${icon("edit")}Écrire</button>` : "")
     + `<div id="ml-body"></div>`;
   if (!accs.length) return empty();
   acc = accs.find(a => a.id === parts[0]) || accs.find(a => a.id === acc?.id) || accs[0];
@@ -49,6 +49,7 @@ export async function render(el, parts, q) {
   $("#ml-write").onclick = () => compose({});
   $("#ml-acc").onclick = () => location.hash = "#/reglages/enligne";
   $("#ml-rules").onclick = rulesPanel;
+  $("#ml-away").onclick = awayPanel;
   $("#ml-add").onclick = () => connect({ want: "mail", onDone: a => { acc = a; render(root, [a.id]); } });
   $("#ml-menu").onclick = () => $(".ml-layout").dataset.pane = "side";
   $("#ml-refresh").onclick = () => { loadFolders(); loadList(); };
@@ -56,7 +57,7 @@ export async function render(el, parts, q) {
   $("#ml-q").oninput = e => { clearTimeout(t); t = setTimeout(() => { query = e.target.value.trim(); page = 0; loadList(); }, 400); };
   $("#ml-filter").onchange = e => { unread = e.target.value === "1"; page = 0; loadList(); };
   paintAccounts();
-  await Promise.all([loadFolders(), loadList()]);
+  await Promise.all([loadFolders(), loadList(), loadScheduledCount()]);
   if (q?.uid) openMessage(q.uid);
   if (q?.to) compose({ to: q.to });
   clearInterval(timer);
@@ -107,11 +108,15 @@ async function loadFolders() {
   paintFolders();
 }
 
+const SCHEDULED = "__programmes__";
+let scheduledCount = 0;
+
 function paintFolders() {
   const el = $("#ml-folders");
   if (!el) return;
   el.innerHTML = folders.map(f => `<button class="ml-folder ${f.name === folder ? "on" : ""}" data-folder="${esc(f.name)}" style="--d:${Math.min(f.depth, 3)}">
       ${icon(FOLDER_ICON[f.role] || "folder")}<span class="grow">${esc(f.label)}</span>${f.unread ? `<span class="count">${f.unread}</span>` : ""}</button>`).join("")
+    + `<button class="ml-folder ${folder === SCHEDULED ? "on" : ""}" data-folder="${SCHEDULED}">${icon("clock")}<span class="grow">Programmés</span>${scheduledCount ? `<span class="count">${scheduledCount}</span>` : ""}</button>`
     + `<button class="ml-folder" data-newfolder>${icon("plus")}<span class="grow meta">Nouveau dossier</span></button>`;
   const cur = folders.find(f => f.name === folder);
   $("#ml-fname").textContent = cur?.label || folder;
@@ -121,7 +126,32 @@ function paintFolders() {
 
 const role = () => folders.find(f => f.name === folder)?.role;
 
+async function loadScheduledCount() {
+  try { scheduledCount = (await api("/api/mail/scheduled")).filter(x => x.account === acc.id).length; paintFolders(); } catch {}
+}
+
+async function loadScheduled() {
+  const list = $("#ml-items");
+  const items = (await api("/api/mail/scheduled")).filter(x => x.account === acc.id);
+  scheduledCount = items.length;
+  msgs = []; selected.clear(); paintBulk();
+  list.innerHTML = items.length ? items.map(x => `<div class="ml-item ml-sched">
+      <span class="ml-av" style="--h:200">${icon("clock")}</span>
+      <div class="grow ml-lines"><div class="ml-l1"><b class="grow">À : ${esc(x.to)}</b><small class="meta">${new Date(x.at * 1000).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</small></div>
+        <div class="ml-l2"><span class="grow">${esc(x.subject)}</span>
+          <button class="btn ghost small" data-snow="${x.id}">${icon("send")}Envoyer</button><button class="icon-btn plain" data-sdel="${x.id}" title="Annuler">${icon("trash")}</button></div></div></div>`).join("")
+    : `<div class="empty">${icon("clock")}<b>Aucun mail programmé</b>Dans un nouveau mail, coche « Envoyer plus tard ».</div>`;
+  list.onclick = async e => {
+    const b = e.target.closest("[data-snow],[data-sdel]");
+    if (!b) return;
+    if (b.dataset.sdel) { if (!confirm("Annuler l'envoi de ce mail ?")) return; await api(`/api/mail/scheduled/${b.dataset.sdel}`, { method: "DELETE" }); toast("Envoi annulé"); }
+    else { await api(`/api/mail/scheduled/${b.dataset.snow}/now`, { json: {} }); toast("Mail envoyé"); }
+    loadScheduled(); paintFolders();
+  };
+}
+
 async function loadList(quiet = false) {
+  if (folder === SCHEDULED) return loadScheduled();
   const list = $("#ml-items");
   if (!quiet) list.innerHTML = `<p class="meta" style="padding:16px"><span class="spinner"></span></p>`;
   try {
@@ -259,13 +289,15 @@ async function openMessage(uid, images = false) {
       <button class="icon-btn plain" data-r="trash" title="${inTrash ? "Supprimer définitivement" : "Corbeille"}">${icon("trash")}</button>
       <button class="icon-btn plain" data-r="unread" title="Marquer comme non lu">${icon("mail")}</button>
       <button class="icon-btn plain" data-r="move" title="Déplacer">${icon("move")}</button>
-      <button class="icon-btn plain" data-r="rule" title="Créer une règle pour ces mails">${icon("sliders")}</button></div>
+      <button class="icon-btn plain" data-r="rule" title="Créer une règle pour ces mails">${icon("sliders")}</button>
+      <button class="icon-btn plain" data-r="event" title="Ajouter à l'agenda">${icon("calendar")}</button></div>
     <div class="ml-rhead"><h2>${esc(d.subject)}</h2>
       <div class="ml-from"><span class="ml-av big" style="--h:${hue(who(d.from))}">${initial(who(d.from))}</span>
         <div class="grow"><b>${esc(who(d.from))}</b> <small class="meta">${esc(d.from[0]?.email || "")}</small>
           ${d.from[0]?.email && !d.security?.trusted && d.security?.level !== "phishing" ? `<button class="ml-addct" data-r="addcontact" title="Ajouter aux contacts">${icon("plus")}Contact</button>` : ""}
           <small class="meta ml-to">À : ${esc(addr(d.to)) || "—"}${d.cc.length ? ` · Cc : ${esc(addr(d.cc))}` : ""}</small></div>
         <small class="meta">${d.date ? new Date(d.date * 1000).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}</small></div></div>
+    ${inviteBanner(d.invite)}
     ${unsubBanner(d.unsubscribe)}
     ${secBanner(d.security)}
     ${d.remote_images && !images && d.security?.level !== "phishing" ? `<div class="ml-imgs">${icon("eye")}<span class="grow">Images distantes bloquées pour protéger ta vie privée (elles servent souvent à savoir si tu as ouvert le mail).</span><button class="btn ghost small" data-r="images">Afficher les images</button></div>` : ""}
@@ -275,6 +307,7 @@ async function openMessage(uid, images = false) {
       <button class="icon-btn plain" data-save="${a.n}" title="Enregistrer sur le NAS">${icon("nas")}</button>
       ${/pdf|image\/(jpe?g|png|heic)/.test(a.type) ? `<button class="icon-btn plain" data-paper="${a.n}" title="Envoyer à Paperasse">${icon("receipt")}</button>` : ""}</div>`).join("")}</div>` : ""}
     <div class="ml-frame-wrap"><iframe class="ml-frame" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" title="Contenu du mail"></iframe></div>`);
+  fillInviteCalendars();
   const fr = $(".ml-frame");
   const csp = `default-src 'none'; img-src data: ${images ? "https: http:" : ""}; style-src 'unsafe-inline' ${images ? "https:" : ""}; font-src data: ${images ? "https:" : ""}`;
   fr.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><base target="_blank">
@@ -327,6 +360,8 @@ async function openMessage(uid, images = false) {
       return;
     }
     if (r === "rule") return ruleFor(d);
+    if (r === "event") return mailToEvent(d);
+    if (r.startsWith("inv-")) return answerInvite(d, r.slice(4), b);
     if (r === "addcontact") {
       const f = d.from[0], parts = (f.name || "").replace(/["']/g, "").trim().split(/\s+/);
       const { edit } = await import("./contacts.js");
@@ -462,6 +497,80 @@ async function ruleEditor(r) {
   };
 }
 
+// --- Invitations et agenda ----------------------------------------------------------------
+
+const ANSWER = { ACCEPTED: "Accepté", TENTATIVE: "Peut-être", DECLINED: "Refusé" };
+let agendaInfo = null;
+
+function inviteBanner(inv) {
+  if (!inv) return "";
+  const s = new Date(inv.start), e = new Date(inv.end);
+  const when = inv.allday ? s.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
+    : `${s.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}, ${s.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} – ${e.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`;
+  const head = `<div class="ml-inv-head">${icon("calendar")}<div class="grow"><b>${esc(inv.title)}</b><small>${esc(when.charAt(0).toUpperCase() + when.slice(1))}${inv.location ? ` · ${esc(inv.location)}` : ""}${inv.recur_text ? ` · ${esc(inv.recur_text)}` : ""}</small>
+    <small class="meta">${inv.organizer ? `Organisé par ${esc(inv.organizer)}` : ""}${inv.attendees ? ` · ${inv.attendees} invité${inv.attendees > 1 ? "s" : ""}` : ""}</small></div></div>`;
+  if (inv.method === "CANCEL") return `<div class="ml-inv cancel">${head}<p><b>Cet événement est annulé.</b></p>${inv.in_agenda ? `<div class="row"><button class="btn small" data-r="inv-remove">${icon("trash")}Retirer de l'agenda</button></div>` : ""}</div>`;
+  if (inv.method === "REPLY") return `<div class="ml-inv">${head}<p>${esc(inv.reply_from)} a répondu : <b>${esc(ANSWER[inv.reply_status] || inv.reply_status)}</b></p></div>`;
+  return `<div class="ml-inv">${head}
+    ${inv.in_agenda ? `<p class="meta">${icon("check")} Dans ton agenda « ${esc(inv.in_agenda)} »${inv.my_status ? ` · ta réponse : ${esc(ANSWER[inv.my_status] || inv.my_status)}` : ""}</p>` : ""}
+    <div class="row"><select data-invcal></select>
+      <button class="btn small" data-r="inv-ACCEPTED">${icon("check")}Accepter</button>
+      <button class="btn ghost small" data-r="inv-TENTATIVE">Peut-être</button>
+      <button class="btn ghost small" data-r="inv-DECLINED">${icon("x")}Refuser</button></div></div>`;
+}
+
+async function fillInviteCalendars() {
+  const sel = document.querySelector("[data-invcal]");
+  if (!sel) return;
+  try { agendaInfo = agendaInfo || await api("/api/agenda"); } catch { sel.hidden = true; return; }
+  sel.innerHTML = agendaInfo.calendars.filter(c => !c.readonly).map(c => `<option value="${c.id}">${esc(c.name)}${c.external ? ` (${esc(c.account_label)})` : ""}</option>`).join("");
+  if (sel.querySelector('option[value="personnel"]')) sel.value = "personnel";
+}
+
+async function answerInvite(d, answer, b) {
+  const cal = document.querySelector("[data-invcal]")?.value;
+  b.disabled = true;
+  try {
+    const r = await api(`/api/mail/${acc.id}/invite`, { json: { folder, uid: d.uid, answer, cal } });
+    toast(r.warning || (answer === "remove" ? "Retiré de l'agenda" : answer === "DECLINED" ? `Invitation refusée${r.sent ? " : l'organisateur est prévenu" : ""}`
+      : `Ajouté à ton agenda${r.sent ? " : l'organisateur est prévenu" : ""}`), r.warning ? "err" : "ok");
+    openMessage(d.uid);
+  } catch (err) { toast(err.message, "err"); b.disabled = false; }
+}
+
+async function mailToEvent(d) {
+  let s;
+  try { s = await api(`/api/mail/${acc.id}/event-suggest?folder=${encodeURIComponent(folder)}&uid=${d.uid}`); } catch (err) { return toast(err.message, "err"); }
+  const { newEvent } = await import("./agenda.js");
+  const open = c => newEvent({ title: s.title, notes: s.notes, ...(c ? { start: c.start, end: c.end, allday: c.allday } : {}) }, () => {});
+  if (s.candidates.length <= 1) return open(s.candidates[0]);
+  const m = modal("Ajouter à l'agenda", `<p class="hint" style="margin-top:0">Plusieurs dates dans ce mail : laquelle ?</p>
+    <div class="ml-dates">${s.candidates.map((c, i) => `<button class="acc-prov" data-c="${i}">${icon("calendar")}<span class="grow"><b>${esc(new Date(c.start).toLocaleString("fr-FR", c.allday ? { weekday: "long", day: "numeric", month: "long" } : { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }))}</b>
+      <small>« ${esc(c.text)} »</small></span></button>`).join("")}
+      <button class="acc-prov" data-c="-1">${icon("edit")}<span class="grow"><b>Autre date</b><small>Je la choisis moi-même</small></span></button></div>`, { ic: "calendar" });
+  m.onclick = e => { const b = e.target.closest("[data-c]"); if (b) { closePanel(); setTimeout(() => open(s.candidates[+b.dataset.c]), 250); } };
+}
+
+async function awayPanel() {
+  const v = await api(`/api/mail/${acc.id}/vacation`);
+  const m = modal(`Absence · ${acc.label}`, `<form>
+    <label class="check"><input type="checkbox" name="on" ${v.on ? "checked" : ""}> Répondre automatiquement aux mails reçus</label>
+    <div class="grid2"><div><label class="field">Du</label><input type="date" name="start" value="${esc(v.start)}"></div><div><label class="field">Au</label><input type="date" name="end" value="${esc(v.end)}"></div></div>
+    <label class="field">Objet</label><input type="text" name="subject" value="${esc(v.subject)}">
+    <label class="field">Message</label><textarea name="text" rows="5" placeholder="Bonjour, je suis en vacances jusqu'au 15 août et je lirai ton message à mon retour.">${esc(v.text)}</textarea>
+    <label class="check"><input type="checkbox" name="contacts_only" ${v.contacts_only ? "checked" : ""}> Seulement à mes contacts</label>
+    <p class="hint">Une seule réponse tous les 4 jours par personne ; jamais aux newsletters, aux adresses « no-reply » ni aux faux mails. Bêta Tool doit rester allumé pour répondre.</p>
+    <div class="modal-foot"><button type="button" class="btn ghost" data-close>Annuler</button><button class="btn">${icon("check")}Enregistrer</button></div></form>`, { ic: "sun" });
+  m.querySelector("form").onsubmit = async e => {
+    e.preventDefault();
+    const f = e.target;
+    try {
+      const r = await api(`/api/mail/${acc.id}/vacation`, { method: "PUT", json: { on: f.on.checked, start: f.start.value, end: f.end.value, subject: f.subject.value, text: f.text.value, contacts_only: f.contacts_only.checked } });
+      closePanel(); toast(r.active ? "Réponse automatique activée" : r.on ? "Réponse automatique programmée" : "Réponse automatique désactivée");
+    } catch (err) { toast(err.message, "err"); }
+  };
+}
+
 // --- Newsletters ---------------------------------------------------------------------------
 
 function unsubBanner(u) {
@@ -521,6 +630,13 @@ async function compose({ mode = "", msg = null, to: preset = "" }) {
     <textarea name="text" rows="12" placeholder="Ton message…"></textarea>
     ${msg ? `<p class="hint">${icon(mode === "forward" ? "send" : "back")} ${mode === "forward" ? `Le mail d'origine${msg.attachments.length ? ` et ses ${msg.attachments.length} pièce${msg.attachments.length > 1 ? "s" : ""} jointe${msg.attachments.length > 1 ? "s" : ""}` : ""} sera ajouté en dessous.` : "Le mail d'origine sera cité en dessous."}</p>` : ""}
     <div class="ml-files" id="ml-files"></div>
+    <div class="ml-copts">
+      <label class="check"><input type="checkbox" name="follow"> Me rappeler si pas de réponse dans</label>
+      <select name="follow_days">${[1, 2, 3, 5, 7, 14].map(n => `<option value="${n}" ${n === 3 ? "selected" : ""}>${n} jour${n > 1 ? "s" : ""}</option>`).join("")}</select>
+      <span class="grow"></span>
+      <label class="check"><input type="checkbox" name="later"> Envoyer plus tard :</label>
+      <select name="when"><option value="tomorrow8">Demain à 8h</option><option value="monday8">Lundi à 8h</option><option value="tonight18">Ce soir à 18h</option><option value="custom">Choisir…</option></select>
+      <input type="datetime-local" name="send_at" hidden></div>
     <div class="modal-foot"><label class="btn ghost"><input type="file" multiple hidden name="files">${icon("upload")}Joindre</label>
       ${acc.mail?.signature ? `<label class="check"><input type="checkbox" name="sig" checked> Signature</label>` : ""}
       <span class="grow"></span><button type="button" class="btn ghost" data-close>Annuler</button><button class="btn">${icon("send")}Envoyer</button></div></form>`, { ic: "edit", large: true });
@@ -530,6 +646,14 @@ async function compose({ mode = "", msg = null, to: preset = "" }) {
   f.files.onchange = () => { files = files.concat([...f.files.files]); f.files.value = ""; paintFiles(); };
   m.querySelector("#ml-files").onclick = e => { const b = e.target.closest("[data-rm]"); if (b) { files.splice(+b.dataset.rm, 1); paintFiles(); } };
   m.querySelector("[data-cc]").onclick = e => { e.target.hidden = true; m.querySelectorAll("[data-ccrow]").forEach(r => r.hidden = false); };
+  const sendBtn = () => f.querySelector(".modal-foot .btn:last-child");
+  const syncLater = () => {
+    f.send_at.hidden = !f.later.checked || f.when.value !== "custom";
+    sendBtn().innerHTML = `${icon(f.later.checked ? "clock" : "send")}${f.later.checked ? "Programmer" : "Envoyer"}`;
+  };
+  f.later.onchange = syncLater;
+  f.when.onchange = () => { f.later.checked = true; syncLater(); };
+  f.follow_days.onchange = () => { f.follow.checked = true; };
   (mode && mode !== "forward" ? f.text : f.to).focus();
   f.onsubmit = async e => {
     e.preventDefault();
@@ -539,6 +663,17 @@ async function compose({ mode = "", msg = null, to: preset = "" }) {
     for (const k of ["to", "cc", "bcc", "subject", "text"]) fd.append(k, f[k].value);
     if (f.sig && !f.sig.checked) fd.append("signature", "0");
     if (msg) { fd.append("mode", mode); fd.append("ref_uid", msg.uid); fd.append("ref_folder", msg.folder); }
+    if (f.follow.checked) fd.append("follow_days", f.follow_days.value);
+    let at = null;
+    if (f.later.checked) {
+      const d = new Date(), pad = n => String(n).padStart(2, "0"), local = x => `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}T${pad(x.getHours())}:${pad(x.getMinutes())}`;
+      if (f.when.value === "tomorrow8") { d.setDate(d.getDate() + 1); d.setHours(8, 0, 0, 0); }
+      else if (f.when.value === "monday8") { d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7)); d.setHours(8, 0, 0, 0); }
+      else if (f.when.value === "tonight18") { d.setHours(18, 0, 0, 0); if (d < new Date()) d.setDate(d.getDate() + 1); }
+      at = f.when.value === "custom" ? f.send_at.value : local(d);
+      if (!at) return toast("Choisis la date d'envoi", "err");
+      fd.append("send_at", at);
+    }
     files.forEach(x => fd.append("files", x));
     const from = f.from?.value || acc.id;
     const btn = f.querySelector(".modal-foot .btn:last-child");
@@ -547,10 +682,15 @@ async function compose({ mode = "", msg = null, to: preset = "" }) {
     try {
       const r = await api(`/api/mail/${from}/send`, { method: "POST", body: fd });
       closePanel();
-      toast(r.warning || "Mail envoyé", r.warning ? "err" : "ok");
+      if (r.scheduled) {
+        toast(`Mail programmé pour ${new Date(r.scheduled).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}`);
+        loadScheduledCount();
+        return;
+      }
+      toast(r.warning || (f.follow.checked ? `Mail envoyé : je te préviens s'il n'y a pas de réponse dans ${f.follow_days.value} jour${+f.follow_days.value > 1 ? "s" : ""}` : "Mail envoyé"), r.warning ? "err" : "ok");
       if (role() === "sent") loadList(true);
       if (msg && mode !== "forward") { const x = msgs.find(y => y.uid === msg.uid); if (x) { x.answered = true; paintList(); } }
-    } catch (err) { toast(err.message, "err"); btn.disabled = false; btn.innerHTML = `${icon("send")}Envoyer`; }
+    } catch (err) { toast(err.message, "err"); btn.disabled = false; syncLater(); }
   };
 }
 
