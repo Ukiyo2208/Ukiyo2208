@@ -19,6 +19,7 @@ import archives
 import auth
 import backup
 import clipboard
+import budget
 import colis
 import contacts
 import converter
@@ -27,6 +28,7 @@ import drop
 import files
 import forms
 import imagetool
+import inventaire
 import journee
 import links
 import mail
@@ -37,6 +39,7 @@ import monitor
 import notes
 import photos
 import transcribe
+import taches
 import translate
 import vault
 import videotool
@@ -622,12 +625,12 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,
                  paperasse=paperasse.search, recettes=recipes.search, agenda=agenda.search, contacts=contacts.search, **{"presse-papier": clipboard.search})
-COUNTERS.update(colis=colis.count, mails=mail.count, contacts=contacts.count, recettes=recipes.count, paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
+COUNTERS.update(taches=taches.count, inventaire=inventaire.count, colis=colis.count, mails=mail.count, contacts=contacts.count, recettes=recipes.count, paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
 
 
 if __name__ == "__main__":
@@ -656,6 +659,9 @@ if __name__ == "__main__":
     journee.start()
     colis.start()
     mailplus.start()
+    taches.start()
+    inventaire.start()
+    budget.start()
     dav = agenda.radicale_app()
     if dav:  # serveur CalDAV des agendas (synchronisation des téléphones)
         from werkzeug.middleware.dispatcher import DispatcherMiddleware

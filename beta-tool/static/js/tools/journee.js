@@ -41,6 +41,7 @@ async function paint() {
       ${enabled("agenda") ? card("calendar", "Rendez-vous", list(b.events, "Aucun rendez-vous."), `#/agenda?date=${iso(day)}`) : ""}
       ${b.tasks !== undefined ? card("check", "Tâches", list(b.tasks, "Rien à faire, profites-en !"), "#/taches") : ""}
       ${b.mail ? card("mail", "Mails", `<p class="jr-big"><b>${b.mail.unread}</b> non lu${b.mail.unread > 1 ? "s" : ""}</p>${b.mail.important.length ? `<small class="meta">De tes contacts :</small>${list(b.mail.important)}` : ""}`, "#/mails") : ""}
+      ${b.stock?.length ? card("archive", "Inventaire", list(b.stock, ""), "#/inventaire") : ""}
       ${b.parcels !== undefined ? card("send", "Colis", list(b.parcels, "Aucun colis en route."), "#/colis") : ""}
       ${b.papers !== undefined ? card("receipt", "À payer cette semaine", list(b.papers, "Rien à payer cette semaine."), "#/paperasse") : ""}
       ${b.budget ? card("chart", "Budget du mois", `<p class="jr-big"><b>${esc(b.budget.spent)}</b> dépensés</p><small class="meta">${esc(b.budget.sub)}</small>`, "#/budget") : ""}

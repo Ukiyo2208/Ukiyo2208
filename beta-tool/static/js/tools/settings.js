@@ -230,7 +230,7 @@ async function twofa(el) {
 }
 
 // --- Notifications --------------------------------------------------------------
-const NOTIF_TOOLS = ["journee", "mails", "colis", "telecharger", "abonnements", "convertir", "video", "transcription", "image", "drop", "presse-papier", "questionnaires",
+const NOTIF_TOOLS = ["journee", "mails", "taches", "colis", "inventaire", "telecharger", "abonnements", "convertir", "video", "transcription", "image", "drop", "presse-papier", "questionnaires",
   "agenda", "paperasse", "recettes", "surveillance", "sauvegardes", "traduction", "reglages"];
 
 async function notifications(el) {
