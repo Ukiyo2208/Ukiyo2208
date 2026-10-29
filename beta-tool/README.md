@@ -316,6 +316,16 @@ installable et les notifications sur iPhone. Deux profils prêts à l'emploi dan
 
 Le pas à pas (avec les réglages iPhone, Android, Windows, Mac) est dans **Réglages → Accès sécurisé**.
 
+## Réglages : connexions, profil et apparence
+
+- **Connexions** : une seule page avec tout ce qui est relié (boîtes mail et agendas, connexion Microsoft / Google,
+  synchro des téléphones, sauvegarde WebDAV, notifications, clés d'accès, double authentification, Parcel, La Poste,
+  météo, banque, jetons d'API, HTTPS, VPN, Bêta Work, Coffre), avec l'état de chacun et un accès direct au réglage.
+- **Mon profil** : photo (ou emoji et couleur), nom affiché, page ouverte au démarrage, langue, mot de passe,
+  clés d'accès, double authentification.
+- **Apparence** : thème, couleur principale (9 couleurs ou une au choix), fond (grille, uni, aurore, points), taille du
+  texte, densité, coins, effet verre, menu en icônes seulement, animations réduites. Gardé par compte sur le NAS.
+
 ## Comptes enfants, clés d'accès
 
 - **Clés d'accès** (Réglages → Comptes) : connexion par empreinte, visage ou code de l'appareil (WebAuthn), sans

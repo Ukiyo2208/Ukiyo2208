@@ -21,7 +21,7 @@ _lock = threading.Lock()
 DEFAULT = {"tools": ["journee", "taches", "agenda", "recettes", "notes", "medias", "photos"],
            "week": ["07:30", "20:00"], "weekend": ["08:30", "21:00"], "limit": 90, "bonus": {}}
 # routes toujours permises (page, réglages perso, notifications…)
-ALWAYS = {"config", "me", "famille", "activity", "push", "auth", "search", "dashboard", "suggestions", "save", "fs", "public"}
+ALWAYS = {"config", "me", "avatar", "connections", "famille", "activity", "push", "auth", "search", "dashboard", "suggestions", "save", "fs", "public"}
 PARENTS_ONLY = {"users", "settings", "update", "backup", "accounts", "restart", "v1", "vpn"}
 
 

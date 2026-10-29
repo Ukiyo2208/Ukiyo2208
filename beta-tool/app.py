@@ -50,6 +50,7 @@ import vault
 import videotool
 import vpn
 import passkeys
+import profil
 import paperasse
 import pdftools
 import push
@@ -183,7 +184,7 @@ def login_code():
         return redirect("/login?etape=code&erreur=1" if session.get("pending") else "/login?erreur=expire")
     if left is not True:  # un code de secours vient d'être utilisé
         activity.log(session["user"], "reglages",
-                     f"Code de secours utilisé : il t'en reste {left}", "#/reglages/comptes", "err")
+                     f"Code de secours utilisé : il t'en reste {left}", "#/reglages/profil", "err")
     return redirect("/")
 
 
@@ -220,6 +221,7 @@ def my_prefs():
             p["all_open"] = bool(d["all_open"])
         if d.get("lang") in ("fr", "en"):
             p["lang"] = d["lang"]
+        profil.clean(d, p)
     store.update("prefs", {}, go)
     return jsonify(user_prefs(g.user["name"]))
 
@@ -302,7 +304,7 @@ def my_2fa_setup():
 @app.post("/api/me/2fa/enable")
 def my_2fa_enable():
     codes = auth.twofa_enable(g.user["name"], (request.get_json(silent=True) or {}).get("code"))
-    activity.log(g.user["name"], "reglages", "Double authentification activée", "#/reglages/comptes")
+    activity.log(g.user["name"], "reglages", "Double authentification activée", "#/reglages/profil")
     return jsonify(codes=codes)
 
 
@@ -657,7 +659,7 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones, profil):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,

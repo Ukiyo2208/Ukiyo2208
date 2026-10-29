@@ -75,6 +75,7 @@ export async function render(root, parts, query) {
   paintCals();
   $("#ag-new").onclick = () => edit({ start: iso(cursor) + "T" + nextHour() });
   $("#ag-sync").onclick = syncPanel;
+  if (query?.sync) { history.replaceState(null, "", "#/agenda"); syncPanel(); }
   $("#ag-addcal").onclick = addCalendar;
   $("#ag-bins").onclick = binsPanel;
   $("#ag-import").onchange = importIcs;

@@ -195,7 +195,7 @@ def register():
         x = next(x for x in d["users"] if x["name"] == g.user["name"])
         x.setdefault("passkeys", []).append(key)
     store.update("users", {"users": []}, go)
-    activity.log(g.user["name"], "reglages", f"Nouvelle clé d'accès : {key['name']}", "#/reglages/comptes")
+    activity.log(g.user["name"], "reglages", f"Nouvelle clé d'accès : {key['name']}", "#/reglages/profil")
     return jsonify(ok=True, id=key["id"])
 
 

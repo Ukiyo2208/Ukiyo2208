@@ -10,7 +10,9 @@ import * as archive from "./archive.js";
 import * as work from "./work.js";
 import * as push from "./push.js";
 import * as i18n from "./i18n.js";
+import * as design from "./design.js";
 
+design.applyCached();
 hydrateIcons();
 
 // --- Thème ------------------------------------------------------------------
@@ -23,7 +25,7 @@ export function setTheme(t) {
 }
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-theme-set]");
-  if (b) setTheme(b.dataset.themeSet);
+  if (b) { setTheme(b.dataset.themeSet); savePrefs({ theme: b.dataset.themeSet }); }
 });
 
 // --- Menu, accueil, onglets ---------------------------------------------------
@@ -34,12 +36,12 @@ function buildNav() {
     const items = TOOLS.filter(t => t.cat === cat && visible(t));
     return items.length ? `<div class="nav-label">${label}</div>` + items.map(navLink).join("") : "";
   }).join("");
-  $("#nav").innerHTML = `<a href="#/" data-route="home">${icon("home")}Accueil</a>` + groups
+  $("#nav").innerHTML = `<a href="#/" data-route="home" title="Accueil">${icon("home")}<span>Accueil</span></a>` + groups
     + `<div class="nav-label">Bêta Tool</div>` + SYSTEM.map(navLink).join("");
   const u = state.config.user;
   $("#side-user").innerHTML = `
-    <div class="me"><span class="avatar">${esc((u.name[0] || "?").toUpperCase())}</span>
-      <span><b>${esc(state.config.mode === "open" ? "Accès libre" : u.name)}</b><small>${u.role === "admin" ? "Administrateur" : u.role === "child" ? "Enfant" : "Membre"} · v${esc(state.config.version)}</small></span>
+    <div class="me"><a href="#/reglages/profil" title="Mon profil" class="me-av">${design.avatarHTML(u, state.config.prefs)}</a>
+      <span><b>${esc(state.config.mode === "open" ? (state.config.prefs?.display_name || "Accès libre") : (state.config.prefs?.display_name || u.name))}</b><small>${u.role === "admin" ? "Administrateur" : u.role === "child" ? "Enfant" : "Membre"} · v${esc(state.config.version)}</small></span>
       ${state.config.mode !== "open" ? `<form method="post" action="/logout" onsubmit="try{caches.delete('beta-tool-data-v1');indexedDB.deleteDatabase('beta-tool-offline')}catch(e){}"><button class="icon-btn plain" title="Se déconnecter">${icon("logout")}</button></form>` : ""}
     </div>
     <div class="theme-switch" role="group" aria-label="Thème">
@@ -58,7 +60,7 @@ function buildNav() {
     + [...TOOLS, ...SYSTEM.filter(t => t.id === "reglages")].map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
   buildHome();
 }
-const navLink = t => `<a href="#/${t.id}" data-route="${t.id}">${icon(t.icon)}${esc(t.name)}</a>`;
+const navLink = t => `<a href="#/${t.id}" data-route="${t.id}" title="${esc(t.name)}">${icon(t.icon)}<span>${esc(t.name)}</span></a>`;
 const sheetLink = t => `<a href="#/${t.id}" data-route="${t.id}"><span class="tile ${t.tile}">${icon(t.icon)}</span>${esc(t.name)}</a>`;
 
 function buildHome() {
@@ -120,10 +122,13 @@ export async function togglePin(id) {
   return on;
 }
 
-async function savePrefs(patch, rebuild = true) {
-  state.config.prefs = { ...state.config.prefs, ...patch };
-  try { state.config.prefs = await api("/api/me/prefs", { method: "PUT", json: patch }); } catch (err) { toast(err.message, "err"); }
+/** Enregistre des préférences du compte (épingles, thème, apparence, profil) sur le NAS. */
+export async function savePrefs(patch, rebuild = true) {
+  let ok = true;
+  if (!patch.design && !patch.reset_design) state.config.prefs = { ...state.config.prefs, ...patch };
+  try { state.config.prefs = await api("/api/me/prefs", { method: "PUT", json: patch }); } catch (err) { toast(err.message, "err"); ok = false; }
   if (rebuild) buildHome();
+  return ok ? state.config.prefs : null;
 }
 
 document.addEventListener("click", e => {
@@ -522,7 +527,17 @@ export async function reloadConfig() {
   $("#greeting").textContent = (hr < 5 || hr >= 18 ? "Bonsoir" : "Bonjour") + (state.config?.user ? "" : "") + " 👋";
   state.config = await api("/api/config");
   await i18n.apply(i18n.preferred(state.config.prefs?.lang));
-  if (state.config.mode === "accounts") $("#greeting").textContent = $("#greeting").textContent.replace(" 👋", `, ${state.config.user.name} 👋`);
+  const shown = state.config.prefs?.display_name || (state.config.mode === "accounts" ? state.config.user.name : "");
+  if (shown) $("#greeting").textContent = $("#greeting").textContent.replace(" 👋", `, ${shown} 👋`);
+  design.apply(state.config.prefs?.design);
+  if (state.config.prefs?.theme && state.config.prefs.theme !== getTheme()) setTheme(state.config.prefs.theme);
+  const start = state.config.prefs?.start;
+  try {
+    if (start && start !== "home" && (!location.hash || location.hash === "#/" || location.hash === "#") && !sessionStorage.getItem("bt-started")) {
+      sessionStorage.setItem("bt-started", "1");
+      history.replaceState(null, "", "#/" + start);
+    }
+  } catch {}
   if (state.config.site && state.config.site !== "Bêta Tool") document.title = state.config.site;
   if (state.config.storage && state.config.storage !== "NAS") swapStorage(state.config.storage);
   buildNav();

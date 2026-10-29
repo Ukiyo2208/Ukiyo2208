@@ -2,7 +2,7 @@
 import { $, $$, esc, icon, toast, modal, closePanel } from "../ui.js";
 import { TOOLS, CATS } from "../registry.js";
 import { state, isAdmin, api, ago } from "../state.js";
-import { pageHead, reloadConfig, setTheme } from "../main.js";
+import { pageHead, reloadConfig, setTheme, savePrefs } from "../main.js";
 import * as push from "../push.js";
 import { canvas as qrCanvas } from "../qrcode.js";
 import * as i18n from "../i18n.js";
@@ -11,28 +11,32 @@ import { settingsTab as apiTab } from "../apitokens.js";
 import { settingsTab as famille } from "../famille.js";
 import { card as passkeysCard } from "../passkeys.js";
 import { settingsTab as acces } from "../acces.js";
+import { connexions, apparence as apparenceTab } from "../perso.js";
+import { avatarHTML } from "../design.js";
 
 const TABS = [
-  ["general", "Général", "settings", true],
-  ["outils", "Outils", "grid", true],
-  ["comptes", "Comptes", "users", false],
+  ["connexions", "Connexions", "link", false],
+  ["profil", "Mon profil", "user", false],
+  ["apparence", "Apparence", "sun", false],
+  ["notifications", "Notifications", "bell", false],
+  ["enligne", "Mails et agendas", "globe", false],
+  ["api", "API", "code", false],
+  ["comptes", "Comptes de la maison", "users", true],
   ["famille", "Famille", "heart", true],
   ["acces", "Accès sécurisé", "lock", true],
-  ["enligne", "Comptes en ligne", "globe", false],
-  ["api", "API", "code", false],
-  ["notifications", "Notifications", "bell", false],
+  ["general", "Général", "settings", true],
+  ["outils", "Outils", "grid", true],
   ["maj", "Mises à jour", "refresh", true],
-  ["apparence", "Apparence", "sun", false],
   ["apropos", "À propos", "help", false],
 ];
 
 export async function render(root, parts) {
   const tabs = TABS.filter(t => (!t[3] || isAdmin()) && !(state.config.child && ["enligne", "api"].includes(t[0])));
-  const tab = tabs.find(t => t[0] === parts[0])?.[0] || (isAdmin() ? "general" : "comptes");
+  const tab = tabs.find(t => t[0] === parts[0])?.[0] || "connexions";
   root.innerHTML = pageHead({ name: "Réglages", icon: "settings", tile: "", desc: "Personnalise Bêta Tool : outils, comptes, mises à jour…" })
     + `<nav class="tabs">${tabs.map(([id, label, ic]) => `<a href="#/reglages/${id}" class="${id === tab ? "on" : ""}">${icon(ic)}${label}</a>`).join("")}</nav>
        <div id="set-body"></div>`;
-  await ({ general, outils, comptes, famille, acces, enligne, api: apiTab, notifications, maj, apparence, apropos })[tab]($("#set-body"));
+  await ({ connexions, profil, apparence: apparenceTab, general, outils, comptes, famille, acces, enligne, api: apiTab, notifications, maj, apropos })[tab]($("#set-body"));
 }
 
 // --- Général ----------------------------------------------------------------
@@ -86,13 +90,6 @@ async function outils(el) {
 async function comptes(el) {
   const mode = state.config.mode;
   let html = "";
-  if (mode === "accounts") html += `<form class="card" id="pw-form">
-      <div class="card-title">${icon("key")}Mon mot de passe <span class="count">${esc(state.config.user.name)}</span></div>
-      <div class="grid2"><input type="password" name="old" placeholder="Mot de passe actuel" required autocomplete="current-password">
-        <input type="password" name="new" placeholder="Nouveau mot de passe (6 caractères min.)" required autocomplete="new-password"></div>
-      <button class="btn">${icon("check")}Changer</button></form>
-    <div class="card" id="twofa"></div>
-    <div class="card" id="passkeys"></div>`;
   if (isAdmin()) {
     if (mode === "accounts") {
       const users = await api("/api/users");
@@ -124,12 +121,6 @@ async function comptes(el) {
         <dt>Enfant</dt><dd>Seulement les outils choisis, aux heures permises et avec un temps d'écran par jour (onglet <a href="#/reglages/famille">Famille</a>).</dd></dl></div>`;
   }
   el.innerHTML = html || `<div class="card"><p>Rien à régler ici.</p></div>`;
-  $("#pw-form")?.addEventListener("submit", async e => {
-    e.preventDefault();
-    const f = new FormData(e.target);
-    try { await api("/api/me/password", { json: { old: f.get("old"), new: f.get("new") } }); toast("Mot de passe changé"); e.target.reset(); }
-    catch (err) { toast(err.message, "err"); }
-  });
   $("#add-form")?.addEventListener("submit", async e => {
     e.preventDefault();
     const f = new FormData(e.target);
@@ -140,8 +131,6 @@ async function comptes(el) {
       comptes(el);
     } catch (err) { toast(err.message, "err"); }
   });
-  if ($("#twofa")) twofa($("#twofa"));
-  if ($("#passkeys")) passkeysCard($("#passkeys"));
   el.querySelectorAll("[data-user]").forEach(row => {
     const name = row.dataset.user;
     row.querySelector("[data-a=twofa]")?.addEventListener("click", () => {
@@ -171,6 +160,66 @@ async function comptes(el) {
       };
     };
   });
+}
+
+// --- Mon profil ----------------------------------------------------------------
+const EMOJIS = ["", "😀", "😎", "🦊", "🐱", "🐶", "🐼", "🦁", "🐸", "🦄", "🌸", "⚽", "🎮", "🎸", "🚀", "⭐", "🔥", "🍀"];
+const COLORS = ["", "#1f6bff", "#7c4dff", "#e8457c", "#e5383b", "#f06a1d", "#d99100", "#12a150", "#0aa5a5", "#4b5d7a"];
+const STARTS = [["home", "Accueil"], ["journee", "Ma journée"], ["mails", "Mails"], ["agenda", "Agenda"], ["taches", "Tâches"], ["fichiers", "Fichiers"], ["budget", "Budget"], ["colis", "Colis"], ["recettes", "Recettes"]];
+
+async function profil(el) {
+  const u = state.config.user, p = state.config.prefs || {};
+  const accounts = state.config.mode === "accounts";
+  const role = u.role === "admin" ? "Administrateur" : u.role === "child" ? "Enfant" : "Membre";
+  el.innerHTML = `<div class="card"><div class="card-title">${icon("user")}Identité</div>
+      <div class="pf-id">${avatarHTML(u, p)}
+        <div class="grow">
+          <div class="row"><label class="btn ghost small"><input type="file" accept="image/*" hidden id="pf-photo">${icon("camera")}${p.avatar ? "Changer la photo" : "Mettre une photo"}</label>
+            ${p.avatar ? `<button class="btn ghost small" id="pf-nophoto">${icon("x")}Retirer la photo</button>` : ""}</div>
+          ${p.avatar ? "" : `<div><small class="meta">Ou un emoji</small><div class="pf-emojis">${EMOJIS.map(e => `<button data-emoji="${e}" class="${(p.avatar_emoji || "") === e ? "on" : ""}" title="${e ? e : "Initiale"}">${e || esc((p.display_name || u.name)[0].toUpperCase())}</button>`).join("")}</div></div>
+          <div><small class="meta">Couleur</small><div class="pf-swatches">${COLORS.map(c => `<button data-color="${c}" class="${(p.avatar_color || "") === c ? "on" : ""}" style="background:${c || "linear-gradient(135deg, var(--accent), var(--accent-2))"}" title="${c || "Couleur du thème"}"></button>`).join("")}</div></div>`}
+        </div></div>
+      <div class="grid2" style="margin-top:16px">
+        <div><label class="field">Nom affiché</label><input type="text" id="pf-name" maxlength="40" value="${esc(p.display_name || "")}" placeholder="${esc(accounts ? u.name : "Ton prénom")}"></div>
+        <div><label class="field">Identifiant</label><input type="text" value="${esc(accounts ? u.name : "Accès libre")}" disabled><small class="meta">${role}</small></div></div>
+      <p class="hint">Le nom affiché sert pour le bonjour de l'accueil, le menu et les tâches partagées. L'identifiant reste celui de la connexion.</p></div>
+    <div class="card"><div class="card-title">${icon("home")}Au démarrage</div>
+      <label class="field">Page ouverte quand tu lances Bêta Tool</label>
+      <select id="pf-start" style="max-width:320px">${STARTS.filter(([k]) => k === "home" || state.config.tools[k] !== false).map(([k, l]) => `<option value="${k}" ${(p.start || "home") === k ? "selected" : ""}>${l}</option>`).join("")}</select>
+      <label class="field" style="margin-top:14px">Langue · Language</label>
+      <div class="seg">${[["fr", "Français"], ["en", "English"]].map(([v, l]) => `<label class="notranslate"><input type="radio" name="lg" value="${v}" ${(p.lang || i18n.current()) === v ? "checked" : ""}>${l}</label>`).join("")}</div></div>
+    ${accounts ? `<form class="card" id="pw-form">
+      <div class="card-title">${icon("key")}Mot de passe</div>
+      <div class="grid2"><input type="password" name="old" placeholder="Mot de passe actuel" required autocomplete="current-password">
+        <input type="password" name="new" placeholder="Nouveau mot de passe (6 caractères min.)" required autocomplete="new-password"></div>
+      <button class="btn">${icon("check")}Changer</button></form>
+    <div class="card" id="passkeys"></div>
+    <div class="card" id="twofa"></div>` : `<div class="intro"><span class="tile">${icon("lock")}</span><p>Le site est en <b>accès libre</b> : crée des comptes (Réglages › Comptes de la maison) pour avoir un mot de passe, des clés d'accès et la double authentification.</p></div>`}`;
+  const save = async (patch, msg = "Profil enregistré") => { if (await savePrefs(patch)) { toast(msg); reloadConfig(); profil(el); } };
+  $("#pf-name").onchange = e => save({ display_name: e.target.value });
+  $("#pf-start").onchange = e => save({ start: e.target.value }, "Page de démarrage enregistrée");
+  el.querySelectorAll("[data-emoji]").forEach(b => b.onclick = () => save({ avatar_emoji: b.dataset.emoji }));
+  el.querySelectorAll("[data-color]").forEach(b => b.onclick = () => save({ avatar_color: b.dataset.color }));
+  el.querySelectorAll("[name=lg]").forEach(r => r.onchange = async () => {
+    await savePrefs({ lang: r.value });
+    try { localStorage.setItem("bt-lang", r.value); } catch {}
+    location.reload();
+  });
+  $("#pf-photo").onchange = async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const fd = new FormData(); fd.append("photo", f);
+    try { await api("/api/me/avatar", { method: "POST", body: fd }); toast("Photo enregistrée"); await reloadConfig(); profil(el); } catch (err) { toast(err.message, "err"); }
+  };
+  $("#pf-nophoto")?.addEventListener("click", async () => { await api("/api/me/avatar", { method: "DELETE" }); await reloadConfig(); profil(el); });
+  $("#pw-form")?.addEventListener("submit", async e => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    try { await api("/api/me/password", { json: { old: f.get("old"), new: f.get("new") } }); toast("Mot de passe changé"); e.target.reset(); }
+    catch (err) { toast(err.message, "err"); }
+  });
+  if ($("#twofa")) twofa($("#twofa"));
+  if ($("#passkeys")) passkeysCard($("#passkeys"));
 }
 
 // --- Double authentification ---------------------------------------------------
@@ -401,35 +450,6 @@ function waitRestart(title, notes = []) {
 }
 
 // --- Apparence et notifications ---------------------------------------------
-function apparence(el) {
-  const theme = (() => { try { return localStorage.getItem("bt-theme") || "auto"; } catch { return "auto"; } })();
-  const ios = /iphone|ipad/i.test(navigator.userAgent);
-  el.innerHTML = `
-    <div class="card"><div class="card-title">${icon("sun")}Thème</div>
-      <div class="seg">${[["auto", "Automatique", "monitor"], ["light", "Clair", "sun"], ["dark", "Sombre", "moon"]].map(([v, l, i]) =>
-        `<label><input type="radio" name="th" value="${v}" ${theme === v ? "checked" : ""}>${icon(i)}${l}</label>`).join("")}</div></div>
-    <div class="card"><div class="card-title">${icon("translate")}Langue · Language</div>
-      <div class="seg">${[["fr", "Français"], ["en", "English"]].map(([v, l]) =>
-        `<label class="notranslate"><input type="radio" name="lg" value="${v}" ${(state.config.prefs?.lang || i18n.current()) === v ? "checked" : ""}>${l}</label>`).join("")}</div>
-      <p class="hint">Choix enregistré pour ton compte, sur tous tes appareils.</p></div>
-    <div class="card"><div class="card-title">${icon("bell")}Notifications</div>
-      <p class="hint" style="margin-top:-6px">Notifications sur ton téléphone ou ordinateur, même quand Bêta Tool est fermé : réglages dans l'onglet Notifications.</p>
-      <a class="btn ghost" href="#/reglages/notifications">${icon("bell")}Régler les notifications</a></div>
-    <div class="card"><div class="card-title">${icon("phone")}Installer l'application</div>
-      <p class="hint" style="margin-top:-6px">Une vraie icône sur ton téléphone ou ton ordinateur, en plein écran. Bonus : « Partager → Bêta Tool » depuis YouTube lance le téléchargement.</p>
-      ${window.btInstall ? `<button class="btn" id="pwa">${icon("download")}Installer Bêta Tool</button>`
-        : ios ? `<p>Sur iPhone / iPad : bouton <b>Partager</b> de Safari → <b>Sur l'écran d'accueil</b>.</p>`
-        : `<p>Menu du navigateur → <b>Installer l'application</b> (ou « Ajouter à l'écran d'accueil »).</p>`}
-      ${isSecureContext ? "" : `<p class="hint">${icon("alert")} L'installation complète (et le partage depuis d'autres applis) demande une adresse en HTTPS. Le README explique comment.</p>`}</div>`;
-  el.querySelectorAll("[name=th]").forEach(r => r.onchange = () => setTheme(r.value));
-  el.querySelectorAll("[name=lg]").forEach(r => r.onchange = async () => {
-    await api("/api/me/prefs", { method: "PUT", json: { lang: r.value } });
-    try { localStorage.setItem("bt-lang", r.value); } catch {}
-    location.reload();
-  });
-  $("#pwa")?.addEventListener("click", async () => { window.btInstall.prompt(); window.btInstall = null; });
-}
-
 // --- À propos ---------------------------------------------------------------
 function apropos(el) {
   const libs = [

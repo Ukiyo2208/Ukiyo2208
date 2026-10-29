@@ -605,6 +605,8 @@ export const HELP = {
     title: "Tuto · Réglages", icon: "settings", tile: "",
     lead: "Adapte Bêta Tool à ton usage : outils affichés, comptes, mises à jour, apparence.",
     steps: [
+      ["Connexions", "Tout ce qui est relié à Bêta Tool au même endroit (boîtes mail, agendas, Parcel, La Poste, météo, téléphones, clés d'accès, HTTPS…) avec son état ; touche une carte pour la régler."],
+      ["Mon profil et Apparence", "Photo ou emoji, nom affiché, page de démarrage, mot de passe ; couleur principale, fond, taille du texte, densité, coins, menu en icônes. Tes choix te suivent sur tous tes appareils."],
       ["Outils", "Active ou désactive chaque outil d'un clic : il disparaît du menu, de l'accueil et de la recherche pour tout le monde."],
       ["Comptes", "Crée un compte administrateur pour protéger le site, puis un compte par personne (rôle Membre ou Administrateur). Active la double authentification pour plus de sécurité."],
       ["Comptes en ligne", "Tes boîtes mail et agendas raccordés (iCloud, Gmail, Outlook…) : nom d'expéditeur, signature, agendas affichés. L'administrateur y active aussi la connexion Microsoft et Google."],
