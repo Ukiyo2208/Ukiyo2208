@@ -1,6 +1,6 @@
 // Réglages : outils, comptes, mises à jour, apparence, à propos.
 import { $, $$, esc, icon, toast, modal, closePanel } from "../ui.js";
-import { TOOLS, CATS } from "../registry.js";
+import { TOOLS, CATS, THEMES } from "../registry.js";
 import { state, isAdmin, api, ago } from "../state.js";
 import { pageHead, reloadConfig, setTheme, savePrefs } from "../main.js";
 import * as push from "../push.js";
@@ -63,27 +63,50 @@ async function general(el) {
 // --- Outils -----------------------------------------------------------------
 async function outils(el) {
   const s = await api("/api/settings");
-  el.innerHTML = `<div class="card">
-    <div class="card-title">${icon("grid")}Outils affichés <span class="count">${Object.values(s.tools).filter(Boolean).length} sur ${TOOLS.length}</span></div>
-    <p class="hint" style="margin-top:-8px">Un outil désactivé disparaît du menu, de l'accueil et de la recherche, pour tout le monde. Ses fichiers restent sur le NAS.</p>
-    ${CATS.map(([cat, label]) => `<div class="home-cat">${label}</div>` + TOOLS.filter(t => t.cat === cat).map(t => `
-      <div class="set-row">
-        <span class="tile ${t.tile}">${icon(t.icon)}</span>
-        <div class="txt"><b>${esc(t.name)}</b><small>${esc(t.desc)}${t.id === "coffre" ? " Demande le conteneur Vaultwarden (voir le README)." : ""}${t.id === "vpn" ? " Demande le conteneur wg-easy (voir le README)." : ""}${t.id === "work" ? " Demande le conteneur ONLYOFFICE." : ""}</small></div>
-        <label class="switch"><input type="checkbox" data-tool="${t.id}" ${s.tools[t.id] ? "checked" : ""}><span></span></label>
-      </div>`).join("")).join("")}
-  </div>`;
-  el.addEventListener("change", async e => {
-    const id = e.target.dataset.tool;
-    if (!id) return;
+  const NOTE = { coffre: " Demande le conteneur Vaultwarden (voir le README).", vpn: " Demande le conteneur wg-easy (voir le README).", work: " Demande le conteneur ONLYOFFICE." };
+  const known = new Set(THEMES.flatMap(t => t[4]));
+  const themes = [...THEMES, ["autres", "Autres", "grid", "", TOOLS.filter(t => !known.has(t.id)).map(t => t.id)]].filter(t => t[4].length);
+  const total = () => Object.values(s.tools).filter(Boolean).length;
+  const paint = () => {
+    const q = ($("#ot-q")?.value || "").toLowerCase();
+    $("#ot-count").textContent = `${total()} sur ${TOOLS.length} activés`;
+    $("#ot-list").innerHTML = themes.map(([id, name, ic, tile, ids]) => {
+      const tools = ids.map(i => TOOLS.find(t => t.id === i)).filter(t => t && (!q || (t.name + " " + t.desc).toLowerCase().includes(q)));
+      if (!tools.length) return "";
+      const on = ids.filter(i => s.tools[i]).length;
+      return `<div class="card ot-theme"><div class="ot-head"><span class="tile ${tile}">${icon(ic)}</span>
+          <div class="grow"><b>${esc(name)}</b><small class="meta">${on} sur ${ids.length} activé${on > 1 ? "s" : ""}</small></div>
+          <button class="btn ghost small" data-all="${id}" data-on="${on < ids.length ? 1 : 0}">${on < ids.length ? "Tout activer" : "Tout désactiver"}</button></div>
+        <div class="ot-grid">${tools.map(t => `<label class="ot-tool ${s.tools[t.id] ? "on" : ""}">
+          <span class="tile ${t.tile}">${icon(t.icon)}</span>
+          <span class="grow"><b>${esc(t.name)}</b><small class="meta">${esc(t.desc)}${NOTE[t.id] || ""}</small></span>
+          <span class="switch"><input type="checkbox" data-tool="${t.id}" ${s.tools[t.id] ? "checked" : ""}><span></span></span></label>`).join("")}</div></div>`;
+    }).join("") || `<div class="card empty">${icon("search")}<b>Aucun outil trouvé</b></div>`;
+  };
+  el.innerHTML = `<div class="ot-top"><div class="ml-search grow">${icon("search")}<input type="search" id="ot-q" placeholder="Chercher un outil…"></div>
+      <span class="chip" id="ot-count"></span></div>
+    <p class="hint" style="margin-top:0">Un outil désactivé disparaît du menu, de l'accueil et de la recherche, pour tout le monde. Ses fichiers restent sur le NAS.</p>
+    <div id="ot-list"></div>`;
+  paint();
+  $("#ot-q").oninput = paint;
+  const save = async (patch, msg) => {
     try {
-      await api("/api/settings", { method: "PUT", json: { tools: { [id]: e.target.checked } } });
-      toast(`${TOOLS.find(t => t.id === id).name} ${e.target.checked ? "activé" : "désactivé"}`);
-      state.config = await api("/api/config");
-      const { reloadConfig: rc } = await import("../main.js");
-      rc();
-    } catch (err) { toast(err.message, "err"); e.target.checked = !e.target.checked; }
-  });
+      s.tools = { ...s.tools, ...(await api("/api/settings", { method: "PUT", json: { tools: patch } })).tools };
+      toast(msg);
+      await reloadConfig();
+    } catch (err) { toast(err.message, "err"); }
+    paint();
+  };
+  el.onchange = e => {
+    const id = e.target.dataset.tool;
+    if (id) save({ [id]: e.target.checked }, `${TOOLS.find(t => t.id === id).name} ${e.target.checked ? "activé" : "désactivé"}`);
+  };
+  el.onclick = e => {
+    const b = e.target.closest("[data-all]");
+    if (!b) return;
+    const th = themes.find(t => t[0] === b.dataset.all), on = b.dataset.on === "1";
+    save(Object.fromEntries(th[4].map(i => [i, on])), `${th[1]} : ${on ? "tout activé" : "tout désactivé"}`);
+  };
 }
 
 // --- Comptes ----------------------------------------------------------------

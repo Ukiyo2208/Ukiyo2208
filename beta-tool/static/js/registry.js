@@ -9,6 +9,18 @@ export const CATS = [
   ["utilitaires", "Utilitaires"],
 ];
 
+// Thèmes plus fins pour Réglages › Outils : [id, nom, icône, couleur, outils]
+export const THEMES = [
+  ["quotidien", "Au quotidien", "sun", "ambre", ["journee", "agenda", "taches", "recettes", "inventaire"]],
+  ["communication", "Mails, contacts et colis", "mail", "bleu-vert", ["mails", "contacts", "colis"]],
+  ["argent", "Argent et papiers", "receipt", "vert", ["budget", "paperasse", "scanner"]],
+  ["medias", "Vidéos, musique et photos", "play", "rose", ["telecharger", "abonnements", "medias", "photos"]],
+  ["creation", "Retouche et transcription", "wand", "violet", ["video", "image", "transcription", "traduction"]],
+  ["bureau", "Documents et bureautique", "briefcase", "bleu", ["convertir", "pdf", "work", "notes", "questionnaires"]],
+  ["fichiers", "Fichiers et sauvegardes", "folder", "", ["fichiers", "drop", "decompresser", "stockage", "sauvegardes", "sauvegarde-tel"]],
+  ["reseau", "Partage, sécurité et réseau", "shield", "bleu-vert", ["presse-papier", "qr", "liens", "surveillance", "vpn", "coffre"]],
+];
+
 export const TOOLS = [
   { id: "telecharger", name: "Téléchargeur", icon: "download", tile: "", cat: "medias", view: "telecharger",
     desc: "Colle un lien, récupère la vidéo ou la musique en meilleure qualité.", chips: ["YouTube", "TikTok", "+1800 sites"] },

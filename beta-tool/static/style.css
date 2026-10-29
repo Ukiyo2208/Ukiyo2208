@@ -2130,3 +2130,17 @@ select.inline { display: inline-block; width: auto; padding: 4px 8px; margin: 0 
 .cx-card.card, .ap-grid > .card { margin-bottom: 0; }
 .ap-grid { margin-bottom: 20px; }
 .cx-grid + .cx-group { margin-top: 26px; }
+/* ---------- Réglages › Outils (par thème) ---------- */
+.ot-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.ot-theme { padding: 16px 18px; }
+.ot-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.ot-head .tile { width: 40px; height: 40px; border-radius: 12px; box-shadow: none; }
+.ot-head .tile svg.i { width: 20px; height: 20px; }
+.ot-head .grow { display: grid; }
+.ot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px; }
+.ot-tool { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; opacity: .62; transition: opacity .15s, border-color .15s; }
+.ot-tool.on { opacity: 1; border-color: var(--border-strong); background: var(--surface-2); }
+.ot-tool .tile { width: 34px; height: 34px; border-radius: 10px; box-shadow: none; }
+.ot-tool .tile svg.i { width: 17px; height: 17px; }
+.ot-tool .grow { min-width: 0; display: grid; }
+.ot-tool small { font-size: .8rem; line-height: 1.35; }
