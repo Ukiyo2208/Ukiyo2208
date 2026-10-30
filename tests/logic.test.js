@@ -87,3 +87,10 @@ test('règles : une condition non remplie est expliquée (mode test)', async () 
   assert.strictEqual(out.trace[0].ok, false);
   assert.strictEqual(out.trace[0].failed[0].type, 'away');
 });
+
+test('go2rtc : configuration dans un dossier, ancien fichier repris', () => {
+  const d = tmp('cams'); fs.writeFileSync(path.join(d, 'go2rtc.yaml'), 'streams: {}\n');
+  require(R + 'cams')(d, () => { }, async () => ({}));
+  assert.ok(fs.statSync(path.join(d, 'go2rtc')).isDirectory());
+  assert.strictEqual(fs.readFileSync(path.join(d, 'go2rtc', 'go2rtc.yaml'), 'utf8'), 'streams: {}\n');
+});

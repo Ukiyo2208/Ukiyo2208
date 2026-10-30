@@ -333,7 +333,10 @@ module.exports = function engine(DATA, send, readBody, M) {
     if (p === '/api/engine' && m === 'GET') return send(res, 200, view());
     if (p === '/api/engine' && m === 'PUT') {   // configuration envoyée par Bêta home (appareils, routines, règles, réglages)
       const b = await readBody(req) || {};
-      ['devices', 'routines', 'rules', 'users', 'home'].forEach(k => { if (b[k] !== undefined) C[k] = b[k]; });
+      // types vérifiés : une configuration malformée ne doit jamais casser le cerveau
+      ['routines', 'rules', 'users'].forEach(k => { if (Array.isArray(b[k])) C[k] = b[k].filter(x => x && typeof x === 'object'); });
+      if (b.devices && typeof b.devices === 'object' && !Array.isArray(b.devices)) C.devices = b.devices;
+      if (b.home === null || (b.home && typeof b.home.lat === 'number' && typeof b.home.lon === 'number')) C.home = b.home;
       ['presence', 'tempo', 'trash'].forEach(k => { if (b[k]) C[k] = Object.assign(C[k], b[k]); });
       if (b.vigil) { const old = C.vigil.key; C.vigil = Object.assign(C.vigil, b.vigil); if (b.vigil.key === '••••' || b.vigil.key == null) C.vigil.key = old; }
       if (b.alarm) { const code = b.alarm.code, old = C.alarm.code; C.alarm = Object.assign(C.alarm, b.alarm); if (code === '••••' || code == null) C.alarm.code = old; }

@@ -1,4 +1,4 @@
-// Serveur Bêta 7.16 — « Tester toute la maison » : chaque étape de l'installation et chaque service vérifiés,
+// Serveur Bêta 7.17 — « Tester toute la maison » : chaque étape de l'installation et chaque service vérifiés,
 // avec ✅ / ⚠️ / ❌ et quoi faire. Comprend un contrôle de sécurité (clé, mode sécurisé, écrans, fichiers secrets).
 'use strict';
 const fs = require('fs'), path = require('path'), os = require('os'), http = require('http');
@@ -61,6 +61,15 @@ module.exports = function diag(DATA, send, M) {
     const g = await get(go + '/api', 2500); add('Caméras', 'go2rtc', g ? 'ok' : 'warn', 'go2rtc (vidéo des caméras)', g ? 'en marche' : 'ne répond pas sur ' + go, 'Démarrez le service go2rtc du docker-compose.');
     let br = null; try { br = JSON.parse(fs.readFileSync(path.join(DATA, 'bridge.json'), 'utf8')); } catch (e) { }
     const st = br && br.status; add('Alexa et Maison', 'bridge', !st ? 'off' : Date.now() - (st.at || 0) > 120000 ? 'warn' : st.matterErr ? 'warn' : 'ok', 'Pont Matter / HomeKit', !st ? 'Non installé (facultatif)' : Date.now() - (st.at || 0) > 120000 ? 'Ne donne plus de nouvelles' : st.matterErr ? 'HomeKit OK, Matter : ' + st.matterErr : 'En marche', 'Service matter-bridge du docker-compose ; Matter a besoin de l’IPv6 sur le réseau du NAS.');
+
+    /* ---------- automatismes qui se contredisent ---------- */
+    if (ENGINE) {
+      const X = ENGINE.X, by = {};
+      (X.EXT.claims || []).forEach(f => { try { f().forEach(c => { (by[c.dev] = by[c.dev] || []).push(c.by); }); } catch (e) { } });
+      try { const ex = JSON.parse(fs.readFileSync(path.join(DATA, 'extra.json'), 'utf8')); (ex.shift || []).forEach(s => { (by[s.dev] = by[s.dev] || []).push('Décalage Tempo'); }); } catch (e) { }
+      const dup = Object.keys(by).filter(d => new Set(by[d]).size > 1);
+      add('Maison', 'claims', dup.length ? 'warn' : 'ok', 'Appareils pilotés par plusieurs automatismes', dup.length ? dup.map(d => ((X.C.devices[d] || {}).name || d) + ' : ' + [...new Set(by[d])].join(' + ')).join(' · ') : 'Aucun conflit', 'Un appareil ne devrait être réglé que par un seul automatisme (sinon ils se contredisent). Le décalage Tempo s’efface déjà devant le chauffage, l’arrosage et la recharge.');
+    }
 
     /* ---------- moteur ---------- */
     if (ENGINE) { const s = ENGINE.status(); add('Maison', 'engine', 'ok', 'Cerveau du NAS', 'Alarme : ' + s.alarm.status + ' · ' + Object.keys(s.presence || {}).length + ' personne(s) suivie(s)'); }

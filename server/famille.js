@@ -220,12 +220,12 @@ module.exports = function famille(DATA, send, readBody, M) {
     const v = C.vac;
     if (on) {
       v.on = true; v.back = back || ''; v.since = Date.now(); v.restored = false; v.prev = {};
-      if (P) { (P.heat.zones || []).forEach(z => { v.prev[z.id] = z.mode || 'auto'; z.mode = 'frost'; }); P.sim.mode = P.sim.mode === 'off' ? 'away' : P.sim.mode; }
+      if (P) { (P.heat.zones || []).forEach(z => { v.prev[z.id] = z.mode || 'auto'; z.mode = 'frost'; }); v.prevSim = P.sim.mode; if (P.sim.mode === 'off' && !(P.off || []).includes('simulation')) P.sim.mode = 'away'; }
       NOTIFY.setAway(true, 'mode vacances', 'vacances');
       if (E.alarm && E.alarm.on) X.setAlarm('armed_away', 'mode vacances', true);
       X.note('Mode vacances activé' + (back ? ' jusqu’au ' + new Date(back).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : ''), 'walk');
     } else {
-      restoreHeat(); v.on = false; X.note('Mode vacances terminé', 'homeFill'); persist();
+      restoreHeat(); if (P && v.prevSim) { P.sim.mode = v.prevSim; delete v.prevSim; } v.on = false; X.note('Mode vacances terminé', 'homeFill'); persist();
       if (NOTIFY.isAway()) NOTIFY.setAway(false, 'retour de vacances', 'vacances');   // déclenche le résumé « pendant votre absence »
     }
     persist();
@@ -300,6 +300,9 @@ module.exports = function famille(DATA, send, readBody, M) {
     X.command(v.dev, { on }).then(() => X.note('Recharge ' + (on ? 'lancée (heure la moins chère)' : 'en pause'), 'charger')).catch(() => { });
   }
 
+  X.EXT.claims = X.EXT.claims || [];
+  X.EXT.claims.push(() => C.ev.on && C.ev.dev ? [{ dev: C.ev.dev, by: 'Recharge de la voiture' }] : []);
+
   /* ======================= boucle ======================= */
   X.EXT.tick.push(({ now, t, minute }) => {
     if (!minute) return;
@@ -323,6 +326,7 @@ module.exports = function famille(DATA, send, readBody, M) {
       ['cals', 'chores', 'rewards', 'parcels'].forEach(k => { if (Array.isArray(b[k])) C[k] = b[k]; });
       [['icloud', ['pass']], ['mail', ['pass']], ['photos', ['key']], ['sitter', []], ['door', []], ['ev', []], ['vac', []]].forEach(([k, sec]) => { if (b[k] && typeof b[k] === 'object') { const old = {}; sec.forEach(s => { old[s] = C[k][s]; }); Object.assign(C[k], b[k]); sec.forEach(s => { if (b[k][s] === '••••' || b[k][s] == null) C[k][s] = old[s]; }); } });
       if (b.laposte !== undefined && b.laposte !== '••••') C.laposte = String(b.laposte).trim();
+      [[C.door, 'replies'], [C.sitter, 'contacts'], [C.sitter, 'rooms']].forEach(([o, k]) => { if (!Array.isArray(o[k])) o[k] = []; });
       if (b.cals || b.icloud) calCache.at = 0; if (b.photos) setTimeout(indexPhotos, 100); if (b.ev) evPlan.at = 0; if (b.sitter) X.emit({ type: 'sitter', on: !!C.sitter.on });
       persist(); return send(res, 200, view());
     }

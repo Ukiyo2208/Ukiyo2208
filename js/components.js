@@ -27,7 +27,8 @@
     ['marques', 'Marques', 'plug', 'plug', 'noside'],
     ['parametres', 'Paramètres', 'gear', 'gearFill']
   ];
-  const GUEST_HIDE = ['nas', 'calendrier', 'mails', 'parametres', 'marques'];
+  const GUEST_HIDE = ['nas', 'calendrier', 'mails', 'parametres', 'marques', 'connexions', 'securite', 'reglages', 'installation', 'admin', 'reseau', 'routines', 'journal', 'sante', 'bilan'];
+  B.GUEST_HIDE = GUEST_HIDE;
   const navItems = () => (B.navList ? B.navList(NAV) : NAV).filter(n => !(guest() && GUEST_HIDE.includes(n[0])));
   const unread = () => S.mails.filter(m => !m.read).length;
   const badgeHTML = id => id === 'mails' && unread() ? '<span class="badge">' + unread() + '</span>' : '';

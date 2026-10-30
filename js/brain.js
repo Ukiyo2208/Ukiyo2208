@@ -300,7 +300,7 @@
   }
   const alRedraw = () => { const m = document.querySelector('.almodal'); if (m) { const sc = m.scrollTop; m.innerHTML = '<button class="x" data-act="closeModal" aria-label="Fermer">' + ico('x') + '</button>' + alarmBody(); m.scrollTop = sc; } };
   const alSave = async patch => { await save({ alarm: Object.assign({}, patch) }); alRedraw(); };
-  B.act('alCfg', async () => { if (!isAdmin()) return B.toast('Réservé aux administrateurs', 'lock'); await load(); B.modal(alarmBody(), 'wide almodal'); });
+  B.act('alCfg', async () => { if (!isAdmin()) return B.toast('Réservé aux administrateurs', 'lock'); await load(); if (!BR.cfg || !BR.cfg.alarm) return B.toast(srv() ? 'Serveur Bêta injoignable ou trop ancien' : 'Serveur Bêta du NAS nécessaire (Connexions)', 'server'); B.modal(alarmBody(), 'wide almodal'); });
   B.act('alOn', () => alSave({ on: !BR.cfg.alarm.on }));
   B.act('alSay', () => alSave({ say: !BR.cfg.alarm.say }));
   B.act('alNum', el => alSave({ [el.dataset.arg]: Math.max(0, +el.value || 0) }));

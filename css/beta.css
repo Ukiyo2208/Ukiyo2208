@@ -2123,8 +2123,8 @@ html.tnight body::after { content: ''; position: fixed; inset: 0; background: #0
 .scmodal .scfg { display: flex; flex-direction: column; gap: 12px; }
 
 /* ---------- 7.11 : règles, présence, sécurité ---------- */
-.rlmodal .rlh { display: flex; align-items: center; gap: 6px; margin: 16px 0 6px; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: #7fb6ff; }
-.rlmodal .rlh small { text-transform: none; letter-spacing: 0; color: var(--soft); font-weight: 400; }
+.rlh { display: flex; align-items: center; gap: 6px; margin: 16px 0 6px; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: #7fb6ff; }
+.rlh small { text-transform: none; letter-spacing: 0; color: var(--soft); font-weight: 400; }
 .rlrow { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; padding: 8px; border-radius: 10px; background: rgba(6, 16, 40, .55); flex-wrap: wrap; }
 .rlrow > select { flex: 0 0 200px; }
 .rlf { display: flex; flex: 1; gap: 6px; flex-wrap: wrap; align-items: center; min-width: 0; }

@@ -4,3 +4,4 @@ tests
 node_modules
 server/data
 *.zip
+docs

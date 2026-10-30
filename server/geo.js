@@ -45,7 +45,7 @@ module.exports = function geo(DATA, send, readBody, NOTIFY) {
     const p = url.pathname, m = req.method;
     // réception d'une position envoyée par OwnTracks (pas de clé Bêta : identification propre à chaque personne)
     if (p === '/api/owntracks' && m === 'POST') {
-      const uid = who(req); if (!uid) { res.setHeader('WWW-Authenticate', 'Basic realm="Bêta home"'); return send(res, 401, { error: 'identifiants OwnTracks refusés' }); }
+      const uid = who(req); if (!uid) { if (self.onFail) self.onFail(req); res.setHeader('WWW-Authenticate', 'Basic realm="Bêta home"'); return send(res, 401, { error: 'identifiants OwnTracks refusés' }); }
       const b = await readBody(req) || {};
       if (b._type === 'location' && typeof b.lat === 'number' && typeof b.lon === 'number') {
         const pt = { lat: +b.lat.toFixed(6), lon: +b.lon.toFixed(6), acc: b.acc || null, t: (b.tst || Date.now() / 1000) * 1000, batt: b.batt == null ? null : b.batt, vel: b.vel == null ? null : b.vel, src: 'OwnTracks' };
@@ -81,5 +81,6 @@ module.exports = function geo(DATA, send, readBody, NOTIFY) {
     }
     return false;
   }
-  return { api, inside: () => Object.assign({}, G.inside), last: () => G.last, home: () => G.home };
+  const self = { api, inside: () => Object.assign({}, G.inside), last: () => G.last, home: () => G.home, onFail: null };   // onFail : le serveur compte les essais refusés
+  return self;
 };

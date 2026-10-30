@@ -9,7 +9,7 @@
   // [id, nom, description, icône, pages, tourne aussi sur le NAS]
   const MODS = [
     ['Maison', [
-      ['regles', 'Règles « Si… alors… »', 'Automatismes exécutés par le NAS 24 h/24', 'sparkle', [], true],
+      ['regles', 'Règles « Si… alors… »', 'Automatismes du NAS 24 h/24 (dont les couvre-feux des enfants)', 'sparkle', [], true],
       ['scenes', 'Scènes', 'Ambiances par pièce, lumière adaptative', 'sunGear', ['scenes'], true],
       ['chauffage', 'Chauffage intelligent', 'Zones, planning, éco automatique', 'flame', ['chauffage'], true],
       ['energie', 'Énergie', 'Solaire, consommation, coûts en euros', 'boltPlain', ['energie'], true],

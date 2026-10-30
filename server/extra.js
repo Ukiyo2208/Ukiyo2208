@@ -142,7 +142,7 @@ module.exports = function extra(DATA, send, readBody, M) {
   /* ======================= 5. modes : ne pas déranger, Wi-Fi invités, musique ======================= */
   const dndOn = () => C.dnd > Date.now();
   const nr0 = NOTIFY.notifyRule;
-  NOTIFY.notifyRule = (rule, o) => dndOn() && !(o && o.critical) && !['alarm', 'leak'].includes(rule) ? Promise.resolve(0) : nr0(rule, o);
+  NOTIFY.notifyRule = (rule, o) => dndOn() && !(o && o.critical) && !['alarm', 'leak', 'doorbell'].includes(rule) ? Promise.resolve(0) : nr0(rule, o);
   function modeRun(sc) { const m = sc.mode || {}; if (+m.dnd) { C.dnd = Date.now() + +m.dnd * 36e5; persist(); X.emit({ type: 'dnd', until: C.dnd }); } if (m.guest) guestSet(true, C.guest.hours).catch(() => { }); if (m.say) X.say(m.say); if (m.radio && m.tablet) HUB.command('fully', m.tablet, { sound: m.radio }).catch(() => { }); }
   if (PLUS) { X.EXT.onScene = X.EXT.onScene || []; X.EXT.onScene.push(modeRun); }
 
@@ -164,8 +164,9 @@ module.exports = function extra(DATA, send, readBody, M) {
     if (!C.shift.length) return;
     const T = P ? P.tariff : { mode: 'tempo', hcFrom: '22:00', hcTo: '06:00' }, t = X.hm(d), tp = X.S.tempo || {}, red = tp.today === 'rouge' && t >= '06:00' && t < '22:00';
     const hc = T.mode === 'hphc' ? inSpan(t, T.hcFrom, T.hcTo) : inSpan(t, '22:00', '06:00');
+    const taken = new Set((X.EXT.claims || []).flatMap(f => { try { return f(); } catch (e) { return []; } }).map(x => x.dev));
     C.shift.forEach(s => {
-      if (!E.devices[s.dev]) return;
+      if (!E.devices[s.dev] || taken.has(s.dev)) return;   // déjà piloté par le chauffage, l'arrosage ou la recharge
       const on = s.mode === 'red' ? !red : hc;
       if (shiftLast[s.dev] === on) return; shiftLast[s.dev] = on;
       X.command(s.dev, { on }).then(() => X.note((on ? 'Rallumé : ' : 'Coupé (heures ' + (s.mode === 'red' ? 'pleines rouges' : 'pleines') + ') : ') + dname(s.dev), 'boltPlain')).catch(() => { });

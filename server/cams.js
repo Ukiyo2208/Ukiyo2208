@@ -7,7 +7,10 @@ const fs = require('fs'), path = require('path'), http = require('http'), crypto
 const D = require('./discover');
 
 module.exports = function cams(DATA, send, readBody) {
-  const FILE = path.join(DATA, 'cams.json'), YAML = process.env.GO2RTC_CONFIG || path.join(DATA, 'go2rtc.yaml');
+  // go2rtc lit un dossier (data/go2rtc monté sur /config) : monter un seul fichier fait créer à Docker un dossier
+  // « go2rtc.yaml » s'il n'existe pas encore. L'ancien emplacement data/go2rtc.yaml est repris automatiquement.
+  const FILE = path.join(DATA, 'cams.json'), YAML = process.env.GO2RTC_CONFIG || path.join(DATA, 'go2rtc', 'go2rtc.yaml');
+  try { fs.mkdirSync(path.dirname(YAML), { recursive: true }); const old = path.join(DATA, 'go2rtc.yaml'); if (!fs.existsSync(YAML) && fs.statSync(old).isFile()) fs.copyFileSync(old, YAML); } catch (e) { }
   const GO = (process.env.GO2RTC_URL || 'http://127.0.0.1:1984').replace(/\/+$/, '');
   let CAMS = []; try { CAMS = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch (e) { }
   const persist = () => fs.writeFileSync(FILE, JSON.stringify(CAMS, null, 1), { mode: 0o600 });

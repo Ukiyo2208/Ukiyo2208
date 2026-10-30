@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Guide d'utilisation Bêta home</title>
+<link rel="stylesheet" href="tuto.css">
+</head>
+<body>
+
+<div class="cover">
+  <div class="top"><img src="../../assets/logo-mark.png" alt=""><div><div class="brand">Bêta home · version 7.17</div><b style="font-size:12pt">Maison intelligente, sans Home Assistant obligatoire</b></div></div>
+  <div>
+    <h1>Guide d'utilisation</h1>
+    <div class="sub">Tablettes murales, iPhone et ordinateur : toutes les pages, les réglages et les automatismes, pas à pas.</div>
+  </div>
+  <div class="hero"><img src="../img/accueil.jpg" alt="Page d'accueil de Bêta home"></div>
+  <div class="meta">Pour l'installation sur le NAS (Docker), voir le second tutoriel : <b>« Installer Bêta home sur Docker »</b>.<br>Les captures sont prises en mode démonstration : vos pièces, appareils et personnes apparaîtront à la place.</div>
+</div>
+
+<section>
+  <h2>Sommaire</h2>
+  <ol class="toc">
+    <li>1. Comprendre Bêta home en 2 minutes</li>
+    <li>2. Le premier démarrage</li>
+    <li>3. La page d'accueil</li>
+    <li>4. Pièces, lumières, volets, scènes</li>
+    <li>5. Chauffage et énergie</li>
+    <li>6. Sécurité : alarme, caméras, sonnette</li>
+    <li>7. Automatismes : routines et règles</li>
+    <li>8. La vie de famille</li>
+    <li>9. Enfants, invités, baby-sitter</li>
+    <li>10. Réseau : Bbox et TP-Link Deco</li>
+    <li>11. Les tablettes murales</li>
+    <li>12. L'iPhone : raccourcis, Siri, notifications</li>
+    <li>13. Réglages : tout retrouver</li>
+    <li>14. Modules : activer seulement ce qui vous sert</li>
+    <li>15. Sauvegarde et mises à jour</li>
+    <li>16. En cas de souci</li>
+  </ol>
+
+  <h3>1. Comprendre Bêta home en 2 minutes</h3>
+  <div class="schema" style="grid-template-columns:1fr 1fr 1fr">
+    <div class="box"><b>Les écrans</b>3 tablettes Fire 8″ (Fully Kiosk), l'iPhone, un ordinateur. Ils affichent Bêta home dans le navigateur.</div>
+    <div class="box nas"><b>Le serveur Bêta (NAS)</b>Tourne 24 h/24 dans Docker. Il garde les réglages, exécute l'alarme, les règles, le chauffage, les notifications…</div>
+    <div class="box"><b>Vos appareils</b>Lumières, prises, volets, caméras, Bbox, Deco, voiture… reliés directement (ou via Home Assistant si vous le souhaitez).</div>
+  </div>
+  <ul>
+    <li><b>Sans serveur</b>, Bêta home fonctionne en mode démonstration (rien n'est piloté pour de vrai).</li>
+    <li><b>Avec le serveur</b>, les automatismes continuent même quand toutes les tablettes sont éteintes.</li>
+    <li><b>Chaque fonction est un module indépendant</b> : vous pouvez couper le chauffage, l'arrosage, le contrôle parental… sans rien casser d'autre (chapitre 14).</li>
+    <li><b>Home Assistant est facultatif</b> : vos appareils peuvent être reliés directement, par Home Assistant, ou un mélange des deux.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">2</span>Le premier démarrage</h2>
+  <ol class="steps">
+    <li>Sur un ordinateur du réseau, ouvrez <code>http://IP-du-NAS:8090</code> (exemple : <code>http://192.168.1.20:8090</code>).</li>
+    <li>L'assistant d'accueil demande votre prénom, la ville (Fegersheim) et les membres de la famille.</li>
+    <li>Allez dans <span class="path">Installation</span> (menu de gauche ou <span class="path">Réglages › Système › Installation et diagnostic</span>). Les 10 étapes s'y cochent au fur et à mesure.</li>
+    <li>Cliquez sur <b>Relancer</b> dans « Test de toute la maison » : chaque point rouge ou orange explique quoi faire, avec la flèche <b>→</b>.</li>
+  </ol>
+  <figure><img src="../img/installation.jpg" alt=""><figcaption>Installation : à gauche les étapes, à droite le diagnostic complet (serveur, sécurité, Internet, notifications, appareils, tablettes, caméras…). « Copier le rapport » donne un texte à coller si vous demandez de l'aide.</figcaption></figure>
+  <div class="tip"><b>Astuce</b> Le diagnostic signale aussi les conflits : par exemple un même radiateur piloté à la fois par le chauffage et par le conseiller Tempo.</div>
+</section>
+
+<section>
+  <h2><span class="n">3</span>La page d'accueil</h2>
+  <p>L'accueil s'adapte à l'écran : grille complète sur ordinateur, disposition 8 pouces sur les tablettes, colonne unique sur l'iPhone.</p>
+  <figure><img src="../img/accueil-tablette.jpg" alt=""><figcaption>Accueil sur tablette 8″ : personnes, météo de Fegersheim, calendrier, courrier, caméras, musique, NAS et assistant.</figcaption></figure>
+  <ul>
+    <li><b>En haut</b> : heure, météo, cloches de notifications, bouton des routines rapides, l'assistant Bêta, et la roue des réglages.</li>
+    <li><b>Les personnes</b> : batterie du téléphone et position (à la maison, au travail, au lycée…) grâce à OwnTracks.</li>
+    <li><b>Toucher une carte</b> ouvre la page complète (Calendrier, Caméras, Musique, NAS…).</li>
+    <li><b>Le menu de gauche</b> (ou les onglets du bas sur iPhone) donne accès à toutes les pages ; « Chercher » trouve une page, un appareil ou un réglage.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">4</span>Pièces, lumières, volets, scènes</h2>
+  <figure class="half"><img src="../img/pieces.jpg" alt=""><figcaption>Les pièces, étage par étage : un appui allume/éteint, un appui long ouvre le détail (intensité, couleur, minuterie).</figcaption></figure>
+  <h3>Scènes</h3>
+  <p>Une scène règle plusieurs appareils d'un coup (« Film », « Dîner », « Bonne nuit »). Créez-la dans <span class="path">Scènes › Nouvelle scène</span> : choisissez les appareils et leur état, puis testez-la avec <b>Essayer</b>.</p>
+  <figure class="half"><img src="../img/scenes.jpg" alt=""><figcaption>Scènes et « Lumière de la journée » (éclairage adaptatif) : la teinte suit le soleil, du blanc froid le matin au chaud le soir.</figcaption></figure>
+  <div class="tip"><b>Bon à savoir</b> L'éclairage adaptatif ne corrige qu'une lampe qu'on vient d'allumer, ou qu'il a lui-même réglée. Si vous changez la couleur à la main ou lancez une scène, il n'y touche plus jusqu'à la prochaine extinction.</div>
+</section>
+
+<section>
+  <h2><span class="n">5</span>Chauffage et énergie</h2>
+  <figure class="half"><img src="../img/chauffage.jpg" alt=""><figcaption>Chauffage : un planning par pièce (confort, éco, hors-gel), coupure automatique quand une fenêtre est ouverte, éco quand tout le monde est parti.</figcaption></figure>
+  <ul>
+    <li><b>Zones</b> : une zone = une pièce + ses radiateurs ou sa clim + un capteur de température.</li>
+    <li><b>Jours Tempo rouges</b> : le chauffage peut baisser d'un degré automatiquement.</li>
+  </ul>
+  <figure class="half"><img src="../img/energie.jpg" alt=""><figcaption>Énergie : consommation en kWh et en euros, production solaire, voiture, et le conseiller Tempo (« lancez la machine maintenant, c'est moins cher »).</figcaption></figure>
+  <p><b>Décalage des appareils</b> : dans <span class="path">Réglages › Énergie et confort › Conseiller Tempo</span>, une prise (chauffe-eau, lave-linge) peut être coupée automatiquement pendant les heures rouges. <b>Recharge de la voiture</b> : la borne charge en heures creuses jusqu'au pourcentage voulu pour l'heure de départ.</p>
+</section>
+
+<section>
+  <h2><span class="n">6</span>Sécurité : alarme, caméras, sonnette</h2>
+  <h3>Régler l'alarme</h3>
+  <ol class="steps">
+    <li><span class="path">Réglages › Sécurité › Alarme</span>.</li>
+    <li>Cochez les détecteurs du mode <b>Absence</b> (toute la maison) et du mode <b>Nuit</b> (portes et fenêtres seulement).</li>
+    <li>Indiquez les <b>portes d'entrée</b> : elles laissent le temps de taper le code (délai d'entrée).</li>
+    <li>Choisissez les sirènes et lumières à déclencher, puis activez l'alarme.</li>
+  </ol>
+  <figure class="half"><img src="../img/alarme.jpg" alt=""><figcaption>La fenêtre de réglage de l'alarme. Elle est exécutée par le NAS, 24 h/24, même si les tablettes sont éteintes.</figcaption></figure>
+  <ul>
+    <li><b>Désarmer</b> : code de l'alarme ou code PIN personnel de chacun.</li>
+    <li><b>Intrusion</b> : sirènes, notification critique avec la photo de la sonnette, annonce sur les tablettes.</li>
+    <li><b>Sonnette</b> : la visite apparaît sur les tablettes et l'iPhone ; « Réponses » envoie un message préenregistré (« Déposez le colis devant la porte »).</li>
+    <li><b>Détection caméras</b> (Frigate) : personne, voiture, animal, avec choix des caméras et des heures.</li>
+  </ul>
+  <div class="warn"><b>Ne pas déranger</b> Le mode « Ne pas déranger » coupe les notifications ordinaires, mais jamais l'alarme, une fuite d'eau ou la sonnette.</div>
+</section>
+
+<section>
+  <h2><span class="n">7</span>Automatismes : routines et règles</h2>
+  <figure class="half"><img src="../img/routines.jpg" alt=""><figcaption>Routines (« Je pars », « Je rentre », « Bonne nuit ») et règles « Si… alors… ».</figcaption></figure>
+  <h3>Une routine</h3>
+  <p>Une liste d'actions lancée d'un bouton, par Siri ou à heure fixe. Exemple « Je pars » : éteindre tout, baisser le chauffage, armer l'alarme en mode Absence.</p>
+  <h3>Une règle « Si… alors… »</h3>
+  <table>
+    <tr><th>Si…</th><th>et seulement si…</th><th>alors…</th></tr>
+    <tr><td>la porte d'entrée s'ouvre</td><td>il fait nuit</td><td>allumer l'entrée 3 minutes</td></tr>
+    <tr><td>Bastien arrive à la maison</td><td>l'alarme est armée</td><td>désarmer et allumer le salon</td></tr>
+    <tr><td>une fuite est détectée</td><td>—</td><td>couper la vanne, notification critique</td></tr>
+  </table>
+  <ul>
+    <li><b>Mode test</b> : la règle s'affiche dans le journal sans rien piloter. Idéal pour vérifier avant d'activer.</li>
+    <li><b>Journal</b> : chaque déclenchement est expliqué (« pourquoi la lumière s'est allumée ? »).</li>
+    <li><b>Modes de la maison</b> : Normal, Absent, Nuit, Vacances, Ne pas déranger.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">8</span>La vie de famille</h2>
+  <div class="duo">
+    <figure><img src="../img/matin.jpg" alt=""><figcaption>Le tableau du matin : météo, agenda du jour, trafic, bus et tram CTS, trains SNCF, rappels.</figcaption></figure>
+    <figure><img src="../img/calendrier.jpg" alt=""><figcaption>Calendrier : les agendas iCloud de chacun (lien de partage ou CalDAV), en couleur par personne.</figcaption></figure>
+  </div>
+  <div class="duo">
+    <figure><img src="../img/listes.jpg" alt=""><figcaption>Listes (courses…) et messages du tableau, partagés entre les écrans.</figcaption></figure>
+    <figure><img src="../img/interphone.jpg" alt=""><figcaption>Interphone : parler d'une tablette à l'autre, ou à toutes.</figcaption></figure>
+  </div>
+  <ul>
+    <li><b>Colis</b> : les numéros de suivi trouvés dans vos e-mails (IMAP) + suivi La Poste.</li>
+    <li><b>Rappels de la maison</b> : filtre de la VMC, pile du détecteur, vidange… tous les X mois.</li>
+    <li><b>Réveil en douceur</b> : lumières et volets progressifs avant l'heure du réveil.</li>
+    <li><b>Mode vacances</b> : chauffage hors-gel, simulation de présence, alarme ; au retour, tout revient comme avant.</li>
+    <li><b>« Pendant votre absence »</b> : un résumé de ce qui s'est passé à votre retour ; <b>Bilan</b> : le récapitulatif du mois.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">9</span>Enfants, invités, baby-sitter</h2>
+  <figure class="half"><img src="../img/missions.jpg" alt=""><figcaption>Missions des enfants : tâches cochées sur la tablette, points et récompenses validés par un parent.</figcaption></figure>
+  <table>
+    <tr><th>Profil</th><th>Ce qu'il voit</th><th>Ce qu'il ne peut pas faire</th></tr>
+    <tr><td><b>Parent (admin)</b></td><td>Tout</td><td>—</td></tr>
+    <tr><td><b>Enfant</b></td><td>Accueil, sa chambre, musique, missions, listes</td><td>Réglages, alarme, réseau, routines avec alarme, bilan</td></tr>
+    <tr><td><b>Invité</b></td><td>Lumières des pièces communes, musique, Wi-Fi invités</td><td>Sécurité, réglages, journal, connexions</td></tr>
+    <tr><td><b>Baby-sitter</b></td><td>Pièces choisies, contacts d'urgence, consignes</td><td>Tout le reste ; la sortie du mode demande le code d'un parent</td></tr>
+  </table>
+  <p><b>Wi-Fi invités</b> : <span class="path">Réglages › Réseau › Wi-Fi invités</span> affiche un QR code à scanner avec l'appareil photo (le réseau invité de la Bbox s'allume et s'éteint d'un bouton).</p>
+</section>
+
+<section>
+  <h2><span class="n">10</span>Réseau : Bbox et TP-Link Deco</h2>
+  <figure class="half"><img src="../img/reseau.jpg" alt=""><figcaption>Réseau : état de la Bbox, débit, appareils connectés via les Deco, historique des coupures.</figcaption></figure>
+  <ul>
+    <li><b>Bbox</b> : reliez-la dans <span class="path">Réglages › Maison › Marques et appareils › Bbox</span> avec le mot de passe administrateur de la box.</li>
+    <li><b>TP-Link Deco</b> (mode routeur) : connecteur Deco avec le mot de passe de l'application Deco. Bêta home lit la liste des appareils connectés.</li>
+    <li><b>Contrôle parental</b> : vous le gérez dans l'application Deco ; le module « Contrôle parental » de Bêta home est donc <b>désactivé par défaut</b>.</li>
+    <li><b>Surveillance</b> : une notification si Internet tombe ou si un appareil inconnu se connecte.</li>
+  </ul>
+  <div class="warn"><b>Deco en mode routeur</b> Les appareils Wi-Fi sont derrière les Deco : c'est le Deco, pas la Bbox, qui connaît leurs noms. Reliez donc le Deco pour voir la liste complète.</div>
+</section>
+
+<section>
+  <h2><span class="n">11</span>Les tablettes murales</h2>
+  <ol class="steps">
+    <li>Sur chaque Fire 8″, installez <b>Fully Kiosk Browser</b> (voir le tutoriel Docker, étape 9) et ouvrez <code>http://IP-du-NAS:8090</code>.</li>
+    <li>Sur l'ordinateur : <span class="path">Réglages › Sécurité › Codes PIN, mode sécurisé, écrans › Associer un nouvel écran</span>. Un QR code s'affiche.</li>
+    <li>Sur la tablette, scannez le QR (ou tapez le code). L'écran reçoit son propre accès, révocable à tout moment.</li>
+    <li>Sur la tablette : <span class="path">Réglages › Écrans et iPhone › Cet écran</span> : nom (« Cuisine »), disposition, veille, page de départ, grand texte.</li>
+  </ol>
+  <figure class="half"><img src="../img/ecrans-qr.jpg" alt=""><figcaption>Codes PIN, mode sécurisé et association des écrans par QR code. Un écran perdu se retire avec « Retirer ».</figcaption></figure>
+  <ul>
+    <li><b>Mode performance</b> : activé automatiquement sur les Fire (animations et flous réduits).</li>
+    <li><b>Veille</b> : horloge et cadre photo (dossier du NAS ou Immich) ; l'écran s'éteint la nuit.</li>
+    <li><b>Commande vocale</b> : dites « <b>Bêta</b>, allume le salon ». À activer par tablette (micro en https ou dans Fully Kiosk).</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">12</span>L'iPhone : raccourcis, Siri, notifications</h2>
+  <div class="duo" style="grid-template-columns:1fr 1fr">
+    <figure class="phone"><img style="max-height:95mm" src="../img/raccourcis.jpg" alt=""><figcaption>Sur iPhone, Bêta home s'ouvre sur « Raccourcis » : météo, état de la maison, routines.</figcaption></figure>
+    <figure class="phone"><img style="max-height:95mm" src="../img/accueil-iphone.jpg" alt=""><figcaption>L'accueil en colonne, avec la barre d'onglets en bas.</figcaption></figure>
+  </div>
+  <h3>Installer l'application</h3>
+  <ol class="steps">
+    <li>Dans Safari, ouvrez l'adresse de Bêta home (en https via Tailscale pour l'extérieur).</li>
+    <li>Bouton Partager › <b>Sur l'écran d'accueil</b>. L'icône Bêta home apparaît comme une vraie application.</li>
+    <li><span class="path">Réglages › Écrans et iPhone › iPhone : Siri et widgets</span> donne les raccourcis Siri prêts à ajouter (« Dis Siri, je pars »).</li>
+  </ol>
+  <h3>Notifications</h3>
+  <p>Installez l'application <b>ntfy</b> sur chaque iPhone et abonnez-vous au sujet indiqué. Bouton <b>Tester</b> pour vérifier.</p>
+</section>
+
+<section>
+  <h2><span class="n">13</span>Réglages : tout retrouver</h2>
+  <figure class="half"><img src="../img/reglages.jpg" alt=""><figcaption>Le centre des réglages, rangé par thème, avec une recherche (« wifi », « alarme », « tempo »…).</figcaption></figure>
+  <table>
+    <tr><th>Thème</th><th>Contenu</th></tr>
+    <tr><td>Maison</td><td>Profils et droits, Modules, Marques et appareils, Connexions, Pièces et étages, Scènes, Règles</td></tr>
+    <tr><td>Sécurité</td><td>Codes PIN et écrans, Alarme, Présence, Vacances, Simulation, Détection caméras, Sonnette, Profils enfants, Baby-sitter</td></tr>
+    <tr><td>Énergie et confort</td><td>Tarif et coûts, Conseiller Tempo, Chauffage, Recharge voiture, Arrosage, Réveil en douceur</td></tr>
+    <tr><td>Famille</td><td>Notifications, Calendriers iPhone, Colis, Tempo/vigilance/collectes, Rappels, Missions, Tableau du matin</td></tr>
+    <tr><td>Écrans et iPhone</td><td>Cet écran, Cadre photo, Interphone, Siri et widgets, Commande vocale « Bêta »</td></tr>
+    <tr><td>Réseau</td><td>Box et Wi-Fi, Wi-Fi invités</td></tr>
+    <tr><td>Système</td><td>Installation et diagnostic, Sauvegarde, Mises à jour, Administration, Santé de la maison</td></tr>
+  </table>
+  <div class="tip"><b>Droits</b> Les réglages sont réservés aux administrateurs. En <b>mode sécurisé</b>, ils demandent en plus le code PIN d'un parent.</div>
+</section>
+
+<section>
+  <h2><span class="n">14</span>Modules : activer seulement ce qui vous sert</h2>
+  <p><span class="path">Réglages › Maison › Modules</span> : chaque fonction (chauffage, arrosage, alarme, missions, colis, calendriers, contrôle parental…) s'active ou se coupe indépendamment. Un module coupé disparaît des menus et le serveur ne l'exécute plus.</p>
+  <figure class="half" style="margin-bottom:2mm"><img src="../img/marques.jpg" alt=""><figcaption>Marques et appareils : chaque marque se relie séparément (Bbox, Deco, Tapo, Zigbee2MQTT, Matter, caméras…).</figcaption></figure>
+  <h3>Qui pilote quoi ? (éviter les conflits)</h3>
+  <p>Plusieurs automatismes peuvent vouloir piloter le même appareil. Bêta home les arbitre ainsi :</p>
+  <table>
+    <tr><th>Situation</th><th>Ce qui se passe</th></tr>
+    <tr><td>Un radiateur est dans une zone de chauffage <i>et</i> dans le décalage Tempo</td><td>Le chauffage garde la main ; le décalage l'ignore et le diagnostic le signale.</td></tr>
+    <tr><td>La prise de la borne est aussi dans le décalage Tempo</td><td>La recharge intelligente garde la main.</td></tr>
+    <tr><td>Une vanne d'arrosage est aussi dans le décalage</td><td>L'arrosage garde la main.</td></tr>
+    <tr><td>Une scène règle une lampe, l'éclairage adaptatif est actif</td><td>La scène gagne ; l'adaptatif ne retouche pas la lampe.</td></tr>
+    <tr><td>Mode vacances avec la simulation de présence coupée</td><td>La simulation n'est pas activée ; au retour, l'état d'avant est rétabli.</td></tr>
+    <tr><td>Ne pas déranger + sonnette / alarme / fuite</td><td>Ces trois-là passent toujours.</td></tr>
+  </table>
+  <div class="ok"><b>Sans Home Assistant</b> Toutes les fonctions marchent avec des appareils reliés directement. Avec Home Assistant, ses appareils s'ajoutent simplement à la liste (Marques › Home Assistant).</div>
+</section>
+
+<section>
+  <h2><span class="n">15</span>Sauvegarde et mises à jour</h2>
+  <div class="duo">
+    <figure><img src="../img/sauvegarde.jpg" alt=""><figcaption>Sauvegarde chiffrée chaque nuit (mot de passe de sauvegarde), copie possible sur une clé USB du NAS, restauration en un clic.</figcaption></figure>
+    <figure><img src="../img/majs.jpg" alt=""><figcaption>Mises à jour : avec Watchtower, la nouvelle version s'installe depuis Bêta home.</figcaption></figure>
+  </div>
+  <div class="warn"><b>Mot de passe de sauvegarde</b> Notez-le sur papier : sans lui, une sauvegarde chiffrée ne peut pas être restaurée.</div>
+</section>
+
+<section>
+  <h2><span class="n">16</span>En cas de souci</h2>
+  <table>
+    <tr><th>Symptôme</th><th>Solution</th></tr>
+    <tr><td>« Serveur Bêta du NAS nécessaire »</td><td>Réglages › Maison › Connexions : adresse <code>http://IP-du-NAS:8090</code> et clé (ou associez l'écran par QR).</td></tr>
+    <tr><td>Un appareil ne répond plus</td><td>Installation › Relancer : la ligne « Appareils » indique la marque en cause.</td></tr>
+    <tr><td>Les heures des règles sont décalées</td><td>Ajoutez <code>TZ=Europe/Paris</code> dans le docker-compose (le diagnostic le signale).</td></tr>
+    <tr><td>Pas de notification sur l'iPhone</td><td>Application ntfy installée ? Sujet correct ? Bouton Tester dans Notifications.</td></tr>
+    <tr><td>Tablette lente</td><td>Cet écran › Mode performance ; vérifier que Fully Kiosk est utilisé.</td></tr>
+    <tr><td>Code PIN oublié</td><td>Un autre parent le change dans Réglages › Sécurité. Sinon, sur l'ordinateur, Connexions avec la clé du serveur (BETA_KEY) redonne l'accès administrateur.</td></tr>
+    <tr><td>NAS éteint ou injoignable</td><td><b>Mode secours</b> automatique : une bannière le signale ; les listes et scènes restent sur l'écran, les appareils Home Assistant restent pilotables.</td></tr>
+    <tr><td>Internet coupé</td><td>Les lumières, l'alarme et les règles locales continuent ; une bannière l'indique sur les écrans.</td></tr>
+  </table>
+  <figure class="half"><img src="../img/sante.jpg" alt=""><figcaption>Santé de la maison : piles faibles, appareils muets, courbes de température.</figcaption></figure>
+</section>
+
+</body>
+</html>

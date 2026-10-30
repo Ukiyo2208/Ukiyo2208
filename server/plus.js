@@ -104,15 +104,18 @@ module.exports = function plus(DATA, send, readBody, M) {
     return sc;
   }
   const sceneFor = room => { const m = moment().name, l = C.scenes.filter(s => s.room === room); return l.find(s => (s.moments || []).includes(m)) || l[0]; };
-  const adaptSet = {};   // dernière valeur posée par la lumière adaptative ; si quelqu'un a changé à la main, on la laisse 2 h
+  // lumière adaptative : ne touche qu'une lampe qu'on vient d'allumer, ou qu'elle règle déjà elle-même ;
+  // une luminosité choisie à la main ou par une scène (cinéma à 8 %…) est respectée jusqu'à la prochaine extinction
+  const adaptSet = {}, onAt = {};
+  function adaptTrack(changes) { changes.forEach(({ id, p, c }) => { if (!LIGHT.includes(kind(id))) return; if (c.on && !p.on) onAt[id] = Date.now(); if (!c.on && p.on) { delete onAt[id]; delete adaptSet[id]; } }); }
   function adaptTick() {
     if (!C.adaptive.on) return; const m = moment(), c = cur();
     Object.keys(E.devices).filter(id => LIGHT.includes(kind(id)) && (!C.adaptive.rooms.length || C.adaptive.rooms.includes(E.devices[id].room))).forEach(id => {
       const s = c[id], a = adaptSet[id]; if (!s || !s.on || s.bri == null) return;
-      if (a && a.until > Date.now()) return;
-      if (a && Math.abs(s.bri - a.bri) > 8) { a.until = Date.now() + 2 * 36e5; return; }   // réglée à la main
-      if (Math.abs(s.bri - m.bri) < 4 && a && a.ct === m.ct) return;
-      adaptSet[id] = { bri: m.bri, ct: m.ct, until: 0 }; X.command(id, { bri: m.bri, ct: m.ct }).catch(() => { });
+      const fresh = onAt[id] && Date.now() - onAt[id] < 3 * 6e4, ours = a && Math.abs(s.bri - a.bri) <= 4;
+      if (!fresh && !ours) return;
+      if (ours && Math.abs(a.bri - m.bri) < 3 && a.ct === m.ct) return;
+      adaptSet[id] = { bri: m.bri, ct: m.ct }; delete onAt[id]; X.command(id, { bri: m.bri, ct: m.ct }).catch(() => { });
     });
   }
 
@@ -315,15 +318,17 @@ module.exports = function plus(DATA, send, readBody, M) {
   X.EXT.acts.heat = a => { const z = C.heat.zones.find(x => x.id === a.zone); if (z) { z.mode = a.mode || 'auto'; if (a.mode === 'boost') { z.mode = 'auto'; z.boost = Date.now() + 36e5; } persist(); heatTick(new Date()); } };
   X.EXT.acts.water = () => { waterRun('règle'); };
   X.EXT.conds.sim = c => simActive() === (c.is !== false);
+  X.EXT.claims = X.EXT.claims || [];
+  X.EXT.claims.push(() => (C.heat.zones || []).filter(z => z.on !== false).flatMap(z => (z.devs || []).map(dev => ({ dev, by: 'Chauffage « ' + (z.name || 'zone') + ' »' }))).concat(C.water.on ? (C.water.devs || []).map(dev => ({ dev, by: 'Arrosage' })) : []));
 
   /* ======================= boucle (toutes les 4 s, travaux à la minute) ======================= */
   X.EXT.tick.push(({ changes, now, t, minute }) => {
-    simRecord(changes);
+    simRecord(changes); adaptTrack(changes);
     if (!minute) return;
     if (X.S.tempo && X.S.tempo.today) { const k = X.S.tempo.date ? String(X.S.tempo.date).slice(0, 10) : X.ymd(new Date(Date.now() - 6 * 36e5)); if (C.tempoDays[k] !== X.S.tempo.today) { C.tempoDays[k] = X.S.tempo.today; const ks = Object.keys(C.tempoDays).sort(); ks.slice(0, Math.max(0, ks.length - 400)).forEach(x => delete C.tempoDays[x]); persist(); } }
     if (on('chauffage')) heatTick(now);
     if (on('simulation')) simTick(now);
-    if (on('scenes') && now.getMinutes() % 10 === 0) adaptTick();
+    if (on('scenes')) adaptTick();
     if (on('energie') && /:05$/.test(t)) energyAlert();
     if (C.backup.auto && t === (C.backup.at || '03:30')) autoBackup();
     const w = C.water; if (on('arrosage') && w.on && (w.times || []).includes(t) && (!w.days || !w.days.length || w.days.includes(now.getDay()))) waterRun('programmé');
@@ -372,6 +377,9 @@ module.exports = function plus(DATA, send, readBody, M) {
       ['scenes', 'off'].forEach(k => { if (Array.isArray(b[k])) C[k] = b[k]; }); syncOff();
       ['adaptive', 'heat', 'water', 'sim', 'detect', 'tariff'].forEach(k => { if (b[k] && typeof b[k] === 'object') C[k] = Object.assign(C[k], b[k]); });
       if (b.backup) { const old = C.backup.pass; C.backup = Object.assign(C.backup, b.backup); if (b.backup.pass === '••••' || b.backup.pass == null) C.backup.pass = old; }
+      // listes attendues : une valeur d'un autre type est remplacée par une liste vide (évite de casser les tâches du NAS)
+      [[C.heat, 'zones'], [C.water, 'devs'], [C.water, 'times'], [C.water, 'days'], [C.sim, 'devs'], [C.detect, 'labels'], [C.adaptive, 'rooms']].forEach(([o, k]) => { if (!Array.isArray(o[k])) o[k] = []; });
+      if (!C.detect.cams || typeof C.detect.cams !== 'object') C.detect.cams = {};
       enCache.at = 0; persist(); if (b.heat) heatTick(new Date());
       return send(res, 200, view());
     }

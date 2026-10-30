@@ -1,4 +1,4 @@
-/* Bêta home 7.16 — installer, vérifier, régler, parler :
+/* Bêta home 7.17 — installer, vérifier, régler, parler :
    - page Installation : guide pas à pas (✅ / ❌) et « Tester toute la maison » (diagnostic du NAS + de cet écran), rapport à copier
    - page Réglages : tous les réglages rangés par thème, avec recherche
    - « Bêta, … » : commande vocale sur les tablettes (reconnaissance vocale du navigateur)
@@ -62,7 +62,7 @@
   RENDER.guide = () => {
     const l = steps(), done = l.filter(x => x.st === 'ok').length;
     return '<div class="guide scroll"><div class="gdbar"><i style="width:' + Math.round(done / l.length * 100) + '%"></i></div><small class="muted">' + done + ' étape(s) sur ' + l.length + (D.at ? ' · vérifié à ' + F.time(new Date(D.at)) : '') + '</small>' +
-      l.map((x, i) => '<div class="gdst ' + (ST[x.st] || ST.off)[0] + '"><span class="gdn">' + (x.st === 'ok' ? ico('check') : i + 1) + '</span><div><b>' + esc(x.t) + '</b><small>' + esc(x.d) + '</small></div>' + (x.a ? '<button class="btn sm" data-act="gdGo" data-arg="' + i + '">' + esc(x.a[0]) + '</button>' : '') + '</div>').join('') + '</div>';
+      l.map((x, i) => '<div class="gdst ' + (ST[x.st] || ST.off)[0] + '"><span class="gdn">' + (x.st === 'ok' ? ico('check') : i + 1) + '</span><div><b>' + esc(x.t) + '</b><small>' + esc(x.d) + '</small></div>' + (x.a ? '<button class="btn sm" data-act="dgGo" data-arg="' + i + '">' + esc(x.a[0]) + '</button>' : '') + '</div>').join('') + '</div>';
   };
   RENDER.diagList = () => {
     if (D.busy) return '<p class="muted">' + ico('refresh') + ' Vérification de toute la maison… (jusqu’à 20 secondes)</p>';
@@ -73,7 +73,7 @@
       '<div class="dglist list scroll">' + cats.map(c => '<h4 class="rlh">' + esc(c) + '</h4>' + l.filter(x => x.cat === c).sort((a, b) => 'err warn off ok'.indexOf(a.st) - 'err warn off ok'.indexOf(b.st)).map(x => '<div class="li dgi ' + (ST[x.st] || ST.off)[0] + '"><span class="ic">' + ico((ST[x.st] || ST.off)[1]) + '</span><div><b>' + esc(x.title) + '</b><small>' + esc(x.detail) + '</small>' + (x.st !== 'ok' && x.fix ? '<small class="dgfix">→ ' + esc(x.fix) + '</small>' : '') + '</div></div>').join('')).join('') + '</div>';
   };
   const report = () => { const l = allChecks(); return 'Bêta home — rapport du ' + new Date(D.at).toLocaleString('fr-FR') + '\nVersion du serveur : ' + ((D.srv && D.srv.version) || '?') + ' · écran : ' + navigator.userAgent.slice(0, 120) + '\n\n' + l.map(c => ({ ok: '✅', warn: '⚠️', err: '❌', off: '·' }[c.st] || '·') + ' [' + c.cat + '] ' + c.title + ' — ' + c.detail).join('\n'); };
-  B.route('installation', { title: 'Installation', bg: 'assets/bg/generic.jpg', render: () => B.side('installation') + B.header({ id: 'installation', title: 'Installation', sub: 'Guide pas à pas et test de toute la maison', icon: 'check', info: { t: 'infobox', keys: ['diag'], items: () => { const l = D.at ? allChecks() : []; return [{ icon: 'check', v: l.filter(c => c.st === 'ok').length || '—', l: 'OK', cls: 'g' }, { icon: 'alert', v: l.filter(c => c.st === 'warn').length || '—', l: 'À voir', cls: 'y' }, { icon: 'x', v: l.filter(c => c.st === 'err').length || '—', l: 'À corriger', cls: l.some(c => c.st === 'err') ? 'p' : '' }]; } } }) +
+  B.route('installation', { title: 'Installation', bg: 'assets/bg/generic.jpg', render: () => B.side('installation') + B.header({ id: 'installation', title: 'Installation', sub: 'Guide pas à pas et diagnostic', icon: 'check', info: { t: 'infobox', keys: ['diag'], items: () => { const l = D.at ? allChecks() : []; return [{ icon: 'check', v: l.filter(c => c.st === 'ok').length || '—', l: 'OK', cls: 'g' }, { icon: 'alert', v: l.filter(c => c.st === 'warn').length || '—', l: 'À voir', cls: 'y' }, { icon: 'x', v: l.filter(c => c.st === 'err').length || '—', l: 'À corriger', cls: l.some(c => c.st === 'err') ? 'p' : '' }]; } } }) +
     '<section class="card pcard abs" style="' + box([105, 235, 700, 1012]) + '">' + B.whead('check', 'Étapes de l’installation') + T({ t: 'guide', keys: ['guide', 'diag'] }) + '</section>' +
     '<section class="card pcard abs" style="' + box([710, 235, 1522, 1012]) + '">' + B.whead('heart', 'Test de toute la maison') + T({ t: 'diagList', keys: ['diag'] }) + '</section>', after: () => { if (!D.at || Date.now() - D.at > 10 * 6e4) runDiag(); } });
   B.act('dgRun', runDiag);
@@ -85,7 +85,7 @@
     ['Maison', 'homeFill', [['Profils et droits', 'family', go('parametres')], ['Modules', 'layers', act('modOpen')], ['Marques et appareils', 'grid9', go('marques')], ['Connexions', 'link', go('connexions')], ['Pièces et étages', 'rooms', act('roomsManager')], ['Scènes', 'sparkle', go('scenes')], ['Règles « Si… alors… »', 'wand', go('routines')]]],
     ['Sécurité', 'shieldCheck', [['Codes PIN, mode sécurisé, écrans', 'lock', act('secOpen')], ['Alarme', 'shieldCheck', act('alCfg')], ['Présence et absent auto', 'walk', act('presenceCfg')], ['Mode vacances', 'walk', act('vacOpen')], ['Simulation de présence', 'bulb', act('simOpen')], ['Détection caméras', 'cctv', act('detOpen')], ['Sonnette : réponses', 'bellFill', act('visOpen')], ['Profils enfants', 'family', act('kidOpen')], ['Mode baby-sitter', 'heart', act('sitOpen')]]],
     ['Énergie et confort', 'boltPlain', [['Tarif et coûts', 'chart', act('enOpen')], ['Conseiller Tempo', 'boltPlain', act('tpOpen')], ['Chauffage', 'flame', go('chauffage')], ['Recharge de la voiture', 'charger', act('evOpen')], ['Arrosage', 'sprinkler', act('waOpen')], ['Réveil en douceur', 'sun', act('wkOpen')]]],
-    ['Famille', 'family', [['Notifications', 'bellFill', act('nfOpen')], ['Calendriers iPhone', 'calendar', act('calOpen')], ['Colis', 'download', act('pkOpen')], ['Tempo, vigilance, collectes', 'sun2', act('svcOpen')], ['Rappels de la maison', 'history', act('rmOpen')], ['Missions et récompenses', 'heart', act('msCfg')], ['Tableau du matin', 'route', act('mcOpen')]]],
+    ['Famille', 'family', [['Notifications', 'bellFill', act('nfOpen')], ['Calendriers iPhone', 'calendar', act('icOpen')], ['Colis', 'download', act('pkOpen')], ['Tempo, vigilance, collectes', 'sun2', act('svcOpen')], ['Rappels de la maison', 'history', act('rmOpen')], ['Missions et récompenses', 'heart', act('msCfg')], ['Tableau du matin', 'route', act('mcOpen')]]],
     ['Écrans et iPhone', 'monitor', [['Cet écran (disposition, veille, langue)', 'monitor', act('screenCfg')], ['Cadre photo', 'photo', act('phOpen')], ['Interphone : tablettes', 'mic', go('interphone')], ['iPhone : Siri et widgets', 'mic', act('iphOpen')], ['Commande vocale « Bêta »', 'mic', act('wakeCfg')]]],
     ['Réseau', 'wifi', [['Box et Wi-Fi', 'wifi', go('reseau')], ['Wi-Fi invités', 'wifi', act('gwOpen')]]],
     ['Système', 'server', [['Installation et diagnostic', 'check', go('installation')], ['Sauvegarde', 'cloudUp', act('bkOpen')], ['Mises à jour', 'download', act('upOpen')], ['Administration', 'server', go('admin')], ['Santé de la maison', 'heart', go('sante')]]]
@@ -162,12 +162,12 @@
     return '<div class="qkst">' + (w ? '<span>' + (B.wxIcon ? ico(B.wxIcon(w.code, !w.day)) : '') + '<b>' + Math.round(w.temp) + '°</b></span>' : '') + (a ? '<span class="' + (a === 'disarmed' ? '' : 'g') + '">' + ico('shieldCheck') + (a === 'disarmed' ? 'Alarme coupée' : a === 'triggered' ? 'ALARME' : 'Alarme activée') + '</span>' : '') + (pres.length ? '<span>' + ico('family') + pres.filter(Boolean).length + '/' + pres.length + ' à la maison</span>' : '') + (S.away ? '<span class="y">' + ico('walk') + 'Mode absent</span>' : '') + (tp && tp.today ? '<span class="t-' + tp.today + '">' + ico('boltPlain') + 'Tempo ' + tp.today + '</span>' : '') + '</div>' + (al ? '<p class="qkal">' + ico(al.icon || 'info') + esc(al.text) + '</p>' : '');
   };
   RENDER.qkFavs = () => '<div class="qkgrid">' + favs().map((f, i) => { const x = favInfo(f); return x ? '<button class="qkb' + (x.on ? ' on' : '') + '" data-act="qkRun" data-arg="' + i + '">' + ico(x.icon) + '<b>' + esc(x.name) + '</b><small>' + esc(x.sub) + '</small></button>' : ''; }).join('') + '<button class="qkb add" data-act="qkEdit">' + ico('plus') + '<b>Modifier</b><small>mes raccourcis</small></button></div>';
-  B.route('raccourcis', { title: 'Raccourcis', bg: 'assets/bg/generic.jpg', render: () => B.side('raccourcis') + B.header({ id: 'raccourcis', title: 'Bonjour ' + B.user().name, sub: 'Vos raccourcis', icon: 'grid9', info: { t: 'infobox', keys: ['brain'], items: () => [{ icon: 'family', v: Object.values(((S.brain || {}).status || {}).presence || {}).filter(Boolean).length, l: 'À la maison', cls: 'c' }] } }) +
+  B.route('raccourcis', { title: 'Raccourcis', bg: 'assets/bg/generic.jpg', render: () => B.side('raccourcis') + B.header({ id: 'raccourcis', title: 'Bonjour ' + B.user().name, sub: 'Vos raccourcis', icon: 'grid9', info: { t: 'infobox', keys: ['brain'], items: () => [{ icon: 'family', v: (pr => pr.length ? pr.filter(Boolean).length : '—')(Object.values(((S.brain || {}).status || {}).presence || {})), l: 'À la maison', cls: 'c' }] } }) +
     '<section class="card pcard abs" style="' + box([105, 235, 1522, 400]) + '">' + B.whead('home', 'La maison') + T({ t: 'qkStatus', keys: ['brain', 'house', 'weather'] }) + '</section>' +
     '<section class="card pcard abs" style="' + box([105, 410, 1522, 1012]) + '">' + B.whead('grid9', 'Raccourcis') + T({ t: 'qkFavs', keys: ['house', 'qk', 'plus'] }) + '</section>' });
   B.act('qkRun', el => {
     const f = favs()[+el.dataset.arg]; if (!f) return;
-    if (f.t === 'routine' && B.runRoutine) B.runRoutine(f.id);
+    if (f.t === 'routine' && B.runRoutine) { const r = (S.routines || []).find(x => x.id === f.id), u = B.user(); if (r && r.a && r.a.alarm && u && (u.id === 'guest' || u.child)) return B.toast('Cette routine touche l’alarme : réservée aux parents', 'lock'); B.runRoutine(f.id); }
     else if (f.t === 'scene') B.ACT.scRun && B.ACT.scRun({ dataset: { arg: f.id } });
     else if (f.t === 'page') location.hash = f.id;
     else if (f.t === 'dev') { const d = DATA.DEVICES[f.id], st = S.dev[f.id] || d.def || {}, k = B.kindOf(d); if (B.canUse && !B.canUse(f.id)) return B.toast('Accès réservé', 'lock'); B.setDev(f.id, ['cover', 'awning', 'garage'].includes(k) ? { pos: st.pos > 0 ? 0 : 100 } : k === 'lock' ? { locked: !st.locked } : { on: !st.on }); }
@@ -185,6 +185,9 @@
   const sp0 = B.startPage;
   if (sp0) B.startPage = () => { const c = dcfg(); return !c.start && /iPhone|Android.*Mobile/.test(navigator.userAgent) && !window.fully ? 'raccourcis' : sp0(); };
   if (!location.hash && sessionStorage.getItem('betaos.unlocked') && B.startPage() === 'raccourcis') setTimeout(() => B.go('raccourcis'), 80);
+
+  /* ---------- invité : pas de pages de réglages, même en tapant l'adresse ---------- */
+  window.addEventListener('hashchange', () => { const u = B.user(); if (u && u.id === 'guest' && (B.GUEST_HIDE || []).includes(location.hash.slice(1))) setTimeout(() => B.go('accueil'), 0); });
 
   /* ---------- menus ---------- */
   const nl0 = B.navList;

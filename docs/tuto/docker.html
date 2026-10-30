@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Installer Bêta home sur Docker</title>
+<link rel="stylesheet" href="tuto.css">
+</head>
+<body>
+
+<div class="cover">
+  <div class="top"><img src="../../assets/logo-mark.png" alt=""><div><div class="brand">Bêta home · version 7.17</div><b style="font-size:12pt">Installation sur NAS UGREEN (UGOS Pro) avec Docker</b></div></div>
+  <div>
+    <h1>Installer Bêta home sur Docker</h1>
+    <div class="sub">Du NAS éteint aux tablettes allumées : serveur, caméras, notifications, accès à distance, mises à jour.</div>
+  </div>
+  <div class="hero"><img src="../img/installation.jpg" alt=""></div>
+  <div class="meta">Compter environ 30 minutes pour le serveur, puis 10 minutes par tablette.<br>Valable aussi pour Synology, un Raspberry Pi ou un PC Linux : seules les étapes « UGOS » changent.<br>Les libellés des menus UGOS peuvent varier légèrement selon la version du NAS.</div>
+</div>
+
+<section>
+  <h2>Vue d'ensemble</h2>
+  <div class="schema" style="grid-template-columns:1fr">
+    <div class="box"><b>Écrans</b>3 tablettes Fire 8″ (Fully Kiosk) · iPhone (Safari / écran d'accueil) · ordinateur — ils ouvrent <code>http://IP-du-NAS:8090</code></div>
+    <div class="arrow">▼ réseau de la maison (Wi-Fi Deco)</div>
+    <div class="box nas"><b>NAS UGREEN — Docker (un seul « projet » docker-compose)</b>
+      <span class="pill"><b style="display:inline;color:inherit">beta-home</b> :8090 — obligatoire</span>
+      <span class="pill">go2rtc :1984 — caméras</span>
+      <span class="pill">mosquitto :1883 — MQTT</span>
+      <span class="pill">zigbee2mqtt :8080</span>
+      <span class="pill">matter-server :5580</span>
+      <span class="pill">music-assistant :8095</span>
+      <span class="pill">ntfy :8091</span>
+      <span class="pill">matter-bridge :5540 / 51826 — Alexa, app Maison</span>
+      <span class="pill">tailscale — accès extérieur</span>
+      <span class="pill">watchtower :8092 — mises à jour</span>
+    </div>
+    <div class="arrow">▼ pilotage direct (ou via Home Assistant, facultatif)</div>
+    <div class="box"><b>Appareils</b>Bbox · TP-Link Deco · lumières et prises · caméras · thermostats · voiture · sonnette…</div>
+  </div>
+  <p>Seul <b>beta-home</b> est indispensable. Tous les autres services sont <b>commentés</b> (désactivés) dans le fichier : vous les activez quand vous en avez besoin, un par un.</p>
+
+  <h3>Ce qu'il faut avant de commencer</h3>
+  <ul class="check">
+    <li>Le NAS UGREEN allumé, sur le réseau, avec UGOS Pro à jour.</li>
+    <li>L'application <b>Docker</b> installée depuis le Centre d'applications d'UGOS.</li>
+    <li>L'adresse IP du NAS (UGOS › Panneau de configuration › Réseau), par exemple <code>192.168.1.20</code>. Idéalement, réservez-la dans l'application Deco (Plus › Avancé › Réservation d'adresse) pour qu'elle ne change jamais.</li>
+    <li>Le fichier <b>beta-home-v7.17.zip</b> (ou une copie du dépôt GitHub).</li>
+    <li>Une <b>longue phrase secrète</b> pour la clé du serveur, par exemple <code>tram-cigogne-bretzel-2026-violet</code>.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">1</span>Copier Bêta home sur le NAS</h2>
+  <ol class="steps">
+    <li>Dans UGOS, ouvrez <b>Fichiers</b> et créez le dossier partagé <code>docker</code> (s'il n'existe pas), puis le sous-dossier <code>beta-home</code>.</li>
+    <li>Décompressez <b>beta-home-v7.17.zip</b> sur l'ordinateur et copiez <b>tout son contenu</b> dans <code>docker/beta-home</code>.</li>
+    <li>Vous devez obtenir :</li>
+  </ol>
+<pre>docker/beta-home/
+├── index.html, css/, js/, assets/      <span class="c">← l'application</span>
+├── bridge/                              <span class="c">← pont Alexa / app Maison (facultatif)</span>
+└── server/
+    ├── <span class="h">docker-compose.yml</span>                  <span class="c">← le fichier à modifier</span>
+    ├── Dockerfile
+    ├── mosquitto/mosquitto.conf
+    ├── tailscale/serve.json
+    └── data/                            <span class="c">← créé au premier démarrage : TOUTES vos données</span></pre>
+  <div class="warn"><b>Le dossier server/data</b> contient vos réglages, sauvegardes, codes et appairages. Ne le supprimez jamais, et ne le remplacez pas lors d'une mise à jour.</div>
+</section>
+
+<section>
+  <h2><span class="n">2</span>Personnaliser le fichier docker-compose.yml</h2>
+  <p>Ouvrez <code>server/docker-compose.yml</code> avec l'éditeur de texte d'UGOS (ou sur l'ordinateur). Seules ces lignes du service <b>beta-home</b> sont à changer :</p>
+<pre>services:
+  beta-home:
+    image: ghcr.io/ukiyo2208/beta-home:latest
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    container_name: beta-home
+    restart: unless-stopped
+    network_mode: host                      <span class="c"># indispensable (découverte des caméras, Bonjour, HomeKit)</span>
+    environment:
+      - PORT=8090
+      - <span class="h">BETA_KEY=tram-cigogne-bretzel-2026-violet</span>   <span class="c"># VOTRE phrase secrète</span>
+      - BACKUP_KEEP=30
+      - GO2RTC_URL=http://127.0.0.1:1984
+      - <span class="h">TZ=Europe/Paris</span>                       <span class="c"># heures justes pour les règles, le réveil…</span>
+    volumes:
+      - ./data:/data</pre>
+  <table>
+    <tr><th>Réglage</th><th>Rôle</th></tr>
+    <tr><td><code>BETA_KEY</code></td><td>Clé maîtresse du serveur. Elle protège tout l'accès. Gardez-la secrète : les écrans s'associent ensuite par QR code sans la recopier.</td></tr>
+    <tr><td><code>TZ</code></td><td>Fuseau horaire. Sans lui, le NAS est en UTC et les règles se déclenchent 1 à 2 h trop tôt.</td></tr>
+    <tr><td><code>BACKUP_KEEP</code></td><td>Nombre de sauvegardes de la nuit conservées.</td></tr>
+    <tr><td><code>BETA_OFF</code> <i>(facultatif)</i></td><td>Couper des modules serveur, par exemple <code>BETA_OFF=famille,extra</code>. Le reste fonctionne normalement.</td></tr>
+    <tr><td><code>PHOTO_DIR</code> <i>(facultatif)</i></td><td>Dossier des photos pour le cadre photo des tablettes (avec le volume <code>/photos</code>, voir étape 8).</td></tr>
+  </table>
+  <div class="tip"><b>Image prête ou construction locale ?</b> La ligne <code>image:</code> télécharge l'image construite par GitHub. Si le téléchargement est refusé (image pas encore publiée ou privée), <b>supprimez la ligne <code>image:</code></b> : Docker construit alors Bêta home sur le NAS à partir des fichiers copiés (1 à 2 minutes, rien à installer).</div>
+</section>
+
+<section>
+  <h2><span class="n">3</span>Créer le projet dans Docker (UGOS)</h2>
+  <ol class="steps">
+    <li>Ouvrez l'application <b>Docker</b> › <b>Projet</b> › <b>Créer</b>.</li>
+    <li><b>Nom du projet</b> : <code>beta-home</code>.</li>
+    <li><b>Chemin de stockage</b> : choisissez le dossier <code>docker/beta-home/server</code> (celui qui contient docker-compose.yml). UGOS propose alors d'utiliser le fichier existant.</li>
+    <li>Vérifiez le contenu affiché (vos modifications de l'étape 2), puis <b>Déployer</b> / <b>Créer</b>.</li>
+    <li>Attendez que le conteneur <b>beta-home</b> soit « En cours d'exécution » (et <b>go2rtc</b>, <b>mosquitto</b>).</li>
+  </ol>
+  <h3>Alternative : en SSH (plus rapide si vous avez l'habitude)</h3>
+  <p>Activez SSH dans UGOS (Panneau de configuration › Terminal), puis depuis l'ordinateur :</p>
+<pre>ssh votre-compte@192.168.1.20
+cd /volume1/docker/beta-home/server        <span class="c"># adaptez « volume1 » si vos données sont sur un autre volume</span>
+sudo docker compose up -d                  <span class="c"># télécharge (ou construit) et démarre</span>
+sudo docker compose ps                     <span class="c"># état des services</span>
+sudo docker logs -f beta-home              <span class="c"># journal en direct (Ctrl+C pour quitter)</span></pre>
+  <p>Dans le journal, vous devez voir une ligne du type <code>Serveur Bêta 7.17 sur http://0.0.0.0:8090 — …</code>.</p>
+</section>
+
+<section>
+  <h2><span class="n">4</span>Premier accès et diagnostic</h2>
+  <ol class="steps">
+    <li>Sur l'ordinateur, ouvrez <code>http://192.168.1.20:8090</code> (l'IP de votre NAS).</li>
+    <li>Suivez l'assistant d'accueil (prénoms, ville : Fegersheim).</li>
+    <li><span class="path">Réglages › Maison › Connexions › Serveur Bêta</span> : adresse <code>http://192.168.1.20:8090</code> et la clé <code>BETA_KEY</code>. Le voyant passe au vert.</li>
+    <li>Ouvrez la page <span class="path">Installation</span> et cliquez sur <b>Relancer</b>.</li>
+  </ol>
+  <figure class="half"><img src="../img/connexions.jpg" alt=""><figcaption>Connexions : le serveur Bêta du NAS, puis les autres services (Home Assistant facultatif, Plex, NAS…).</figcaption></figure>
+  <figure class="half"><img src="../img/installation.jpg" alt=""><figcaption>Le diagnostic vérifie : serveur, fuseau horaire, place libre, sécurité, Internet, notifications, appareils, tablettes, caméras, ponts Alexa/Maison et les conflits entre automatismes.</figcaption></figure>
+  <div class="tip"><b>Ordinateur = écran comme les autres</b> Une fois connecté avec la clé, utilisez « Associer cet écran (et oublier la clé) » dans Réglages › Sécurité : la clé n'est plus stockée dans le navigateur.</div>
+</section>
+
+<section>
+  <h2><span class="n">5</span>Activer les services facultatifs</h2>
+  <p>Dans <code>docker-compose.yml</code>, chaque service facultatif est précédé de <code>#</code>. Pour l'activer, retirez le <code>#</code> <b>et un espace</b> au début de chacune de ses lignes (l'indentation doit rester alignée), puis redéployez le projet (UGOS : Projet › beta-home › Recréer ; SSH : <code>sudo docker compose up -d</code>).</p>
+  <table>
+    <tr><th>Service</th><th>Quand l'activer</th><th>Ensuite dans Bêta home</th></tr>
+    <tr><td><b>go2rtc</b> (actif)</td><td>Caméras en direct, et caméras dans l'app Maison</td><td>Marques › caméras (Reolink, Tapo, ONVIF…)</td></tr>
+    <tr><td><b>mosquitto</b> (actif)</td><td>Zigbee2MQTT, Tasmota, ESPHome</td><td>Marques › MQTT (IP du NAS, port 1883)</td></tr>
+    <tr><td><b>zigbee2mqtt</b></td><td>Clé Zigbee USB branchée sur le NAS</td><td>Marques › Zigbee2MQTT ; interface <code>:8080</code></td></tr>
+    <tr><td><b>matter-server</b></td><td>Appareils Matter (Aqara, Eve, Nanoleaf, IKEA)</td><td>Marques › Matter (<code>IP:5580</code>) — IPv6 du NAS activée</td></tr>
+    <tr><td><b>music-assistant</b></td><td>Musique sur les enceintes, sans Home Assistant</td><td>Marques › Music Assistant (<code>IP:8095</code>)</td></tr>
+    <tr><td><b>ntfy</b></td><td>Notifications hébergées chez vous plutôt que ntfy.sh</td><td>Réglages › Famille › Notifications : <code>http://IP:8091</code></td></tr>
+    <tr><td><b>matter-bridge</b></td><td>Piloter vos appareils avec Alexa ou l'app Maison / Siri</td><td>Connexions › Alexa et Maison (codes d'appairage affichés)</td></tr>
+    <tr><td><b>tailscale</b></td><td>Accès hors de la maison, en https</td><td>Étape 6</td></tr>
+    <tr><td><b>watchtower</b></td><td>Mises à jour depuis Bêta home</td><td>Étape 7</td></tr>
+  </table>
+  <div class="warn"><b>Même clé partout</b> Le service <b>matter-bridge</b> a sa propre ligne <code>BETA_KEY=</code> : mettez exactement la même phrase que pour beta-home.</div>
+  <div class="tip"><b>Zigbee2MQTT</b> Pour connaître le nom de la clé USB : en SSH, <code>ls /dev/serial/by-id/</code>, puis adaptez la ligne <code>devices:</code>.</div>
+</section>
+
+<section>
+  <h2><span class="n">6</span>Accès depuis l'extérieur avec Tailscale</h2>
+  <p>Tailscale (gratuit) relie vos iPhone au NAS par un tunnel chiffré : <b>aucun port à ouvrir sur la Bbox</b>, et une adresse https (nécessaire au micro et à certaines applications).</p>
+  <ol class="steps">
+    <li>Créez un compte sur <b>tailscale.com</b>.</li>
+    <li>Console d'administration › <b>DNS</b> : activez <b>MagicDNS</b> et <b>HTTPS Certificates</b>.</li>
+    <li><b>Settings › Keys › Generate auth key</b> : copiez la clé <code>tskey-auth-…</code>.</li>
+    <li>Dans docker-compose.yml, activez le service <b>tailscale</b> et collez la clé dans <code>TS_AUTHKEY=</code>. Redéployez.</li>
+    <li>Installez l'application <b>Tailscale</b> sur chaque iPhone, connectée au même compte.</li>
+    <li>Bêta home est joignable partout à <code>https://beta-home.&lt;votre-tailnet&gt;.ts.net</code>. Mettez cette adresse dans Connexions sur les iPhone, et dans OwnTracks.</li>
+  </ol>
+  <div class="tip"><b>OwnTracks</b> (positions de la famille) : installez l'app OwnTracks, puis sur l'iPhone ouvrez la page <span class="path">Carte</span> de Bêta home : le bouton <b>Ouvrir dans OwnTracks</b> configure l'app automatiquement (adresse <code>…/api/owntracks</code>, identifiant et mot de passe personnels).</div>
+</section>
+
+<section>
+  <h2><span class="n">7</span>Mises à jour automatiques (Watchtower)</h2>
+  <ol class="steps">
+    <li>Choisissez une deuxième phrase secrète, différente de BETA_KEY.</li>
+    <li>Service <b>beta-home</b> : décommentez <code>WATCHTOWER_TOKEN=</code> et mettez cette phrase.</li>
+    <li>Activez le service <b>watchtower</b> et mettez la même phrase dans <code>WATCHTOWER_HTTP_API_TOKEN=</code>. Redéployez.</li>
+    <li>Dans <span class="path">Réglages › Système › Mises à jour</span>, le bouton <b>Mettre à jour</b> télécharge la nouvelle image et redémarre Bêta home (environ 1 minute).</li>
+  </ol>
+  <figure class="half"><img src="../img/majs.jpg" alt=""><figcaption>Mises à jour : version installée, version disponible, et installation en un clic.</figcaption></figure>
+  <h3>Sans Watchtower (manuel)</h3>
+<pre>cd /volume1/docker/beta-home/server
+sudo docker compose pull          <span class="c"># nouvelle image (ou : copiez les nouveaux fichiers puis « docker compose build »)</span>
+sudo docker compose up -d         <span class="c"># redémarre seulement ce qui a changé ; server/data est conservé</span></pre>
+  <div class="warn"><b>Mise à jour en copiant un nouveau zip</b> Remplacez tout <b>sauf</b> le dossier <code>server/data</code> et votre <code>docker-compose.yml</code> personnalisé.</div>
+</section>
+
+<section>
+  <h2><span class="n">8</span>Sauvegardes et photos</h2>
+  <h3>Copie des sauvegardes sur une clé USB</h3>
+  <p>Branchez une clé USB sur le NAS, repérez son chemin dans Fichiers, puis décommentez la ligne de volume <code>/backup</code> du service beta-home :</p>
+<pre>    volumes:
+      - ./data:/data
+      - <span class="h">/mnt/@usb/sdb1/beta-backup:/backup</span>    <span class="c"># adaptez le chemin de votre clé</span></pre>
+  <p>Puis dans <span class="path">Réglages › Système › Sauvegarde</span> : mot de passe de sauvegarde (notez-le !), sauvegarde de la nuit, copie vers /backup.</p>
+  <figure class="half"><img src="../img/sauvegarde.jpg" alt=""><figcaption>Sauvegardes chiffrées : téléchargement, restauration, copie sur la clé USB.</figcaption></figure>
+  <h3>Cadre photo des tablettes</h3>
+<pre>      - <span class="h">/volume1/Photos:/photos:ro</span>             <span class="c"># lecture seule</span></pre>
+  <p>Puis <span class="path">Réglages › Écrans et iPhone › Cadre photo</span> : dossier <code>/photos</code> (ou l'adresse de votre serveur Immich).</p>
+</section>
+
+<section>
+  <h2><span class="n">9</span>Les tablettes Fire avec Fully Kiosk</h2>
+  <ol class="steps">
+    <li>Sur la tablette : <b>Paramètres › Sécurité et confidentialité › Applications de sources inconnues</b> : autorisez le navigateur Silk.</li>
+    <li>Dans Silk, téléchargez <b>Fully Kiosk Browser</b> depuis le site officiel <code>fully-kiosk.com</code> et installez-le.</li>
+    <li>Dans Fully Kiosk › <b>Settings › Web Content Settings › Start URL</b> : <code>http://192.168.1.20:8090</code>.</li>
+    <li><b>Device Management</b> : <i>Keep Screen On</i> activé ; <b>Remote Administration</b> activé avec un mot de passe (Bêta home l'utilise pour allumer l'écran, régler la luminosité et parler).</li>
+    <li><b>Web Content Settings</b> : autorisez micro et caméra si vous utilisez l'interphone ou la commande vocale « Bêta ».</li>
+    <li>Sur l'ordinateur : <span class="path">Réglages › Sécurité › Associer un nouvel écran</span>, puis scannez le QR code avec la tablette (ou tapez le code affiché).</li>
+    <li>Sur la tablette : <span class="path">Réglages › Écrans et iPhone › Cet écran</span> : nom (« Cuisine », « Salon », « Étage »), veille, page de départ.</li>
+    <li>Dans <span class="path">Marques › Fully Kiosk</span>, ajoutez la tablette (IP + mot de passe Remote Administration).</li>
+  </ol>
+  <figure class="half"><img src="../img/ecrans-qr.jpg" alt=""><figcaption>Associer un nouvel écran : un QR code valable quelques minutes. Chaque tablette a son propre accès, révocable.</figcaption></figure>
+  <div class="tip"><b>Performance</b> Les tablettes Fire passent automatiquement en mode performance (moins d'effets). Bêta home est livré en un seul fichier compressé : le premier chargement est rapide, même en Wi-Fi moyen.</div>
+</section>
+
+<section>
+  <h2><span class="n">10</span>Les iPhone et les notifications</h2>
+  <ol class="steps">
+    <li>Safari › adresse de Bêta home › Partager › <b>Sur l'écran d'accueil</b>.</li>
+    <li>Associez l'iPhone comme une tablette (QR code) : il ouvre directement la page « Raccourcis ».</li>
+    <li>Installez l'application <b>ntfy</b> (App Store) et abonnez-vous au sujet indiqué dans <span class="path">Réglages › Famille › Notifications</span>.</li>
+    <li>Bouton <b>Tester</b> : la notification doit arriver en quelques secondes.</li>
+    <li>Siri : <span class="path">Réglages › Écrans et iPhone › iPhone : Siri et widgets</span> pour ajouter « Je pars », « Je rentre », « Bonne nuit ».</li>
+  </ol>
+  <div class="duo">
+    <figure class="phone"><img src="../img/raccourcis.jpg" alt=""><figcaption>Page Raccourcis sur iPhone.</figcaption></figure>
+    <figure><img src="../img/notifs.jpg" alt=""><figcaption>Réglages des notifications : un sujet par personne.</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">11</span>Sécuriser</h2>
+  <ul class="check">
+    <li>BETA_KEY longue et unique (jamais « changez-moi… »). Le diagnostic le vérifie.</li>
+    <li>Un code PIN pour chaque parent, puis <b>Mode sécurisé</b> dans Réglages › Sécurité.</li>
+    <li>Les écrans associés par QR, puis « oublier la clé » sur l'ordinateur.</li>
+    <li>Aucun port ouvert sur la Bbox : passez par Tailscale pour l'extérieur.</li>
+    <li>Mot de passe de sauvegarde noté sur papier, sauvegarde de la nuit activée.</li>
+    <li>Mosquitto : pour exiger un mot de passe, suivez les deux lignes d'explication en tête de <code>server/mosquitto/mosquitto.conf</code>.</li>
+  </ul>
+  <div class="ok"><b>Bon à savoir</b> Après 30 essais de clé ou de code erronés en 10 minutes, le serveur bloque l'adresse concernée quelques minutes. Les mots de passe (box, Deco, e-mail…) restent sur le NAS, dans <code>server/data</code>, lisibles par lui seul.</div>
+</section>
+
+<section>
+  <h2><span class="n">12</span>Dépannage</h2>
+  <table>
+    <tr><th>Problème</th><th>Cause probable et solution</th></tr>
+    <tr><td><code>denied</code> ou <code>not found</code> au téléchargement de <code>ghcr.io/…/beta-home</code></td><td>Image non publiée ou privée : supprimez la ligne <code>image:</code> pour construire sur le NAS (étape 2).</td></tr>
+    <tr><td>La page <code>:8090</code> ne s'ouvre pas</td><td>Conteneur arrêté : Docker › Conteneur › beta-home › Journal. Port déjà pris : changez <code>PORT=8090</code> (ex. 8095) et utilisez la nouvelle adresse.</td></tr>
+    <tr><td>« clé refusée » / 401</td><td>La clé saisie diffère de BETA_KEY (attention aux espaces). Trop d'essais : attendez 10 minutes.</td></tr>
+    <tr><td>Les règles se déclenchent à la mauvaise heure</td><td><code>TZ=Europe/Paris</code> manquant ; redéployez.</td></tr>
+    <tr><td>Caméras noires</td><td>go2rtc arrêté ou ancien montage : le volume doit être <code>./data/go2rtc:/config</code> (un dossier). Si un dossier <code>data/go2rtc.yaml</code> vide existe d'une ancienne installation, supprimez-le.</td></tr>
+    <tr><td>Appareils Matter introuvables</td><td>IPv6 désactivée sur le NAS ou le réseau Deco ; activez-la.</td></tr>
+    <tr><td>Découverte des appareils vide</td><td><code>network_mode: host</code> retiré ? Il est indispensable.</td></tr>
+    <tr><td>« permission denied » sur /data</td><td>Le dossier <code>server/data</code> doit être modifiable par Docker (Fichiers › Propriétés › Autorisations).</td></tr>
+    <tr><td>Pas de notification hors de la maison avec ntfy auto-hébergé</td><td>Les iPhone doivent joindre le NAS : Tailscale, et <code>NTFY_BASE_URL</code> à l'adresse Tailscale.</td></tr>
+  </table>
+<pre><span class="c"># commandes utiles (SSH, dans docker/beta-home/server)</span>
+sudo docker compose ps                    <span class="c"># qui tourne ?</span>
+sudo docker compose logs --tail 100 beta-home
+sudo docker compose restart beta-home
+sudo docker compose down &amp;&amp; sudo docker compose up -d   <span class="c"># tout relancer (données conservées)</span></pre>
+  <div class="tip"><b>Demander de l'aide</b> Page Installation › <b>Copier le rapport</b> : un texte complet sans aucun mot de passe, à coller dans votre message.</div>
+</section>
+
+</body>
+</html>

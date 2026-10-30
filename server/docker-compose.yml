@@ -25,7 +25,7 @@ services:
       # - /volume1/Photos:/photos:ro                 # cadre photo des tablettes (Outils › Cadre photo : dossier /photos)
 
   # Caméras : direct vidéo pour Bêta home + pont HomeKit (app Maison) pour les seules caméras.
-  # Sa configuration (data/go2rtc.yaml) est écrite par Bêta home ; ne la modifiez pas à la main.
+  # Sa configuration (data/go2rtc/go2rtc.yaml) est écrite par Bêta home ; ne la modifiez pas à la main.
   go2rtc:
     image: alexxit/go2rtc:latest
     container_name: go2rtc
@@ -34,7 +34,7 @@ services:
     environment:
       - TZ=Europe/Paris
     volumes:
-      - ./data/go2rtc.yaml:/config/go2rtc.yaml
+      - ./data/go2rtc:/config                        # dossier (et non un fichier) : écrit par Bêta home
 
   # Broker MQTT : utilisé par Zigbee2MQTT (et Tasmota, ESPHome, LinknLink si vous le souhaitez).
   mosquitto:

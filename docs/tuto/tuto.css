@@ -1,0 +1,63 @@
+/* Mise en page des tutoriels Bêta home (HTML → PDF A4 avec docs/tuto/build-pdf.js) */
+@page { size: A4; margin: 16mm 15mm 18mm; }
+:root { --ink: #14213d; --soft: #52607a; --blue: #1f6feb; --cyan: #0ea5c6; --line: #d9e1ee; --pale: #f2f6fc; --ok: #11845b; --warn: #b26a00; --bad: #c0392b; }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; font: 10.5pt/1.5 "Inter", "Segoe UI", "DejaVu Sans", Arial, sans-serif; color: var(--ink); background: #fff; }
+h1, h2, h3 { line-height: 1.2; margin: 0; }
+h2 { font-size: 19pt; color: var(--blue); margin: 0 0 4mm; padding-bottom: 2mm; border-bottom: 2px solid var(--line); break-after: avoid; }
+h2 .n { display: inline-block; min-width: 9mm; height: 9mm; line-height: 9mm; text-align: center; border-radius: 50%; background: var(--blue); color: #fff; font-size: 12pt; margin-right: 3mm; vertical-align: 2px; }
+h3 { font-size: 12.5pt; margin: 5mm 0 2mm; break-after: avoid; }
+p { margin: 0 0 2.6mm; }
+ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+li { margin: 0 0 1.2mm; }
+section { break-before: page; }
+section.flow { break-before: auto; margin-top: 8mm; }
+b { font-weight: 650; }
+code, .k { font: 9.2pt/1.4 "DejaVu Sans Mono", Consolas, monospace; background: var(--pale); border: 1px solid var(--line); border-radius: 4px; padding: 0 1.2mm; }
+pre { font: 8.6pt/1.45 "DejaVu Sans Mono", Consolas, monospace; background: #0f1b33; color: #e6edf7; border-radius: 6px; padding: 3.5mm 4mm; margin: 0 0 3.5mm; white-space: pre-wrap; break-inside: avoid; }
+pre .c { color: #8fb3e8; }
+pre .h { color: #ffd479; }
+.path { font-weight: 650; color: var(--blue); white-space: nowrap; }
+figure { margin: 2mm 0 4mm; break-inside: avoid; text-align: center; }
+figure img { max-width: 100%; border-radius: 6px; border: 1px solid var(--line); box-shadow: 0 1mm 3mm rgba(20, 33, 61, .12); }
+figure.phone img { max-height: 120mm; }
+figure.half img { max-height: 76mm; }
+figcaption { font-size: 9pt; color: var(--soft); margin-top: 1.5mm; }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; align-items: start; }
+.duo figure { margin-top: 0; }
+.tip, .warn, .bad, .ok { border-radius: 6px; padding: 2.6mm 3.5mm; margin: 0 0 3.5mm; break-inside: avoid; border-left: 4px solid; }
+.tip { background: #eef5ff; border-color: var(--blue); }
+.warn { background: #fff6e8; border-color: var(--warn); }
+.bad { background: #fdeeee; border-color: var(--bad); }
+.ok { background: #eaf7f1; border-color: var(--ok); }
+.tip b:first-child, .warn b:first-child, .bad b:first-child, .ok b:first-child { margin-right: 1mm; }
+table { width: 100%; border-collapse: collapse; margin: 0 0 4mm; font-size: 9.6pt; break-inside: auto; }
+th, td { text-align: left; vertical-align: top; padding: 1.8mm 2.4mm; border-bottom: 1px solid var(--line); }
+th { background: var(--pale); font-weight: 650; }
+tr { break-inside: avoid; }
+.steps { counter-reset: s; list-style: none; padding: 0; }
+.steps > li { counter-increment: s; position: relative; padding-left: 10mm; margin-bottom: 2.6mm; }
+.steps > li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 6.5mm; height: 6.5mm; line-height: 6.5mm; border-radius: 50%; text-align: center; background: var(--cyan); color: #fff; font-weight: 700; font-size: 9pt; }
+.check { list-style: none; padding: 0; }
+.check li::before { content: "☐  "; color: var(--blue); }
+/* couverture */
+.cover { height: 260mm; display: flex; flex-direction: column; justify-content: space-between; padding: 6mm 0; }
+.cover .top { display: flex; align-items: center; gap: 5mm; }
+.cover .top img { width: 22mm; height: 22mm; }
+.cover .brand { font-size: 13pt; color: var(--soft); letter-spacing: 1px; text-transform: uppercase; }
+.cover h1 { font-size: 34pt; color: var(--ink); margin: 0 0 3mm; }
+.cover .sub { font-size: 14pt; color: var(--soft); }
+.cover .hero img { width: 100%; border-radius: 8px; box-shadow: 0 2mm 6mm rgba(20, 33, 61, .25); }
+.cover .meta { font-size: 9.5pt; color: var(--soft); }
+.toc { columns: 2; column-gap: 8mm; padding: 0; list-style: none; }
+.toc li { break-inside: avoid; padding: 1.2mm 0; border-bottom: 1px dotted var(--line); }
+/* schémas */
+.schema { display: grid; gap: 3mm; margin: 2mm 0 5mm; break-inside: avoid; }
+.box { border: 1.5px solid var(--blue); border-radius: 7px; padding: 2.5mm 3mm; background: #f7faff; font-size: 9.2pt; }
+.box b { display: block; color: var(--blue); font-size: 10pt; margin-bottom: .8mm; }
+.box.nas { border-color: var(--cyan); background: #effafd; }
+.box.nas b { color: #087891; }
+.box.opt { border-style: dashed; }
+.arrow { text-align: center; color: var(--soft); font-size: 9pt; }
+.pill { display: inline-block; border-radius: 99px; padding: 0 2.2mm; font-size: 8.4pt; background: var(--pale); border: 1px solid var(--line); margin: .5mm .5mm 0 0; }

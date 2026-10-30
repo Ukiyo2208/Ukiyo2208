@@ -10,7 +10,7 @@ const ROOT = path.resolve(process.env.APP_DIR || path.join(__dirname, '..'));
 const DATA = path.resolve(process.env.DATA_DIR || path.join(__dirname, 'data'));
 const KEY = process.env.BETA_KEY || '';
 const KEEP = +process.env.BACKUP_KEEP || 30;
-const VERSION = '1.0.0';
+const VERSION = '7.17';
 for (const d of ['', 'store', 'backups']) fs.mkdirSync(path.join(DATA, d), { recursive: true });
 if (!KEY) console.warn('⚠️  BETA_KEY n’est pas défini : l’API est ouverte à tout le réseau.');
 
@@ -34,6 +34,7 @@ const BRIDGE = opt('bridge', () => require('./bridge')(DATA, send, readBody, HUB
 const AUTH = require('./auth')(DATA, send, readBody, KEY);             // écrans associés, codes PIN, mode sécurisé
 const GEO0 = GEO || { inside: () => ({}), home: () => null, last: () => null };
 const ENGINE = opt('engine', () => require('./engine')(DATA, send, readBody, { HUB, NOTIFY, GEO: GEO0, BRIDGE, CAMS, AUTH }));   // cerveau : routines, règles, présence, alarme
+if (GEO) GEO.onFail = req => fail(req);
 if (BRIDGE && ENGINE) BRIDGE.setRunner((id, by) => ENGINE.runRoutine(id, by));   // « Alexa, allume Soirée ciné » exécuté par le NAS
 const PLUS = ENGINE ? opt('plus', () => require('./plus')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, AUTH })) : null;   // sauvegardes, scènes, chauffage, énergie, arrosage, Siri, listes, Frigate
 const EXTRA = ENGINE ? opt('extra', () => require('./extra')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, PLUS, LOGS, MODS: () => MODS })) : null;   // réseau, réveil, matin, interphone, rappels, administration
@@ -55,7 +56,7 @@ async function api(req, res, url) {
   const p = url.pathname, m = req.method;
   if (p === '/api/ping') return send(res, 200, Object.assign({ ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now(), sha: process.env.BETA_SHA || 'dev' }, MODS));
   if (p === '/api/hub/oauth/callback') return HUB.callback(req, res, url);
-  if (p === '/api/owntracks') return GEO ? GEO.api(req, res, url) : send(res, 503, { error: 'module géolocalisation coupé' });   // identifiants propres à chaque téléphone
+  if (p === '/api/owntracks') { if (!GEO) return send(res, 503, { error: 'module géolocalisation coupé' }); if (blocked(req)) return send(res, 429, { error: 'trop d’essais refusés' }); const r0 = await GEO.api(req, res, url); return r0 === false ? send(res, 405, { error: 'OwnTracks envoie ses positions en POST' }) : undefined; }   // identifiants propres à chaque téléphone
   if (p === '/api/auth/pair' && m === 'POST') { if (blocked(req)) return send(res, 429, { error: 'trop d’essais : réessayez dans 10 minutes' }); fail(req, 3); return AUTH.pair(req, res); }   // compte comme 1/3 d'échec : 10 codes essayés au plus   // association d'un écran avec le code à 6 chiffres
   // les images de caméras s'affichent dans une balise <img> : la clé peut alors venir de l'adresse (?k=)
   // idem pour la sonnette appelée par un bouton (Shelly, ESPHome…) qui ne sait pas ajouter d'en-tête
@@ -187,6 +188,6 @@ http.createServer(async (req, res) => {
   if (url.pathname.startsWith('/api/')) {
     cors(req, res);
     if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
-    try { await api(req, res, url); } catch (e) { send(res, 500, { error: e.message }); }
+    try { await api(req, res, url); } catch (e) { if (!res.headersSent) send(res, /JSON invalide|trop gros/.test(e.message) ? 400 : 500, { error: e.message }); }
   } else serveStatic(req, res, url);
 }).listen(PORT, () => console.log('Serveur Bêta ' + VERSION + ' sur http://0.0.0.0:' + PORT + ' — application : ' + ROOT + ' — données : ' + DATA));

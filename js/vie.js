@@ -54,7 +54,7 @@
   B.act('gwHours', el => save({ guest: { hours: +el.value } }).then(gwR));
   B.act('gwSet', async el => { await save({ guest: { [el.dataset.arg]: el.value } }); try { V.guest = await req('/api/extra/guest'); } catch (e) { } gwR(); });
   B.act('gwMain', async el => { await save({ guest: { main: { ssid: el.value, pass: '••••' } } }); gwR(); });
-  B.act('gwMainPass', el => { GW.mainPass = el.value; clearTimeout(GW.t); GW.t = setTimeout(() => { save({ guest: { main: { ssid: ((V.cfg.guest || {}).main || {}).ssid || '', pass: GW.mainPass } } }); gwR(); }, 600); });
+  B.act('gwMainPass', el => { if (!V.cfg) return need(); GW.mainPass = el.value; clearTimeout(GW.t); GW.t = setTimeout(() => { save({ guest: { main: { ssid: ((V.cfg.guest || {}).main || {}).ssid || '', pass: GW.mainPass } } }); gwR(); }, 600); });
   B.act('gwShow', () => { const g = V.guest || {}, c = (V.cfg || {}).guest || {}, n = GW.tab === 'guest' ? { ssid: g.ssid, pass: g.pass } : { ssid: (c.main || {}).ssid, pass: GW.mainPass }; B.closeModal(); const o = document.createElement('div'); o.className = 'gwfull'; o.innerHTML = '<div>' + qr(wifiQ(n.ssid, n.pass), 10) + '<b>' + esc(n.ssid) + '</b>' + (n.pass ? '<span>' + esc(n.pass) + '</span>' : '') + '<small>Scannez avec l’appareil photo pour vous connecter · touchez pour fermer</small></div>'; o.addEventListener('click', () => o.remove()); document.body.appendChild(o); });
 
   /* ======================= 2. contrôle parental ======================= */
@@ -74,7 +74,7 @@
   const pcSave = async list => { if (await save({ kids: list })) { await load(); modal('pcmodal', pcBody()); } };
   const pcK = () => JSON.parse(JSON.stringify(V.cfg.kids || []));
   B.act('pcOpen', async () => { if (!needAdmin()) return; await load(); PC_CL = await clients(); modal('pcmodal', pcBody()); });
-  B.act('pcEdit', el => { if (el.dataset && el.dataset.arg) { PC = el.dataset.arg; return modal('pcmodal', pcBody()); } const k = { id: 'k' + Date.now().toString(36), name: 'Enfant', macs: [], sched: [], on: true }; PC = k.id; pcSave(pcK().concat([k])); });
+  B.act('pcEdit', el => { if (!V.cfg) return need(); if (el.dataset && el.dataset.arg) { PC = el.dataset.arg; return modal('pcmodal', pcBody()); } const k = { id: 'k' + Date.now().toString(36), name: 'Enfant', macs: [], sched: [], on: true }; PC = k.id; pcSave(pcK().concat([k])); });
   const pcUpd = f => { const l = pcK(), k = l.find(x => x.id === PC); f(k); pcSave(l); };
   B.act('pcSet', el => pcUpd(k => { k[el.dataset.arg] = el.value; }));
   B.act('pcMac', el => pcUpd(k => { k.macs = tog(k.macs, el.dataset.arg); }));
@@ -122,7 +122,7 @@
   const wkL = () => JSON.parse(JSON.stringify(V.cfg.wakes || []));
   const wkUpd = async f => { const l = wkL(), w = l.find(x => x.id === WK); f(w); if (await save({ wakes: l })) wkR(); };
   B.act('wkOpen', async () => { if (!needAdmin()) return; await load(); wkR(); });
-  B.act('wkEdit', async el => { if (el.dataset && el.dataset.arg) { WK = el.dataset.arg; return wkR(); } const w = { id: 'w' + Date.now().toString(36), name: 'Réveil de ' + B.user().name, who: B.user().name, time: '07:00', days: [1, 2, 3, 4, 5], ramp: 15, lights: [], covers: [], tablet: '', radio: '', say: true, on: true }; WK = w.id; if (await save({ wakes: wkL().concat([w]) })) wkR(); });
+  B.act('wkEdit', async el => { if (!V.cfg) return need(); if (el.dataset && el.dataset.arg) { WK = el.dataset.arg; return wkR(); } const w = { id: 'w' + Date.now().toString(36), name: 'Réveil de ' + B.user().name, who: B.user().name, time: '07:00', days: [1, 2, 3, 4, 5], ramp: 15, lights: [], covers: [], tablet: '', radio: '', say: true, on: true }; WK = w.id; if (await save({ wakes: wkL().concat([w]) })) wkR(); });
   B.act('wkSet', el => wkUpd(w => { w[el.dataset.arg] = el.dataset.arg === 'ramp' ? +el.value : el.value; }));
   B.act('wkDay', el => wkUpd(w => { w.days = tog(w.days, +el.dataset.arg.split('|')[1]); }));
   B.act('wkPick', el => { const [k, id] = el.dataset.arg.split('|'); wkUpd(w => { w[k] = tog(w[k], id); }); });
@@ -165,8 +165,8 @@
       '<h4 class="rlh">' + ico('plug') + 'Appareils décalés automatiquement</h4><div class="list">' + (plugs.map(d => { const s = (c.shift || []).find(x => x.dev === d.id); return '<div class="li" style="grid-template-columns:1fr auto"><span>' + esc(dlabel(d)) + '</span><select data-change="tpShift" data-arg="' + d.id + '"><option value="">jamais</option><option value="red"' + (s && s.mode === 'red' ? ' selected' : '') + '>coupé les jours rouges (6 h – 22 h)</option><option value="hc"' + (s && s.mode === 'hc' ? ' selected' : '') + '>seulement en heures creuses</option></select></div>'; }).join('') || '<p class="muted">Aucune prise pilotable par le NAS.</p>') + '</div>';
   }
   B.act('tpOpen', async () => { if (!needAdmin()) return; await load(); modal('tpmodal', tpBody()); });
-  B.act('tpAdv', async () => { await save({ advice: V.cfg.advice === false }); modal('tpmodal', tpBody()); });
-  B.act('tpShift', async el => { const l = (V.cfg.shift || []).filter(x => x.dev !== el.dataset.arg).concat(el.value ? [{ dev: el.dataset.arg, mode: el.value }] : []); await save({ shift: l }); });
+  B.act('tpAdv', async () => { if (!V.cfg) return need(); await save({ advice: V.cfg.advice === false }); modal('tpmodal', tpBody()); });
+  B.act('tpShift', async el => { if (!V.cfg) return need(); const l = (V.cfg.shift || []).filter(x => x.dev !== el.dataset.arg).concat(el.value ? [{ dev: el.dataset.arg, mode: el.value }] : []); await save({ shift: l }); });
 
   /* ======================= 9-10. page Matin ======================= */
   async function loadMorning() { if (!srv() || !V.cfg) return; try { V.morning = await req('/api/extra/morning'); } catch (e) { } B.emit('matin'); }

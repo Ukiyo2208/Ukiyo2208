@@ -343,6 +343,7 @@
     brands.forEach(b => { if (H.list[b]) H.list[b].live = res[b] ? res[b].err || 'ok' : ''; });
   }
   setInterval(poll, 4000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
   // import automatique (assistant plug & play) : tous les appareils de la marque, rangés par pièce
   async function autoImport(id, floorId) {
     const list = await call('/api/hub/' + id + '/devices'), m = map(), linked = new Set(Object.values(m).filter(r => r.brand === id).map(r => r.id)), added = [];

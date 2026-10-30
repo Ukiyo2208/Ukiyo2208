@@ -340,3 +340,31 @@ Le QR code utilise la bibliothèque libre *qrcode-generator* (Kazuhiko Arase, li
 - **« Bêta, … »** (Réglages › Commande vocale) : un bouton micro sur l'écran, ou l'écoute permanente du mot « Bêta » sur une tablette murale (« Bêta, allume le salon », « Bêta, état de la maison »). Bêta répond à voix haute. Il faut un navigateur avec reconnaissance vocale (Chrome, Safari) et souvent une adresse https (Tailscale). La WebView de Fully Kiosk sur les Fire peut ne pas la proposer : sur ces tablettes, Alexa reste le plus simple.
 - **Page Raccourcis** : une version simple pour l'iPhone, avec l'état de la maison et vos boutons favoris (routines, scènes, appareils, pages). C'est la première page sur un téléphone, sauf si vous en choisissez une autre dans Cet écran.
 - **Tests automatiques** : `npm run check` (syntaxe des 139 scripts) et `npm test` (19 tests : connecteurs Deco, Bbox et Home Assistant, énergie et Tempo, chauffage, calendriers, colis, recharge, sauvegarde chiffrée, règles, serveur complet). Ils tournent sur GitHub à chaque envoi (`.github/workflows/tests.yml`), sans aucune dépendance à installer.
+
+## Relecture, conflits et tutoriels (7.17)
+
+**Tutoriels PDF** (dans `docs/`, avec captures d'écran) :
+- `docs/Guide-Beta-home.pdf` : guide d'utilisation (pages, réglages, automatismes, enfants et invités, tablettes, iPhone, dépannage).
+- `docs/Installer-Beta-home-Docker.pdf` : installation pas à pas sur le NAS UGREEN (docker-compose, clé, fuseau horaire, services facultatifs, Tailscale, Watchtower, sauvegarde USB, Fully Kiosk, ntfy, dépannage).
+- Pour les régénérer après une modification : `node docs/tuto/build-pdf.js` (sources HTML dans `docs/tuto`).
+
+**Options qui se gênaient (corrigé)** :
+- Un même appareil piloté par plusieurs automatismes : le chauffage, l'arrosage et la recharge de la voiture gardent la main, le décalage Tempo les ignore, et le diagnostic signale le doublon.
+- L'éclairage adaptatif ne modifie plus une lampe réglée par une scène ou à la main : il ne corrige qu'une lampe qu'on vient d'allumer, ou qu'il a réglée lui-même.
+- Mode vacances : il n'allume plus la simulation de présence si ce module est coupé, et rétablit l'état d'avant au retour (y compris le mode Absent).
+- « Ne pas déranger » laisse toujours passer l'alarme, la fuite d'eau et la sonnette.
+- Invités et enfants : les pages de réglages, d'installation, de réseau, d'administration et de bilan sont fermées, même par lien direct ; un enfant ne peut plus lancer une routine qui arme ou désarme l'alarme.
+- Deux actions portaient le même nom (calendrier iPhone et calendrier) : la seconde écrasait la première.
+
+**Bugs corrigés** :
+- go2rtc : le fichier de configuration est désormais dans un dossier (`data/go2rtc/`, monté sur `/config`). Monter un seul fichier faisait créer à Docker un dossier vide à sa place lors d'une première installation. L'ancien fichier est repris automatiquement.
+- Version du serveur alignée (7.17 au lieu de 1.0.0).
+- Le serveur refuse les réglages mal formés au lieu de planter ; un JSON invalide renvoie une erreur 400 (et non 500) ; OwnTracks ne reste plus bloqué sur une requête GET ; les erreurs de mot de passe OwnTracks comptent dans la protection contre les essais répétés.
+- Alarme, contrôle parental, réveil et conseiller Tempo : message clair au lieu d'une erreur quand le serveur est absent.
+- Titres de rubriques des fenêtres de réglage mal alignés (icône au-dessus du texte).
+- Page Raccourcis : « — » au lieu de « 0 à la maison » quand la présence n'est pas configurée.
+
+**Optimisation** :
+- Le cache hors ligne garde une seule copie de `bundle.js` (avant, chaque mise à jour en ajoutait une d'environ 1 Mo sur les tablettes).
+- Les appareils se rafraîchissent dès qu'un écran redevient visible, sans attendre le prochain relevé.
+- L'image Docker n'embarque plus les tutoriels (`docs/` exclu).
