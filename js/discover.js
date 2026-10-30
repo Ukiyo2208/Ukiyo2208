@@ -10,7 +10,6 @@
   const media = (id, kind) => Srv().url() + '/api/cams/' + kind + '/' + id + '?k=' + encodeURIComponent(key()) + (kind === 'frame' ? '&t=' + Math.floor(Date.now() / 10000) : '');
   const fmtPin = p => p ? p.slice(0, 3) + '-' + p.slice(3, 5) + '-' + p.slice(5) : '';
   const TYPES = { camera: ['Caméras', 'camera'], hub: ['Ponts et box', 'homeFill'], lampe: ['Éclairage', 'bulbFill'], prise: ['Prises et modules', 'plug'], module: ['Prises et modules', 'plug'], matter: ['Matter', 'link'], homekit: ['HomeKit', 'homeFill'], multimedia: ['Multimédia', 'speaker'], imprimante: ['Imprimantes', 'files'], nas: ['NAS et partages', 'nas'], box: ['Box internet', 'wifi'], autre: ['Autres', 'grid9'] };
-  const HAN = { shelly: 'Shelly', esphome: 'ESPHome', matter: 'Matter', homekit_controller: 'HomeKit', cast: 'Google Cast', sonos: 'Sonos', apple_tv: 'Apple TV / AirPlay', ipp: 'Imprimante (IPP)', dlna_dmr: 'DLNA', self: '' };
 
   /* ---------- caméras ajoutées → emplacements de caméra de Bêta home ---------- */
   function applyCams() {
@@ -36,8 +35,10 @@
     { ip: '192.168.1.41', type: 'hub', name: 'Hue Bridge', brand: 'Philips Hue', via: ['mDNS'], link: 'brand:hue' },
     { ip: '192.168.1.40', type: 'hub', name: 'TaHoma Switch', brand: 'Somfy TaHoma', via: ['mDNS'], link: 'brand:tahoma' },
     { ip: '192.168.1.50', type: 'lampe', name: 'Elgato Key Light', brand: 'Elgato', via: ['mDNS'], link: 'brand:elgato' },
-    { ip: '192.168.1.70', type: 'prise', name: 'shellyplug-s-A1B2C3', brand: 'Shelly', via: ['mDNS'], link: 'ha:shelly' },
-    { ip: '192.168.1.80', type: 'multimedia', name: 'Salon TV', brand: 'Google Cast', via: ['mDNS'], link: 'ha:cast' },
+    { ip: '192.168.1.70', type: 'prise', name: 'shellyplug-s-A1B2C3', brand: 'Shelly', via: ['mDNS'], link: 'brand:shelly' },
+    { ip: '192.168.1.90', type: 'module', name: 'capteur-garage', brand: 'ESPHome', via: ['mDNS'], link: 'brand:esphome' },
+    { ip: '192.168.1.85', type: 'multimedia', name: 'Salon', brand: 'Sonos', model: 'Era 100', via: ['mDNS', 'UPnP'], link: 'brand:sonos' },
+    { ip: '192.168.1.80', type: 'multimedia', name: 'Salon TV', brand: 'Google Cast', via: ['mDNS'], link: 'brand:cast' },
     { ip: '192.168.1.81', type: 'multimedia', name: 'Echo Dot cuisine', brand: 'Amazon Echo / Fire', via: ['mDNS'], link: 'alexa' },
     { ip: '192.168.1.20', type: 'nas', name: 'UGREEN DXP', brand: 'UGREEN', via: ['mDNS', 'UPnP'], link: '' },
     { ip: '192.168.1.1', type: 'box', name: 'Freebox', brand: 'Box internet', via: ['UPnP'], link: '' }] };
@@ -48,7 +49,9 @@
     const known = S.netcams.some(c => c.ip === d.ip);
     if (d.type === 'camera') return known ? '<span class="tag2">Ajoutée</span>' : '<button class="btn sm pri" data-act="dcAddCam" data-arg="' + i + '">' + ico('plus') + 'Ajouter</button>';
     if (/^brand:/.test(d.link)) return '<button class="btn sm" data-act="dcBrand" data-arg="' + i + '">' + ico('link') + 'Relier</button>';
-    if (/^ha:/.test(d.link) && d.link !== 'ha:self') return '<button class="btn sm" data-act="dcHa" data-arg="' + i + '" title="Ajouter dans Home Assistant">' + ico('homeFill') + HAN[d.link.slice(3)] + '</button>';
+    if (d.link === 'matter') return '<span class="muted dsmall">Matter : module Matter du serveur (prochaine étape)</span>';
+    if (d.link === 'homekit') return '<span class="muted dsmall">Accessoire HomeKit : app Maison</span>';
+    if (d.link === 'airplay') return '<span class="muted dsmall">AirPlay : depuis l’iPhone</span>';
     if (d.link === 'alexa') return '<span class="muted dsmall">Via Alexa (Matter)</span>';
     return '';
   }
@@ -68,9 +71,8 @@
   B.act('dcScan', async () => { busy = true; paint(); try { res = await Srv().post('/api/discover', { rtsp: true }); } catch (e) { B.toast('Recherche impossible : ' + e.message, 'info'); } busy = false; paint(); });
   B.act('dcBrand', el => {
     const d = res.devices[+el.dataset.arg], id = d.link.slice(6); B.closeModal(); B.go('marques');
-    setTimeout(() => { if (B.ACT.hubOpen) B.ACT.hubOpen({ dataset: { arg: id } }); setTimeout(() => { const f = document.querySelector('form[data-submit="hubSave"][data-arg="' + id + '"]'); const inp = f && (f.querySelector('[name=host]') || f.querySelector('[name=hosts]')); if (inp && !inp.value) { inp.value = d.ip; B.toast('Adresse ' + d.ip + ' préremplie : suivez les étapes de ' + d.brand, 'link'); } }, 250); }, 400);
+    setTimeout(() => { if (B.ACT.hubOpen) B.ACT.hubOpen({ dataset: { arg: id } }); setTimeout(() => { const f = document.querySelector('form[data-submit="hubSave"][data-arg="' + id + '"]'); const one = f && f.querySelector('[name=host]'), many = f && f.querySelector('[name=hosts]'), val = id === 'cast' ? d.ip + ':' + d.name : d.ip; if (one && !one.value) one.value = d.ip; if (many && !many.value.includes(d.ip)) many.value = (many.value.trim() ? many.value.trim() + ', ' : '') + val; if (one || many) B.toast(d.ip + ' ajouté : « Enregistrer », puis « Tester » et « Ajouter les appareils »', 'link'); }, 250); }, 400);
   });
-  B.act('dcHa', el => { const d = res.devices[+el.dataset.arg], dom = d.link.slice(3), u = (S.settings.haUrl || '').replace(/\/+$/, ''); if (!u) return B.toast('Reliez d’abord Home Assistant (Connexions)', 'homeFill'); window.open(u + '/config/integrations/dashboard/add?domain=' + dom, '_blank', 'noopener'); });
 
   /* ---------- ajouter une caméra ---------- */
   let draft = null;

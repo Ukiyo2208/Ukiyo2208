@@ -52,18 +52,21 @@
     S.music.cast = id; B.save(); B.$$('.pop').forEach(p => p.remove());
     const list = listOf(id), name = label(id);
     if (!list.length) { B.emit('music'); if (!quiet) B.toast('La musique joue sur ' + name.toLowerCase(), 'speaker'); return; }
-    const real = list.filter(t => t.eid);
-    if (HA.enabled() && real.length) {
-      for (const t of real) await playOn(t.eid);
+    // enceintes reliées directement par Marques (Sonos, Google Cast) : le serveur Bêta leur envoie le flux
+    const hub = (S.settings.hubMap || {}), direct = list.filter(t => hub[t.id]), real = list.filter(t => t.eid && !hub[t.id]);
+    const url = mediaUrl(), it = Music.get(S.music.src) || {}, radioOk = /^https?:\/\//.test(url) && !/youtube\.com|youtu\.be/.test(url);
+    if (direct.length && radioOk) direct.forEach(t => B.HA.push(t.id, { play: url, title: it.name || 'Bêta home' }));
+    if (HA.enabled() && real.length) for (const t of real) await playOn(t.eid);
+    if ((direct.length && radioOk) || (HA.enabled() && real.length)) {
       if (Music.playing) Music.pause();   // le son ne sort plus du téléphone
       if (!quiet) B.toast('Diffusion sur ' + name, 'speaker');
-    } else if (!quiet) B.toast('Diffusion sur ' + name + (HA.enabled() ? ' : appareil non relié à un lecteur Home Assistant' : ' (démo — reliez Home Assistant)'), 'speaker');
+    } else if (!quiet) B.toast(direct.length && !radioOk ? 'Les vidéos YouTube ne se diffusent pas sur ' + name + ' : choisissez une radio ou un fichier du NAS' : 'Diffusion sur ' + name + ' (démo — reliez l’enceinte dans Marques)', 'speaker');
     B.emit('music');
   }
   B.cast = { targets, label, castTo };
   // une nouvelle musique choisie part directement sur la cible en cours
   const play0 = Music.play.bind(Music);
-  Music.play = function (id) { const r = play0(id); if (S.music.cast && S.music.cast !== 'local' && HA.enabled() && listOf(S.music.cast).some(t => t.eid)) setTimeout(() => castTo(S.music.cast, true), 50); return r; };
+  Music.play = function (id) { const r = play0(id); const hub = S.settings.hubMap || {}; if (S.music.cast && S.music.cast !== 'local' && listOf(S.music.cast).some(t => hub[t.id] || (HA.enabled() && t.eid))) setTimeout(() => castTo(S.music.cast, true), 50); return r; };
 
   /* ---------- choix de la cible ---------- */
   const chip = floor => '<button class="castbtn" data-act="castPick" data-floor="' + (floor || '') + '" title="Où écouter ?">' + ico(S.music.cast === 'local' ? 'monitor' : 'speaker') + '<span>' + esc(label(S.music.cast)) + '</span>' + ico('chevD') + '</button>';

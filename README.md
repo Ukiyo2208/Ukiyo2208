@@ -144,6 +144,17 @@ Les positions et les trajets restent sur l'appareil. Seul le fond de carte (Open
 Connexions › **Découvrir** (et page Marques) : le serveur Bêta cherche les appareils du réseau local.
 - **Caméras** : par ONVIF (presque toutes les caméras IP) et par le port RTSP. « Ajouter » récupère automatiquement l'adresse vidéo avec l'identifiant de la caméra. L'adresse et le mot de passe restent sur le NAS.
 - **Ponts et box** (Hue, TaHoma, Elgato) : « Relier » ouvre la fiche de la marque avec l'adresse préremplie.
-- **Le reste** (Shelly, ESPHome, Matter, HomeKit, Chromecast, Sonos, AirPlay, imprimantes…) : un lien ouvre directement l'ajout de l'intégration dans Home Assistant.
+- **Shelly, ESPHome, Sonos, Google Cast** : « Relier » ajoute l'adresse dans la fiche de la marque (page Marques). Ces appareils sont ensuite pilotés **directement, sans Home Assistant ni compte**.
+- Matter, HomeKit et AirPlay sont signalés ; le module Matter du serveur est la prochaine étape.
 
 **Caméras & HomeKit** : un interrupteur par caméra la publie dans l'app Maison d'Apple, avec son code à 8 chiffres. Ce pont ne concerne que les caméras. Il passe par **go2rtc** (gratuit, libre), qui fournit aussi le direct vidéo dans Bêta home. Le fichier `server/docker-compose.yml` lance Bêta home et go2rtc en réseau « hôte », indispensable pour la découverte et HomeKit.
+
+## Connecteurs locaux sans Home Assistant (7.5)
+
+Page **Marques** : quatre nouveaux connecteurs 100 % locaux, sans compte.
+- **Shelly** (génération 1, 2 et +) : prises, relais, variateurs, volets.
+- **ESPHome** : interrupteurs, lumières, volets, capteurs et détecteurs. Il faut ajouter `web_server:` dans le YAML du module.
+- **Sonos** : lecture/pause, volume, titre en cours, et lecture des radios de Bêta home.
+- **Google Cast** (Chromecast, Nest, TV) : volume, lecture/pause, arrêt, et diffusion des radios.
+
+Les enceintes Sonos et Google Cast apparaissent dans **« Où écouter ? »**.

@@ -116,12 +116,12 @@ async function rtspScan(ms) {
 /* ---------- classement : quoi, quelle marque, comment le relier ---------- */
 const KIND = [
   [/_hue\._tcp|philips hue|hue bridge/i, 'hub', 'Philips Hue', 'brand:hue'], [/_elg\._tcp|elgato/i, 'lampe', 'Elgato', 'brand:elgato'], [/_kizboxdev|tahoma|somfy/i, 'hub', 'Somfy TaHoma', 'brand:tahoma'],
-  [/_shelly\._tcp|shelly/i, 'prise', 'Shelly', 'ha:shelly'], [/_esphomelib/i, 'module', 'ESPHome', 'ha:esphome'], [/_home-assistant/i, 'hub', 'Home Assistant', 'ha:self'],
-  [/_matterc?\._(tcp|udp)/i, 'matter', 'Matter', 'ha:matter'], [/_hap\._tcp/i, 'homekit', 'HomeKit', 'ha:homekit_controller'],
-  [/_googlecast|chromecast|google home|nest/i, 'multimedia', 'Google Cast', 'ha:cast'], [/_sonos|sonos/i, 'multimedia', 'Sonos', 'ha:sonos'], [/_airplay|_raop/i, 'multimedia', 'AirPlay', 'ha:apple_tv'],
+  [/_shelly\._tcp|shelly/i, 'prise', 'Shelly', 'brand:shelly'], [/_esphomelib/i, 'module', 'ESPHome', 'brand:esphome'], [/_home-assistant/i, 'hub', 'Home Assistant', ''],
+  [/_matterc?\._(tcp|udp)/i, 'matter', 'Matter', 'matter'], [/_hap\._tcp/i, 'homekit', 'HomeKit', 'homekit'],
+  [/_sonos|sonos/i, 'multimedia', 'Sonos', 'brand:sonos'], [/_googlecast|chromecast|google home|nest/i, 'multimedia', 'Google Cast', 'brand:cast'], [/_airplay|_raop/i, 'multimedia', 'AirPlay', 'airplay'],
   [/_spotify-connect/i, 'multimedia', 'Spotify Connect', ''], [/_amzn-wplay|amazon|echo/i, 'multimedia', 'Amazon Echo / Fire', 'alexa'],
-  [/_ipp|_printer|printer|imprim/i, 'imprimante', 'Imprimante', 'ha:ipp'], [/_smb\._tcp|nas|ugreen|synology|qnap/i, 'nas', 'NAS / partage', ''],
-  [/mediarenderer|samsung|lg |webos|bravia|philips tv|tv/i, 'multimedia', 'TV / lecteur', 'ha:dlna_dmr'], [/internetgatewaydevice|freebox|livebox|bbox|fritz/i, 'box', 'Box internet', '']
+  [/_ipp|_printer|printer|imprim/i, 'imprimante', 'Imprimante', ''], [/_smb\._tcp|nas|ugreen|synology|qnap/i, 'nas', 'NAS / partage', ''],
+  [/mediarenderer|samsung|lg |webos|bravia|philips tv|tv/i, 'multimedia', 'TV / lecteur', ''], [/internetgatewaydevice|freebox|livebox|bbox|fritz/i, 'box', 'Box internet', '']
 ];
 function classify(d) {
   const s = [d.svc, d.name, d.maker, d.model, d.dtype, d.server, d.txt && JSON.stringify(d.txt)].filter(Boolean).join(' ');
@@ -137,7 +137,7 @@ async function scan(opts) {
   const add = (ip, o) => { const k = ip; dev[k] = Object.assign(dev[k] || { ip, via: [] }, o, { via: [...new Set([...(dev[k] ? dev[k].via : []), o.via])] }); };
   cams.forEach(c => add(c.ip, { via: 'ONVIF', type: 'camera', name: c.name || 'Caméra ' + c.ip, brand: c.model || '', model: c.model, onvif: c.xaddr, link: 'camera' }));
   rt.forEach(r => { if (!dev[r.ip] || dev[r.ip].type !== 'camera') add(r.ip, { via: 'RTSP', type: 'camera', name: (dev[r.ip] && dev[r.ip].name) || 'Caméra ' + r.ip, rtspPort: r.port, link: 'camera' }); });
-  md.forEach(m => { if (!m.ip) return; const c = classify(m); const cur = dev[m.ip]; if (cur && cur.type === 'camera') { cur.via = [...new Set(cur.via.concat('mDNS'))]; if (/_hap/.test(m.svc)) cur.homekit = true; return; } add(m.ip, Object.assign({ via: 'mDNS', name: m.name, svc: (cur && cur.svc ? cur.svc + ', ' : '') + m.svc, port: m.port }, cur && cur.type !== 'autre' && c.type === 'autre' ? {} : c)); });
+  md.forEach(m => { if (!m.ip) return; const c = classify(m); const cur = dev[m.ip]; if (cur && cur.type === 'camera') { cur.via = [...new Set(cur.via.concat('mDNS'))]; if (/_hap/.test(m.svc)) cur.homekit = true; return; } add(m.ip, Object.assign({ via: 'mDNS', name: (m.txt && (m.txt.fn || m.txt.friendly_name)) || m.name, svc: (cur && cur.svc ? cur.svc + ', ' : '') + m.svc, port: m.port }, cur && cur.type !== 'autre' && c.type === 'autre' ? {} : c)); });
   up.forEach(u => { const c = classify(u), cur = dev[u.ip]; if (cur && cur.type !== 'autre') { cur.via = [...new Set(cur.via.concat('UPnP'))]; if (!cur.model && u.model) cur.model = u.model; return; } add(u.ip, Object.assign({ via: 'UPnP', name: u.name || u.server || u.ip, model: u.model }, c)); });
   const list = Object.values(dev).sort((a, b) => (a.type === 'camera' ? 0 : 1) - (b.type === 'camera' ? 0 : 1) || a.ip.localeCompare(b.ip, undefined, { numeric: true }));
   return { at: Date.now(), took: Date.now() - t0, subnets: subnets(), devices: list };
