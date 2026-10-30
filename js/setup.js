@@ -154,13 +154,14 @@
   let W = null; // état de l'assistant
   const MODES = [
     ['demo', 'sparkle', 'Démo', 'Une maison d’exemple toute prête, pour découvrir Bêta home sans rien brancher.'],
+    ['plug', 'search2', 'Plug & play', 'Recommandé : Bêta home cherche vos appareils sur le réseau, propose vos marques et ne demande que l’essentiel (serveur Bêta du NAS).'],
     ['manual', 'edit', 'Manuel', 'Vous créez vos étages et vos pièces (avec modèles et images), puis cochez les appareils.'],
-    ['scan', 'search2', 'Assisté', 'Bêta home lit Home Assistant et propose un placement ; vous validez ou corrigez.'],
+    ['scan', 'layers', 'Assisté', 'Bêta home lit Home Assistant et propose un placement ; vous validez ou corrigez.'],
     ['auto', 'bolt', 'Automatique', 'Mode « flemmard » : étages, pièces et appareils repris tels quels de Home Assistant.']
   ];
   const AV = DATA.AVATARS.flatMap(g => g.items);
   function wiz() {
-    const w = W, steps = w.mode === 'demo' ? ['hello', 'mode'] : ['hello', 'mode', 'users', w.mode === 'manual' ? 'floors' : 'ha'].concat(w.mode === 'scan' ? ['review'] : []);
+    const w = W, steps = w.mode === 'demo' ? ['hello', 'mode'] : w.mode === 'plug' ? ['hello', 'mode', 'users', 'server'] : ['hello', 'mode', 'users', w.mode === 'manual' ? 'floors' : 'ha'].concat(w.mode === 'scan' ? ['review'] : []);
     const st = steps[w.step] || 'hello', last = w.step >= steps.length - 1;
     let h = '';
     if (st === 'hello') h = '<div class="sw-hero"><img src="' + A + 'icon-512.png" alt=""><h2>Bienvenue dans Bêta home</h2><p>Le tableau de bord de votre maison. En quelques étapes, on le prépare pour <b>votre</b> maison.</p>' +
@@ -173,6 +174,13 @@
     if (st === 'floors') h = '<h3>Vos niveaux</h3><p class="muted" style="margin:0 0 10px;font-size:13px">Touchez pour choisir. Vous ajouterez ensuite les pièces de chaque niveau.</p><div class="sw-chips">' +
       ['Extérieur', 'Sous-sol', 'RDC', 'Étage 1', 'Étage 2', 'Grenier'].concat(w.floors.filter(f => !['Extérieur', 'Sous-sol', 'RDC', 'Étage 1', 'Étage 2', 'Grenier'].includes(f))).map(f => '<button class="pinc' + (w.floors.includes(f) ? ' on' : '') + '" data-act="swFloor" data-arg="' + esc(f) + '">' + esc(f) + '</button>').join('') + '</div>' +
       '<form class="row" data-submit="swFloorAdd" style="margin-top:10px;gap:8px"><input class="search" name="n" placeholder="Autre niveau (ex. Dépendance)"><button class="btn sm">' + ico('plus') + 'Ajouter</button></form>';
+    if (st === 'server') {
+      const ok = B.Server.ok();
+      h = '<h3>Le serveur Bêta du NAS</h3><p class="muted" style="margin:0 0 10px;font-size:13px;line-height:1.5">C’est lui qui cherche vos appareils, garde les mots de passe et parle aux marques. Adresse : celle du NAS avec le port 8090 ; clé : celle du docker-compose (BETA_KEY).</p><div style="display:flex;flex-direction:column;gap:10px">' +
+        '<label class="field">Adresse du serveur<input id="swSrvUrl" value="' + esc(S.conn.server.url || (/^https?:/.test(location.protocol) && !/netlify|github/.test(location.host) ? location.origin : '')) + '" placeholder="http://192.168.1.20:8090" spellcheck="false"></label>' +
+        '<label class="field">Clé du serveur<input id="swSrvKey" type="password" value="' + esc(S.conn.server.key || '') + '" autocomplete="off"></label>' +
+        (w.err ? '<p class="warn">' + esc(w.err) + '</p>' : '') + (ok ? '<p class="ok2">' + ico('check') + ' Serveur Bêta joignable : prêt à chercher vos appareils.</p>' : '') + '</div>';
+    }
     if (st === 'ha') h = '<h3>Connexion à Home Assistant</h3><div style="display:flex;flex-direction:column;gap:10px"><label class="field">Adresse<input id="swHaUrl" value="' + esc(S.settings.haUrl || '') + '" placeholder="http://192.168.1.10:8123" spellcheck="false"></label><label class="field">Jeton d’accès longue durée<input id="swHaTok" type="password" value="' + esc(S.settings.haToken || '') + '"></label>' +
       '<p class="muted" style="font-size:12px;margin:0;line-height:1.5">Home Assistant › votre profil › Sécurité › « Jetons d’accès longue durée » › Créer. Le site doit être ouvert en https si Home Assistant l’est, et Home Assistant doit autoriser cette adresse (cors_allowed_origins).</p>' +
       (w.err ? '<p class="warn">' + esc(w.err) + '</p>' : '') + (w.busy ? '<p class="muted">' + ico('refresh') + ' Lecture de votre maison…</p>' : '') + (w.plan ? '<p class="ok2">' + ico('check') + ' ' + w.plan.floors.length + ' niveau(x), ' + w.plan.rooms.length + ' pièce(s), ' + w.plan.items.length + ' appareil(s), ' + w.plan.cams.length + ' caméra(s) trouvés.</p>' : '') + '</div>';
@@ -183,7 +191,7 @@
     }
     paint('<div class="setupw"><div class="sw-steps">' + steps.map((s, i) => '<i class="' + (i < w.step ? 'done' : i === w.step ? 'on' : '') + '"></i>').join('') + '</div><div class="sw-body">' + h + '</div>' +
       '<div class="sw-nav">' + (w.step ? '<button class="btn" data-act="swPrev">' + ico('chevL') + 'Retour</button>' : '<span></span>') +
-      (st === 'ha' && !w.plan ? '<button class="btn pri" data-act="swHa"' + (w.busy ? ' disabled' : '') + '>' + ico('search2') + 'Lire ma maison</button>' : '<button class="btn pri" data-act="' + (last ? 'swDone' : 'swNext') + '"' + (st === 'mode' && !w.mode ? ' disabled' : '') + '>' + (last ? ico('check') + 'Terminer' : 'Suivant' + ico('chevR')) + '</button>') + '</div></div>', 'setup wide');
+      (st === 'server' && !B.Server.ok() ? '<button class="btn pri" data-act="swSrv">' + ico('server') + 'Tester la connexion</button>' : st === 'server' ? '<button class="btn pri" data-act="swDone">' + ico('search2') + 'Chercher mes appareils</button>' : st === 'ha' && !w.plan ? '<button class="btn pri" data-act="swHa"' + (w.busy ? ' disabled' : '') + '>' + ico('search2') + 'Lire ma maison</button>' : '<button class="btn pri" data-act="' + (last ? 'swDone' : 'swNext') + '"' + (st === 'mode' && !w.mode ? ' disabled' : '') + '>' + (last ? ico('check') + 'Terminer' : 'Suivant' + ico('chevR')) + '</button>') + '</div></div>', 'setup wide');
     const x = document.querySelector('.modal .box.setup .x'); if (x && !S.setup.done) x.remove();
   }
   function startWizard() { W = { step: 0, mode: '', users: [{ id: 'u1', name: '', avatar: AV[12].src, ring: AV[12].ring, admin: true, place: 'home', bat: 100 }], floors: ['RDC', 'Étage 1'] }; wiz(); }
@@ -208,6 +216,13 @@
     catch (e) { W.busy = false; W.err = 'Home Assistant ne répond pas (' + (e.message === 'Failed to fetch' ? 'adresse injoignable ou CORS' : e.message) + ').'; }
     wiz();
   });
+  B.act('swSrv', async () => {
+    const u = document.getElementById('swSrvUrl').value.trim().replace(/\/+$/, ''), k = document.getElementById('swSrvKey').value.trim();
+    if (!u) { W.err = 'Indiquez l’adresse du serveur.'; return wiz(); }
+    S.conn.server.url = u; S.conn.server.key = k; W.err = ''; await B.Server.ping();
+    if (!B.Server.ok()) W.err = 'Serveur injoignable ou clé refusée (' + String(S.conn.status.server || '').replace(/^err:/, '') + ').';
+    wiz();
+  });
   B.act('swRoomOn', el => { W.plan.rooms[+el.dataset.arg].on = el.checked; });
   B.act('swRoomFloor', el => { W.plan.rooms[+el.dataset.arg].floor = el.value; });
   B.act('swItOn', el => { W.plan.items[+el.dataset.arg].on = el.checked; });
@@ -217,11 +232,13 @@
     if (w.mode !== 'demo') {
       const users = w.users.filter(u => u.name.trim()).map((u, i) => Object.assign({}, u, { id: (u.name.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\W+/g, '') || 'u') + i, name: u.name.trim(), admin: u.admin || i === 0 }));
       blank(users);
+      if (w.mode === 'plug') { C.floors.push({ id: 'maison', name: 'Maison', level: 0, icon: 'homeFill' }); B.registerFloorRoutes(); }
       if (w.mode === 'manual') { w.floors.forEach((n, i) => C.floors.push({ id: uid('f'), name: n, level: /ext/i.test(n) ? -9 : /sous/i.test(n) ? -1 : /rdc/i.test(n) ? 0 : /grenier/i.test(n) ? 9 : (parseInt((n.match(/\d+/) || [i])[0], 10) || i), icon: /ext/i.test(n) ? 'tree' : 'layers' })); B.registerFloorRoutes(); }
       else if (w.plan) applyPlan(w.plan);
     }
     S.setup = { done: true, mode: w.mode || 'demo', at: Date.now() };
     sessionStorage.setItem('betaos.unlocked', '1'); try { localStorage.setItem('betaos.v5', JSON.stringify(S)); } catch (e) { } B.closeModal();
+    if (w.mode === 'plug' && B.plugWizard) return setTimeout(() => B.plugWizard({ setup: true }), 250);   // la suite : découverte des appareils
     const first = B.floors().find(f => f.level >= 0) || B.floors()[0];
     if (w.mode === 'manual' && first) { B.go(first.route); setTimeout(() => { B.toast('Ajoutez vos pièces : bouton « Modifier » puis « + Pièce »', 'rooms'); }, 600); }
     else B.go('accueil');

@@ -204,3 +204,13 @@ Toujours en préparation : Ford (API fragile, lecture seule), Roborock, Verisure
 - **Robots et jardin** : Valetudo, Husqvarna Automower et Gardena smart system.
 
 HomePod passe déjà par Music Assistant (AirPlay), les Roborock récents par Matter ou Valetudo. Restent en préparation : Navimow (accès développeur Segway) et Ford (API fragile).
+
+## Plug & play (7.9)
+
+**À la création** (assistant de démarrage, mode « Plug & play », recommandé) : prénoms, adresse et clé du serveur Bêta du NAS, puis Bêta home **cherche vos appareils sur le réseau** (Bonjour, UPnP, caméras ONVIF, diffusion UDP) et :
+1. affiche les **marques trouvées** (avec le nombre d'appareils), les **caméras** (un identifiant et un mot de passe communs suffisent) et une liste « **Vous avez aussi… ?** » pour les marques invisibles sur le réseau (comptes en ligne, clés USB) ;
+2. ne demande que les **infos importantes** : les adresses sont déjà remplies, les marques sans réglage se connectent seules (« Automatique »), les autres montrent leur bouton d'appairage (Autoriser, Appairer…) et l'astuce utile ;
+3. **« Tout connecter »** : enregistre, teste, importe tous les appareils dans leurs pièces (niveau « Maison », pièces au nom de la marque ou de la pièce d'origine), ajoute les caméras ;
+4. **masque toutes les autres marques**, pour une page Marques qui ne montre que les vôtres.
+
+L'assistant se relance à tout moment depuis **Marques › Plug & play** (il ajoute alors ce qui est nouveau sans rien effacer). Les comptes à relier par OAuth (Netatmo, Spotify, SmartThings…) se terminent dans leur fiche (« Se connecter »).

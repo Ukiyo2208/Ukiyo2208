@@ -112,6 +112,7 @@
     S.netcams = S.netcams.filter(c => c.demo).concat(r.cams.map((c, i) => { const old = S.netcams.filter(x => !x.demo)[i] || {}; return Object.assign({}, old, { id: c.id, name: c.name, ip: c.ip, homekit: c.homekit, pin: c.pin }, i === r.cams.length - 1 && extra && !extra.id ? { slot: extra.slot } : {}); }));
     if (r.go2rtc !== 'ok') B.toast('Caméras enregistrées. ' + r.go2rtc + ' — démarrez le conteneur go2rtc pour le direct et HomeKit.', 'info');
   }
+  B.Disc = { pushCams, applyCams, online };   // pour l'assistant plug & play
   B.act('cfSave', async el => {
     const f = new FormData(el), rtsp = String(f.get('rtsp') || '').trim();
     const c = { name: String(f.get('name')).trim(), slot: f.get('slot') || '', ip: draft.ip || '', homekit: draft.homekit, rtsp };

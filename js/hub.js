@@ -339,7 +339,21 @@
     brands.forEach(b => { if (H.list[b]) H.list[b].live = res[b] ? res[b].err || 'ok' : ''; });
   }
   setInterval(poll, 4000);
-  B.Hub = { load, poll, BRANDS };
+  // import automatique (assistant plug & play) : tous les appareils de la marque, rangés par pièce
+  async function autoImport(id, floorId) {
+    const list = await call('/api/hub/' + id + '/devices'), m = map(), linked = new Set(Object.values(m).filter(r => r.brand === id).map(r => r.id)), added = [];
+    const vis = B.floors(), fl = floorId || (vis.find(f => f.level >= 0) || vis[0] || {}).id;   // niveaux visibles seulement (pas ceux de la démo) if (!fl) throw new Error('aucun niveau');
+    list.filter(d => !linked.has(d.id) && B.KIND[d.kind] && !d.error).forEach(d => {
+      const all = vis.flatMap(f => B.roomsList(f.id, true).map(r => [f, r])), want = (d.room || BR(id).name).trim(), hit = all.find(([f, r]) => r.name.toLowerCase() === want.toLowerCase());
+      let room = want, rf = fl;
+      if (hit) { rf = hit[0].id; room = hit[1].name; } else C.rooms.push({ id: uid('r'), name: room, floor: fl, icon: 'homeFill' });
+      const did = rf + '.c' + uid(''); C.devices.push({ id: did, type: d.kind, name: d.name, room, floor: rf, ha: '' }); m[did] = { brand: id, id: d.id }; added.push([did, d.state]);
+    });
+    added.forEach(([did]) => { const f = did.split('.')[0], fo = B.floor(f); if (fo && fo.builtin) C.layout[f] = 'auto'; });
+    B.registerCustom(); added.forEach(([did, s]) => { if (s && Object.keys(s).length) setDev(did, s, { silent: true }); }); B.save();
+    return added.length;
+  }
+  B.Hub = { load, poll, BRANDS, CATS, BR, call, H, autoImport, isOff, off };
 
   /* ---------- page ---------- */
   RENDER.hubpage = () => {
@@ -351,7 +365,7 @@
   function cards() {
     const nOff = BRANDS.filter(b => isOff(b.id)).length;
     const bar = '<div class="hubbar"><label class="hfind">' + ico('search2') + '<input data-input="hubFind" placeholder="Chercher une marque…" autocomplete="off" spellcheck="false"></label>' +
-      '<button type="button" class="btn sm" data-act="brandsCfg">' + ico('grid9') + 'Choisir les marques' + (nOff ? ' · ' + nOff + ' masquée' + (nOff > 1 ? 's' : '') : '') + '</button></div>';
+      '<button type="button" class="btn sm pri" data-act="plugOpen">' + ico('sparkle') + 'Plug & play</button><button type="button" class="btn sm" data-act="brandsCfg">' + ico('grid9') + 'Choisir les marques' + (nOff ? ' · ' + nOff + ' masquée' + (nOff > 1 ? 's' : '') : '') + '</button></div>';
     return bar + CATS.map(cat => {
       const list = cat[3].map(BR).filter(b => b && !isOff(b.id)).sort((a, b) => (b.ready ? 1 : 0) - (a.ready ? 1 : 0) || (inUse(b.id) ? 1 : 0) - (inUse(a.id) ? 1 : 0));   // prêtes et utilisées d'abord
       if (!list.length) return '';
