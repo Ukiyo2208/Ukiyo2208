@@ -249,3 +249,22 @@ Le serveur Bêta du NAS (`server/engine.js`) fait maintenant tourner la maison *
 ### Images Docker toutes prêtes
 
 À chaque envoi sur GitHub, l'action `.github/workflows/docker.yml` construit `ghcr.io/ukiyo2208/beta-home` et `ghcr.io/ukiyo2208/beta-home-bridge` (x86 et ARM). Sur le NAS UGREEN, `docker compose pull && docker compose up -d` suffit ; `build:` reste disponible pour construire en local. Rendez les paquets publics sur GitHub (Packages › Package settings) ou connectez le NAS avec `docker login ghcr.io`.
+
+## Plus solide, plus pratique (7.12)
+
+Tout se trouve dans **Paramètres › Outils**, et dans trois nouvelles pages : **Scènes**, **Chauffage** et **Listes**.
+
+- **Sauvegarde et restauration** : un seul fichier `.betabak` chiffré (AES-256, mot de passe) avec les réglages de Bêta home, les marques et leurs identifiants, les règles, scènes, chauffage, alarme, codes et l'historique. Pour restaurer sur un NAS neuf, il suffit de choisir le fichier : le serveur redémarre tout seul. **Chaque nuit**, une copie automatique est faite (chiffrée si vous donnez un mot de passe) et peut aller sur une **clé USB** (volume `/backup` dans `docker-compose.yml`).
+- **Journal des règles** (Routines › Journal) : pour chaque déclencheur, la règle a agi ou a été « bloquée : pas « il fait nuit » ».
+- **Mode test** (Routines › Tester) : simuler un appareil qui change, une arrivée ou un départ, la sonnette, une heure, Tempo, une détection de caméra… Bêta montre quelles règles réagiraient, sans rien exécuter (sauf « pour de vrai »).
+- **Mises à jour** : bouton « Mettre à jour maintenant » avec **Watchtower**. Décommentez le service `watchtower` et mettez la même phrase dans `WATCHTOWER_TOKEN` du service `beta-home`. Une sauvegarde est faite avant la mise à jour.
+- **Scènes** : une pièce + l'état de chaque appareil (« Salon soir », « Chambre lecture »), des moments (matin, journée, soir, nuit) pour le bouton « Selon l'heure », et une option **adaptative** (lumière vive et froide le matin, chaude et douce le soir). La **lumière adaptative** peut aussi suivre la journée toute seule (une lampe réglée à la main est laissée tranquille 2 h).
+- **Chauffage** : des zones (radiateurs, thermostats ou clims, un capteur, des fenêtres) avec un planning confort/éco, l'éco automatique en mode absent, la coupure quand une fenêtre reste ouverte, et 1 à 3 °C de moins les jours rouges Tempo. Boutons Auto, Confort, Éco, Hors-gel, Arrêt et Boost 1 h.
+- **Énergie en euros** (Énergie › Coûts en €, ou Outils › Tarif) : kWh et € par jour et par appareil (prises et compteurs qui mesurent la puissance), avec votre tarif (Base, HP/HC ou Tempo avec la couleur de chaque jour), la comparaison avec le mois dernier et une alerte de consommation inhabituelle.
+- **Arrosage selon la météo** : aux heures choisies, le NAS regarde la pluie d'hier et celle prévue (Open-Meteo, gratuit). Il arrose zone après zone, ou annule et vous prévient.
+- **iPhone : Siri et widgets** : chaque iPhone a son accès révocable. Des adresses toutes prêtes pour l'app Raccourcis (« Dis Siri, je pars », « Dis Siri, ajoute aux courses », « état de la maison »), et un widget d'écran d'accueil avec l'app gratuite Scriptable (alarme, présents, température, Tempo, poubelles, courses).
+- **Profils enfants** : seulement leurs pièces, pas de réglages, d'alarme, d'énergie ni de serrures, et un **couvre-feu** exécuté par le NAS (« TV coupée à 21 h » + annonce sur les tablettes).
+- **Listes partagées** : les courses et les tâches (pour qui, pour quand), partagées par tous les écrans. On ajoute un article depuis la page, avec Bêta IA (« ajoute du lait à la liste de courses ») ou avec Siri. *Alexa ne permet pas d'envoyer du texte libre à une application sans créer un « skill » Amazon : passez par Siri ou Bêta IA.*
+- **Messages sur les tablettes** : un mot (« Je rentre tard ») affiché sur toutes les tablettes, leur écran de veille et l'accueil, annoncé à voix haute, avec une durée.
+- **Simulation de présence** (Sécurité) : en mode absent, le NAS rejoue vos vrais gestes de la semaine précédente (lumières, volets), décalés de quelques minutes, du coucher du soleil à l'heure choisie. Tant qu'il n'a rien appris, il suit un scénario de soirée.
+- **Détection sur les caméras** (Sécurité, avec Frigate) : notification avec photo seulement pour les personnes, les voitures, les colis… (pas les chats ni les branches), par caméra et par zone, seulement en absence si vous le voulez. Une personne détectée peut déclencher l'alarme. La détection sert aussi de déclencheur dans les règles.

@@ -59,6 +59,7 @@
     if (evAt) for (const ev of r.events) {
       if (ev.type === 'routine' && B.runRoutine) { const c = await B.Server.post('/api/engine/claim', { t: ev.t, type: 'routine' }).catch(() => ({})); if (c.ok) { B.src = 'nas'; try { B.runRoutine(ev.id, true); } finally { B.src = null; } } }
       if (ev.type === 'say' && B.tabletSay) B.tabletSay(ev.text);
+      if (B.fire) B.fire('nas', ev);   // autres modules de l'écran (listes, scènes, détection)
       if (ev.type === 'away') { if (ev.on && !S.away && B.awayLock) B.awayLock(); else if (!ev.on && S.away) { S.away = 0; B.save(); B.emit('house'); B.emit('abs'); } }
     }
     evAt = r.now; BR.alarm = r.alarm; alarmOverlay(r.alarm);
@@ -85,9 +86,9 @@
 
   /* ---------- règles « Si… alors… » ---------- */
   const PROPS = k => ['temp', 'hum', 'co2', 'meter'].includes(k) ? [['val', 'valeur']] : k === 'cover' || k === 'awning' || k === 'garage' ? [['pos', 'ouverture (%)'], ['open', 'ouvert']] : k === 'lock' ? [['locked', 'verrouillée']] : k === 'clim' ? [['on', 'allumée'], ['cur', 'température']] : [['on', /door|motion|leak/.test(k) ? (k === 'door' ? 'ouvert' : k === 'motion' ? 'mouvement' : 'fuite') : 'allumé']];
-  const TRIGS = { time: 'À une heure', sun: 'Lever / coucher du soleil', device: 'Un appareil change', presence: 'Présence de la famille', away: 'Mode absent', doorbell: 'On sonne', tempo: 'Couleur Tempo de demain', vigil: 'Vigilance Météo-France', alarm: 'Alarme' };
-  const CONDS = { away: 'Mode absent', night: 'Nuit / jour', between: 'Entre deux heures', days: 'Certains jours', device: 'État d’un appareil', someone: 'Quelqu’un à la maison', alarm: 'État de l’alarme' };
-  const ACTS = { device: 'Commander un appareil', routine: 'Lancer une routine', notify: 'Envoyer une notification', say: 'Annonce sur les tablettes', away: 'Mode absent', alarm: 'Alarme', delay: 'Attendre' };
+  const TRIGS = { time: 'À une heure', sun: 'Lever / coucher du soleil', device: 'Un appareil change', presence: 'Présence de la famille', away: 'Mode absent', doorbell: 'On sonne', tempo: 'Couleur Tempo de demain', vigil: 'Vigilance Météo-France', alarm: 'Alarme', detect: 'Caméra : détection (Frigate)', list: 'Ajout à une liste' };
+  const CONDS = { away: 'Mode absent', night: 'Nuit / jour', between: 'Entre deux heures', days: 'Certains jours', device: 'État d’un appareil', someone: 'Quelqu’un à la maison', alarm: 'État de l’alarme', tempo: 'Couleur Tempo du jour', sim: 'Simulation de présence' };
+  const ACTS = { device: 'Commander un appareil', routine: 'Lancer une routine', notify: 'Envoyer une notification', say: 'Annonce sur les tablettes', away: 'Mode absent', alarm: 'Alarme', delay: 'Attendre', scene: 'Lancer une scène', heat: 'Chauffage', list: 'Ajouter à une liste', board: 'Message sur les tablettes', water: 'Arroser (selon la météo)' };
   const DAYS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
   const dname = id => { const d = DATA.DEVICES[id]; return d ? (d.room ? d.room + ' · ' : '') + d.name : '?'; };
   const OPS = { '==': '=', '>': '>', '<': '<', changes: 'change' };
@@ -102,7 +103,6 @@
       case 'presence': return { arrive: (uName(x.user) || 'quelqu’un') + ' arrive', leave: (uName(x.user) || 'quelqu’un') + ' part', all_away: 'tout le monde est parti', first_home: 'le premier rentre' }[x.ev];
       case 'away': return 'le mode absent ' + (x.on ? 's’active' : 'se coupe');
       case 'doorbell': return 'on sonne';
-      case 'tempo': return 'demain est un jour ' + x.color;
       case 'vigil': return 'vigilance ' + ({ 2: 'jaune', 3: 'orange', 4: 'rouge' })[x.level || 3] + ' ou plus';
       case 'alarm': return kind === 'if' ? 'l’alarme est ' + ({ armed: 'activée', disarmed: 'désactivée', triggered: 'déclenchée' })[x.is] : 'l’alarme ' + ({ triggered: 'se déclenche', armed: 's’active', disarmed: 'se coupe' })[x.status];
       case 'night': return x.is === false ? 'il fait jour' : 'il fait nuit';
@@ -113,6 +113,14 @@
       case 'notify': return 'notifier ' + ({ all: 'tout le monde', admins: 'les admins' }[x.who || 'all'] || 'un membre') + ' : « ' + (x.message || x.title || '') + ' »';
       case 'say': return 'annoncer « ' + (x.text || '') + ' »';
       case 'delay': return 'attendre ' + (x.sec >= 60 ? Math.round(x.sec / 60) + ' min' : x.sec + ' s');
+      case 'detect': return 'la caméra ' + (x.cam ? '« ' + x.cam.replace(/_/g, ' ') + ' » ' : '') + 'voit ' + ({ person: 'une personne', car: 'une voiture', dog: 'un chien', cat: 'un chat', package: 'un colis' }[x.label] || 'quelque chose');
+      case 'list': return kind === 'then' ? 'ajouter « ' + (x.text || '') + ' » à la liste ' + (x.list === 'taches' ? 'des tâches' : 'de courses') : 'on ajoute quelque chose à la liste ' + (x.list === 'taches' ? 'des tâches' : x.list === 'courses' ? 'de courses' : '');
+      case 'scene': return 'scène « ' + ((((B.P || {}).cfg || {}).scenes || []).find(s => s.id === x.id) || {}).name + ' »';
+      case 'heat': return 'chauffage « ' + ((((B.P || {}).cfg || {}).heat || { zones: [] }).zones.find(z => z.id === x.zone) || {}).name + ' » : ' + ({ auto: 'automatique', comfort: 'confort', eco: 'éco', frost: 'hors-gel', off: 'arrêt', boost: 'boost 1 h' }[x.mode || 'auto']);
+      case 'board': return 'afficher « ' + (x.text || '') + ' » sur les tablettes';
+      case 'water': return 'arroser si la météo le permet';
+      case 'tempo': return kind === 'if' ? 'aujourd’hui est un jour ' + (x.color || 'rouge') : 'demain est un jour ' + x.color;
+      case 'sim': return x.is === false ? 'la simulation de présence est arrêtée' : 'la simulation de présence tourne';
     }
     if (x.type === 'away' && kind === 'then') return (x.on ? 'activer' : 'couper') + ' le mode absent';
     return x.type;
@@ -124,12 +132,12 @@
   const actSay = a => a.type === 'device' ? patchTxt(a.patch) + ' « ' + dname(a.dev) + ' »' : a.type === 'away' ? (a.on ? 'activer' : 'couper') + ' le mode absent' : a.type === 'alarm' ? ({ armed_away: 'activer l’alarme (absence)', armed_night: 'activer l’alarme (nuit)', disarmed: 'désactiver l’alarme' })[a.mode] : says(a, 'then');
   const patchTxt = p => p ? ('on' in p ? (p.on ? 'allumer' : 'éteindre') : 'pos' in p ? (p.pos >= 100 ? 'ouvrir' : p.pos <= 0 ? 'fermer' : 'ouvrir à ' + p.pos + ' %') : 'locked' in p ? (p.locked ? 'verrouiller' : 'déverrouiller') : 'bri' in p ? 'régler à ' + p.bri + ' %' : 'temp' in p ? 'régler à ' + p.temp + ' °C' : 'status' in p ? 'lancer' : 'commander') : '';
   const sentence = r => 'Quand ' + (r.when || []).map(t => says(t, 'when')).join(' ou ') + ((r.if || []).length ? ', si ' + r.if.map(c => says(c, 'if')).join(' et ') : '') + ' → ' + (r.then || []).map(actSay).join(', puis ');
-  B.ruleSentence = sentence;
+  B.ruleSentence = sentence; B.ruleSays = says; B.ruleActSay = a => actSay(a);
 
   RENDER.blist = () => {
     if (!srv() || BR.ok === false) return RENDER.alist0 ? RENDER.alist0() : '';
     const rules = (BR.cfg && BR.cfg.rules) || [], fired = (BR.status && BR.status.fired) || {};
-    return '<div class="list scroll" style="flex:1">' + (rules.length ? rules.map(r => '<div class="li auto"><span class="ic">' + ico({ time: 'calendar', sun: 'sun2', device: 'plug', presence: 'family', away: 'walk', doorbell: 'bellFill', tempo: 'boltPlain', vigil: 'alert', alarm: 'shieldCheck' }[((r.when || [])[0] || {}).type] || 'sparkle') + '</span>' +
+    return '<div class="list scroll" style="flex:1">' + (rules.length ? rules.map(r => '<div class="li auto"><span class="ic">' + ico({ time: 'calendar', sun: 'sun2', device: 'plug', presence: 'family', away: 'walk', doorbell: 'bellFill', tempo: 'boltPlain', vigil: 'alert', alarm: 'shieldCheck', detect: 'cctv', list: 'check' }[((r.when || [])[0] || {}).type] || 'sparkle') + '</span>' +
       '<div><b>' + esc(r.name || 'Règle') + '</b><small>' + esc(sentence(r)) + (fired[r.id] ? ' · dernière fois ' + new Date(fired[r.id]).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : '') + '</small></div>' +
       '<div class="row" style="gap:6px"><button class="sw sm' + (r.on !== false ? ' on' : '') + '" data-act="ruleToggle" data-arg="' + r.id + '" role="switch" aria-label="Activer"></button><button class="sq" data-act="ruleEdit" data-arg="' + r.id + '" aria-label="Modifier">' + ico('edit') + '</button></div></div>').join('') : '<p class="muted" style="font-size:13px">Aucune règle pour l’instant.</p>') + '</div>' +
       '<div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="btn pri" data-act="ruleEdit">' + ico('plus') + 'Nouvelle règle</button>' + ((S.autos || []).length ? '<button class="btn" data-act="ruleImport">' + ico('download') + 'Reprendre les automatismes de cet écran</button>' : '') + '<button class="btn" data-act="presenceCfg">' + ico('family') + 'Présence</button></div>' +
@@ -163,6 +171,13 @@
       case 'notify': return sel(p + 'who', x.who || 'all', [['all', 'tout le monde'], ['admins', 'les admins']].concat(S.users.map(u => [u.id, u.name]))) + inp(p + 'title', x.title, 'text', 'Titre') + inp(p + 'message', x.message, 'text', 'Message') + '<label class="rlck"><input type="checkbox" data-change="rlCk" data-arg="' + p + 'critical"' + (x.critical ? ' checked' : '') + '>critique</label><label class="rlck"><input type="checkbox" data-change="rlCk" data-arg="' + p + 'photo"' + (x.photo ? ' checked' : '') + '>photo caméra</label>';
       case 'say': return inp(p + 'text', x.text, 'text', 'On sonne à la porte');
       case 'delay': return inp(p + 'sec', x.sec || 60, 'number', 'secondes');
+      case 'detect': return inp(p + 'cam', x.cam || '', 'text', 'caméra (vide = toutes)') + sel(p + 'label', x.label || 'person', [['person', 'personne'], ['car', 'voiture'], ['dog', 'chien'], ['cat', 'chat'], ['package', 'colis']]);
+      case 'list': return sel(p + 'list', x.list || 'courses', [['courses', 'courses'], ['taches', 'tâches']]) + (sec === 'then' ? inp(p + 'text', x.text, 'text', 'Piles AA') : '');
+      case 'scene': return sel(p + 'id', x.id || '', [['', '— scène —']].concat((((B.P || {}).cfg || {}).scenes || []).map(s => [s.id, s.name])));
+      case 'heat': return sel(p + 'zone', x.zone || '', [['', '— zone —']].concat(((((B.P || {}).cfg || {}).heat || {}).zones || []).map(z => [z.id, z.name]))) + sel(p + 'mode', x.mode || 'eco', [['auto', 'automatique'], ['comfort', 'confort'], ['eco', 'éco'], ['frost', 'hors-gel'], ['off', 'arrêt'], ['boost', 'boost 1 h']]);
+      case 'board': return inp(p + 'text', x.text, 'text', 'Pensez à fermer le garage') + inp(p + 'hours', x.hours || 6, 'number', 'heures');
+      case 'water': return '<span class="muted">selon les réglages de l’arrosage</span>';
+      case 'sim': return sel(p + 'is', String(x.is !== false), [['true', 'tourne'], ['false', 'est arrêtée']]);
     }
     return '';
   }
@@ -182,6 +197,8 @@
   function norm(r) {
     const o = JSON.parse(JSON.stringify(r)), typ = v => v === 'true' ? true : v === 'false' ? false : v !== '' && v != null && !isNaN(v) ? +v : v;
     ['when', 'if'].forEach(s => o[s].forEach(x => { if (x.type === 'device') { const k = DATA.DEVICES[x.dev] ? B.kindOf(DATA.DEVICES[x.dev]) : ''; x.prop = x.prop || PROPS(k)[0][0]; x.op = x.op || '=='; if (x.op !== 'changes') x.value = typ(x.value == null ? true : x.value); if (x.for) x.for = +x.for; else delete x.for; } ['on', 'is'].forEach(k => { if (k in x) x[k] = typ(x[k]); }); if ('level' in x) x.level = +x.level; if ('off' in x) x.off = +x.off || 0; }));
+    const DEF = { tempo: { color: 'rouge' }, detect: { label: 'person' }, list: { list: 'courses' }, heat: { mode: 'eco' }, board: { hours: 6 } };
+    ['when', 'if', 'then'].forEach(sx => o[sx].forEach(x => { Object.keys(DEF[x.type] || {}).forEach(k => { if (x[k] == null || x[k] === '') x[k] = DEF[x.type][k]; }); }));
     o.then.forEach(a => { if (a.type === 'device') { a.patch = toPatch(a); } if (a.type === 'away') a.on = typ(a.on === undefined ? true : a.on); if (a.type === 'delay') a.sec = +a.sec || 60; });
     return o;
   }

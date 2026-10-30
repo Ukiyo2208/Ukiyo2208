@@ -19,6 +19,9 @@ module.exports = function engine(DATA, send, readBody, M) {
   const events = [];
   const emit = ev => { ev.t = Date.now(); events.push(ev); while (events.length > 100) events.shift(); };
   const log = [];   // journal des règles (affiché dans Bêta home)
+  const trace = [];   // pourquoi chaque règle s'est déclenchée… ou pas (« bloquée car il ne fait pas nuit »), simulations comprises
+  const addTrace = x => { x.t = Date.now(); trace.unshift(x); trace.length = Math.min(trace.length, 150); };
+  const EXT = { acts: {}, tick: [], conds: {} };   // extensions (server/plus.js) : actions « scène », « liste »…, tâches de la boucle
   const note = (txt, icon) => { log.unshift({ t: Date.now(), txt, icon: icon || 'sparkle' }); log.length = Math.min(log.length, 80); };
   let cur = {}, prev = {};   // états des appareils (identifiants Bêta)
 
@@ -70,6 +73,8 @@ module.exports = function engine(DATA, send, readBody, M) {
     if (c.type === 'device') return cmp(val(cur[c.dev], c.prop), c.op, c.value);
     if (c.type === 'someone') return Object.values(S.presence).some(Boolean) === (c.is !== false);
     if (c.type === 'alarm') return S.alarm.status === c.is;
+    if (c.type === 'tempo') return !!S.tempo && S.tempo.today === c.color;
+    if (EXT.conds[c.type]) return EXT.conds[c.type](c);
     return true;
   }
   function trigMatch(t, ev) {
@@ -82,16 +87,23 @@ module.exports = function engine(DATA, send, readBody, M) {
     if (t.type === 'tempo') return t.color === ev.color;
     if (t.type === 'vigil') return ev.level >= (t.level || 3);
     if (t.type === 'alarm') return t.status === ev.status;
+    if (t.type === 'detect') return (!t.cam || t.cam === ev.cam) && (!t.label || t.label === ev.label);
+    if (t.type === 'list') return !t.list || t.list === ev.list;
     return t.type === 'doorbell';
   }
   const running = {};
-  async function fire(rule, why) {
-    if (running[rule.id] && Date.now() - running[rule.id] < 20000) return;   // pas de rafale
-    if (!(rule.if || []).every(condOk)) return;
+  async function fire(rule, why, o) {
+    o = o || {};
+    if (!o.dry && running[rule.id] && Date.now() - running[rule.id] < 20000) return;   // pas de rafale
+    const failed = (rule.if || []).filter(c => !condOk(c));
+    if (failed.length) { addTrace({ id: rule.id, name: rule.name, why, ok: false, failed, sim: !!o.sim, dry: !!o.dry }); return; }
+    if (o.dry) { addTrace({ id: rule.id, name: rule.name, why, ok: true, dry: true, sim: true, acts: rule.then || [] }); return; }   // simulation : rien n'est exécuté
+    addTrace({ id: rule.id, name: rule.name, why, ok: true, sim: !!o.sim, acts: rule.then || [] });
     running[rule.id] = Date.now(); S.fired[rule.id] = Date.now(); note((rule.name || 'Règle') + (why ? ' · ' + why : ''), 'sparkle');
     for (const a of rule.then || []) {
       try {
-        if (a.type === 'device') await command(a.dev, a.patch);
+        if (EXT.acts[a.type]) await EXT.acts[a.type](a, rule);
+        else if (a.type === 'device') await command(a.dev, a.patch);
         else if (a.type === 'routine') await runRoutine(a.id, rule.name);
         else if (a.type === 'notify') await NOTIFY.sendTo({ title: a.title || rule.name || 'Bêta home', message: a.message || '', critical: a.critical, urgent: a.urgent, go: a.go || 'accueil', image: a.photo ? await NOTIFY.snapshot().catch(() => null) || undefined : undefined }, a.who || 'all');
         else if (a.type === 'say') { await say(a.text); }
@@ -102,7 +114,7 @@ module.exports = function engine(DATA, send, readBody, M) {
     }
     save();
   }
-  function dispatch(ev) { (C.rules || []).filter(r => r.on !== false && (r.when || []).some(t => trigMatch(t, ev))).forEach(r => fire(r, ev.why)); }
+  function dispatch(ev) { (C.rules || []).filter(r => r.on !== false && (r.when || []).some(t => trigMatch(t, ev))).forEach(r => fire(r, ev.why, { dry: ev.dry, sim: ev.sim })); }
   // annonce sur les tablettes (Fully Kiosk) et sur les écrans ouverts
   async function say(text) {
     emit({ type: 'say', text });
@@ -293,8 +305,9 @@ module.exports = function engine(DATA, send, readBody, M) {
         if (!S.fired[k] && Date.now() - running[k + 's'] >= t.for * 6e4) { S.fired[k] = Date.now(); fire(r, (C.devices[t.dev] || {}).name + ' depuis ' + t.for + ' min'); }
       }));
       presence(st); alarmTick(changes); record();
-      const now = new Date(), t = hm(now);
-      if (t !== lastMin) {
+      const now = new Date(), t = hm(now), minute = t !== lastMin;
+      EXT.tick.forEach(f => { try { f({ changes, st, t, now, minute }); } catch (e) { console.warn('extension : ' + e.message); } });
+      if (minute) {
         lastMin = t;
         dispatch({ type: 'time', hm: t, day: now.getDay() });
         C.routines.filter(r => r.sched && r.time === t && (!r.days || !r.days.length || r.days.includes(now.getDay()))).forEach(r => runRoutine(r.id, 'programmée'));
@@ -329,6 +342,19 @@ module.exports = function engine(DATA, send, readBody, M) {
       return send(res, 200, view());
     }
     if (p === '/api/engine/status' && m === 'GET') return send(res, 200, { now: Date.now(), away: NOTIFY.isAway(), presence: S.presence, alarm: S.alarm, tempo: S.tempo, vigil: S.vigil, night: isNight(), sun: sunT, log: log.slice(0, 30), fired: S.fired });
+    if (p === '/api/engine/trace' && m === 'GET') { const id = url.searchParams.get('id'); return send(res, 200, trace.filter(x => !id || x.id === id).slice(0, 60)); }
+    // mode test : un évènement « pour de faux » ; par défaut les actions ne sont pas exécutées (dry)
+    if (p === '/api/engine/sim' && m === 'POST') {
+      const b = await readBody(req) || {}, dry = b.real !== true, t0 = Date.now(), ev = { sim: true, dry };
+      if (b.kind === 'device') { const c0 = cur[b.dev] || {}; Object.assign(ev, { type: 'device', dev: b.dev, prev: c0, cur: Object.assign({}, c0, b.state || {}), why: 'simulation : ' + ((C.devices[b.dev] || {}).name || b.dev) }); }
+      else if (b.kind === 'presence') Object.assign(ev, { type: 'presence', ev: b.ev, user: b.user, why: 'simulation : ' + ({ arrive: 'arrivée', leave: 'départ', all_away: 'tout le monde part', first_home: 'premier retour' }[b.ev] || b.ev) });
+      else if (b.kind === 'time') { const d = new Date(); Object.assign(ev, { type: 'time', hm: b.at || hm(d), day: b.day != null ? +b.day : d.getDay(), why: 'simulation : ' + (b.at || hm(d)) }); }
+      else if (b.kind === 'sun') { ev.why = 'simulation : ' + (b.ev === 'sunrise' ? 'lever' : 'coucher') + ' du soleil'; (C.rules || []).filter(r => r.on !== false && (r.when || []).some(x => x.type === 'sun' && x.ev === b.ev)).forEach(r => fire(r, ev.why, ev)); }
+      else Object.assign(ev, { type: b.kind, on: b.on, color: b.color, level: +b.level || 3, status: b.status, cam: b.cam, label: b.label, list: b.list, why: 'simulation : ' + b.kind });
+      if (ev.type) dispatch(ev);
+      await new Promise(r => setTimeout(r, 250));
+      return send(res, 200, { dry, trace: trace.filter(x => x.t >= t0) });
+    }
     if (p === '/api/engine/events' && m === 'GET') { const t = +url.searchParams.get('since') || 0; return send(res, 200, { now: Date.now(), events: events.filter(e => e.t > t), alarm: S.alarm, away: NOTIFY.isAway() }); }
     if (p === '/api/engine/claim' && m === 'POST') { const b = await readBody(req) || {}, e = events.find(x => x.t === +b.t && x.type === b.type); if (!e || e.claimed) return send(res, 200, { ok: false }); e.claimed = true; return send(res, 200, { ok: true }); }
     if (p === '/api/engine/routine' && m === 'POST') { const b = await readBody(req) || {}; await runRoutine(b.id, b.by); return send(res, 200, { ok: true }); }
@@ -347,5 +373,7 @@ module.exports = function engine(DATA, send, readBody, M) {
     if (p === '/api/engine/trash' && m === 'GET') return send(res, 200, await trashDays(Math.min(+url.searchParams.get('days') || 45, 120)));
     return false;
   }
-  return { api, runRoutine, isNight, status: () => ({ alarm: S.alarm, presence: S.presence }), _test: { sun, trashDays, history } };
+  // pour server/plus.js
+  const X = { C, S, EXT, cur: () => cur, command, dispatch, emit, note, say, isNight, home, hm, ymd, sun, runRoutine, setAlarm, trigger, save, persist, history, HDIR, trashDays };
+  return { api, runRoutine, isNight, X, status: () => ({ alarm: S.alarm, presence: S.presence }), _test: { sun, trashDays, history } };
 };

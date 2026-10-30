@@ -27,11 +27,12 @@ const BRIDGE = require('./bridge')(DATA, send, readBody, HUB, NOTIFY); // pont M
 const AUTH = require('./auth')(DATA, send, readBody, KEY);             // écrans associés, codes PIN, mode sécurisé
 const ENGINE = require('./engine')(DATA, send, readBody, { HUB, NOTIFY, GEO, BRIDGE, CAMS, AUTH });   // cerveau : routines, règles, présence, alarme
 BRIDGE.setRunner((id, by) => ENGINE.runRoutine(id, by));   // « Alexa, allume Soirée ciné » exécuté par le NAS
+const PLUS = require('./plus')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, AUTH });   // sauvegardes, scènes, chauffage, énergie, arrosage, Siri, listes, Frigate
 
 /* ---------- API ---------- */
 async function api(req, res, url) {
   const p = url.pathname, m = req.method;
-  if (p === '/api/ping') return send(res, 200, { ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now(), hub: true, discover: true, notify: true, geo: true, bridge: true, engine: true, auth: true });
+  if (p === '/api/ping') return send(res, 200, { ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now(), hub: true, discover: true, notify: true, geo: true, bridge: true, engine: true, auth: true, plus: true, sha: process.env.BETA_SHA || 'dev' });
   if (p === '/api/hub/oauth/callback') return HUB.callback(req, res, url);
   if (p === '/api/owntracks') return GEO.api(req, res, url);   // identifiants propres à chaque téléphone
   if (p === '/api/auth/pair' && m === 'POST') return AUTH.pair(req, res);   // association d'un écran avec le code à 6 chiffres
@@ -43,6 +44,7 @@ async function api(req, res, url) {
   if (AUTH.needAdmin(p, m) && !w.admin) return send(res, 401, { error: 'réservé à un administrateur (code PIN)', need: 'admin' });
   if (p === '/api/auth' || p.startsWith('/api/auth/')) { const r0 = await AUTH.api(req, res, url, w); if (r0 !== false) return; }
   if (p === '/api/engine' || p.startsWith('/api/engine/') || p === '/api/history') { const r0 = await ENGINE.api(req, res, url, w); if (r0 !== false) return; }
+  if (p === '/api/plus' || p.startsWith('/api/plus/') || p === '/api/quick' || p === '/api/energy') { const r0 = await PLUS.api(req, res, url, w); if (r0 !== false) return; }
   if (p === '/api/hub' || p.startsWith('/api/hub/')) return HUB.api(req, res, url);
   if (p === '/api/discover' || p.startsWith('/api/cams')) { const r0 = await CAMS.api(req, res, url); if (r0 !== false) return; }
   if (p === '/api/bridge' || p.startsWith('/api/bridge/')) { const r0 = await BRIDGE.api(req, res, url); if (r0 !== false) return; }

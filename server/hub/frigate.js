@@ -4,13 +4,14 @@
 const { request } = require('./net');
 const base = c => { const h = String(c.host || '').trim().replace(/\/+$/, ''); return /^https?:\/\//.test(h) ? h : 'http://' + (/:\d+$/.test(h) ? h : h + ':5000'); };
 const sess = {};
-async function api(c, path) {
+async function api(c, path, bin) {
   const b = base(c), h = {};
   if (c.user) {   // Frigate 0.14+ sur le port 8971 : connexion par identifiant
     if (!sess[b] || Date.now() - sess[b].at > 3600e3) { const r = await request(b + '/api/login', { insecure: true, body: { user: c.user, password: c.password || '' }, raw: true }); if (r.status >= 400) throw new Error('identifiant Frigate refusé'); sess[b] = { cookie: (r.headers['set-cookie'] || []).map(x => x.split(';')[0]).join('; '), at: Date.now() }; }
     h.Cookie = sess[b].cookie;
   }
-  return (await request(b + path, { insecure: true, headers: h, timeout: 8000 })).json();
+  const r = await request(b + path, { insecure: true, headers: h, timeout: 8000 });
+  return bin ? r.buf : r.json();
 }
 const LBL = { person: 'personne', car: 'voiture', dog: 'chien', cat: 'chat', bicycle: 'vélo', motorcycle: 'moto', bird: 'oiseau', package: 'colis' };
 module.exports = {
@@ -23,5 +24,10 @@ module.exports = {
       return { id: cam, name: 'Détection ' + cam.replace(/_/g, ' '), kind: 'motion', info: 'Frigate', state: { on: live.length > 0, label: live[0] ? (LBL[live[0].label] || live[0].label) : '', last: last ? Math.round(last.start_time * 1000) : 0 } };
     });
   },
-  async command() { }
+  async command() { },
+  // pour la détection sur le serveur (server/plus.js) : évènements récents, photo d'un évènement, caméras et zones
+  events: (c, after) => api(c, '/api/events?limit=30&include_thumbnails=0&after=' + Math.floor(after)),
+  snap: (c, id) => api(c, '/api/events/' + encodeURIComponent(id) + '/snapshot.jpg?bbox=1', true),
+  config: c => api(c, '/api/config'),
+  LBL
 };

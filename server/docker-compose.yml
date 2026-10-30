@@ -18,8 +18,10 @@ services:
       - BACKUP_KEEP=30                                # nombre de sauvegardes gardées
       - GO2RTC_URL=http://127.0.0.1:1984             # go2rtc ci-dessous
       - TZ=Europe/Paris
+      # - WATCHTOWER_TOKEN=une-autre-longue-phrase   # mises à jour depuis Bêta home (service watchtower ci-dessous)
     volumes:
       - ./data:/data                                  # sauvegardes, journal, caméras, config go2rtc
+      # - /mnt/@usb/sdb1/beta-backup:/backup          # clé USB : sauvegardes de la nuit copiées dans /backup (Paramètres › Sauvegarde)
 
   # Caméras : direct vidéo pour Bêta home + pont HomeKit (app Maison) pour les seules caméras.
   # Sa configuration (data/go2rtc.yaml) est écrite par Bêta home ; ne la modifiez pas à la main.
@@ -145,3 +147,20 @@ services:
   #   volumes:
   #     - ./data/tailscale:/var/lib/tailscale
   #     - ./tailscale:/config
+
+  # Mises à jour depuis Bêta home (Paramètres › Mises à jour) : Watchtower télécharge la nouvelle image et redémarre.
+  # Mettez la même phrase dans WATCHTOWER_TOKEN ici et dans le service beta-home.
+  # watchtower:
+  #   image: containrrr/watchtower:latest
+  #   container_name: watchtower
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8092:8080"
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   environment:
+  #     - WATCHTOWER_HTTP_API_UPDATE=true
+  #     - WATCHTOWER_HTTP_API_TOKEN=une-autre-longue-phrase
+  #     - WATCHTOWER_HTTP_API_PERIODIC_POLLS=false
+  #     - WATCHTOWER_CLEANUP=true
+  #   command: beta-home beta-matter-bridge

@@ -6,7 +6,7 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 
-const RULES = ['doorbell', 'person', 'garage', 'leak', 'alarm', 'trash', 'appliance', 'weather', 'away', 'presence', 'tempo', 'health'];
+const RULES = ['doorbell', 'person', 'garage', 'leak', 'alarm', 'trash', 'appliance', 'weather', 'away', 'presence', 'tempo', 'health', 'energy', 'water'];
 module.exports = function notify(DATA, send, readBody, HUB, CAMS) {
   const FILE = path.join(DATA, 'notify.json');
   let C = {}; try { C = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch (e) { }

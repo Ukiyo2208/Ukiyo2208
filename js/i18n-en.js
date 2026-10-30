@@ -67,4 +67,6 @@ window.BETA_EN = {
   'Chercher mes appareils': 'Find my devices', 'Recherche de vos appareils…': 'Looking for your devices…', 'Vous avez aussi… ?': 'Do you also have…?', 'Les infos importantes': 'The important details', 'Tout connecter': 'Connect everything', 'Votre maison est prête': 'Your home is ready', 'Prénom': 'First name',
   // 7.11 compléments
   'Profils, connexions et préférences': 'Profiles, connections and preferences', 'Règles actives': 'Active rules', 'L’alarme maison tourne sur le serveur Bêta du NAS : reliez-le d’abord (Connexions).': 'The home alarm runs on the Bêta server of your NAS: connect it first (Connections).',
+  // 7.12
+  'Scènes': 'Scenes', 'Chauffage': 'Heating', 'Listes': 'Lists', 'Outils': 'Tools', 'Courses': 'Shopping', 'Tâches': 'Tasks', 'Messages sur les tablettes': 'Messages on tablets', 'Zones de chauffage': 'Heating zones', 'Nouvelle zone': 'New zone', 'Nouvelle scène': 'New scene', 'Lumière de la journée': 'Daylight', 'Outils de la maison': 'Home tools', 'Sauvegarde': 'Backup', 'Mises à jour': 'Updates', 'Journal': 'Log', 'Tester': 'Test', 'Coûts en €': 'Costs in €'
 };

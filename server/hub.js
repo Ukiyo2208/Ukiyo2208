@@ -103,5 +103,5 @@ module.exports = function hub(DATA, send, readBody) {
   // pour les autres modules du serveur (notifications 24 h/24, pont Alexa)
   async function command(brand, id, patch, cur) { const b = BRANDS[brand]; if (!b) throw new Error('marque inconnue'); await b.command(cfg(brand), id, patch || {}, cur || {}, helper(b)); if (cache[brand]) cache[brand].at = 0; }
   const configured = () => Object.keys(BRANDS).filter(id => CFG[id] && Object.keys(CFG[id]).some(k => !['status', 'info'].includes(k)));
-  return { callback, api, states, command, configured, cfg: id => cfg(id) };
+  return { callback, api, states, command, configured, cfg: id => cfg(id), brand: id => BRANDS[id] };
 };

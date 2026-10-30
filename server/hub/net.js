@@ -15,8 +15,8 @@ function request(url, o) {
     const req = lib.request(u, { method: o.method || (body != null ? 'POST' : 'GET'), headers, rejectUnauthorized: !o.insecure, timeout: o.timeout || 15000 }, res => {
       const ch = []; res.on('data', c => ch.push(c));
       res.on('end', () => {
-        const text = Buffer.concat(ch).toString('utf8');
-        const r = { status: res.statusCode, headers: res.headers, text, json() { try { return JSON.parse(text); } catch (e) { return null; } } };
+        const buf = Buffer.concat(ch), text = buf.toString('utf8');
+        const r = { status: res.statusCode, headers: res.headers, text, buf, json() { try { return JSON.parse(text); } catch (e) { return null; } } };
         if (o.raw || (res.statusCode >= 200 && res.statusCode < 300)) return ok(r);
         const j = r.json(), msg = j && (j.error_description || j.message || j.error && (j.error.description || j.error.message || j.error) || j.errorCode);
         ko(new Error('HTTP ' + res.statusCode + (msg ? ' : ' + (typeof msg === 'string' ? msg : JSON.stringify(msg)) : '')));
