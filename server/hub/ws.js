@@ -8,7 +8,7 @@ function connect(url, o) {
   return new Promise((ok, ko) => {
     const u = new URL(url), secure = u.protocol === 'wss:', port = +u.port || (secure ? 443 : 80), key = crypto.randomBytes(16).toString('base64');
     const sock = secure ? tls.connect(Object.assign({ host: u.hostname, port, rejectUnauthorized: false }, net.isIP(u.hostname) ? {} : { servername: u.hostname })) : net.connect({ host: u.hostname, port });
-    const ws = { onmessage: null, onclose: null, open: false, send, close, sock };
+    const ws = { onmessage: null, onclose: null, open: false, send, close, sock, early: [] };   // early : messages reçus avant qu'on écoute
     let buf = Buffer.alloc(0), head = true, frag = [];
     const timer = setTimeout(() => { sock.destroy(); ko(new Error('appareil injoignable')); }, o.timeout || 6000);
     sock.on(secure ? 'secureConnect' : 'connect', () => {
@@ -32,7 +32,7 @@ function connect(url, o) {
         if (mk) p = Buffer.from(p.map((b, i) => b ^ mk[i % 4]));
         if (op === 9) { frame(10, p); continue; }        // ping → pong
         if (op === 8) { close(); continue; }
-        if (op === 1 || op === 2 || op === 0) { frag.push(p); if (fin) { const m = Buffer.concat(frag).toString('utf8'); frag = []; if (ws.onmessage) try { ws.onmessage(m); } catch (e) { } } }
+        if (op === 1 || op === 2 || op === 0) { frag.push(p); if (fin) { const m = Buffer.concat(frag).toString('utf8'); frag = []; if (ws.onmessage) try { ws.onmessage(m); } catch (e) { } else ws.early.push(m); } }
       }
     });
     sock.on('error', e => { clearTimeout(timer); if (!ws.open) ko(new Error('appareil injoignable (' + (e.code || e.message) + ')')); });

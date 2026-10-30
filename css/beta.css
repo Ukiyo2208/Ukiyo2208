@@ -2024,3 +2024,23 @@ html.fluid .ftop .fright { flex-shrink: 0; }
 .mbsteps { margin: 14px 0 8px; font-size: 12.5px; }
 .mbnote { display: flex; gap: 8px; font-size: 12px; line-height: 1.5; margin: 0; }
 @media (max-width: 760px) { .mbgrid { grid-template-columns: 1fr; } .mbstat { flex-wrap: wrap; } .mbcode { text-align: left; } }
+
+/* ---------- 7.8 : marques par catégorie, recherche, marques masquées ---------- */
+.hubbar { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.hfind { flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: 11px; background: rgba(6, 16, 40, .7); border: 1px solid rgba(90, 160, 255, .28); }
+.hfind .ico { color: #7fb6ff; font-size: 16px; }
+.hfind input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: #fff; font-size: 14px; }
+.hcat { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin: 10px 0 0; font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #7fb6ff; }
+.hcat .ico { font-size: 18px; color: #2fd3ff; }
+.hcat small { margin-left: 4px; padding: 1px 8px; border-radius: 9px; background: rgba(47, 182, 255, .14); color: #bfe4ff; font-size: 11.5px; letter-spacing: 0; }
+.bcintro { margin: 0 0 12px; font-size: 13px; line-height: 1.5; }
+.bcbtns { gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.bcbtns .muted { margin-left: auto; font-size: 12.5px; }
+.bcgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 20px; }
+.bcgrid h4 { margin: 0 0 6px; font-size: 12.5px; letter-spacing: 1px; text-transform: uppercase; color: #7fb6ff; }
+.bcgrid h4 label { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+.bcgrid input { width: 16px; height: 16px; accent-color: #2fb6ff; flex: none; }
+.bcrow { display: flex; align-items: center; gap: 8px; padding: 4px 2px; font-size: 13.5px; cursor: pointer; }
+.bcrow small.tag2 { font-size: 10.5px; padding: 1px 6px; }
+@media (max-width: 900px) { .bcgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .bcgrid { grid-template-columns: 1fr; } }

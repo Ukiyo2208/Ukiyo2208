@@ -189,3 +189,18 @@ La découverte trouve aussi les TV Samsung, LG et Philips, et (par diffusion UDP
 **docker-compose** : blocs prêts à décommenter pour `matter-server`, `music-assistant`, `ntfy` et `matter-bridge`.
 
 Toujours en préparation : Ford (API fragile, lecture seule), Roborock, Verisure, Viessmann, HomePod.
+
+## 64 marques, rangées et masquables (7.8)
+
+**Page Marques** : les marques sont rangées par catégorie (Éclairage, Prises et modules, Ponts, TV et musique, Chauffage, Sécurité et caméras, Énergie, Box internet, Robots et jardin), avec une recherche. **Paramètres › Marques** (ou « Choisir les marques ») : décochez celles que vous n'avez pas. Une marque masquée disparaît de la page, n'est plus interrogée et ses appareils sont mis en pause ; rien n'est effacé. Le bouton « Seulement celles que j'utilise » fait le tri d'un coup.
+
+**35 nouvelles marques** :
+- **Caméras et sécurité** : Frigate (détection IA locale), Reolink (caméras et sonnette), UniFi Protect, Hikvision et Dahua (flux d'évènements en direct), Nuki (serrure), Verisure (alarme, API non officielle avec code SMS).
+- **Box et présence** : Freebox (API officielle), Livebox, Bbox — qui est à la maison d'après les téléphones connectés, Wi-Fi marche/arrêt.
+- **Énergie** : Linky (conso.boris.sh), panneaux solaires (Fronius, Enphase, SMA, Huawei), bornes Wallbox et Easee, et un **serveur OCPP 1.6** intégré pour toute borne compatible (Schneider, ABB, Alfen, Keba…).
+- **Chauffage et climat** : Netatmo / Legrand with Netatmo, tado°, Sensibo, Cozytouch (Atlantic, Thermor, Sauter — API non officielle), Viessmann, station Ecowitt.
+- **Ponts** : Tuya en local (protocoles 3.3 et 3.4), IKEA Dirigera, Z-Wave JS, deCONZ / Phoscon, SwitchBot, MQTT « découverte » (LinknLink, OpenBeken…).
+- **TV et musique** : Spotify, Yamaha MusicCast, Bose SoundTouch, TV Sony Bravia, Fire TV / Android TV (débogage réseau), Jellyfin.
+- **Robots et jardin** : Valetudo, Husqvarna Automower et Gardena smart system.
+
+HomePod passe déjà par Music Assistant (AirPlay), les Roborock récents par Matter ou Valetudo. Restent en préparation : Navimow (accès développeur Segway) et Ford (API fragile).

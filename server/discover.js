@@ -5,7 +5,7 @@
 const dgram = require('dgram'), net = require('net'), os = require('os'), http = require('http'), crypto = require('crypto');
 
 /* ---------- mDNS / Bonjour ---------- */
-const SERVICES = ['_hap._tcp', '_matter._tcp', '_matterc._udp', '_hue._tcp', '_elg._tcp', '_shelly._tcp', '_googlecast._tcp', '_airplay._tcp', '_raop._tcp', '_sonos._tcp',
+const SERVICES = ['_fbx-api._tcp', '_ihsp._tcp', '_soundtouch._tcp', '_androidtvremote2._tcp', '_valetudo._tcp', '_nuki._tcp', '_frigate._tcp', '_hap._tcp', '_matter._tcp', '_matterc._udp', '_hue._tcp', '_elg._tcp', '_shelly._tcp', '_googlecast._tcp', '_airplay._tcp', '_raop._tcp', '_sonos._tcp',
   '_spotify-connect._tcp', '_home-assistant._tcp', '_esphomelib._tcp', '_kizboxdev._tcp', '_rtsp._tcp', '_axis-video._tcp', '_ipp._tcp', '_printer._tcp', '_smb._tcp', '_amzn-wplay._tcp', '_wled._tcp', '_nanoleafapi._tcp', '_mqtt._tcp', '_heos-audio._tcp', '_http._tcp'];
 function dnsName(name) { return Buffer.concat(name.split('.').filter(Boolean).map(l => { const b = Buffer.from(l); return Buffer.concat([Buffer.from([b.length]), b]); }).concat([Buffer.from([0])])); }
 function dnsQuery(names) {
@@ -122,10 +122,14 @@ const KIND = [
   [/_spotify-connect/i, 'multimedia', 'Spotify Connect', ''], [/_amzn-wplay|amazon|echo/i, 'multimedia', 'Amazon Echo / Fire', 'alexa'],
   [/_wled\._tcp|wled/i, 'lampe', 'WLED', 'brand:wled'], [/_nanoleaf|nanoleaf/i, 'lampe', 'Nanoleaf', 'brand:nanoleaf'], [/_mqtt\._tcp|mosquitto/i, 'hub', 'Broker MQTT', 'brand:z2m'],
   [/_heos-audio|denon|marantz/i, 'multimedia', 'Denon / Marantz', 'brand:denon'], [/roku/i, 'multimedia', 'Roku', 'brand:roku'], [/yeelight/i, 'lampe', 'Yeelight', 'brand:yeelight'], [/daikin/i, 'clim', 'Daikin', 'brand:daikin'],
+  [/_fbx-api|freebox/i, 'box', 'Freebox', 'brand:freebox'], [/livebox|sagemcom.*orange/i, 'box', 'Livebox', 'brand:livebox'], [/bbox|bouygues/i, 'box', 'Bbox', 'brand:bbox'],
+  [/_ihsp\._tcp|dirigera/i, 'hub', 'IKEA Dirigera', 'brand:dirigera'], [/dresden elektronik|deconz|phoscon|conbee/i, 'hub', 'deCONZ', 'brand:deconz'], [/_nuki|nuki/i, 'hub', 'Nuki Bridge', 'brand:nuki'],
+  [/_soundtouch|bose/i, 'multimedia', 'Bose', 'brand:bose'], [/yamaha|musiccast/i, 'multimedia', 'Yamaha MusicCast', 'brand:musiccast'], [/bravia|sony.*tv/i, 'multimedia', 'TV Sony', 'brand:bravia'], [/_androidtvremote|android tv|aft[a-z]+|fire ?tv/i, 'multimedia', 'Android TV / Fire TV', 'brand:androidtv'],
+  [/_valetudo|valetudo/i, 'robot', 'Valetudo', 'brand:valetudo'], [/_frigate|frigate/i, 'nas', 'Frigate', 'brand:frigate'], [/reolink/i, 'camera', 'Reolink', 'camera'], [/hikvision|hikdigital/i, 'camera', 'Hikvision', 'camera'], [/dahua|amcrest/i, 'camera', 'Dahua', 'camera'],
   [/_ipp|_printer|printer|imprim/i, 'imprimante', 'Imprimante', ''], [/_smb\._tcp|nas|ugreen|synology|qnap/i, 'nas', 'NAS / partage', ''],
   [/samsung.*(tv|tizen)|tizen|\[tv\] samsung/i, 'multimedia', 'TV Samsung', 'brand:samsungtv'], [/webos|lg electronics|\blg tv/i, 'multimedia', 'TV LG', 'brand:lgtv'], [/philips.*(tv|android)|jointspace|_philipstv/i, 'multimedia', 'TV Philips', 'brand:philipstv'],
   [/\bkasa\b|tp-link smart|smartplug|^hs1\d\d|\bkp\d{3}/i, 'prise', 'TP-Link Kasa', 'brand:kasa'], [/tapo/i, 'prise', 'TP-Link Tapo', 'brand:tapo'], [/lifx/i, 'lampe', 'LIFX', 'brand:lifx'], [/broadlink|rm4|rm mini/i, 'telecommande', 'Broadlink', 'brand:broadlink'],
-  [/mediarenderer|samsung|lg |webos|bravia|philips tv|tv/i, 'multimedia', 'TV / lecteur', ''], [/internetgatewaydevice|freebox|livebox|bbox|fritz/i, 'box', 'Box internet', '']
+  [/mediarenderer|samsung|lg |webos|bravia|philips tv|tv/i, 'multimedia', 'TV / lecteur', ''], [/internetgatewaydevice|fritz/i, 'box', 'Box internet', '']
 ];
 function classify(d) {
   const s = [d.svc, d.name, d.maker, d.model, d.dtype, d.server, d.txt && JSON.stringify(d.txt)].filter(Boolean).join(' ');

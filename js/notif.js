@@ -88,7 +88,7 @@
 
 
   /* ---------- mode ntfy : réglages gardés par le serveur Bêta (il envoie 24 h/24) ---------- */
-  const hubDevs = test => Object.keys(S.settings.hubMap || {}).map(id => DATA.DEVICES[id] && Object.assign({ id, k: B.kindOf ? B.kindOf(DATA.DEVICES[id]) : DATA.DEVICES[id].type }, DATA.DEVICES[id])).filter(d => d && (!test || test(d)));
+  const hubDevs = test => Object.keys(S.settings.hubMap || {}).filter(id => !(B.brandOff && B.brandOff(S.settings.hubMap[id].brand))).map(id => DATA.DEVICES[id] && Object.assign({ id, k: B.kindOf ? B.kindOf(DATA.DEVICES[id]) : DATA.DEVICES[id].type }, DATA.DEVICES[id])).filter(d => d && (!test || test(d)));
   const WATCH_KINDS = ['leak', 'motion', 'door', 'alarm', 'app', 'garage'];
   function watchList() {
     return hubDevs().map(d => { const r = S.settings.hubMap[d.id], role = d.id === N.bell ? 'doorbell' : d.id === N.garage ? 'garage' : ''; return (role || WATCH_KINDS.includes(d.k)) ? { brand: r.brand, id: r.id, kind: d.k, name: d.name, room: d.room || '', role } : null; }).filter(Boolean);
@@ -237,5 +237,5 @@
   const conn0 = B.RENDER.conn;
   if (conn0) B.RENDER.conn = s => conn0(s).replace('<div class="csave">', '<div class="ccard tile wide2"><div class="cch">' + B.badge('chart') + '<div><b>Notifications sur les téléphones</b><small>' + (via() === 'ntfy' ? 'Avec ntfy, envoyées par le serveur Bêta · ' + S.users.filter(u => N.topic[u.id]).length : 'Via l’application Home Assistant · ' + S.users.filter(u => svcOf(u)).length) + ' destinataire(s)' + (isSender() ? ' · cet écran émet' : '') + '</small></div></div><div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn sm pri" data-act="nfOpen">' + ico('bellFill') + 'Configurer</button>' + (via() === 'ha' ? '<button type="button" class="btn sm" data-act="nfYaml">' + ico('download') + 'Automatisations HA</button>' : '') + '</div></div><div class="csave">');
   const sfx1 = B.RENDER.sfx;
-  if (sfx1) B.RENDER.sfx = s => sfx1(s).replace('<button class="btn sm" data-act="nightCfg">', '<button class="btn sm" data-act="nfOpen">' + ico('bellFill') + 'Notifs</button><button class="btn sm" data-act="nightCfg">');
+  if (sfx1) B.RENDER.sfx = s => sfx1(s).replace('<button class="btn sm" data-act="nightCfg">', '<button class="btn sm" data-act="brandsCfg">' + ico('grid9') + 'Marques</button><button class="btn sm" data-act="nfOpen">' + ico('bellFill') + 'Notifs</button><button class="btn sm" data-act="nightCfg">');
 })();

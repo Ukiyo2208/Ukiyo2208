@@ -7,7 +7,7 @@
   const srv = () => B.Server && B.Server.ok();
   const TRIGGERS = [['sonnette', 'Sonnette', 'S’ouvre 8 s quand on sonne'], ['absent', 'Mode absent', 'Ouvert tant que la maison est en absence']];
   const OK_KINDS = ['light', 'rgb', 'plug', 'power', 'computer', 'cover', 'awning', 'garage', 'fan', 'valve', 'tv', 'speaker', 'clim', 'app', 'door', 'motion', 'leak', 'temp', 'hum'];
-  const hubDevs = () => Object.keys(S.settings.hubMap || {}).map(id => { const d = DATA.DEVICES[id]; return d && Object.assign({ id, k: B.kindOf ? B.kindOf(d) : d.type }, d); }).filter(d => d && OK_KINDS.includes(d.k));
+  const hubDevs = () => Object.keys(S.settings.hubMap || {}).filter(id => !(B.brandOff && B.brandOff(S.settings.hubMap[id].brand))).map(id => { const d = DATA.DEVICES[id]; return d && Object.assign({ id, k: B.kindOf ? B.kindOf(d) : d.type }, d); }).filter(d => d && OK_KINDS.includes(d.k));
   async function load() {
     if (!srv()) return;
     try { const r = await B.Server.req('/api/bridge'); M.items = r.items || []; M.status = r.status; M.err = ''; } catch (e) { M.err = e.message; }

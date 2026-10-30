@@ -9,7 +9,7 @@
   const key = () => ((S.conn || {}).server || {}).key || '';
   const media = (id, kind) => Srv().url() + '/api/cams/' + kind + '/' + id + '?k=' + encodeURIComponent(key()) + (kind === 'frame' ? '&t=' + Math.floor(Date.now() / 10000) : '');
   const fmtPin = p => p ? p.slice(0, 3) + '-' + p.slice(3, 5) + '-' + p.slice(5) : '';
-  const TYPES = { camera: ['Caméras', 'camera'], hub: ['Ponts et box', 'homeFill'], lampe: ['Éclairage', 'bulbFill'], prise: ['Prises et modules', 'plug'], telecommande: ['Télécommandes', 'tv'], module: ['Prises et modules', 'plug'], matter: ['Matter', 'link'], clim: ['Climatisation', 'snow'], homekit: ['HomeKit', 'homeFill'], multimedia: ['Multimédia', 'speaker'], imprimante: ['Imprimantes', 'files'], nas: ['NAS et partages', 'nas'], box: ['Box internet', 'wifi'], autre: ['Autres', 'grid9'] };
+  const TYPES = { camera: ['Caméras', 'camera'], hub: ['Ponts et box', 'homeFill'], lampe: ['Éclairage', 'bulbFill'], prise: ['Prises et modules', 'plug'], telecommande: ['Télécommandes', 'tv'], robot: ['Robots', 'robotFill'], module: ['Prises et modules', 'plug'], matter: ['Matter', 'link'], clim: ['Climatisation', 'snow'], homekit: ['HomeKit', 'homeFill'], multimedia: ['Multimédia', 'speaker'], imprimante: ['Imprimantes', 'files'], nas: ['NAS et partages', 'nas'], box: ['Box internet', 'wifi'], autre: ['Autres', 'grid9'] };
 
   /* ---------- caméras ajoutées → emplacements de caméra de Bêta home ---------- */
   function applyCams() {
@@ -72,6 +72,7 @@
   B.act('dcScan', async () => { busy = true; paint(); try { res = await Srv().post('/api/discover', { rtsp: true }); } catch (e) { B.toast('Recherche impossible : ' + e.message, 'info'); } busy = false; paint(); });
   B.act('dcBrand', el => {
     const d = res.devices[+el.dataset.arg], id = d.link.slice(6); B.closeModal(); B.go('marques');
+    if (B.brandOff && B.brandOff(id)) { delete S.settings.brandsOff[id]; B.save(); B.toast('Marque réaffichée dans la page Marques', 'link'); }
     setTimeout(() => { if (B.ACT.hubOpen) B.ACT.hubOpen({ dataset: { arg: id } }); setTimeout(() => { if (id === 'matter') return B.toast('Saisissez le code d’appairage de l’appareil, puis « Ajouter cet appareil »', 'link'); const f = document.querySelector('form[data-submit="hubSave"][data-arg="' + id + '"]'); const one = f && f.querySelector('[name=host]'), many = f && f.querySelector('[name=hosts]'), val = id === 'cast' ? d.ip + ':' + d.name : d.ip; if (one && !one.value) one.value = d.ip; if (many && !many.value.includes(d.ip)) many.value = (many.value.trim() ? many.value.trim() + ', ' : '') + val; if (one || many) B.toast(d.ip + ' ajouté : « Enregistrer », puis « Tester » et « Ajouter les appareils »', 'link'); }, 250); }, 400);
   });
 

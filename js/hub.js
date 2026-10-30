@@ -140,28 +140,158 @@
       actions: [['pair', 'Appairer', 'link']],
       steps: ['TV allumée, réservez son IP dans votre box et relevez son adresse MAC (Réglages › Réseau).', 'Réglages › Général › Appareils › <b>LG Connect Apps</b> et <b>Allumer via Wi-Fi</b> : activés.', '<b>Appairer</b> puis acceptez la demande sur la TV, et <b>Ajouter les appareils</b>.'],
       note: 'API locale webOS. Les annonces (sonnette…) peuvent s’afficher en message sur la TV.' },
+    { id: 'frigate', name: 'Frigate', sub: 'Détection de personnes sur toutes les caméras (NVR local)', icon: 'camera', ready: true,
+      fields: [['host', 'Adresse de Frigate', { ph: '192.168.1.20:5000' }], ['user', 'Utilisateur (Frigate 0.14+, port 8971)'], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Installez <b>Frigate</b> sur le NAS (conteneur Docker) et ajoutez-y vos caméras.', 'Ici : adresse du NAS et port 5000 (ou 8971 avec identifiant), puis <b>Tester</b> et <b>Ajouter les appareils</b>.', 'Chaque caméra devient un détecteur « personne / voiture / animal » : utilisez-le dans Notifs (alerte pendant l’absence) ou les automatismes.'],
+      note: 'Détection 100 % locale par IA, sans abonnement.' },
+    { id: 'reolink', name: 'Reolink', sub: 'Caméras et sonnette vidéo : mouvement, personne, appui', icon: 'camera', ready: true,
+      fields: [['hosts', 'Adresses IP', { ph: '192.168.1.60, 192.168.1.61' }], ['user', 'Utilisateur', { ph: 'admin' }], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Appli Reolink › caméra › Paramètres › Réseau › Avancé › <b>Configuration des ports</b> : activez HTTP (ou HTTPS).', 'Créez de préférence un utilisateur « invité » pour Bêta home.', '<b>Tester</b>, puis <b>Ajouter les appareils</b>. La sonnette Reolink devient un bouton : choisissez-le dans Notifs › Bouton de la sonnette.'],
+      note: 'API locale, sans cloud. L’image et le direct passent par « Découvrir » (go2rtc).' },
+    { id: 'unifiprotect', name: 'UniFi Protect', sub: 'Caméras et sonnettes Ubiquiti', icon: 'camera', ready: true,
+      fields: [['host', 'Adresse de la console UniFi', { ph: '192.168.1.1' }], ['user', 'Utilisateur local'], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['UniFi OS › Admins › <b>Ajouter un admin local</b> (rôle « Lecture seule » pour Protect).', 'Saisissez l’adresse de la console (UDM, Cloud Key, UNVR), l’utilisateur et le mot de passe.', '<b>Tester</b>, puis <b>Ajouter les appareils</b> : mouvement par caméra et appui sur les sonnettes G4.'],
+      note: 'Local, sans compte Ubiquiti en ligne.' },
+    { id: 'hikvision', name: 'Hikvision', sub: 'Caméras et NVR : mouvement, ligne franchie, intrusion', icon: 'camera', ready: true,
+      fields: [['hosts', 'Adresses IP', { ph: '192.168.1.64' }], ['user', 'Utilisateur', { ph: 'admin' }], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Dans la caméra : Configuration › Évènement › cochez <b>Notifier le centre de surveillance</b> pour les détections voulues.', 'Saisissez IP, utilisateur, mot de passe, puis <b>Tester</b> et <b>Ajouter les appareils</b>.'],
+      note: 'Flux d’évènements ISAPI tenu ouvert par le serveur : réaction en moins d’une seconde. Aussi HiLook, Annke.' },
+    { id: 'dahua', name: 'Dahua / Amcrest', sub: 'Caméras, NVR et interphones VTO', icon: 'camera', ready: true,
+      fields: [['hosts', 'Adresses IP', { ph: '192.168.1.65' }], ['user', 'Utilisateur', { ph: 'admin' }], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Saisissez IP, utilisateur et mot de passe de la caméra ou de l’interphone.', '<b>Tester</b>, puis <b>Ajouter les appareils</b> : mouvement / personne, et appui sur l’interphone (à choisir comme bouton de sonnette).'],
+      note: 'Flux d’évènements local. Aussi Imou en mode local, Lorex.' },
+    { id: 'nuki', name: 'Nuki', sub: 'Serrure connectée et Opener', icon: 'lock', ready: true,
+      fields: [['host', 'Adresse IP du Nuki Bridge', { ph: '192.168.1.70' }], ['token', 'Jeton API du bridge', { pw: 1 }]],
+      steps: ['Appli Nuki › Bridge › <b>Gérer le bridge</b> › activez l’<b>API HTTP</b> et notez le jeton.', 'Saisissez IP et jeton, <b>Tester</b> puis <b>Ajouter les appareils</b> : serrure (verrouiller / ouvrir), capteur de porte, batterie.'],
+      note: 'API locale du bridge. Les serrures Nuki 4.0 Pro en Matter passent aussi par la fiche Matter.' },
+    { id: 'freebox', name: 'Freebox', sub: 'Qui est à la maison, Wi-Fi marche/arrêt', icon: 'wifi', ready: true,
+      fields: [['host', 'Adresse de la Freebox', { ph: 'mafreebox.freebox.fr' }], ['presence', 'Appareils à suivre (noms ou adresses MAC)', { ph: 'iPhone de Bastien, iPhone de Sarah' }]],
+      actions: [['pair', 'Autoriser', 'link']],
+      steps: ['<b>Autoriser</b>, puis appuyez dans les 90 s sur la <b>flèche ›</b> de l’écran de la Freebox Server.', 'Freebox OS › Paramètres › Gestion des accès › Applications › Bêta home : cochez <b>Modification des réglages</b> (pour couper le Wi-Fi).', 'Notez le nom des téléphones de la famille (tels qu’affichés dans Freebox OS), <b>Ajouter les appareils</b> : une « présence » par téléphone.'],
+      note: 'API locale officielle. Sert de détection de présence sans GPS (téléphone connecté au Wi-Fi = à la maison).' },
+    { id: 'livebox', name: 'Livebox', sub: 'Qui est à la maison, Wi-Fi marche/arrêt', icon: 'wifi', ready: true,
+      fields: [['host', 'Adresse de la Livebox', { ph: '192.168.1.1' }], ['password', 'Mot de passe admin de la Livebox', { pw: 1 }], ['presence', 'Appareils à suivre (noms ou MAC)', { ph: 'iPhone-de-Bastien' }]],
+      steps: ['Le mot de passe est celui de l’interface de la Livebox (par défaut : les 8 premiers caractères de la clé Wi-Fi).', 'Notez le nom des téléphones (Mes équipements), <b>Tester</b> puis <b>Ajouter les appareils</b>.'],
+      note: 'API locale de la box.' },
+    { id: 'bbox', name: 'Bbox', sub: 'Qui est à la maison, Wi-Fi marche/arrêt', icon: 'wifi', ready: true,
+      fields: [['host', 'Adresse de la Bbox', { ph: 'mabbox.bytel.fr' }], ['password', 'Mot de passe admin (pour le Wi-Fi)', { pw: 1 }], ['presence', 'Appareils à suivre (noms ou MAC)', { ph: 'iPhone-Bastien' }]],
+      steps: ['La liste des appareils se lit sans mot de passe ; il faut celui de l’interface pour couper le Wi-Fi.', '<b>Tester</b>, puis <b>Ajouter les appareils</b>.'], note: 'API locale de la box.' },
+    { id: 'linky', name: 'Linky', sub: 'Consommation électrique (Enedis)', icon: 'boltPlain', ready: true,
+      fields: [['prm', 'Numéro de compteur (PRM, 14 chiffres)'], ['token', 'Jeton conso.boris.sh', { pw: 1 }]],
+      steps: ['Sur <b>conso.boris.sh</b>, connectez-vous avec votre compte Enedis et autorisez le partage : un jeton s’affiche.', 'Le numéro PRM figure sur la facture ou sur le compteur (touche +).', 'Dans votre espace Enedis, activez la <b>courbe de charge</b> (puissance par 30 min).', '<b>Tester</b>, puis <b>Ajouter les appareils</b> : consommation de la veille et puissance.'],
+      note: 'Gratuit. Enedis publie les données le lendemain. Pour le direct, un module TIC Zigbee (Lixee) passe par Zigbee2MQTT.' },
+    { id: 'solaire', name: 'Panneaux solaires', sub: 'Fronius, Enphase, SMA, Huawei : production en direct', icon: 'sun', ready: true,
+      fields: [['type', 'Onduleur (fronius, enphase, sma, huawei)', { ph: 'fronius' }], ['host', 'Adresse IP de l’onduleur / Envoy'], ['token', 'Jeton Enphase (Envoy récents)', { pw: 1 }], ['port', 'Port Modbus (SMA / Huawei)', { ph: '502' }]],
+      steps: ['<b>Fronius</b> : rien à faire (Solar API activée par défaut). <b>Enphase</b> : jeton sur entrez.enphaseenergy.com (Envoy firmware 7+).', '<b>SMA</b> et <b>Huawei</b> : activez <b>Modbus TCP</b> dans l’onduleur (Sunny Portal / appli FusionSolar).', '<b>Tester</b>, puis <b>Ajouter les appareils</b> : production, échange avec le réseau, consommation.'],
+      note: 'Lecture locale, toutes les 10 s.' },
+    { id: 'ocpp', name: 'Borne OCPP', sub: 'Toute borne compatible : Schneider, ABB, Alfen, Keba, Zaptec…', icon: 'charger', ready: true,
+      fields: [['port', 'Port d’écoute du serveur', { ph: '9220' }]],
+      steps: ['<b>Enregistrer</b> : le serveur Bêta attend les bornes sur <code>ws://IP-du-NAS:9220/nom-de-la-borne</code>.', 'Dans l’outil de configuration de la borne (Schneider : eSetup / EVlink Pro AC), réglez le <b>serveur OCPP 1.6J</b> sur cette adresse.', '<b>Tester</b>, puis <b>Ajouter les appareils</b> : état, puissance, énergie, départ / arrêt de la charge.'],
+      note: 'Sans cloud. Attention : la borne ne parle qu’à un seul serveur OCPP (l’appli du fabricant peut perdre le contrôle).' },
+    { id: 'wallbox', name: 'Wallbox', sub: 'Bornes Pulsar, Commander, Copper', icon: 'charger', ready: true,
+      fields: [['email', 'E-mail myWallbox'], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Saisissez le compte de l’appli <b>myWallbox</b>, <b>Tester</b> puis <b>Ajouter les appareils</b> : charge en cours, puissance, pause / reprise.'], note: 'API du compte Wallbox (cloud).' },
+    { id: 'easee', name: 'Easee', sub: 'Bornes Easee Home / Charge', icon: 'charger', ready: true,
+      fields: [['email', 'E-mail ou téléphone Easee'], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Saisissez le compte de l’appli <b>Easee</b>, <b>Tester</b> puis <b>Ajouter les appareils</b>.'], note: 'API officielle Easee (cloud).' },
+    { id: 'cozytouch', name: 'Cozytouch', sub: 'Atlantic, Thermor, Sauter : radiateurs, chauffe-eau', icon: 'hotWater', ready: true,
+      fields: [['email', 'E-mail Cozytouch'], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Les appareils doivent être dans l’appli <b>Cozytouch</b> (bridge Cozytouch ou appareils Wi-Fi).', 'Saisissez le compte, <b>Tester</b> puis <b>Ajouter les appareils</b> : consignes des radiateurs, chauffe-eau, températures.'],
+      note: '⚠️ API non officielle (la même que l’appli), lue toutes les minutes. Avec une box TaHoma, la fiche Somfy TaHoma les pilote en local.' },
+    { id: 'netatmo', name: 'Netatmo / Legrand', sub: 'Thermostat, vannes, station météo, Legrand with Netatmo', icon: 'therm', ready: true, oauth: true,
+      fields: [['clientId', 'Client ID'], ['clientSecret', 'Client secret', { pw: 1 }]],
+      steps: ['Sur <b>dev.netatmo.com</b> › My apps › <b>Create</b> : nom « Bêta home », adresse de retour : <code>{callback}</code>', 'Copiez Client ID et secret, <b>Enregistrer</b>, puis <b>Se connecter</b> avec votre compte Netatmo (ou Legrand Home + Control).', '<b>Ajouter les appareils</b> : chauffage par pièce, prises et interrupteurs Céliane / dooxie, volets, station météo.'],
+      note: 'API officielle et gratuite.' },
+    { id: 'tado', name: 'tado°', sub: 'Thermostats, têtes de radiateur, Smart AC', icon: 'therm', ready: true,
+      fields: [], actions: [['login', 'Se connecter', 'link'], ['finish', 'Terminer', 'check']],
+      steps: ['<b>Se connecter</b> : un lien s’affiche sous le titre. Ouvrez-le, connectez-vous à tado° et validez.', 'Revenez ici et cliquez <b>Terminer</b>.', '<b>Ajouter les appareils</b> : une tuile par pièce (consigne, température, humidité).'],
+      note: 'Aucun mot de passe enregistré. Attention au quota gratuit de tado° (100 requêtes par jour sans abonnement) : lecture toutes les 15 min recommandée.' },
+    { id: 'sensibo', name: 'Sensibo', sub: 'Clims infrarouges connectées', icon: 'snow', ready: true,
+      fields: [['apiKey', 'Clé API Sensibo', { pw: 1 }]],
+      steps: ['Sur <b>home.sensibo.com</b> › menu › <b>API</b> : créez une clé.', 'Collez-la, <b>Tester</b> puis <b>Ajouter les appareils</b> : marche, consigne, mode, température et humidité de la pièce.'], note: 'API officielle.' },
+    { id: 'ecowitt', name: 'Ecowitt', sub: 'Station météo perso (GW1100, GW2000, Froggit)', icon: 'rain', ready: true,
+      fields: [['host', 'Adresse IP de la passerelle', { ph: '192.168.1.90' }]],
+      steps: ['Relevez l’IP de la passerelle (appli WS View Plus).', '<b>Tester</b>, puis <b>Ajouter les appareils</b> : température, humidité, vent, pluie, capteurs des pièces.'], note: 'Lecture locale, sans cloud.' },
+    { id: 'tuya', name: 'Tuya (local)', sub: 'Lidl Silvercrest, Moes, Nedis, Konyks, Blitzwolf…', icon: 'plug', ready: true,
+      fields: [['devices', 'Appareils : IP, id, clé locale, version, nom (un par ligne)', { ph: '192.168.1.80, bf12…, 1a2b3c…, 3.3, Prise salon', pw: 1 }]],
+      steps: ['Récupérez une fois l’<b>id</b> et la <b>clé locale</b> de chaque appareil : compte gratuit sur <b>iot.tuya.com</b> lié à l’appli Smart Life, ou outil <code>python -m tinytuya wizard</code>.', 'Une ligne par appareil : <code>IP, id, clé, 3.3 ou 3.4, nom</code>. Réservez les IP dans votre box.', 'Fermez l’appli Smart Life sur les téléphones (un seul contrôle local à la fois), puis <b>Tester</b> et <b>Ajouter les appareils</b>.'],
+      note: 'Ensuite 100 % local (protocoles 3.3 et 3.4). Si vous changez d’appli ou réinitialisez l’appareil, la clé change.' },
+    { id: 'dirigera', name: 'IKEA Dirigera', sub: 'Lampes, prises, stores et capteurs IKEA', icon: 'bulbFill', ready: true,
+      fields: [['host', 'Adresse IP de la passerelle', { ph: '192.168.1.95' }]], actions: [['pair', 'Appairer', 'link']],
+      steps: ['Saisissez l’IP de la passerelle Dirigera (appli IKEA Home smart › Hub).', 'Cliquez <b>Appairer</b>, puis appuyez sur le <b>bouton « action »</b> au dos de la passerelle dans la minute.', '<b>Ajouter les appareils</b> : avec leur pièce IKEA.'], note: 'API locale de la passerelle.' },
+    { id: 'zwavejs', name: 'Z-Wave JS', sub: 'Tous vos appareils Z-Wave', icon: 'link', ready: true,
+      fields: [['host', 'Adresse du serveur Z-Wave JS', { ph: '192.168.1.20:3000' }]],
+      steps: ['Lancez <b>Z-Wave JS UI</b> sur le NAS (conteneur Docker) avec la clé Z-Wave USB, et associez-y vos appareils.', 'Dans Z-Wave JS UI › Réglages › Home Assistant : activez <b>WS Server</b> (port 3000).', 'Ici : adresse du NAS, <b>Tester</b> puis <b>Ajouter les appareils</b>.'], note: 'Local, mises à jour en direct.' },
+    { id: 'deconz', name: 'deCONZ / Phoscon', sub: 'Clé ConBee / RaspBee', icon: 'link', ready: true,
+      fields: [['host', 'Adresse de la passerelle', { ph: '192.168.1.20:8080' }]], actions: [['pair', 'Appairer', 'link']],
+      steps: ['Phoscon › Passerelle › Avancé › <b>Authentifier l’application</b>.', 'Dans les 60 s : <b>Appairer</b> ici, puis <b>Ajouter les appareils</b>.'], note: 'API locale.' },
+    { id: 'switchbot', name: 'SwitchBot', sub: 'Bot, rideaux, stores, capteurs, télécommandes IR', icon: 'plug', ready: true,
+      fields: [['token', 'Jeton', { pw: 1 }], ['secret', 'Clé secrète', { pw: 1 }]],
+      steps: ['Appli SwitchBot › Profil › Préférences › touchez 10 fois <b>Version de l’appli</b> › Options développeur : copiez le jeton et la clé secrète.', 'Il faut un <b>Hub SwitchBot</b> pour les appareils Bluetooth.', '<b>Tester</b>, puis <b>Ajouter les appareils</b>.'], note: 'API officielle (cloud), lue toutes les 2 min à cause du quota de 10 000 appels par jour.' },
+    { id: 'mqttha', name: 'MQTT (découverte)', sub: 'LinknLink, OpenBeken, et tout ce qui s’annonce sur MQTT', icon: 'link', ready: true,
+      fields: [['host', 'Adresse du broker MQTT', { ph: '192.168.1.20' }], ['port', 'Port', { ph: '1883' }], ['user', 'Utilisateur MQTT'], ['password', 'Mot de passe MQTT', { pw: 1 }], ['prefix', 'Préfixe de découverte', { ph: 'homeassistant' }]],
+      steps: ['Le broker <b>Mosquitto</b> du docker-compose suffit.', 'Dans chaque appareil, renseignez l’adresse du broker et activez la <b>découverte « Home Assistant »</b> (LinknLink : firmware HA ; OpenBeken, Tasmota, ESPHome : option MQTT discovery).', '<b>Tester</b>, puis <b>Ajouter les appareils</b> : prises, lumières, volets, capteurs et boutons.'], note: 'Local, sans Home Assistant : Bêta lit les mêmes annonces.' },
+    { id: 'spotify', name: 'Spotify', sub: 'Lecture sur vos appareils Spotify Connect', icon: 'music', ready: true, oauth: true,
+      fields: [['clientId', 'Client ID'], ['clientSecret', 'Client secret', { pw: 1 }]],
+      steps: ['Sur <b>developer.spotify.com</b> › Dashboard › <b>Create app</b> : API « Web API », adresse de retour : <code>{callback}</code>', 'Copiez Client ID et secret, <b>Enregistrer</b>, puis <b>Se connecter</b> (compte Premium nécessaire pour piloter la lecture).', '<b>Ajouter les appareils</b> : chaque appareil Spotify Connect devient une enceinte (lecture, volume, titre).'],
+      note: 'Spotify exige une adresse de retour en https : passez par le reverse proxy d’UGOS (comme SmartThings).' },
+    { id: 'musiccast', name: 'Yamaha MusicCast', sub: 'Amplis, barres de son, enceintes', icon: 'speaker', ready: true,
+      fields: [['hosts', 'Adresses IP', { ph: '192.168.1.31' }]], steps: ['Relevez l’IP de chaque appareil (appli MusicCast › Paramètres).', '<b>Tester</b>, puis <b>Ajouter les appareils</b>.'], note: 'API locale.' },
+    { id: 'bose', name: 'Bose SoundTouch', sub: 'Enceintes SoundTouch', icon: 'speaker', ready: true,
+      fields: [['hosts', 'Adresses IP', { ph: '192.168.1.32' }]], steps: ['Relevez l’IP de chaque enceinte (appli SoundTouch › Réglages › Infos).', '<b>Tester</b>, puis <b>Ajouter les appareils</b>.'], note: 'API locale (port 8090).' },
+    { id: 'bravia', name: 'TV Sony Bravia', sub: 'TV Android / Google TV Sony', icon: 'tv', ready: true,
+      fields: [['host', 'Adresse IP de la TV', { ph: '192.168.1.63' }], ['psk', 'Clé pré-partagée', { pw: 1 }], ['name', 'Nom de la TV', { ph: 'TV salon' }]],
+      steps: ['TV › Paramètres › Réseau › Configuration du réseau domestique › <b>Contrôle IP</b> : Authentification « Normale et clé pré-partagée », choisissez une clé (ex. 0000).', 'Activez aussi <b>Contrôle à distance simple IP</b>.', 'Saisissez IP et clé, <b>Tester</b> puis <b>Ajouter les appareils</b>.'], note: 'API locale.' },
+    { id: 'androidtv', name: 'Fire TV / Android TV', sub: 'Fire TV, Google TV, Shield : marche, volume, applis', icon: 'tv', ready: true,
+      fields: [['host', 'Adresse IP', { ph: '192.168.1.66' }], ['name', 'Nom', { ph: 'Fire TV salon' }]], actions: [['pair', 'Autoriser', 'link']],
+      steps: ['Fire TV : Paramètres › Ma Fire TV › Options pour les développeurs › <b>Débogage ADB : activé</b> (sur Google TV : Paramètres › Système › 7 appuis sur « Build », puis Débogage USB et réseau).', '<b>Autoriser</b>, puis sur la TV cochez <b>Toujours autoriser</b> « beta-home » et validez.', '<b>Ajouter les appareils</b>.'], note: 'Local, par le débogage réseau. Aussi la tablette Fire / Alexa si besoin.' },
+    { id: 'jellyfin', name: 'Jellyfin', sub: 'Ce qui est regardé, lecture/pause', icon: 'film', ready: true,
+      fields: [['host', 'Adresse du serveur', { ph: '192.168.1.20:8096' }], ['apiKey', 'Clé API', { pw: 1 }]],
+      steps: ['Jellyfin › Tableau de bord › <b>Clés API</b> › + : nom « Bêta home ».', 'Collez la clé, <b>Tester</b> puis <b>Ajouter les appareils</b> : chaque appareil qui lit du Jellyfin apparaît.'], note: 'API locale. Fonctionne aussi avec Emby.' },
+    { id: 'valetudo', name: 'Valetudo', sub: 'Aspirateurs robots sans cloud (Dreame, Roborock…)', icon: 'robotFill', ready: true,
+      fields: [['hosts', 'Adresses IP des robots', { ph: '192.168.1.120' }]], steps: ['Le robot doit tourner sous <b>Valetudo</b> (valetudo.cloud).', 'Saisissez son IP, <b>Tester</b> puis <b>Ajouter les appareils</b> : état, batterie, départ, retour à la base.'], note: 'API locale.' },
+    { id: 'husqvarna', name: 'Husqvarna / Gardena', sub: 'Tondeuses Automower, arrosage Gardena smart', icon: 'mowerRobot', ready: true,
+      fields: [['appKey', 'Clé d’application'], ['appSecret', 'Secret d’application', { pw: 1 }]],
+      steps: ['Sur <b>developer.husqvarnagroup.cloud</b> : connectez-vous avec le compte de l’appli, <b>Create application</b>, puis connectez-y les API « Authentication », « Automower Connect » et/ou « GARDENA smart system ».', 'Copiez la clé et le secret, <b>Tester</b> puis <b>Ajouter les appareils</b> : tondeuses (tondre, garer), vannes d’arrosage, prises, capteurs du sol.'],
+      note: 'API officielle et gratuite.' },
     // marques préparées : le tuto dit quoi faire dès maintenant, le connecteur arrive ensuite
-    { id: 'linknlink', name: 'LinknLink', sub: 'Télécommande IR eRemote, capteurs', icon: 'tv',
-      steps: ['App LinknLink › appareil › mettez à jour le firmware en version <b>HA / MQTT</b>.', 'Le serveur Bêta fournira l’adresse MQTT à saisir dans l’app (… › Connexion MQTT).'],
-      note: 'Connecteur MQTT en préparation (petit serveur Mosquitto ajouté au docker-compose).' },
-    { id: 'schneider', name: 'Schneider Charge', sub: 'Borne de recharge', icon: 'charger',
-      steps: ['Relevez le modèle et l’accès installateur de la borne (app Wiser / eSetup).', 'La borne sera reliée au serveur Bêta par <b>OCPP 1.6J</b> : suivi de la charge, départ, arrêt, limite de puissance.'],
-      note: 'Connecteur OCPP en préparation. Attention : rediriger l’OCPP peut couper le lien avec l’app Wiser.' },
-    { id: 'viessmann', name: 'Viessmann', sub: 'Chauffage (ViCare)', icon: 'hotWater',
-      steps: ['Créez un compte sur <b>developer.viessmann.com</b> et une application (Client ID).', 'L’offre gratuite permet de lire températures et état ; régler le thermostat demande l’offre payante « Advanced ».'],
-      note: 'Connecteur en préparation.' },
+    { id: 'viessmann', name: 'Viessmann', sub: 'Chaudière, PAC, eau chaude (ViCare)', icon: 'hotWater', ready: true, oauth: true,
+      fields: [['clientId', 'Client ID']],
+      steps: ['Sur <b>developer.viessmann.com</b> › API Keys › <b>Add</b> : nom « Bêta home », Google reCAPTCHA désactivé, adresse de retour : <code>{callback}</code>', 'Copiez le <b>Client ID</b>, <b>Enregistrer</b>, puis <b>Se connecter</b> avec votre compte ViCare.', '<b>Ajouter les appareils</b> : températures, eau chaude (consigne, recharge unique).'],
+      note: 'Offre gratuite « Basic » : 1 450 appels par jour, lecture toutes les 5 min.' },
     { id: 'homepod', name: 'Apple HomePod', sub: 'Musique et volume', icon: 'speaker',
-      steps: ['Réservez l’IP du HomePod dans votre box internet.'], note: 'Nécessite un petit module Python (pyatv) à côté du serveur Bêta : en préparation.' },
+      steps: ['Réservez l’IP du HomePod dans votre box internet.'], note: 'Déjà possible : ajoutez le HomePod comme lecteur AirPlay dans Music Assistant (fiche Music Assistant). Pilotage complet (pyatv) en préparation.' },
     { id: 'roborock', name: 'Roborock', sub: 'Aspirateur robot', icon: 'robotFill',
-      steps: ['Gardez l’e-mail de votre compte Roborock : un code de connexion vous sera envoyé.'], note: 'API non officielle (python-roborock) : en préparation.' },
+      steps: ['Gardez l’e-mail de votre compte Roborock : un code de connexion vous sera envoyé.'], note: 'Déjà possible : les Roborock récents (Saros, Qrevo) s’ajoutent par la fiche Matter, ou par Valetudo. Le cloud Roborock reste en préparation.' },
     { id: 'navimow', name: 'Segway Navimow', sub: 'Tondeuse robot', icon: 'mowerRobot',
       steps: ['App Navimow : demandez l’<b>accès développeur</b> (OpenAPI) pour votre tondeuse.'], note: 'En attente de l’accès développeur Segway.' },
-    { id: 'verisure', name: 'Verisure', sub: 'Alarme, serrure', icon: 'shieldCheck',
-      steps: ['Préparez l’e-mail du compte Verisure : un code SMS sera demandé (double authentification).', 'Le code de l’alarme sera demandé à chaque désarmement et jamais enregistré.'], note: 'API non officielle : en préparation.' },
+    { id: 'verisure', name: 'Verisure', sub: 'Alarme, détecteurs d’ouverture', icon: 'shieldCheck', ready: true,
+      fields: [['email', 'E-mail du compte Verisure'], ['password', 'Mot de passe Verisure', { pw: 1 }], ['smsCode', 'Code reçu par SMS', { tmp: 1 }], ['code', 'Code de l’alarme (option, sinon demandé)', { pw: 1 }]],
+      actions: [['login', 'Se connecter', 'link'], ['verify', 'Valider le code', 'check']],
+      steps: ['Saisissez e-mail et mot de passe Verisure puis <b>Se connecter</b> : un code arrive par SMS.', 'Saisissez-le puis <b>Valider le code</b> : le serveur devient « appareil de confiance », plus de SMS ensuite.', '<b>Ajouter les appareils</b> : alarme (armer / désarmer), détecteurs d’ouverture et de température.'],
+      note: '⚠️ API non officielle (celle de l’appli) : elle peut changer. Sans code d’alarme enregistré, il est demandé à chaque désarmement.' },
     { id: 'ford', name: 'Ford', sub: 'Voiture (lecture seule)', icon: 'carFill',
       steps: ['Créez de préférence un <b>compte FordPass dédié</b>, partagé avec le vôtre pour la voiture.', 'Inscription sur le portail développeur Ford (FordConnect).'], note: 'API fragile, risque de blocage du compte : en préparation, en lecture seule.' }
   ];
   const BR = id => BRANDS.find(b => b.id === id);
+
+  /* ---------- catégories et marques masquées (Paramètres › Marques) ---------- */
+  // une marque masquée disparaît de la page, n'est plus interrogée et ses appareils ne reçoivent plus d'ordres
+  const CATS = [
+    ['lum', 'Éclairage', 'bulbFill', ['hue', 'elgato', 'govee', 'wled', 'nanoleaf', 'yeelight', 'wiz', 'lifx', 'dirigera']],
+    ['prise', 'Prises, modules et télécommandes', 'plug', ['shelly', 'esphome', 'tasmota', 'kasa', 'tapo', 'broadlink', 'switchbot', 'tuya']],
+    ['pont', 'Ponts et protocoles', 'link', ['matter', 'z2m', 'zwavejs', 'deconz', 'mqttha', 'smartthings', 'tahoma']],
+    ['media', 'TV, musique et vidéo', 'tv', ['sonos', 'cast', 'denon', 'musiccast', 'bose', 'musicassistant', 'spotify', 'philipstv', 'samsungtv', 'lgtv', 'bravia', 'androidtv', 'roku', 'jellyfin', 'homepod']],
+    ['climat', 'Chauffage et climatisation', 'therm', ['daikin', 'netatmo', 'tado', 'sensibo', 'cozytouch', 'viessmann', 'ecowitt']],
+    ['secu', 'Sécurité et caméras', 'camera', ['frigate', 'reolink', 'unifiprotect', 'hikvision', 'dahua', 'nuki', 'verisure']],
+    ['energie', 'Énergie, recharge et voiture', 'boltPlain', ['linky', 'solaire', 'ocpp', 'wallbox', 'easee', 'ford']],
+    ['reseau', 'Box internet et tablettes', 'wifi', ['freebox', 'livebox', 'bbox', 'fully']],
+    ['maison', 'Électroménager, robots et jardin', 'robotFill', ['homeconnect', 'valetudo', 'husqvarna', 'roborock', 'navimow']]
+  ];
+  const catOf = id => (CATS.find(c => c[3].includes(id)) || CATS[CATS.length - 1]);
+  const off = () => (S.settings.brandsOff = S.settings.brandsOff || {});
+  const isOff = id => !!off()[id];
+  const inUse = id => nDev(id) > 0 || !!(H.list[id] && H.list[id].status === 'ok');
 
   /* ---------- client du serveur ---------- */
   // comme B.Server.req, mais remonte le message d'erreur du serveur (ex. « appuyez sur le bouton du pont »)
@@ -185,6 +315,7 @@
   const push0 = B.HA.push.bind(B.HA);
   B.HA.push = function (id, patch) {
     const r = map()[id]; if (!r) return push0(id, patch);
+    if (isOff(r.brand)) return B.toast(BR(r.brand).name + ' est désactivée (Paramètres › Marques)', 'info');
     if (!B.Server.ok()) return B.toast('Serveur Bêta injoignable : commande non envoyée', 'info');
     call('/api/hub/command', { brand: r.brand, id: r.id, patch, cur: dev(id) }).catch(e => B.toast(BR(r.brand).name + ' : ' + e.message, 'info'));
   };
@@ -194,7 +325,7 @@
 
   /* ---------- états en direct ---------- */
   async function poll() {
-    const m = map(), brands = [...new Set(Object.values(m).map(r => r.brand))];
+    const m = map(), brands = [...new Set(Object.values(m).map(r => r.brand))].filter(b => !isOff(b));
     if (!brands.length || !B.Server.ok() || document.hidden) return;
     let res; try { res = await call('/api/hub/states?brands=' + brands.join(',')); } catch (e) { return; }
     for (const id in m) {
@@ -218,9 +349,19 @@
     return '<div class="cgrid scroll">' + cards() + '</div>';
   };
   function cards() {
-    return BRANDS.map(b => {
+    const nOff = BRANDS.filter(b => isOff(b.id)).length;
+    const bar = '<div class="hubbar"><label class="hfind">' + ico('search2') + '<input data-input="hubFind" placeholder="Chercher une marque…" autocomplete="off" spellcheck="false"></label>' +
+      '<button type="button" class="btn sm" data-act="brandsCfg">' + ico('grid9') + 'Choisir les marques' + (nOff ? ' · ' + nOff + ' masquée' + (nOff > 1 ? 's' : '') : '') + '</button></div>';
+    return bar + CATS.map(cat => {
+      const list = cat[3].map(BR).filter(b => b && !isOff(b.id)).sort((a, b) => (b.ready ? 1 : 0) - (a.ready ? 1 : 0) || (inUse(b.id) ? 1 : 0) - (inUse(a.id) ? 1 : 0));   // prêtes et utilisées d'abord
+      if (!list.length) return '';
+      return '<h3 class="hcat" data-cat="' + cat[0] + '">' + ico(cat[2]) + cat[1] + '<small>' + list.length + '</small></h3>' + card(list);
+    }).join('');
+  }
+  function card(list) {
+    return list.map(b => {
       const s = status(b.id), x = H.list[b.id] || {}, n = nDev(b.id);
-      return '<div class="ccard tile' + (b.ready ? '' : ' locked') + '"><div class="cch"><span class="bdg" style="--g1:' + (b.ready ? '#2fe0ff' : '#9fb4d8') + ';--g2:' + (b.ready ? '#1f7dff' : '#4a6aa8') + '">' + ico(b.icon) + '</span><div><b>' + esc(b.name) + '</b><small>' + esc(b.sub) + '</small></div><span class="tag2 ' + s[0] + '">' + esc(s[1]) + '</span></div>' +
+      return '<div class="ccard tile' + (b.ready ? '' : ' locked') + '" data-b="' + esc((b.name + ' ' + b.sub).toLowerCase()) + '"><div class="cch"><span class="bdg" style="--g1:' + (b.ready ? '#2fe0ff' : '#9fb4d8') + ';--g2:' + (b.ready ? '#1f7dff' : '#4a6aa8') + '">' + ico(b.icon) + '</span><div><b>' + esc(b.name) + '</b><small>' + esc(b.sub) + '</small></div><span class="tag2 ' + s[0] + '">' + esc(s[1]) + '</span></div>' +
         '<p class="muted" style="margin:0;font-size:12.5px;line-height:1.45">' + (x.info && b.ready ? esc(x.info) + (n ? ' · ' + n + ' dans Bêta home' : '') : esc(b.note || '')) + '</p>' +
         '<div class="row" style="gap:8px;margin-top:auto;flex-wrap:wrap"><button type="button" class="btn sm' + (b.ready && s[1] !== 'Connecté' ? ' pri' : '') + '" data-act="hubOpen" data-arg="' + b.id + '">' + ico(b.ready ? 'gear' : 'info') + (b.ready ? 'Configurer' : 'Tuto') + '</button>' +
         (b.ready ? '<button type="button" class="btn sm" data-act="hubTest" data-arg="' + b.id + '">' + ico('refresh') + 'Tester</button>' : '') +
@@ -251,6 +392,28 @@
   const reopen = id => { if (document.querySelector('.modal .box')) sheet(id); B.emit('hub'); };
 
   B.act('hubOpen', el => sheet(el.dataset.arg));
+  // recherche : on filtre les fiches déjà affichées (sans redessiner, le champ garde le focus)
+  B.act('hubFind', el => {
+    const q = el.value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), g = el.closest('.cgrid');
+    g.querySelectorAll('.ccard[data-b]').forEach(c => { c.style.display = !q || c.dataset.b.normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q) ? '' : 'none'; });
+    g.querySelectorAll('.hcat').forEach(h => { let n = h.nextElementSibling, any = false; while (n && !n.classList.contains('hcat')) { if (n.style.display !== 'none') any = true; n = n.nextElementSibling; } h.style.display = any ? '' : 'none'; });
+  });
+  /* ---------- fenêtre « Choisir les marques » ---------- */
+  function brandsBody() {
+    const n = BRANDS.filter(b => !isOff(b.id)).length;
+    return '<p class="muted bcintro">Décochez les marques que vous n’avez pas : elles disparaissent de la page Marques, ne sont plus interrogées et leurs appareils sont mis en pause. Rien n’est effacé : recochez pour les retrouver telles quelles.</p>' +
+      '<div class="row bcbtns"><button type="button" class="btn sm" data-act="brandsAll" data-arg="on">' + ico('check') + 'Tout afficher</button><button type="button" class="btn sm" data-act="brandsAll" data-arg="used">' + ico('homeFill') + 'Seulement celles que j’utilise</button><span class="muted">' + n + ' / ' + BRANDS.length + ' affichées</span></div>' +
+      '<div class="bcgrid">' + CATS.map(cat => '<section><h4><label><input type="checkbox" data-change="brandsCat" data-arg="' + cat[0] + '"' + (cat[3].some(id => !isOff(id)) ? ' checked' : '') + '>' + ico(cat[2]) + cat[1] + '</label></h4>' +
+        cat[3].map(BR).filter(Boolean).map(b => '<label class="bcrow' + (inUse(b.id) ? ' used' : '') + '"><input type="checkbox" data-change="brandTog" data-arg="' + b.id + '"' + (isOff(b.id) ? '' : ' checked') + '><span>' + esc(b.name) + (inUse(b.id) ? ' <small class="tag2">utilisée</small>' : !b.ready ? ' <small class="tag2 wait">bientôt</small>' : '') + '</span></label>').join('') + '</section>').join('') + '</div>';
+  }
+  const brandsOpen = () => B.modal('<h2>' + ico('grid9') + 'Marques affichées</h2>' + brandsBody(), 'wide bcmodal');
+  const brandsRedraw = () => { const m = document.querySelector('.bcmodal'); if (m) { const sc = m.scrollTop; m.innerHTML = '<button class="x" data-act="closeModal" aria-label="Fermer">' + ico('x') + '</button><h2>' + ico('grid9') + 'Marques affichées</h2>' + brandsBody(); m.scrollTop = sc; } B.save(); B.emit('hub'); };
+  B.brandsCfg = brandsOpen;
+  B.brandOff = isOff;
+  B.act('brandsCfg', brandsOpen);
+  B.act('brandTog', el => { const id = el.dataset.arg; if (el.checked) delete off()[id]; else { off()[id] = 1; if (inUse(id)) B.toast(BR(id).name + ' : ses ' + nDev(id) + ' appareil(s) sont en pause', 'info'); } brandsRedraw(); });
+  B.act('brandsCat', el => { const c = CATS.find(x => x[0] === el.dataset.arg); c[3].forEach(id => { if (el.checked) delete off()[id]; else if (!inUse(id)) off()[id] = 1; }); if (!el.checked && c[3].some(inUse)) B.toast('Les marques utilisées de cette catégorie restent affichées', 'info'); brandsRedraw(); });
+  B.act('brandsAll', el => { BRANDS.forEach(b => { if (el.dataset.arg === 'on' || inUse(b.id)) delete off()[b.id]; else off()[b.id] = 1; }); brandsRedraw(); });
   B.act('hubSave', async el => {
     if (!guard()) return; const id = el.dataset.arg;
     try { H.list[id] = await call('/api/hub/' + id, formData(el), 'PUT'); B.toast('Réglages enregistrés sur le NAS', 'check'); reopen(id); } catch (e) { B.toast('Enregistrement impossible : ' + e.message, 'info'); }
@@ -315,7 +478,7 @@
 
   B.route('marques', { title: 'Marques', bg: BG, render: () => { if (B.Server.ok() && !H._t) { H._t = 1; setTimeout(() => { H._t = 0; load(); }, 50); } return B.side('parametres') + B.header({ id: 'marques', title: 'Marques', sub: 'En direct, sans Home Assistant', icon: 'link', info: { t: 'infobox', keys: ['hub', 'conn'], items: () => {
     const ready = BRANDS.filter(b => b.ready), ok = ready.filter(b => H.list[b.id] && H.list[b.id].status === 'ok').length;
-    return [{ icon: 'link', v: ok + '/' + ready.length, l: 'Marques reliées', cls: 'c' }, { icon: 'homeFill', v: Object.keys(map()).length, l: 'Appareils en direct' }, { icon: 'server', v: B.Server.ok() ? 'En ligne' : 'À installer', l: 'Serveur Bêta', cls: B.Server.ok() ? 'g' : 'y', go: 'connexions' }, { icon: 'sparkle', v: BRANDS.length - ready.length, l: 'Bientôt' }];
+    return [{ icon: 'link', v: ok + '/' + ready.length, l: 'Marques reliées', cls: 'c' }, { icon: 'homeFill', v: Object.keys(map()).length, l: 'Appareils en direct' }, { icon: 'server', v: B.Server.ok() ? 'En ligne' : 'À installer', l: 'Serveur Bêta', cls: B.Server.ok() ? 'g' : 'y', go: 'connexions' }, { icon: 'grid9', v: BRANDS.filter(b => isOff(b.id)).length, l: 'Masquées' }];
   } } }) +
     '<section class="card pcard abs" style="' + box([105, 235, 1522, 1012]) + '">' + B.whead('link', 'Marques', isAdmin() ? '' : '<span class="tag2 wait">' + ico('lock') + 'Lecture seule</span>') + T({ t: 'hubpage', keys: ['hub', 'conn'] }) + '</section>'; } });
 

@@ -6,7 +6,7 @@ const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { request } = require('./hub/net');
 
 const BRANDS = {};
-['tahoma', 'hue', 'elgato', 'govee', 'smartthings', 'homeconnect', 'shelly', 'esphome', 'sonos', 'cast', 'wled', 'nanoleaf', 'yeelight', 'wiz', 'tasmota', 'denon', 'fully', 'daikin', 'roku', 'z2m', 'kasa', 'tapo', 'lifx', 'broadlink', 'philipstv', 'samsungtv', 'lgtv', 'musicassistant', 'matter'].forEach(n => { const m = require('./hub/' + n); BRANDS[m.id] = m; });
+['tahoma', 'hue', 'elgato', 'govee', 'smartthings', 'homeconnect', 'shelly', 'esphome', 'sonos', 'cast', 'wled', 'nanoleaf', 'yeelight', 'wiz', 'tasmota', 'denon', 'fully', 'daikin', 'roku', 'z2m', 'kasa', 'tapo', 'lifx', 'broadlink', 'philipstv', 'samsungtv', 'lgtv', 'musicassistant', 'matter', 'frigate', 'reolink', 'unifiprotect', 'hikvision', 'dahua', 'freebox', 'livebox', 'bbox', 'linky', 'solaire', 'wallbox', 'easee', 'ocpp', 'cozytouch', 'netatmo', 'tado', 'sensibo', 'ecowitt', 'viessmann', 'tuya', 'dirigera', 'zwavejs', 'deconz', 'switchbot', 'mqttha', 'nuki', 'verisure', 'spotify', 'musiccast', 'bose', 'bravia', 'jellyfin', 'androidtv', 'husqvarna', 'valetudo'].forEach(n => { const m = require('./hub/' + n); BRANDS[m.id] = m; });
 
 module.exports = function hub(DATA, send, readBody) {
   const FILE = path.join(DATA, 'hub.json');
@@ -16,17 +16,20 @@ module.exports = function hub(DATA, send, readBody) {
   const update = (id, patch) => { Object.assign(cfg(id), patch); persist(); };
   const pending = {};           // états OAuth en attente : state → { brand, redirect, at }
   const cache = {};             // états des appareils par marque : { at, data, busy }
+  // connecteurs qui écoutent en continu (flux d'évènements des caméras, bornes OCPP) : démarrés dès le lancement
+  setTimeout(() => Object.keys(BRANDS).forEach(id => { if (BRANDS[id].init && CFG[id]) try { BRANDS[id].init(CFG[id], helper(BRANDS[id])); } catch (e) { console.warn(id + ' : ' + e.message); } }), 1000);
 
   /* ---------- OAuth (SmartThings, Home Connect) ---------- */
   async function oauthToken(b, form) {
     const c = cfg(b.id), o = b.oauth, headers = {};
     if (o.basic) headers.Authorization = 'Basic ' + Buffer.from(c.clientId + ':' + c.clientSecret).toString('base64');
-    else Object.assign(form, { client_id: c.clientId, client_secret: c.clientSecret });
+    else { form.client_id = c.clientId; if (c.clientSecret) form.client_secret = c.clientSecret; }   // PKCE (Viessmann) : pas de secret
     const r = (await request(o.token, { form, headers })).json();
     if (!r || !r.access_token) throw new Error('jeton refusé');
     update(b.id, { tokens: { access: r.access_token, refresh: r.refresh_token || (c.tokens && c.tokens.refresh), exp: Date.now() + (r.expires_in || 3600) * 1000 } });
   }
   const helper = b => ({
+    save(patch) { update(b.id, patch || {}); },   // jetons renouvelés par le connecteur (Tado, Linky…)
     async auth() {
       const c = cfg(b.id);
       if (!c.tokens || !c.tokens.access) throw new Error('compte non relié : utilisez « Se connecter »');
@@ -55,7 +58,7 @@ module.exports = function hub(DATA, send, readBody) {
     if (!st || Date.now() - st.at > 15 * 6e4) return page('Lien expiré, recommencez depuis Bêta home', false);
     delete pending[url.searchParams.get('state')];
     if (url.searchParams.get('error')) return page('Connexion refusée : ' + url.searchParams.get('error'), false);
-    try { await oauthToken(BRANDS[st.brand], { grant_type: 'authorization_code', code: url.searchParams.get('code'), redirect_uri: st.redirect }); update(st.brand, { status: 'ok', info: 'Compte relié' }); return page(BRANDS[st.brand].name + ' est relié', true); }
+    try { await oauthToken(BRANDS[st.brand], Object.assign({ grant_type: 'authorization_code', code: url.searchParams.get('code'), redirect_uri: st.redirect }, st.verifier ? { code_verifier: st.verifier } : {})); update(st.brand, { status: 'ok', info: 'Compte relié' }); return page(BRANDS[st.brand].name + ' est relié', true); }
     catch (e) { return page('Échec : ' + e.message, false); }
   }
 
@@ -85,11 +88,14 @@ module.exports = function hub(DATA, send, readBody) {
     if (what === 'devices' && m === 'GET') { const list = await b.devices(c, helper(b)); return send(res, 200, list); }
     if (what === 'action' && m === 'POST' && b.actions && b.actions[r[3]]) { const patch = await b.actions[r[3]](c, await readBody(req) || {}); update(b.id, patch || {}); return send(res, 200, view(b)); }
     if (what === 'oauth' && m === 'GET' && b.oauth) {
-      if (!c.clientId || !c.clientSecret) return send(res, 400, { error: 'Client ID et secret à renseigner d’abord' });
+      if (!c.clientId || (!c.clientSecret && !b.oauth.pkce)) return send(res, 400, { error: 'Client ID et secret à renseigner d’abord' });
       const redirect = url.searchParams.get('redirect') || '', state = crypto.randomBytes(16).toString('hex');
       if (!/^https?:\/\/.+\/api\/hub\/oauth\/callback$/.test(redirect)) return send(res, 400, { error: 'adresse de retour invalide' });
-      pending[state] = { brand: b.id, redirect, at: Date.now() };
-      return send(res, 200, { url: b.oauth.auth + '?' + new URLSearchParams({ client_id: c.clientId, response_type: 'code', redirect_uri: redirect, scope: b.oauth.scope, state }) });
+      const verifier = b.oauth.pkce ? crypto.randomBytes(48).toString('base64url') : '';
+      pending[state] = { brand: b.id, redirect, at: Date.now(), verifier };
+      const q = { client_id: c.clientId, response_type: 'code', redirect_uri: redirect, scope: b.oauth.scope, state };
+      if (verifier) Object.assign(q, { code_challenge: crypto.createHash('sha256').update(verifier).digest('base64url'), code_challenge_method: 'S256' });
+      return send(res, 200, { url: b.oauth.auth + '?' + new URLSearchParams(Object.assign(q, b.oauth.extra || {})) });
     }
     return send(res, 404, { error: 'route inconnue' });
   }
