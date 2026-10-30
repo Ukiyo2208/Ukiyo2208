@@ -16,7 +16,12 @@
       ['arrosage', 'Arrosage selon la météo', 'Annule s’il a plu ou s’il va pleuvoir', 'sprinkler', [], true],
       ['services', 'Tempo, vigilance, collectes', 'Infos EDF, Météo-France, poubelles', 'sun2', [], false],
       ['sante', 'Santé de la maison', 'Hors ligne, piles faibles', 'heart', ['sante'], false],
-      ['reseau', 'Réseau', 'Box internet, Wi-Fi Deco, appareils connectés', 'wifi', ['reseau'], false]]],
+      ['reseau', 'Réseau', 'Box, Wi-Fi Deco, inconnus, coupures, Wi-Fi invités, contrôle parental', 'wifi', ['reseau'], true],
+      ['reveil', 'Réveil en douceur', 'Lumière, volets, radio et météo au réveil', 'sun', [], true],
+      ['matin', 'Tableau du matin', 'Météo, agenda, trajets, bus, tram et TER', 'sunGear', ['matin'], false],
+      ['interphone', 'Interphone', 'Annonces vers une tablette ou toutes', 'mic', ['interphone'], false],
+      ['rappels', 'Rappels d’entretien', 'Filtres, chaudière, contrôle technique…', 'history', [], true],
+      ['admin', 'Administration', 'État du serveur, stockage, erreurs', 'server', ['admin'], false]]],
     ['Sécurité', [
       ['securite', 'Alarme et présence', 'Alarme maison, qui est là, absent automatique', 'shieldCheck', ['securite'], false],
       ['simulation', 'Simulation de présence', 'Lumières pendant les vacances', 'bulb', [], true],

@@ -319,7 +319,8 @@
   B.HA.push = function (id, patch) {
     const r = map()[id]; if (!r) return push0(id, patch);
     if (isOff(r.brand)) return B.toast(BR(r.brand).name + ' est désactivée (Paramètres › Marques)', 'info');
-    if (!B.Server.ok()) return B.toast('Serveur Bêta injoignable : commande non envoyée', 'info');
+    if (!B.Server.ok()) { if (B.HA.enabled() && ent0(id)) return push0(id, patch);   // mode secours : par Home Assistant si l'appareil y est aussi
+      return B.toast('Serveur Bêta injoignable : commande non envoyée', 'info'); }
     call('/api/hub/command', { brand: r.brand, id: r.id, patch, cur: dev(id) }).catch(e => B.toast(BR(r.brand).name + ' : ' + e.message, 'info'));
   };
   // un appareil relié à une marque n'est plus piloté par Home Assistant

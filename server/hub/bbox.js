@@ -21,6 +21,14 @@ module.exports = {
     watched(c).forEach(n => { const x = h.find(y => (y.hostname || '').toLowerCase() === n || (y.macaddress || '').toLowerCase() === n); out.push({ id: 'p:' + n, name: 'Présence ' + (x ? x.hostname : n), kind: 'motion', info: x ? 'Connecté au réseau de la maison' : 'Appareil introuvable', state: { on: !!(x && x.active) } }); });
     return out;
   },
+  // Wi-Fi invités (nom, mot de passe, marche/arrêt) et blocage d'un appareil (contrôle parental)
+  async guest(c) { await auth(c); const g = (await get(c, '/wireless/guest'))[0] || {}, e = (await get(c, '/wireless/guestenable'))[0] || {}, w = g.wireless || g; return { ssid: (w.guest || w).ssid || w.ssid || '', pass: (w.guest || w).passphrase || w.passphrase || '', on: !!(((e.wireless || e).guestenable || e).enable != null ? +((e.wireless || e).guestenable || e).enable : 0) }; },
+  async guestSet(c, on) { await auth(c); const t = (await get(c, '/device/token'))[0].device.token; await request(root(c) + '/wireless/guestenable?btoken=' + t, { insecure: true, method: 'PUT', headers: { Cookie: cookie }, form: { enable: on ? 1 : 0 } }); },
+  async block(c, mac, on) {
+    await auth(c); const h = (await get(c, '/hosts'))[0].hosts.list.find(x => String(x.macaddress || '').toLowerCase() === String(mac).toLowerCase()); if (!h) throw new Error('appareil inconnu de la Bbox : ' + mac);
+    const t = (await get(c, '/device/token'))[0].device.token;
+    await request(root(c) + '/hosts/' + h.id + '?btoken=' + t, { insecure: true, method: 'PUT', headers: { Cookie: cookie }, form: { blocked: on ? 1 : 0 } });
+  },
   actions: {
     async reboot(c) { await auth(c); const t = (await get(c, '/device/token'))[0].device.token; await request(root(c) + '/device/reboot?btoken=' + t, { insecure: true, method: 'POST', headers: { Cookie: cookie }, body: '' }); return { info: 'Redémarrage de la Bbox demandé' }; }
   },

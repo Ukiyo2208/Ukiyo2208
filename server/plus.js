@@ -99,6 +99,7 @@ module.exports = function plus(DATA, send, readBody, M) {
   async function runScene(id, by) {
     const sc = C.scenes.find(x => x.id === id); if (!sc) throw new Error('scène inconnue');
     await Promise.all(Object.keys(sc.states || {}).filter(d => E.devices[d]).map(d => X.command(d, adapt(d, sc.states[d], sc)).catch(() => { })));
+    (X.EXT.onScene || []).forEach(f => { try { f(sc, by); } catch (e) { } });
     X.emit({ type: 'scene', id, name: sc.name }); X.note('Scène « ' + sc.name + ' »' + (by ? ' (' + by + ')' : ''), 'sparkle');
     return sc;
   }
@@ -358,6 +359,7 @@ module.exports = function plus(DATA, send, readBody, M) {
       await X.command(id, ['cover', 'awning', 'garage'].includes(k) ? { pos: on ? 100 : 0 } : k === 'lock' ? { locked: !on } : { on }); return { ok: true, say: E.devices[id].name + (on ? ' allumé' : ' éteint') + '.' };
     }
     if (what === 'heat') { const z = findBy(C.heat.zones, q('id') || q('name')); if (!z) throw new Error('zone introuvable'); X.EXT.acts.heat({ zone: z.id, mode: q('mode') || 'boost' }); return { ok: true, say: 'Chauffage ' + z.name + ' : ' + ({ boost: 'boost pour une heure', comfort: 'confort', eco: 'éco', off: 'arrêt', auto: 'automatique', frost: 'hors-gel' }[q('mode') || 'boost'] || q('mode')) + '.' }; }
+    const ex = X.EXT.quick && X.EXT.quick(what, q); if (ex) return ex;
     throw new Error('action inconnue : ' + what);
   }
   async function api(req, res, url, w) {
@@ -405,5 +407,5 @@ module.exports = function plus(DATA, send, readBody, M) {
   }
   function listBackups() { try { return fs.readdirSync(path.join(DATA, 'backups')).filter(n => /^auto-/.test(n)).sort().reverse().slice(0, 30).map(n => ({ name: n, size: fs.statSync(path.join(DATA, 'backups', n)).size, enc: /\.betabak$/.test(n) })); } catch (e) { return []; } }
   syncOff(); setTimeout(() => checkUpdate().catch(() => { }), 20000);
-  return { api, _test: { moment, price, hourly, energy, heatTarget, waterDecide, encrypt, decrypt, collect, simTick, C } };
+  return { api, C, energy, runScene, _test: { moment, price, hourly, energy, heatTarget, waterDecide, encrypt, decrypt, collect, simTick, C } };
 };

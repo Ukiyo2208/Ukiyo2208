@@ -68,7 +68,8 @@
   if (FULLY()) { try { window.fully.bind('onMotion', 'BOS.tabletWake && BOS.tabletWake()'); window.fully.bind('screenOn', 'BOS.tabletWake && BOS.tabletWake()'); } catch (e) { } }
 
   /* ---------- annonces du serveur lues à voix haute (si la tablette n'est pas sous Fully, qui parle déjà) ---------- */
-  B.tabletSay = text => {
+  B.tabletSay = (text, ev) => {
+    if (ev && ev.to && ev.to.length && !ev.to.includes(cfg().name || '')) return;   // annonce pour une autre tablette (interphone)
     if (!tab().say || FULLY() || !window.speechSynthesis) return;
     try { const u = new SpeechSynthesisUtterance(text); u.lang = 'fr-FR'; speechSynthesis.speak(u); } catch (e) { }
     wake();

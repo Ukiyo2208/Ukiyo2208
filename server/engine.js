@@ -21,7 +21,7 @@ module.exports = function engine(DATA, send, readBody, M) {
   const log = [];   // journal des règles (affiché dans Bêta home)
   const trace = [];   // pourquoi chaque règle s'est déclenchée… ou pas (« bloquée car il ne fait pas nuit »), simulations comprises
   const addTrace = x => { x.t = Date.now(); trace.unshift(x); trace.length = Math.min(trace.length, 150); };
-  const EXT = { acts: {}, tick: [], conds: {}, off: new Set() };   // extensions (server/plus.js) : actions « scène », « liste »…, tâches de la boucle
+  const EXT = { acts: {}, tick: [], conds: {}, off: new Set(), listen: [], tempoAdvice: false };   // extensions (server/plus.js) : actions « scène », « liste »…, tâches de la boucle
   const note = (txt, icon) => { log.unshift({ t: Date.now(), txt, icon: icon || 'sparkle' }); log.length = Math.min(log.length, 80); };
   let cur = {}, prev = {};   // états des appareils (identifiants Bêta)
 
@@ -114,7 +114,7 @@ module.exports = function engine(DATA, send, readBody, M) {
     }
     save();
   }
-  function dispatch(ev) { if (EXT.off.has('regles') && !ev.sim) return; (C.rules || []).filter(r => r.on !== false && (r.when || []).some(t => trigMatch(t, ev))).forEach(r => fire(r, ev.why, { dry: ev.dry, sim: ev.sim })); }
+  function dispatch(ev) { if (!ev.sim) EXT.listen.forEach(f => { try { f(ev); } catch (e) { } }); if (EXT.off.has('regles') && !ev.sim) return; (C.rules || []).filter(r => r.on !== false && (r.when || []).some(t => trigMatch(t, ev))).forEach(r => fire(r, ev.why, { dry: ev.dry, sim: ev.sim })); }
   // annonce sur les tablettes (Fully Kiosk) et sur les écrans ouverts
   async function say(text) {
     emit({ type: 'say', text });
@@ -235,7 +235,7 @@ module.exports = function engine(DATA, send, readBody, M) {
       S.tempo = { today: TEMPO[a && a.codeJour] || '', tomorrow: TEMPO[b && b.codeJour] || '', date: a && a.dateJour, at: Date.now() };
       if (S.tempo.tomorrow && S.tempo.tomorrow !== old.tomorrow) {
         dispatch({ type: 'tempo', color: S.tempo.tomorrow, why: 'demain jour ' + S.tempo.tomorrow });
-        if (S.tempo.tomorrow === 'rouge' && C.tempo.notify) NOTIFY.notifyRule('tempo', { title: 'Demain : jour ROUGE Tempo', message: 'Électricité très chère demain de 6 h à 22 h : décalez machines et recharge.', urgent: 1, go: 'energie', tags: ['red_circle'] });
+        if (S.tempo.tomorrow === 'rouge' && C.tempo.notify && !EXT.tempoAdvice) NOTIFY.notifyRule('tempo', { title: 'Demain : jour ROUGE Tempo', message: 'Électricité très chère demain de 6 h à 22 h : décalez machines et recharge.', urgent: 1, go: 'energie', tags: ['red_circle'] });
       }
       save();
     } catch (e) { }

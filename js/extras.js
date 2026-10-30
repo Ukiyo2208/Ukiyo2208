@@ -364,9 +364,9 @@
   /* ======================= MENU iPHONE PAR SECTIONS ======================= */
   const GROUPS = [
     ['Pièces', 'rooms', id => /^(accueil|exterieur|rdc|etage1|etage2|pieces)$/.test(id) || /^niveau-/.test(id)],
-    ['Domotique', 'homeFill', id => /^(ia|energie|chauffage|voiture|routines|scenes|absence|securite|sante|journal)$/.test(id)],
-    ['Outils', 'grid9', id => /^(musique|plex|nas|carte|calendrier|listes|mails)$/.test(id)],
-    ['Réglages', 'gearFill', id => /^(connexions|marques|parametres)$/.test(id)]
+    ['Domotique', 'homeFill', id => /^(ia|energie|chauffage|voiture|routines|scenes|absence|securite|sante|reseau|journal)$/.test(id)],
+    ['Outils', 'grid9', id => /^(matin|musique|plex|nas|carte|calendrier|listes|interphone|mails)$/.test(id)],
+    ['Réglages', 'gearFill', id => /^(connexions|marques|parametres|admin)$/.test(id)]
   ];
   B.act('moreNav', () => {
     const items = PAGES().filter((n, i, a) => a.findIndex(x => x[0] === n[0]) === i && !(B.guest && B.guest() && /^(nas|calendrier|mails|parametres|connexions|marques|journal|carte)$/.test(n[0])));

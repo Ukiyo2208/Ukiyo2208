@@ -6,12 +6,12 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 
-const RULES = ['doorbell', 'person', 'garage', 'leak', 'alarm', 'trash', 'appliance', 'weather', 'away', 'presence', 'tempo', 'health', 'energy', 'water'];
+const RULES = ['doorbell', 'person', 'garage', 'leak', 'alarm', 'trash', 'appliance', 'weather', 'away', 'presence', 'tempo', 'health', 'energy', 'water', 'network', 'reminder'];
 module.exports = function notify(DATA, send, readBody, HUB, CAMS) {
   const FILE = path.join(DATA, 'notify.json');
   let C = {}; try { C = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch (e) { }
   C = Object.assign({ ntfy: { url: 'https://ntfy.sh', token: '' }, users: {}, rules: {}, watch: [], tablets: { say: true, show: true, text: 'On sonne à la porte', tv: false }, cam: '', away: false, site: '', garageMin: 10 }, C);
-  RULES.forEach(r => { C.rules[r] = Object.assign({ on: r !== 'away', who: r === 'away' || r === 'presence' || r === 'health' ? 'admins' : 'all' }, C.rules[r]); });
+  RULES.forEach(r => { C.rules[r] = Object.assign({ on: r !== 'away', who: r === 'away' || r === 'presence' || r === 'health' || r === 'network' ? 'admins' : 'all' }, C.rules[r]); });
   const persist = () => fs.writeFileSync(FILE, JSON.stringify(C, null, 1), { mode: 0o600 });
   const events = [];   // derniers évènements (sonnette…) lus par les écrans ouverts
   const sent = {};     // anti-rafale : clé → date du dernier envoi

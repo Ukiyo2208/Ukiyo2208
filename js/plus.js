@@ -142,7 +142,7 @@
   /* ---------- 9. iPhone : Siri, Raccourcis et widget ---------- */
   function iphBody() {
     const base = P.ext || (S.conn.server.url || ''), t = P.qtok, q = (x, extra) => base + '/api/quick?do=' + x + '&fmt=text&d=' + (t || 'JETON') + (extra || '');   // le texte dicté se colle à la fin
-    const rows = [['Dis Siri, état de la maison', q('status')], ['Dis Siri, ajoute aux courses', q('add', '&list=courses&text=') + ' + « Dicter le texte »'], ['Dis Siri, liste de courses', q('courses')], ['Dis Siri, message à la maison', q('msg', '&text=') + ' + « Dicter le texte »'], ['Dis Siri, active l’alarme', q('alarm', '&mode=armed_away')]]
+    const rows = [['Dis Siri, état de la maison', q('status')], ['Dis Siri, ajoute aux courses', q('add', '&list=courses&text=') + ' + « Dicter le texte »'], ['Dis Siri, liste de courses', q('courses')], ['Dis Siri, message à la maison', q('msg', '&text=') + ' + « Dicter le texte »'], ['Dis Siri, active l’alarme', q('alarm', '&mode=armed_away')], ['Dis Siri, réveil en douceur', q('wake')], ['Dis Siri, ne pas déranger', q('dnd', '&hours=2')], ['Dis Siri, Wi-Fi invités', q('guest', '&on=1')], ['Dis Siri, annonce à la maison', q('announce', '&to=&text=') + ' + « Dicter le texte »']]
       .concat((S.routines || []).map(r => ['Dis Siri, ' + r.name, q('routine', '&id=' + encodeURIComponent(r.id))])).concat(scenes().map(s => ['Dis Siri, ' + s.name, q('scene', '&id=' + encodeURIComponent(s.id))]));
     return '<h2>' + ico('mic') + 'iPhone : Siri et widgets</h2><p class="muted" style="font-size:13px;line-height:1.5;margin:0 0 10px">Chaque iPhone reçoit son propre accès (révocable dans Paramètres › Sécurité). Hors de la maison, il faut Tailscale : mettez alors l’adresse en https://….ts.net.</p>' +
       '<div class="grid2"><label class="field">Adresse du serveur vue par l’iPhone<input value="' + esc(base) + '" data-change="iphExt"></label><label class="field">Nom de l’iPhone<input value="' + esc(P.qname || ('iPhone de ' + B.user().name)) + '" data-change="iphName"></label></div>' +
@@ -197,7 +197,7 @@
   B.route('scenes', { title: 'Scènes', bg: 'assets/bg/generic.jpg', render: () => B.side('scenes') + B.header({ id: 'scenes', title: 'Scènes', sub: 'Ambiances par pièce et par moment de la journée', icon: 'sparkle', info: { t: 'infobox', keys: ['plus'], items: () => { const m = moment(); return [{ icon: 'sparkle', v: scenes().length, l: 'Scènes', cls: 'c' }, { icon: 'sunGear', v: MOM[m.name], l: 'Moment' }, { icon: 'bulb', v: m.bri + ' %', l: 'Lumière idéale', cls: 'y' }, { icon: 'sun2', v: m.ct + ' K', l: 'Couleur' }]; } } }) +
     '<section class="card pcard abs" style="' + box([105, 235, 1040, 1012]) + '">' + B.whead('sparkle', 'Scènes') + T({ t: 'scList', keys: ['plus'] }) + '</section>' +
     '<section class="card pcard abs" style="' + box([1050, 235, 1522, 1012]) + '">' + B.whead('sunGear', 'Lumière de la journée') + T({ t: 'scAdapt', keys: ['plus'] }) + '</section>', after: () => load() });
-  let SC = null;
+  let SC = null; B.scEditing = () => SC;   // pour les options « mode » (vie.js)
   function scBody() {
     const rooms = B.roomsList(null), r = rooms.find(x => x.key === SC.rkey) || rooms.find(x => x.name === SC.room), devs = SC.rkey === 'maison' ? Object.values(DATA.DEVICES).filter(d => SCTL(d) && !(B.isHidden && B.isHidden(d.id))) : r ? r.devs.filter(SCTL) : [];
     const ICONS = ['sparkle', 'sofa', 'bed', 'utensils', 'moon', 'sun', 'film', 'music', 'bulb', 'heart', 'journal', 'tv', 'bath'];

@@ -16,6 +16,8 @@ module.exports = {
     if ('bri' in p) await go({ cmd: 'setStringSetting', key: 'screenBrightness', value: Math.round(p.bri * 2.55) });
     if (p.say) await go({ cmd: 'textToSpeech', text: p.say, locale: 'fr_FR' });   // annonce vocale
     if (p.url) await go({ cmd: 'loadURL', url: p.url });                             // ouvrir une page (ex. caméra)
-    if (p.front) await go({ cmd: 'toForeground' });                                   // ramener Fully (donc Bêta home) devant
+    if (p.front) await go({ cmd: 'toForeground' });
+    if (p.sound) await go({ cmd: 'playSound', url: p.sound, loop: 'false' });          // radio du réveil, carillon
+    if (p.stopSound) await go({ cmd: 'stopSound' });                                   // ramener Fully (donc Bêta home) devant
   }
 };

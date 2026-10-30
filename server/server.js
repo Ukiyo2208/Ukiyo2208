@@ -22,6 +22,10 @@ const safe = s => /^[\w.-]{1,80}$/.test(s) && !s.includes('..');
 const HUB = require('./hub')(DATA, send, readBody);   // appareils connectés en direct (Somfy, Hue, SmartThings…)
 const CAMS = require('./cams')(DATA, send, readBody); // découverte du réseau, caméras et pont HomeKit (go2rtc)
 const NOTIFY = require('./notify')(DATA, send, readBody, HUB, CAMS);   // notifications ntfy, sonnette, surveillance 24 h/24
+// derniers avertissements et erreurs du serveur (tableau d'administration)
+const LOGS = [];
+['warn', 'error'].forEach(k => { const f = console[k].bind(console); console[k] = (...a) => { LOGS.push({ t: Date.now(), lvl: k, msg: a.map(x => x instanceof Error ? x.message : typeof x === 'string' ? x : JSON.stringify(x)).join(' ').slice(0, 400) }); if (LOGS.length > 200) LOGS.shift(); f(...a); }; });
+process.on('unhandledRejection', e => console.error('promesse : ' + (e && e.message || e)));
 // modules facultatifs : chacun peut manquer ou être coupé (BETA_OFF=geo,bridge,engine,plus) sans gêner les autres
 const OFF = String(process.env.BETA_OFF || '').split(/[,; ]+/).filter(Boolean);
 const opt = (name, f) => { if (OFF.includes(name)) { console.log('module ' + name + ' coupé (BETA_OFF)'); return null; } try { return f(); } catch (e) { console.warn('⚠️  module ' + name + ' désactivé : ' + e.message); return null; } };
@@ -32,7 +36,8 @@ const GEO0 = GEO || { inside: () => ({}), home: () => null, last: () => null };
 const ENGINE = opt('engine', () => require('./engine')(DATA, send, readBody, { HUB, NOTIFY, GEO: GEO0, BRIDGE, CAMS, AUTH }));   // cerveau : routines, règles, présence, alarme
 if (BRIDGE && ENGINE) BRIDGE.setRunner((id, by) => ENGINE.runRoutine(id, by));   // « Alexa, allume Soirée ciné » exécuté par le NAS
 const PLUS = ENGINE ? opt('plus', () => require('./plus')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, AUTH })) : null;   // sauvegardes, scènes, chauffage, énergie, arrosage, Siri, listes, Frigate
-const MODS = { hub: true, discover: true, notify: true, geo: !!GEO, bridge: !!BRIDGE, engine: !!ENGINE, auth: true, plus: !!PLUS };
+const EXTRA = ENGINE ? opt('extra', () => require('./extra')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, PLUS, LOGS, MODS: () => MODS })) : null;   // réseau, réveil, matin, interphone, rappels, administration
+const MODS = { hub: true, discover: true, notify: true, geo: !!GEO, bridge: !!BRIDGE, engine: !!ENGINE, auth: true, plus: !!PLUS, extra: !!EXTRA };
 
 /* ---------- API ---------- */
 async function api(req, res, url) {
@@ -49,6 +54,7 @@ async function api(req, res, url) {
   if (AUTH.needAdmin(p, m) && !w.admin) return send(res, 401, { error: 'réservé à un administrateur (code PIN)', need: 'admin' });
   if (p === '/api/auth' || p.startsWith('/api/auth/')) { const r0 = await AUTH.api(req, res, url, w); if (r0 !== false) return; }
   if (ENGINE && (p === '/api/engine' || p.startsWith('/api/engine/') || p === '/api/history')) { const r0 = await ENGINE.api(req, res, url, w); if (r0 !== false) return; }
+  if (EXTRA && (p === '/api/extra' || p.startsWith('/api/extra/'))) { const r0 = await EXTRA.api(req, res, url, w); if (r0 !== false) return; }
   if (PLUS && (p === '/api/plus' || p.startsWith('/api/plus/') || p === '/api/quick' || p === '/api/energy')) { const r0 = await PLUS.api(req, res, url, w); if (r0 !== false) return; }
   if (p === '/api/hub' || p.startsWith('/api/hub/')) return HUB.api(req, res, url);
   if (p === '/api/discover' || p.startsWith('/api/cams')) { const r0 = await CAMS.api(req, res, url); if (r0 !== false) return; }

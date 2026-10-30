@@ -73,7 +73,8 @@
     folder: ['folder', '#ffd23a', '#ff8a34'], shield: ['shieldCheck', '#2ff0b0', '#1f9bff'], download: ['download', '#2fe0ff', '#1f7dff'], film: ['film', '#ffd23a', '#f08a12'],
     battery: ['batteryV', '#2ff0b0', '#12a07a'], chart: ['chart', '#ff6fae', '#7a5bff'], power: ['power', '#2fe0ff', '#1f7dff'], edit: ['edit', '#9b6bff', '#2f7dff'],
     shieldCheck: ['shieldCheck', '#2ff0b0', '#1f9bff'], family: ['family', '#2fd3ff', '#1d5bff'], history: ['history', '#9b6bff', '#2f7dff'], sparkle: ['sparkle', '#ffd23a', '#ff8a34'],
-    sunGear: ['sunGear', '#ffd23a', '#ff8a34'], flame: ['flame', '#ff9a4a', '#ff4f6e'], check: ['check', '#2ff0b0', '#12a07a'], chat: ['chat', '#2fe0ff', '#7a5bff']
+    sunGear: ['sunGear', '#ffd23a', '#ff8a34'], flame: ['flame', '#ff9a4a', '#ff4f6e'], check: ['check', '#2ff0b0', '#12a07a'], chat: ['chat', '#2fe0ff', '#7a5bff'],
+    alert: ['alert', '#ff9a4a', '#ff4f6e'], sun: ['sun', '#ffd23a', '#ff8a34'], mic: ['mic', '#2fe0ff', '#1f7dff'], group: ['group', '#2fd3ff', '#7a5bff']
   };
   function badge(k, sz) { const b = BADGES[k] || BADGES.home; return '<span class="bdg" style="--g1:' + b[1] + ';--g2:' + b[2] + (sz ? ';--s:' + sz + 'px' : '') + '">' + ico(b[0]) + '</span>'; }
   function whead(k, title, right) { return '<div class="whead">' + badge(k) + '<h2>' + title + '</h2>' + (right || '') + '</div>'; }

@@ -61,7 +61,7 @@
     let r; try { r = await req('/api/engine/events?since=' + evAt); } catch (e) { return; }
     if (evAt) for (const ev of r.events) {
       if (ev.type === 'routine' && B.runRoutine) { const c = await B.Server.post('/api/engine/claim', { t: ev.t, type: 'routine' }).catch(() => ({})); if (c.ok) { B.src = 'nas'; try { B.runRoutine(ev.id, true); } finally { B.src = null; } } }
-      if (ev.type === 'say' && B.tabletSay) B.tabletSay(ev.text);
+      if (ev.type === 'say' && B.tabletSay) B.tabletSay(ev.text, ev);
       if (B.fire) B.fire('nas', ev);   // autres modules de l'écran (listes, scènes, détection)
       if (ev.type === 'away') { if (ev.on && !S.away && B.awayLock) B.awayLock(); else if (!ev.on && S.away) { S.away = 0; B.save(); B.emit('house'); B.emit('abs'); } }
     }

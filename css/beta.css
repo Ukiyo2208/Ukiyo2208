@@ -2261,3 +2261,38 @@ html.fluid .encost { position: static; margin: 6px 0; }
 .netcl { display: flex; flex-direction: column; gap: 10px; min-height: 0; flex: 1; } .netcl .list { flex: 1; min-height: 0; }
 .li.netc { grid-template-columns: 30px minmax(0, 1fr) auto; } .li.netc small { display: block; color: var(--soft); font-size: 11.5px; } .li.netc.off { opacity: .5; } .li.netc .ic { color: #2fd3ff; }
 @media (max-width: 560px) { .modsrc { grid-template-columns: 1fr; } }
+
+/* ---------- 7.14 : Wi-Fi invités, contrôle parental, matin, interphone, rappels, secours, administration ---------- */
+.gwgrid { display: grid; grid-template-columns: 300px 1fr; gap: 16px; align-items: start; }
+.gwqr { display: grid; justify-items: center; gap: 6px; padding: 14px; border-radius: 16px; background: #fff; color: #0b1530; text-align: center; }
+.gwqr svg { width: 240px; max-width: 100%; height: auto; display: block; } .gwqr small { color: #445; font-family: ui-monospace, Menlo, monospace; word-break: break-all; } .gwqr .btn { color: #fff; }
+.gwfull { position: fixed; inset: 0; z-index: 9995; display: grid; place-items: center; background: rgba(2, 6, 15, .92); cursor: pointer; }
+.gwfull > div { display: grid; justify-items: center; gap: 8px; padding: 26px; border-radius: 24px; background: #fff; color: #0b1530; text-align: center; max-width: 92vw; }
+.gwfull svg { width: min(70vmin, 520px); height: auto; display: block; } .gwfull b { font-size: 26px; } .gwfull span { font: 20px ui-monospace, Menlo, monospace; } .gwfull small { color: #556; }
+.li.pcli, .li.rmli { grid-template-columns: 30px minmax(0, 1fr) auto; } .li.pcli small, .li.rmli small { display: block; color: var(--soft); font-size: 11.5px; }
+.li.rmli.due .ic { color: #ffb35c; } .rmdue { margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(90, 160, 255, .15); }
+.netspark { display: flex; align-items: flex-end; gap: 1px; height: 40px; } .netspark i { flex: 1; background: rgba(47, 211, 255, .55); border-radius: 1px; min-height: 2px; } .netspark i.off { background: #ff5a6a; }
+.nbouts { display: flex; flex-wrap: wrap; gap: 6px; } .nbouts span { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 4px 8px; border-radius: 8px; background: rgba(255, 90, 106, .12); color: #ffb3bb; }
+.mwx { display: grid; gap: 14px; align-content: start; } .mwxt b { font-size: 64px; font-weight: 200; display: block; line-height: 1; } .mwxt span { color: var(--soft); font-size: 18px; }
+.mwxn { display: flex; align-items: center; gap: 12px; } .mwxn .ico, .mwxn svg { width: 54px; height: 54px; } .mwxn b { font-size: 44px; font-weight: 300; } .mwxn small { color: var(--soft); font-size: 14px; }
+.mchips { display: flex; flex-wrap: wrap; gap: 8px; } .mchips span { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 12px; background: rgba(10, 24, 56, .7); font-size: 14px; }
+.mchips .t-rouge { background: rgba(255, 90, 106, .25); } .mchips .t-blanc { background: rgba(255, 255, 255, .15); } .mchips .t-bleu { background: rgba(59, 130, 246, .25); }
+.li.magl { grid-template-columns: 6px 70px 1fr; align-items: center; font-size: 15px; } .mcol { width: 6px; height: 28px; border-radius: 3px; }
+.li.mtr, .li.mdep { grid-template-columns: auto minmax(0, 1fr) auto; } .li.mtr small, .li.mdep small { display: block; color: var(--soft); font-size: 12px; }
+.mmin { font-size: 22px; font-weight: 500; } .li.mtr.g .ic { color: #22e3a4; } .li.mtr.y .ic { color: #ffb35c; } .li.mtr.p .ic { color: #ff5a6a; } .li.mtr.p .mmin { color: #ff8a95; }
+.mline { min-width: 46px; padding: 4px 8px; border-radius: 8px; text-align: center; font-weight: 600; font-size: 13px; background: #1f7dff; } .mline.tram { background: #e2001a; } .mline.train { background: #5b2c83; }
+.ictg { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 10px; }
+.ictg button { display: grid; justify-items: start; gap: 4px; padding: 16px; border-radius: 16px; background: rgba(6, 16, 40, .6); border: 1px solid rgba(90, 160, 255, .22); color: #fff; cursor: pointer; text-align: left; }
+.ictg button .ico { font-size: 26px; color: #2fd3ff; } .ictg button small { color: var(--soft); } .ictg button.on { border-color: #2fd3ff; background: rgba(47, 211, 255, .15); } .ictg button.off { opacity: .5; }
+.icsend { display: grid; gap: 14px; align-content: start; } .icph { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; } .icph .btn { justify-content: center; min-height: 52px; font-size: 15px; }
+.icform { display: flex; gap: 8px; } .icform input { flex: 1; height: 46px; padding: 0 12px; border-radius: 12px; background: rgba(6, 16, 40, .85); border: 1px solid rgba(90, 160, 255, .3); color: #fff; font-size: 15px; }
+.icpop { position: fixed; left: 50%; top: 24px; transform: translateX(-50%); z-index: 9993; display: flex; align-items: center; gap: 14px; padding: 16px 22px; border-radius: 18px; background: rgba(8, 18, 42, .96); border: 1px solid #2fd3ff; box-shadow: 0 10px 40px rgba(0, 0, 0, .5); max-width: 92vw; cursor: pointer; }
+.icpop > .ico { font-size: 30px; color: #2fd3ff; } .icpop b { font-size: 22px; display: block; } .icpop small { color: var(--soft); }
+.sosbar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 9980; display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 14px; background: rgba(120, 60, 0, .92); border: 1px solid #ffb35c; color: #fff; font-size: 13.5px; max-width: 94vw; cursor: pointer; }
+.sosbar.min span { display: none; } .sosbar .ico { font-size: 20px; color: #ffcf6e; }
+.adgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; } .adgrid > div { display: grid; padding: 10px; border-radius: 10px; background: rgba(10, 24, 56, .55); } .adgrid small { color: var(--soft); font-size: 11.5px; }
+.adbar { height: 12px; border-radius: 6px; background: rgba(90, 160, 255, .15); overflow: hidden; margin: 4px 0; } .adbar i { display: block; height: 100%; background: #22e3a4; } .adbar i.y { background: #ffb35c; } .adbar i.p { background: #ff5a6a; }
+.adchips { display: flex; flex-wrap: wrap; gap: 6px; } .adchips span { padding: 4px 10px; border-radius: 8px; font-size: 12px; background: rgba(255, 90, 106, .15); color: #ffb3bb; } .adchips span.on { background: rgba(34, 227, 164, .15); color: #8ff0cc; }
+.adlogs .li { grid-template-columns: 120px 1fr; font-size: 12px; font-family: ui-monospace, Menlo, monospace; } .adlogs .li.error span { color: #ff8a95; } .adlogs .li.warn span { color: #ffcf6e; }
+.scmode { margin: 10px 0; }
+@media (max-width: 700px) { .gwgrid { grid-template-columns: 1fr; } }
