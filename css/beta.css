@@ -2356,7 +2356,7 @@ html.fluid .qkgrid { grid-template-columns: repeat(3, 1fr); } html.fluid .qkb { 
 
 /* ---------- 7.18 : accueil vertical (tablette debout, iPhone) ---------- */
 /* --u : 1 pixel de la maquette 800 × 1280, mis à l'échelle de l'écran (Fire 8″ ≈ 600 × 960) ; iPhone : version compacte qui défile */
-html.portrait .ph { --u: min(calc(100vw / 800), calc(100vh / 1280)); display: flex; flex-direction: column; gap: calc(13 * var(--u)); padding: 0 calc(12 * var(--u)); }
+html.portrait .ph { --u: min(calc(100vw / 800), calc(100vh / 1280)); display: flex; flex-direction: column; gap: calc(12 * var(--u)); padding: 0 calc(12 * var(--u)); }
 .phbg, html.portrait .ph::before { content: ""; position: fixed; inset: 0; z-index: -1; background: url(../assets/bg/mobile.jpg) center/cover; opacity: .55; }
 html.portrait .ph::after { content: ""; position: fixed; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(3, 10, 27, .25), rgba(3, 10, 27, .75) 45%, rgba(3, 10, 27, .92)); }
 .ph .card { padding: calc(14 * var(--u)); border-radius: calc(18 * var(--u)); }
@@ -2419,6 +2419,8 @@ html.portrait .page:has(.ph) { gap: 0; }
   .phclock b { font-size: 58px; } .phwx b { font-size: 40px; } .phwx b .ico { font-size: 32px; } .phwx .city { display: none; }
   .phroom b { font-size: 16px; padding-right: 54px; } .phroom .sw { transform: scale(.85); transform-origin: top right; }
 }
+/* iPhone déplié (iPhone Duo, écran intérieur 7,6″ ≈ 626 × 890) : grilles de tablette, mais texte à taille de téléphone et la page défile */
+@media (min-width: 560px) { html.portrait.iphone .ph { --u: clamp(.9px, calc(100vw / 600), 1.1px); } }
 html.portrait .dock > a, html.portrait .dock > button:not(.iafab) { font-size: 10px; }
 
 /* ---------- 7.18 : panneau mural d'une pièce (720 × 720) ---------- */

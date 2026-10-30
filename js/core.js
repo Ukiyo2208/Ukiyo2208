@@ -120,6 +120,7 @@
     H.classList.toggle('fluid', fluid);
     H.classList.toggle('tab2', fluid && !mini && lm !== 'phone' && vw >= 700);
     H.classList.toggle('portrait', portrait); H.classList.toggle('mini', mini);
+    H.classList.toggle('iphone', /iPhone/.test(navigator.userAgent));   // iPhone pliable (écran intérieur 626 × 890) : texte à taille de téléphone
     return fluid;
   }
   function fit() {
