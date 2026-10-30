@@ -10,7 +10,7 @@ const ROOT = path.resolve(process.env.APP_DIR || path.join(__dirname, '..'));
 const DATA = path.resolve(process.env.DATA_DIR || path.join(__dirname, 'data'));
 const KEY = process.env.BETA_KEY || '';
 const KEEP = +process.env.BACKUP_KEEP || 30;
-const VERSION = '7.19';
+const VERSION = '7.20';
 for (const d of ['', 'store', 'backups']) fs.mkdirSync(path.join(DATA, d), { recursive: true });
 if (!KEY) console.warn('⚠️  BETA_KEY n’est pas défini : l’API est ouverte à tout le réseau.');
 
@@ -40,6 +40,7 @@ const PLUS = ENGINE ? opt('plus', () => require('./plus')(DATA, send, readBody, 
 const EXTRA = ENGINE ? opt('extra', () => require('./extra')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, PLUS, LOGS, MODS: () => MODS })) : null;   // réseau, réveil, matin, interphone, rappels, administration
 const FAMILLE = ENGINE ? opt('famille', () => require('./famille')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, PLUS, EXTRA })) : null;   // calendriers, colis, missions, photos, vacances, sonnette, recharge
 const MODS = { hub: true, discover: true, notify: true, geo: !!GEO, bridge: !!BRIDGE, engine: !!ENGINE, auth: true, plus: !!PLUS, extra: !!EXTRA, famille: !!FAMILLE };
+const VEILLE = opt('veille', () => require('./veille')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, VERSION }));   // veille des marques : pannes, API modifiées, nouvelles versions
 const DIAG = require('./diag')(DATA, send, { HUB, AUTH, KEY, MODS: () => MODS, ENGINE });   // « Tester toute la maison »
 // fichiers qui contiennent des mots de passe : lisibles par le serveur seulement
 ['hub.json', 'auth.json', 'notify.json', 'plus.json', 'extra.json', 'famille.json', 'engine.json', 'geo.json', 'bridge.json'].forEach(f => { try { fs.chmodSync(path.join(DATA, f), 0o600); } catch (e) { } });
@@ -67,6 +68,7 @@ async function api(req, res, url) {
   if (AUTH.needAdmin(p, m) && !w.admin) return send(res, 401, { error: 'réservé à un administrateur (code PIN)', need: 'admin' });
   if (p === '/api/auth' || p.startsWith('/api/auth/')) { const r0 = await AUTH.api(req, res, url, w); if (r0 !== false) return; }
   if (ENGINE && (p === '/api/engine' || p.startsWith('/api/engine/') || p === '/api/history')) { const r0 = await ENGINE.api(req, res, url, w); if (r0 !== false) return; }
+  if (VEILLE && (p === '/api/veille' || p.startsWith('/api/veille/'))) { const r0 = await VEILLE.api(req, res, url); if (r0 !== false) return; }
   if (p === '/api/diag') { const r0 = await DIAG.api(req, res, url); if (r0 !== false) return; }
   if (FAMILLE && (p === '/api/famille' || p.startsWith('/api/famille/') || p === '/api/photos' || p === '/api/photos/file')) { const r0 = await FAMILLE.api(req, res, url, w); if (r0 !== false) return; }
   if (EXTRA && (p === '/api/extra' || p.startsWith('/api/extra/'))) { const r0 = await EXTRA.api(req, res, url, w); if (r0 !== false) return; }

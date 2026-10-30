@@ -2507,3 +2507,24 @@ html.mini .ringr .btn { min-height: 72px; font-size: 18px; }
 .mp.v-main .mptiles { flex: 1; min-height: 0; } .mp.v-main .mptiles .mpt { min-height: 0; }
 /* le panneau a son propre écran de nuit : pas de filtre « nightmode » (il enfermerait le panneau dans une boîte de hauteur nulle) */
 html.mini .stage { position: relative; z-index: 1; height: 100vh !important; filter: none !important; } .mp { z-index: 20; }
+
+/* ---------- 7.20 : veille des marques ---------- */
+.vl { display: flex; flex-direction: column; gap: 8px; overflow: auto; flex: 1; min-height: 0; }
+.vlb { border-radius: 14px; background: rgba(6, 16, 40, .55); border: 1px solid var(--line2); }
+.vlb.bad { border-color: rgba(255, 58, 76, .6); background: rgba(255, 58, 76, .1); } .vlb.warn { border-color: rgba(255, 179, 92, .5); }
+.vlh { width: 100%; display: grid; grid-template-columns: 14px minmax(90px, auto) auto 1fr auto 20px; gap: 10px; align-items: center; padding: 11px 14px; background: none; border: 0; color: inherit; text-align: left; }
+.vlh .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+.vlb.ok .dot { background: var(--green); box-shadow: 0 0 8px var(--green); } .vlb.bad .dot { background: var(--red); box-shadow: 0 0 8px var(--red); } .vlb.warn .dot { background: var(--orange); }
+.vlh b { font-size: 15px; } .vlh .st { font-size: 13px; color: var(--soft); } .vlh small { color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vlh .chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.vlh .chips span { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 99px; font-size: 12px; background: rgba(20, 44, 96, .6); border: 1px solid var(--line2); }
+.vlh .chips .new { border-color: rgba(31, 224, 160, .6); color: #8ff0cf; } .vlh .chips .warn { border-color: rgba(255, 179, 92, .6); color: #ffd29a; }
+.vld { padding: 0 16px 14px 38px; font-size: 13.5px; line-height: 1.55; } .vld p { margin: 0 0 8px; } .vld code { font-size: 12px; background: rgba(10, 24, 56, .8); padding: 1px 6px; border-radius: 6px; }
+.vlnotes { max-height: 140px; overflow: auto; font-size: 12px; white-space: pre-wrap; background: rgba(4, 10, 26, .7); border-radius: 10px; padding: 8px 10px; margin: 0 0 8px; }
+.vliss { margin: 0 0 10px; padding-left: 18px; } .vliss li { margin-bottom: 3px; } .vliss li.warn a { color: #ffd29a; } .vliss small { color: var(--muted); }
+.vld a, .vlog a { color: var(--cyan); }
+.vlog { display: flex; flex-direction: column; gap: 2px; overflow: auto; flex: 1; min-height: 0; }
+.vlog > div { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: start; padding: 6px 2px; border-bottom: 1px solid var(--line2); font-size: 13px; }
+.vlog .ico { font-size: 16px; color: var(--cyan); } .vlog .down .ico, .vlog .partial .ico { color: var(--red); } .vlog .up .ico { color: var(--green); } .vlog .change .ico, .vlog .issue .ico { color: var(--orange); } .vlog small { color: var(--muted); white-space: nowrap; }
+.vlcfg { overflow: auto; flex: 1; min-height: 0; padding-right: 4px; }
+html.fluid .vlh { grid-template-columns: 14px 1fr auto 20px; } html.fluid .vlh small, html.fluid .vlh .st { grid-column: 2 / 4; } html.fluid .vlh .chips { grid-column: 2 / 4; justify-content: flex-start; }

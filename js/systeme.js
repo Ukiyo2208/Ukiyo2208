@@ -88,7 +88,7 @@
     ['Famille', 'family', [['Notifications', 'bellFill', act('nfOpen')], ['Calendriers iPhone', 'calendar', act('icOpen')], ['Colis', 'download', act('pkOpen')], ['Tempo, vigilance, collectes', 'sun2', act('svcOpen')], ['Rappels de la maison', 'history', act('rmOpen')], ['Missions et récompenses', 'heart', act('msCfg')], ['Tableau du matin', 'route', act('mcOpen')]]],
     ['Écrans et iPhone', 'monitor', [['Cet écran (disposition, veille, langue)', 'monitor', act('screenCfg')], ['Cadre photo', 'photo', act('phOpen')], ['Interphone : tablettes', 'mic', go('interphone')], ['iPhone : Siri et widgets', 'mic', act('iphOpen')], ['Commande vocale « Bêta »', 'mic', act('wakeCfg')]]],
     ['Réseau', 'wifi', [['Box et Wi-Fi', 'wifi', go('reseau')], ['Wi-Fi invités', 'wifi', act('gwOpen')]]],
-    ['Système', 'server', [['Installation et diagnostic', 'check', go('installation')], ['Sauvegarde', 'cloudUp', act('bkOpen')], ['Mises à jour', 'download', act('upOpen')], ['Administration', 'server', go('admin')], ['Santé de la maison', 'heart', go('sante')]]]
+    ['Système', 'server', [['Installation et diagnostic', 'check', go('installation')], ['Sauvegarde', 'cloudUp', act('bkOpen')], ['Mises à jour', 'download', act('upOpen')], ['Administration', 'server', go('admin')], ['Veille des marques (pannes, mises à jour)', 'plug', go('veille')], ['Santé de la maison', 'heart', go('sante')]]]
   ];
   let RQ = '';
   const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '');   // « wifi » trouve « Wi-Fi »

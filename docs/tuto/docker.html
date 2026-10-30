@@ -8,7 +8,7 @@
 <body>
 
 <div class="cover">
-  <div class="top"><img src="../../assets/logo-mark.png" alt=""><div><div class="brand">Bêta home · version 7.19</div><b style="font-size:12pt">Installation sur NAS UGREEN (UGOS Pro) avec Docker</b></div></div>
+  <div class="top"><img src="../../assets/logo-mark.png" alt=""><div><div class="brand">Bêta home · version 7.20</div><b style="font-size:12pt">Installation sur NAS UGREEN (UGOS Pro) avec Docker</b></div></div>
   <div>
     <h1>Installer Bêta home sur Docker</h1>
     <div class="sub">Du NAS éteint aux tablettes allumées : serveur, caméras, notifications, accès à distance, mises à jour.</div>
@@ -44,7 +44,7 @@
     <li>Le NAS UGREEN allumé, sur le réseau, avec UGOS Pro à jour.</li>
     <li>L'application <b>Docker</b> installée depuis le Centre d'applications d'UGOS.</li>
     <li>L'adresse IP du NAS (UGOS › Panneau de configuration › Réseau), par exemple <code>192.168.1.20</code>. Idéalement, réservez-la dans l'application Deco (Plus › Avancé › Réservation d'adresse) pour qu'elle ne change jamais.</li>
-    <li>Le fichier <b>beta-home-v7.19.zip</b> (ou une copie du dépôt GitHub).</li>
+    <li>Le fichier <b>beta-home-v7.20.zip</b> (ou une copie du dépôt GitHub).</li>
     <li>Une <b>longue phrase secrète</b> pour la clé du serveur, par exemple <code>tram-cigogne-bretzel-2026-violet</code>.</li>
   </ul>
 </section>
@@ -53,7 +53,7 @@
   <h2><span class="n">1</span>Copier Bêta home sur le NAS</h2>
   <ol class="steps">
     <li>Dans UGOS, ouvrez <b>Fichiers</b> et créez le dossier partagé <code>docker</code> (s'il n'existe pas), puis le sous-dossier <code>beta-home</code>.</li>
-    <li>Décompressez <b>beta-home-v7.19.zip</b> sur l'ordinateur et copiez <b>tout son contenu</b> dans <code>docker/beta-home</code>.</li>
+    <li>Décompressez <b>beta-home-v7.20.zip</b> sur l'ordinateur et copiez <b>tout son contenu</b> dans <code>docker/beta-home</code>.</li>
     <li>Vous devez obtenir :</li>
   </ol>
 <pre>docker/beta-home/
@@ -115,7 +115,7 @@ cd /volume1/docker/beta-home/server        <span class="c"># adaptez « volume1 
 sudo docker compose up -d                  <span class="c"># télécharge (ou construit) et démarre</span>
 sudo docker compose ps                     <span class="c"># état des services</span>
 sudo docker logs -f beta-home              <span class="c"># journal en direct (Ctrl+C pour quitter)</span></pre>
-  <p>Dans le journal, vous devez voir une ligne du type <code>Serveur Bêta 7.19 sur http://0.0.0.0:8090 — …</code>.</p>
+  <p>Dans le journal, vous devez voir une ligne du type <code>Serveur Bêta 7.20 sur http://0.0.0.0:8090 — …</code>.</p>
 </section>
 
 <section>

@@ -394,3 +394,15 @@ Toutes dans **Marques**, avec le tuto pas à pas. Sauf mention, elles fonctionne
 | Divers | **Imprimantes** IPP / AirPrint (niveaux d'encre), **Adresse web (HTTP)** : tout appareil qui se commande par une URL (une ligne par appareil) |
 
 Chaque connecteur est testé contre un faux appareil qui répond comme le vrai (`tests/connectors2.test.js`). Ils n'ont pas pu être essayés sur du vrai matériel : en cas de souci, le bouton **Tester** de la fiche donne le message d'erreur exact.
+
+## Veille des marques (7.20)
+
+Pour corriger vite quand une marque change : **Réglages › Système › Veille des marques**, et la notification **« Marques »** (Paramètres › Notifs) sur l'iPhone.
+
+- **Panne** : une marque qui marchait ne répond plus depuis 15 minutes (réglable) → notification avec l'erreur exacte, puis « elle refonctionne » quand elle revient. Les marques reliées sont relues toutes les minutes, même si aucun écran n'est allumé.
+- **Réponse différente** : la marque répond, mais ses appareils ont disparu ou des champs manquent (l'API a probablement changé après une mise à jour). Il faut 3 relevés de suite, pour éviter les fausses alertes.
+- **Nouvelles versions** : chaque nuit, la dernière version publiée des projets utilisés (Tasmota, ESPHome, WLED, Zigbee2MQTT, Z-Wave JS, Frigate, Valetudo, Music Assistant, Home Assistant, Jellyfin, Kodi…), avec les notes de version.
+- **Signaux d'alerte** : les tickets ouverts dans la semaine sur l'intégration Home Assistant de la même marque. Pour les marques cloud (MELCloud, Verisure, tado°, Netatmo, Cozytouch, Viessmann…), un ticket du type « stopped working », « 401 », « login » déclenche une notification : on est souvent prévenu avant que ça casse chez soi.
+- **Tableau de bord** : état de chaque marque, dernière lecture réussie, nombre d'appareils, champs reçus, dernière version, tickets, journal des 200 derniers évènements.
+- **Corriger** : « Copier le rapport » donne tout ce qu'il faut pour écrire le correctif (fichier du connecteur, erreur, champs reçus, versions, tickets). Facultatif : avec un jeton GitHub (droit « Issues »), un **ticket** est créé dans votre dépôt — à la main, ou tout seul en cas de panne ou de changement (un seul par semaine et par marque). Le jeton reste sur le NAS.
+- La « santé de la maison » laisse désormais les pannes de marques à la veille (plus de double notification).

@@ -24,6 +24,7 @@
     ['presence', 'pin', 'Arrivées et départs', 'Quand quelqu’un arrive ou quitte la maison (OwnTracks)', 'admins'],
     ['tempo', 'boltPlain', 'Jour rouge Tempo', 'La veille, pour décaler machines et recharge', 'all'],
     ['health', 'heart', 'Santé de la maison', 'Appareil hors ligne, pile faible, sauvegarde ratée', 'admins'],
+    ['brands', 'plug', 'Marques : panne ou mise à jour', 'Une marque ne répond plus, son API change, nouvelle version, signal d’alerte (veille des marques)', 'admins'],
     ['energy', 'chart', 'Consommation inhabituelle', 'Plus de 1,5 fois la normale à la même heure', 'all'],
     ['water', 'sprinkler', 'Arrosage annulé', 'Quand il a plu ou qu’il va pleuvoir', 'all'],
     ['network', 'wifi', 'Réseau', 'Appareil inconnu, coupure internet, débit en chute', 'admins'],

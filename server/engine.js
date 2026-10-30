@@ -220,7 +220,7 @@ module.exports = function engine(DATA, send, readBody, M) {
     const keys = brands.map(b => 'b:' + b.id).concat(devices.map(d => d.id + ':' + d.issue.split(' ')[0]));
     const fresh = keys.filter(k => !known[k]); keys.forEach(k => { known[k] = known[k] || Date.now(); }); Object.keys(known).forEach(k => { if (!keys.includes(k)) delete known[k]; });
     if (fresh.length && Date.now() - started > 5 * 6e4) {
-      const txt = devices.filter(d => fresh.includes(d.id + ':' + d.issue.split(' ')[0])).map(d => d.name + ' : ' + d.issue).concat(brands.filter(b => fresh.includes('b:' + b.id)).map(b => b.id + ' : ' + b.err));
+      const txt = devices.filter(d => fresh.includes(d.id + ':' + d.issue.split(' ')[0])).map(d => d.name + ' : ' + d.issue).concat(EXT.brandWatch ? [] : brands.filter(b => fresh.includes('b:' + b.id)).map(b => b.id + ' : ' + b.err));   // pannes de marques : veille.js
       if (txt.length) NOTIFY.notifyRule('health', { title: 'Santé de la maison', message: txt.slice(0, 5).join(' · '), go: 'sante', tags: ['warning'] });
     }
   }

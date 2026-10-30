@@ -44,10 +44,12 @@ module.exports = function hub(DATA, send, readBody) {
     for (const k in c) if (!['status', 'info', 'tokens'].includes(k)) out[k] = (b.secrets || []).includes(k) && c[k] ? '••••' : c[k];
     return { id: b.id, name: b.name, oauth: !!b.oauth, linked: b.oauth ? !!(c.tokens && c.tokens.access) : undefined, status: c.status || '', info: c.info || '', cfg: out };
   }
+  // chaque relevé (réussi ou en erreur) est signalé à la veille des marques (server/veille.js)
+  const listeners = [], polled = (id, err, list) => listeners.forEach(f => { try { f(id, err, list); } catch (e) { } });
   // états relus au rythme de chaque marque (quotas) ; on répond tout de suite avec la dernière lecture
   async function states(id) {
     const b = BRANDS[id], c = cache[id] = cache[id] || { at: 0, data: {}, err: '' };
-    if (Date.now() - c.at >= b.poll && !c.busy) c.busy = b.devices(cfg(id), helper(b)).then(list => { c.data = {}; list.forEach(d => { c.data[d.id] = d.state; }); c.err = ''; }, e => { c.err = e.message; }).then(() => { c.at = Date.now(); c.busy = null; });
+    if (Date.now() - c.at >= b.poll && !c.busy) c.busy = b.devices(cfg(id), helper(b)).then(list => { c.data = {}; list.forEach(d => { c.data[d.id] = d.state; }); c.err = ''; polled(id, null, list); }, e => { c.err = e.message; polled(id, e.message, null); }).then(() => { c.at = Date.now(); c.busy = null; });
     if (!c.at && c.busy) await c.busy;
     return { s: c.data, err: c.err };
   }
@@ -104,5 +106,5 @@ module.exports = function hub(DATA, send, readBody) {
   // pour les autres modules du serveur (notifications 24 h/24, pont Alexa)
   async function command(brand, id, patch, cur) { const b = BRANDS[brand]; if (!b) throw new Error('marque inconnue'); await b.command(cfg(brand), id, patch || {}, cur || {}, helper(b)); if (cache[brand]) cache[brand].at = 0; }
   const configured = () => Object.keys(BRANDS).filter(id => CFG[id] && Object.keys(CFG[id]).some(k => !['status', 'info'].includes(k)));
-  return { callback, api, states, command, configured, cfg: id => cfg(id), brand: id => BRANDS[id] };
+  return { callback, api, states, command, configured, cfg: id => cfg(id), brand: id => BRANDS[id], onPoll: f => listeners.push(f), brandIds: () => Object.keys(BRANDS) };
 };
