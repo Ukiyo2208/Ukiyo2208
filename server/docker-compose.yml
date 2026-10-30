@@ -57,3 +57,67 @@ services:
   #     - ./data/zigbee2mqtt:/app/data
   #   devices:
   #     - /dev/ttyUSB0:/dev/ttyACM0   # adaptez au nom de votre clé (ls /dev/serial/by-id/)
+
+  # Matter (contrôleur) : pilote en local les appareils Matter (Aqara Hub M3, Eve, Nanoleaf, IKEA…).
+  # Bêta home › Marques › Matter (adresse : IP-du-NAS:5580). Le NAS doit avoir l'IPv6 activée sur le réseau local.
+  # matter-server:
+  #   image: ghcr.io/home-assistant-libs/python-matter-server:stable
+  #   container_name: matter-server
+  #   restart: unless-stopped
+  #   network_mode: host
+  #   security_opt:
+  #     - apparmor:unconfined
+  #   command: --storage-path /data --paa-root-cert-dir /data/credentials
+  #   volumes:
+  #     - ./data/matter-server:/data
+
+  # Music Assistant (serveur seul, sans Home Assistant) : http://IP-du-NAS:8095
+  # Bêta home › Marques › Music Assistant (adresse : IP-du-NAS:8095).
+  # music-assistant:
+  #   image: ghcr.io/music-assistant/server:latest
+  #   container_name: music-assistant
+  #   restart: unless-stopped
+  #   network_mode: host
+  #   security_opt:
+  #     - apparmor:unconfined
+  #   cap_add:
+  #     - SYS_ADMIN
+  #     - DAC_READ_SEARCH
+  #   volumes:
+  #     - ./data/music-assistant:/data
+
+  # ntfy (option) : votre propre serveur de notifications sur le NAS, au lieu de ntfy.sh.
+  # Bêta home › Paramètres › Notifs : serveur ntfy = http://IP-du-NAS:8091. Hors de la maison, les téléphones
+  # doivent pouvoir joindre le NAS (VPN, accès à distance UGREEN, Tailscale…).
+  # ntfy:
+  #   image: binwiederhier/ntfy:latest
+  #   container_name: ntfy
+  #   restart: unless-stopped
+  #   network_mode: host
+  #   command: serve
+  #   environment:
+  #     - TZ=Europe/Paris
+  #     - NTFY_BASE_URL=http://IP-du-NAS:8091
+  #     - NTFY_LISTEN_HTTP=:8091
+  #     - NTFY_UPSTREAM_BASE_URL=https://ntfy.sh          # réveil des iPhone : seul un identifiant passe par ntfy.sh
+  #     - NTFY_CACHE_FILE=/var/cache/ntfy/cache.db
+  #     - NTFY_ATTACHMENT_CACHE_DIR=/var/cache/ntfy/attachments   # photos de la sonnette
+  #   volumes:
+  #     - ./data/ntfy:/var/cache/ntfy
+
+  # Pont Matter : Alexa (et Google Home, Apple Maison) pilote les appareils choisis dans
+  # Bêta home › Connexions › Alexa par Matter. Sans Home Assistant ni abonnement. IPv6 du NAS activée.
+  # Le code d'appairage s'affiche dans Bêta home (et dans le journal du conteneur).
+  # matter-bridge:
+  #   build:
+  #     context: ../bridge
+  #   container_name: beta-matter-bridge
+  #   restart: unless-stopped
+  #   network_mode: host
+  #   environment:
+  #     - BETA_URL=http://127.0.0.1:8090
+  #     - BETA_KEY=changez-moi-par-une-longue-phrase   # la même que pour beta-home
+  #     - BRIDGE_PORT=5540
+  #     - TZ=Europe/Paris
+  #   volumes:
+  #     - ./data/matter-bridge:/data                   # appairages (ne pas supprimer)

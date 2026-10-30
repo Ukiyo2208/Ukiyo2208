@@ -168,3 +168,24 @@ Page **Marques**, sans Home Assistant ni cloud :
 - **WLED**, **Nanoleaf**, **Yeelight**, **Philips WiZ** (lumières), **Tasmota** (prises et modules), **Daikin** (clims avec adaptateur Wi-Fi local).
 
 La découverte reconnaît aussi WLED, Nanoleaf, Denon/Marantz (HEOS), Roku et les brokers MQTT.
+
+## Tout sans Home Assistant (7.7)
+
+**Nouvelles marques** (page Marques, en local) :
+- **TP-Link Kasa** (prises, multiprises, ampoules) et **Tapo** (P100, P110, L530… : identifiants Tapo gardés sur le NAS, connexion locale KLAP).
+- **LIFX** (ampoules), **Broadlink** (télécommandes infrarouges : on apprend un bouton de la vraie télécommande, il devient un bouton Bêta).
+- **TV Philips** (appairage par code PIN), **TV Samsung** (« Autoriser » sur la TV), **TV LG** (webOS) : marche, volume, lecture ; allumage par le réseau (Wake-on-LAN).
+- **Matter** (contrôleur, conteneur `matter-server`) : n'importe quel appareil Matter, ou tous ceux d'un Aqara Hub M3, avec un code de partage.
+- **Music Assistant** (serveur seul) : tous ses lecteurs deviennent des enceintes Bêta, les radios y sont jouées.
+
+La découverte trouve aussi les TV Samsung, LG et Philips, et (par diffusion UDP) les prises Kasa, ampoules LIFX et Broadlink.
+
+**Notifications sans Home Assistant** (Paramètres › Notifs, mode « ntfy ») : le serveur du NAS envoie lui-même, 24 h/24, avec l'appli gratuite **ntfy** (un sujet secret par personne). Il surveille les appareils reliés en direct : sonnette, fuite d'eau, garage resté ouvert, machine terminée, mouvement ou ouverture pendant une absence. Quand on sonne : photo de la caméra sur les téléphones, **annonce vocale et caméra à l'écran sur les tablettes** (Fully Kiosk), message sur la TV LG. Un bouton qui ne sait qu'appeler une adresse (Shelly Button, ESPHome) peut faire sonner via `/api/notify/ring?k=…`. Votre propre serveur ntfy est prêt dans le docker-compose.
+
+**Positions avec OwnTracks** (Carte › Relier les téléphones) : chaque téléphone envoie sa position au NAS (lien « Ouvrir dans OwnTracks » qui configure l'appli d'un coup). Historique sur 24 h, arrivées et départs notifiés. Il faut que le téléphone joigne le NAS hors de la maison (VPN, Tailscale, accès à distance).
+
+**Alexa par Matter** (Connexions › Alexa par Matter) : le conteneur `matter-bridge` (dossier `bridge/`, basé sur matter.js) expose à Alexa les appareils cochés, les routines Bêta comme des boutons (« Alexa, allume Soirée ciné ») et des déclencheurs (Sonnette, Mode absent) pour lancer des routines Alexa. Sans Home Assistant ni abonnement ; le même code marche pour Google Home et Apple Maison. Les caméras restent sur HomeKit (Alexa n'accepte pas les caméras en Matter), les serrures ne sont pas partagées.
+
+**docker-compose** : blocs prêts à décommenter pour `matter-server`, `music-assistant`, `ntfy` et `matter-bridge`.
+
+Toujours en préparation : Ford (API fragile, lecture seule), Roborock, Verisure, Viessmann, HomePod.

@@ -1983,3 +1983,44 @@ html.fluid .ftop .fright { flex-shrink: 0; }
 .hkcode b { font-family: ui-monospace, Menlo, monospace; letter-spacing: 1px; color: #fff; }
 .hkhelp { display: flex; gap: 10px; margin: 12px 0; padding: 10px 12px; border-radius: 12px; background: rgba(30, 90, 200, .2); border: 1px solid rgba(90, 160, 255, .25); font-size: 12.5px; line-height: 1.5; } .hkhelp > .ico { flex: none; color: #2fd3ff; font-size: 18px; }
 .mqdisc { position: absolute; right: 18px; top: 14px; z-index: 2; }
+
+/* ---------- 7.7 : notifications ntfy (sans Home Assistant) ---------- */
+.nfmode { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+.nfsteps { margin: 10px 0; font-size: 12.5px; }
+.nfp { font-size: 12px; line-height: 1.5; margin: 8px 0 0; }
+.nfp code.sel { user-select: all; word-break: break-all; }
+.nfbell { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.nfbell select { width: 100%; height: 36px; padding: 0 8px; border-radius: 9px; background: rgba(6, 16, 40, .8); border: 1px solid rgba(90, 160, 255, .3); color: #fff; font-size: 13px; margin-top: 4px; }
+.nfsws { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 12px 0 4px; }
+.nfsw { gap: 8px; font-size: 13.5px; align-items: center; }
+.nfbtns { justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.nfbtns .muted { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
+@media (max-width: 700px) { .nfbell { grid-template-columns: 1fr; } }
+
+/* ---------- 7.7 : OwnTracks ---------- */
+.otmodal .list .li.otu { grid-template-columns: 40px minmax(0, 1fr) auto; align-items: start; }
+.otu img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
+.otu small { display: block; color: var(--soft); font-size: 12px; margin-top: 2px; line-height: 1.5; }
+.otu .otbtn { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.otcfg { margin-top: 8px; display: grid; gap: 6px; justify-items: start; }
+.otcfg code.sel { user-select: all; word-break: break-all; }
+@media (max-width: 600px) { .otmodal .list .li.otu { grid-template-columns: 34px minmax(0, 1fr); } .otu .otbtn { grid-column: 1 / -1; justify-content: flex-start; } }
+
+/* ---------- 7.7 : Alexa par Matter ---------- */
+.mbstat { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(8, 20, 48, .7); border: 1px solid rgba(90, 160, 255, .25); margin-bottom: 14px; }
+.mbstat > .ico { font-size: 22px; color: #ffb35c; }
+.mbstat.ok > .ico { color: #22e3a4; }
+.mbstat > div:first-of-type { flex: 1; min-width: 0; }
+.mbstat small { display: block; color: var(--soft); font-size: 12px; margin-top: 2px; }
+.mbcode { text-align: right; }
+.mbcode b { font-size: 20px; letter-spacing: 1.5px; color: #2fd3ff; user-select: all; }
+.mbgrid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; }
+.mbgrid h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 12.5px; letter-spacing: 1.2px; text-transform: uppercase; color: #7fb6ff; }
+.mblist { display: grid; gap: 6px; max-height: 340px; overflow: auto; }
+.mbrow { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(6, 16, 40, .55); cursor: pointer; }
+.mbrow input { width: 18px; height: 18px; accent-color: #2fb6ff; flex: none; }
+.mbrow b { display: block; font-weight: 500; font-size: 13.5px; }
+.mbrow small, .mbnone { color: var(--soft); font-size: 12px; }
+.mbsteps { margin: 14px 0 8px; font-size: 12.5px; }
+.mbnote { display: flex; gap: 8px; font-size: 12px; line-height: 1.5; margin: 0; }
+@media (max-width: 760px) { .mbgrid { grid-template-columns: 1fr; } .mbstat { flex-wrap: wrap; } .mbcode { text-align: left; } }

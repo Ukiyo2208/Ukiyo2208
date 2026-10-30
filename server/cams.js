@@ -68,5 +68,7 @@ module.exports = function cams(DATA, send, readBody) {
     }
     return false;
   }
-  return { api, mediaPath: p => /^\/api\/cams\/(frame|mjpeg)\//.test(p) };
+  // image JPEG d'une caméra (pour la notification de la sonnette)
+  async function snapshot(id) { const c = CAMS.find(x => x.id === id) || CAMS[0]; if (!c || !c.rtsp) return null; try { const g = await goReq('/api/frame.jpeg?src=' + c.id); return g.status === 200 ? g.body : null; } catch (e) { return null; } }
+  return { api, snapshot, list: () => CAMS.map(view), mediaPath: p => /^\/api\/cams\/(frame|mjpeg)\//.test(p) };
 };

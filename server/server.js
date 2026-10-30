@@ -21,17 +21,25 @@ const readBody = req => new Promise((ok, ko) => { let n = 0; const ch = []; req.
 const safe = s => /^[\w.-]{1,80}$/.test(s) && !s.includes('..');
 const HUB = require('./hub')(DATA, send, readBody);   // appareils connectés en direct (Somfy, Hue, SmartThings…)
 const CAMS = require('./cams')(DATA, send, readBody); // découverte du réseau, caméras et pont HomeKit (go2rtc)
+const NOTIFY = require('./notify')(DATA, send, readBody, HUB, CAMS);   // notifications ntfy, sonnette, surveillance 24 h/24
+const GEO = require('./geo')(DATA, send, readBody, NOTIFY);           // positions OwnTracks
+const BRIDGE = require('./bridge')(DATA, send, readBody, HUB, NOTIFY); // pont Matter : Alexa, Google Home, Maison
 
 /* ---------- API ---------- */
 async function api(req, res, url) {
   const p = url.pathname, m = req.method;
-  if (p === '/api/ping') return send(res, 200, { ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now(), hub: true, discover: true });
+  if (p === '/api/ping') return send(res, 200, { ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now(), hub: true, discover: true, notify: true, geo: true, bridge: true });
   if (p === '/api/hub/oauth/callback') return HUB.callback(req, res, url);
+  if (p === '/api/owntracks') return GEO.api(req, res, url);   // identifiants propres à chaque téléphone
   // les images de caméras s'affichent dans une balise <img> : la clé peut alors venir de l'adresse (?k=)
-  const keyOk = !KEY || req.headers['x-beta-key'] === KEY || (CAMS.mediaPath(p) && url.searchParams.get('k') === KEY);
+  // idem pour la sonnette appelée par un bouton (Shelly, ESPHome…) qui ne sait pas ajouter d'en-tête
+  const keyOk = !KEY || req.headers['x-beta-key'] === KEY || ((CAMS.mediaPath(p) || p === '/api/notify/ring') && url.searchParams.get('k') === KEY);
   if (!keyOk) return send(res, 401, { error: 'clé invalide' });
   if (p === '/api/hub' || p.startsWith('/api/hub/')) return HUB.api(req, res, url);
   if (p === '/api/discover' || p.startsWith('/api/cams')) { const r0 = await CAMS.api(req, res, url); if (r0 !== false) return; }
+  if (p === '/api/bridge' || p.startsWith('/api/bridge/')) { const r0 = await BRIDGE.api(req, res, url); if (r0 !== false) return; }
+  if (p === '/api/geo' || p.startsWith('/api/geo/')) { const r0 = await GEO.api(req, res, url); if (r0 !== false) return; }
+  if (p === '/api/notify' || p.startsWith('/api/notify/')) { const r0 = await NOTIFY.api(req, res, url); if (r0 !== false) return; }
 
   let r;
   if ((r = p.match(/^\/api\/store\/([\w-]+)$/))) {

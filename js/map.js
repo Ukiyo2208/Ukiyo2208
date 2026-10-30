@@ -1,4 +1,4 @@
-/* Bêta home 7.3 — Carte : position des utilisateurs (Home Assistant ou partage depuis le téléphone),
+/* Bêta home 7.3 — Carte : position des utilisateurs (OwnTracks via le serveur Bêta, Home Assistant ou partage depuis le téléphone),
    voiture, zones, et trajets (moto, voiture, vélo…) enregistrés en direct ou importés en GPX.
    Les positions et trajets restent sur l'appareil (puis sur le serveur Bêta du NAS). */
 (function () {
@@ -68,6 +68,53 @@
       e => B.toast(e.code === 1 ? 'Localisation refusée : autorisez-la pour ce site (Réglages › Safari › Position)' : 'Position indisponible', 'pin'), { enableHighAccuracy: true, maximumAge: 30000, timeout: 20000 });
   }
   if (G.share[B.user().id] && G.users[B.user().id] && G.users[B.user().id].src === 'téléphone') setTimeout(() => shareMine(true), 2000);
+
+  /* ---------- OwnTracks (7.7) : positions reçues par le serveur Bêta du NAS, 24 h/24, sans Home Assistant ---------- */
+  const OT = { users: {}, loaded: false };
+  let homeSent = '';
+  async function fromServer() {
+    if (!B.Server.ok()) return;
+    let r; try { r = await B.Server.req('/api/geo'); } catch (e) { return; }
+    OT.users = r.users || {}; OT.loaded = true;
+    const h = home().join(',');
+    if (homeSent !== h) { homeSent = h; if (!r.home || r.home.lat + ',' + r.home.lon !== h) B.Server.req('/api/geo/home', { lat: home()[0], lon: home()[1], r: 150 }, 'PUT').catch(() => { homeSent = ''; }); }
+    let ch = false;
+    Object.keys(r.last || {}).forEach(uid => {
+      const l = r.last[uid], cur = G.users[uid];
+      if (!S.users.some(u => u.id === uid) || (cur && cur.src !== 'OwnTracks' && cur.src !== 'démo' && cur.t >= l.t)) return;   // une position plus récente (téléphone, HA) reste prioritaire
+      if (!cur || cur.t !== l.t) { G.users[uid] = { lat: l.lat, lon: l.lon, acc: l.acc ? Math.round(l.acc) : null, t: l.t, src: 'OwnTracks', batt: l.batt }; placeFrom(uid); ch = true; }
+    });
+    if (ch) { B.save(); B.emit('geo'); refreshMarkers(); }
+  }
+  setTimeout(fromServer, 2500);
+  setInterval(() => { if (!document.hidden) fromServer(); }, 20000);
+  // lien qui configure OwnTracks d'un coup sur le téléphone (mode HTTP, identifiants, fréquence)
+  const otConfig = (uid, pw) => ({ _type: 'configuration', mode: 3, url: B.Server.url() + '/api/owntracks', auth: true, username: uid, password: pw, deviceId: 'telephone', tid: ((S.users.find(u => u.id === uid) || {}).name || uid).normalize('NFD').replace(/[\u0300-\u036f]/g, '').slice(0, 2).toUpperCase(), monitoring: 1, locatorDisplacement: 50, locatorInterval: 300, pubExtendedData: true });
+  const otLink = c => 'owntracks:///config?inline=' + encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(c)))));
+  function otModal(made) {
+    const srv = B.Server.ok();
+    return '<h2>' + ico('pin') + 'Positions avec OwnTracks</h2><p class="muted" style="margin:0 0 12px;font-size:13px;line-height:1.5">L’appli gratuite <b>OwnTracks</b> (iPhone, Android) envoie la position du téléphone au serveur Bêta du NAS, même écran éteint. Rien ne passe par un service tiers : il faut seulement que le téléphone puisse joindre le NAS hors de la maison (VPN, Tailscale, accès à distance UGREEN).</p>' +
+      (!srv ? '<p class="warn">Reliez d’abord le serveur Bêta (Connexions).</p>' :
+      '<div class="list">' + S.users.map(u => {
+        const o = OT.users[u.id], p = G.users[u.id], mine = made && made.uid === u.id;
+        return '<div class="li otu"><img src="' + esc(u.avatar) + '" alt=""><div><b>' + esc(u.name) + '</b><small>' + (o && o.ready ? (p && p.src === 'OwnTracks' ? 'Dernière position ' + ago(p.t) + (p.batt != null ? ' · batterie ' + p.batt + ' %' : '') : 'Accès créé, en attente de la première position') : 'Pas encore relié') + '</small>' +
+          (mine ? '<div class="otcfg"><a class="btn sm pri" href="' + esc(otLink(otConfig(u.id, made.password))) + '">' + ico('link') + 'Ouvrir dans OwnTracks</a><small>Sur le téléphone de ' + esc(u.name) + ' (appli installée). Ou à la main : Mode <b>HTTP</b> · URL <code class="sel">' + esc(B.Server.url() + '/api/owntracks') + '</code> · Identification : utilisateur <code class="sel">' + esc(u.id) + '</code>, mot de passe <code class="sel">' + esc(made.password) + '</code></small><small class="warn">Ce mot de passe ne sera plus affiché.</small></div>' : '') +
+          '</div><div class="row otbtn">' + (o && o.ready ? '<button class="btn sm" data-act="otHist" data-arg="' + u.id + '">' + ico('route') + '24 h</button>' : '') + '<button class="btn sm' + (o && o.ready ? '' : ' pri') + '" data-act="otMake" data-arg="' + u.id + '">' + ico(o && o.ready ? 'refresh' : 'plus') + (o && o.ready ? 'Nouvel accès' : 'Créer l’accès') + '</button></div></div>';
+      }).join('') + '</div>') +
+      (HA.enabled() ? '<p style="margin:14px 0 0"><button class="btn sm" data-act="mapLinkHA">' + ico('homeFill') + 'Utiliser plutôt Home Assistant</button></p>' : '');
+  }
+  B.act('otMake', async el => {
+    const u = S.users.find(x => x.id === el.dataset.arg); if (OT.users[u.id] && OT.users[u.id].ready && !confirm('Créer un nouvel accès ? Le téléphone de ' + u.name + ' devra être reconfiguré.')) return;
+    try { const r = await B.Server.post('/api/geo/user', { uid: u.id, name: u.name }); OT.users[u.id] = { name: u.name, ready: true }; B.modal(otModal(r), 'otmodal'); }
+    catch (e) { B.toast('Serveur Bêta : ' + e.message, 'info'); }
+  });
+  B.act('otHist', async el => {
+    const uid = el.dataset.arg, u = S.users.find(x => x.id === uid);
+    let pts; try { pts = await B.Server.req('/api/geo/history?user=' + encodeURIComponent(uid) + '&from=' + (Date.now() - 864e5)); } catch (e) { return B.toast('Historique indisponible', 'info'); }
+    if (pts.length < 2) return B.toast('Pas encore de trajet sur 24 h pour ' + u.name, 'pin');
+    B.closeModal(); G.tab = 'famille'; const here = B.current === 'carte'; if (!here) B.go('carte');
+    setTimeout(() => { showTrip({ id: 'hist', veh: G.vehicles[0].id, name: u.name + ' — 24 h', pts }); B.toast(u.name + ' : ' + km(stats(pts).d) + ' parcourus en 24 h', 'route'); }, here ? 50 : 900);
+  });
 
   /* ---------- enregistrer un trajet ---------- */
   let rec = null, lock = null;
@@ -178,7 +225,7 @@
       const me = B.user().id;
       h = '<div class="list scroll mfam">' + S.users.map(u => { const p = G.users[u.id], pl = DATA.PLACES[u.place] || {}; return '<button class="li" data-act="mapUser" data-arg="' + u.id + '"><img src="' + esc(u.avatar) + '" alt="" style="--ring:' + esc(u.ring) + '"><div><b>' + esc(u.name) + '</b><small>' + esc(pl.label || '') + (p ? ' · ' + km(dist(home(), [p.lat, p.lon])) : ' · position inconnue') + '</small><small class="muted">' + (p ? ago(p.t) + ' · ' + esc(p.src) : 'Reliez son téléphone ci-dessous') + '</small></div>' + ico('pin') + '</button>'; }).join('') + '</div>' +
         '<label class="row mshare"><button type="button" class="sw sm' + (G.share[me] && watch != null ? ' on' : '') + '" data-act="mapShare" aria-label="Partager ma position"></button><span><b>Partager ma position</b><small>Depuis ce téléphone, tant que Bêta home est ouvert</small></span></label>' +
-        '<button class="btn sm" data-act="mapLink">' + ico('link') + 'Relier les téléphones (Home Assistant)</button>';
+        '<button class="btn sm" data-act="mapLink">' + ico('link') + 'Relier les téléphones (OwnTracks)</button>';
     }
     if (G.tab === 'trajets') {
       const list = G.trips.filter(t => G.vf === 'all' || t.veh === G.vf), month = G.trips.filter(t => new Date(t.at).getMonth() === new Date().getMonth() && new Date(t.at).getFullYear() === new Date().getFullYear());
@@ -192,7 +239,7 @@
       h = '<div class="list scroll">' + G.vehicles.map((v, i) => { const ts = G.trips.filter(t => t.veh === v.id), tot = ts.reduce((a, t) => a + t.d, 0); return '<div class="li mveh"><span class="aico" style="color:' + v.color + '">' + ico(v.icon) + '</span><div><input value="' + esc(v.name) + '" data-change="vehName" data-arg="' + i + '" aria-label="Nom"><small>' + ts.length + ' trajet' + (ts.length > 1 ? 's' : '') + ' · ' + km(tot) + ' au total</small></div><input type="color" value="' + v.color + '" data-change="vehColor" data-arg="' + i + '" aria-label="Couleur"></div>'; }).join('') + '</div>' +
         '<button class="btn sm" data-act="vehAdd">' + ico('plus') + 'Ajouter un véhicule</button>';
     }
-    return '<div class="mside">' + tabs + h + '<p class="muted mpriv">' + ico('shieldCheck') + 'Positions et trajets restent sur vos appareils. Seul le fond de carte vient d’internet (OpenStreetMap / CARTO).</p></div>';
+    return '<div class="mside">' + tabs + h + '<p class="muted mpriv">' + ico('shieldCheck') + 'Positions et trajets restent sur vos appareils et votre NAS. Seul le fond de carte vient d’internet (OpenStreetMap / CARTO).</p></div>';
   };
   B.act('mapTab', el => { G.tab = el.dataset.arg; B.save(); B.emit('geo'); if (G.tab === 'famille') { showTrip(null); fitFamily(); } else if (G.tab === 'trajets') { const t = G.trips.find(x => x.id === G.sel) || G.trips[0]; if (t) { G.sel = t.id; showTrip(t); B.emit('geo'); } } });
   B.act('mapUser', el => { const p = G.users[el.dataset.arg]; if (p && map) { map.flyTo([p.lat, p.lon], 15); markers[el.dataset.arg] && markers[el.dataset.arg].openPopup(); } else B.toast('Position inconnue : reliez son téléphone', 'pin'); });
@@ -209,7 +256,8 @@
   B.act('vehName', el => { G.vehicles[+el.dataset.arg].name = el.value.trim() || G.vehicles[+el.dataset.arg].name; save(); });
   B.act('vehColor', el => { G.vehicles[+el.dataset.arg].color = el.value; save(); });
   B.act('vehAdd', () => { G.vehicles.push({ id: 'v' + Date.now().toString(36), name: 'Nouveau véhicule', type: 'autre', color: '#ffd23f', icon: 'route' }); save(); });
-  B.act('mapLink', () => {
+  B.act('mapLink', () => { if (!HA.enabled() || B.Server.ok()) return B.modal(otModal(), 'otmodal'); B.ACT.mapLinkHA(); });
+  B.act('mapLinkHA', () => {
     const l = ents();
     B.modal('<h2>' + ico('link') + 'Relier les téléphones</h2><p class="muted" style="margin:0 0 12px;font-size:13px;line-height:1.5">Avec l’application Home Assistant sur chaque téléphone, sa position (person.* ou device_tracker.*) suit en continu, même écran éteint.</p>' +
       (HA.enabled() ? '<div class="list">' + S.users.map(u => '<div class="li" style="grid-template-columns:40px 1fr"><img src="' + esc(u.avatar) + '" alt="" style="width:36px;height:36px;border-radius:50%"><label class="field">' + esc(u.name) + '<select data-change="mapEnt" data-arg="' + u.id + '"><option value="">—</option>' + l.map(e => '<option value="' + e + '"' + (G.ent[u.id] === e ? ' selected' : '') + '>' + esc((HA.states[e].attributes || {}).friendly_name || e) + ' · ' + e + '</option>').join('') + '</select></label></div>').join('') + '</div>' : '<p class="warn">Reliez d’abord Home Assistant (Connexions).</p>'), 'sm');

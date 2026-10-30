@@ -117,12 +117,14 @@ async function rtspScan(ms) {
 const KIND = [
   [/_hue\._tcp|philips hue|hue bridge/i, 'hub', 'Philips Hue', 'brand:hue'], [/_elg\._tcp|elgato/i, 'lampe', 'Elgato', 'brand:elgato'], [/_kizboxdev|tahoma|somfy/i, 'hub', 'Somfy TaHoma', 'brand:tahoma'],
   [/_shelly\._tcp|shelly/i, 'prise', 'Shelly', 'brand:shelly'], [/_esphomelib/i, 'module', 'ESPHome', 'brand:esphome'], [/_home-assistant/i, 'hub', 'Home Assistant', ''],
-  [/_matterc?\._(tcp|udp)/i, 'matter', 'Matter', 'matter'], [/_hap\._tcp/i, 'homekit', 'HomeKit', 'homekit'],
+  [/_matterc?\._(tcp|udp)/i, 'matter', 'Matter', 'brand:matter'], [/_hap\._tcp/i, 'homekit', 'HomeKit', 'homekit'],
   [/_sonos|sonos/i, 'multimedia', 'Sonos', 'brand:sonos'], [/_googlecast|chromecast|google home|nest/i, 'multimedia', 'Google Cast', 'brand:cast'], [/_airplay|_raop/i, 'multimedia', 'AirPlay', 'airplay'],
   [/_spotify-connect/i, 'multimedia', 'Spotify Connect', ''], [/_amzn-wplay|amazon|echo/i, 'multimedia', 'Amazon Echo / Fire', 'alexa'],
   [/_wled\._tcp|wled/i, 'lampe', 'WLED', 'brand:wled'], [/_nanoleaf|nanoleaf/i, 'lampe', 'Nanoleaf', 'brand:nanoleaf'], [/_mqtt\._tcp|mosquitto/i, 'hub', 'Broker MQTT', 'brand:z2m'],
   [/_heos-audio|denon|marantz/i, 'multimedia', 'Denon / Marantz', 'brand:denon'], [/roku/i, 'multimedia', 'Roku', 'brand:roku'], [/yeelight/i, 'lampe', 'Yeelight', 'brand:yeelight'], [/daikin/i, 'clim', 'Daikin', 'brand:daikin'],
   [/_ipp|_printer|printer|imprim/i, 'imprimante', 'Imprimante', ''], [/_smb\._tcp|nas|ugreen|synology|qnap/i, 'nas', 'NAS / partage', ''],
+  [/samsung.*(tv|tizen)|tizen|\[tv\] samsung/i, 'multimedia', 'TV Samsung', 'brand:samsungtv'], [/webos|lg electronics|\blg tv/i, 'multimedia', 'TV LG', 'brand:lgtv'], [/philips.*(tv|android)|jointspace|_philipstv/i, 'multimedia', 'TV Philips', 'brand:philipstv'],
+  [/\bkasa\b|tp-link smart|smartplug|^hs1\d\d|\bkp\d{3}/i, 'prise', 'TP-Link Kasa', 'brand:kasa'], [/tapo/i, 'prise', 'TP-Link Tapo', 'brand:tapo'], [/lifx/i, 'lampe', 'LIFX', 'brand:lifx'], [/broadlink|rm4|rm mini/i, 'telecommande', 'Broadlink', 'brand:broadlink'],
   [/mediarenderer|samsung|lg |webos|bravia|philips tv|tv/i, 'multimedia', 'TV / lecteur', ''], [/internetgatewaydevice|freebox|livebox|bbox|fritz/i, 'box', 'Box internet', '']
 ];
 function classify(d) {
@@ -131,16 +133,42 @@ function classify(d) {
   return k ? { type: k[1], brand: (d.maker && !/^(upnp|linux)/i.test(d.maker)) ? d.maker : k[2], link: k[3] } : { type: 'autre', brand: d.maker || '', link: '' };
 }
 
+/* ---------- diffusion UDP : prises Kasa, ampoules LIFX, télécommandes Broadlink (sans mDNS) ---------- */
+function udpProbe(ms) {
+  return new Promise(ok => {
+    const s = dgram.createSocket('udp4'), out = [];
+    const kasa = Buffer.from('{"system":{"get_sysinfo":{}}}'), kx = b => { let k = 171; const o = Buffer.alloc(b.length); for (let i = 0; i < b.length; i++) { o[i] = b[i] ^ k; k = o[i]; } return o; };
+    const kd = b => { let k = 171; const o = Buffer.alloc(b.length); for (let i = 0; i < b.length; i++) { o[i] = b[i] ^ k; k = b[i]; } return o; };
+    const lifx = Buffer.alloc(36); lifx.writeUInt16LE(36, 0); lifx.writeUInt16LE(0x3400, 2); lifx.writeUInt16LE(2, 32);   // GetService
+    const bl = Buffer.alloc(0x30); bl[0x26] = 6; { let c = 0xbeaf; for (const x of bl) c = (c + x) & 0xffff; bl.writeUInt16LE(c, 0x20); }
+    s.on('message', (m, r) => {
+      try {
+        if (r.port === 9999) { const j = JSON.parse(kd(m).toString()).system.get_sysinfo; out.push({ ip: r.address, svc: 'kasa', name: j.alias, model: j.model, maker: 'TP-Link Kasa' }); }
+        else if (r.port === 56700 && m.readUInt16LE(32) === 3) out.push({ ip: r.address, svc: 'lifx', name: 'Ampoule LIFX', maker: 'LIFX' });
+        else if (r.port === 80 && m.length >= 0x40) out.push({ ip: r.address, svc: 'broadlink', name: 'Broadlink ' + m.readUInt16LE(0x34).toString(16), maker: 'Broadlink' });
+      } catch (e) { }
+    });
+    s.on('error', () => ok(out));
+    s.bind(() => {
+      try { s.setBroadcast(true); } catch (e) { }
+      const targets = ['255.255.255.255'].concat(subnets().map(n => n + '.255'));
+      targets.forEach(t => { s.send(kx(kasa), 9999, t, () => { }); s.send(lifx, 56700, t, () => { }); s.send(bl, 80, t, () => { }); });
+      setTimeout(() => { try { s.close(); } catch (e) { } ok(out); }, ms);
+    });
+  });
+}
+
 async function scan(opts) {
   opts = opts || {};
   const t0 = Date.now();
-  const [cams, md, up, rt] = await Promise.all([onvifProbe(3000), mdns(3000), ssdp(3500), opts.rtsp === false ? [] : rtspScan(350)]);
+  const [cams, md, up, rt, ud] = await Promise.all([onvifProbe(3000), mdns(3000), ssdp(3500), opts.rtsp === false ? [] : rtspScan(350), udpProbe(2500)]);
   const dev = {};
   const add = (ip, o) => { const k = ip; dev[k] = Object.assign(dev[k] || { ip, via: [] }, o, { via: [...new Set([...(dev[k] ? dev[k].via : []), o.via])] }); };
   cams.forEach(c => add(c.ip, { via: 'ONVIF', type: 'camera', name: c.name || 'Caméra ' + c.ip, brand: c.model || '', model: c.model, onvif: c.xaddr, link: 'camera' }));
   rt.forEach(r => { if (!dev[r.ip] || dev[r.ip].type !== 'camera') add(r.ip, { via: 'RTSP', type: 'camera', name: (dev[r.ip] && dev[r.ip].name) || 'Caméra ' + r.ip, rtspPort: r.port, link: 'camera' }); });
   md.forEach(m => { if (!m.ip) return; const c = classify(m); const cur = dev[m.ip]; if (cur && cur.type === 'camera') { cur.via = [...new Set(cur.via.concat('mDNS'))]; if (/_hap/.test(m.svc)) cur.homekit = true; return; } add(m.ip, Object.assign({ via: 'mDNS', name: (m.txt && (m.txt.fn || m.txt.friendly_name)) || m.name, svc: (cur && cur.svc ? cur.svc + ', ' : '') + m.svc, port: m.port }, cur && cur.type !== 'autre' && c.type === 'autre' ? {} : c)); });
   up.forEach(u => { const c = classify(u), cur = dev[u.ip]; if (cur && cur.type !== 'autre') { cur.via = [...new Set(cur.via.concat('UPnP'))]; if (!cur.model && u.model) cur.model = u.model; return; } add(u.ip, Object.assign({ via: 'UPnP', name: u.name || u.server || u.ip, model: u.model }, c)); });
+  ud.forEach(u => { if (!dev[u.ip] || dev[u.ip].type === 'autre') add(u.ip, Object.assign({ via: 'UDP', name: u.name || u.ip, model: u.model }, classify(u))); });
   const list = Object.values(dev).sort((a, b) => (a.type === 'camera' ? 0 : 1) - (b.type === 'camera' ? 0 : 1) || a.ip.localeCompare(b.ip, undefined, { numeric: true }));
   return { at: Date.now(), took: Date.now() - t0, subnets: subnets(), devices: list };
 }
@@ -170,4 +198,4 @@ async function onvifStream(o) {
   return res;
 }
 
-module.exports = { scan, onvifStream, _test: { parseDNS, dnsQuery, parseOnvif, parseSSDP, classify } };
+module.exports = { scan, onvifStream, _test: { udpProbe, parseDNS, dnsQuery, parseOnvif, parseSSDP, classify } };

@@ -9,7 +9,7 @@
   const key = () => ((S.conn || {}).server || {}).key || '';
   const media = (id, kind) => Srv().url() + '/api/cams/' + kind + '/' + id + '?k=' + encodeURIComponent(key()) + (kind === 'frame' ? '&t=' + Math.floor(Date.now() / 10000) : '');
   const fmtPin = p => p ? p.slice(0, 3) + '-' + p.slice(3, 5) + '-' + p.slice(5) : '';
-  const TYPES = { camera: ['Caméras', 'camera'], hub: ['Ponts et box', 'homeFill'], lampe: ['Éclairage', 'bulbFill'], prise: ['Prises et modules', 'plug'], module: ['Prises et modules', 'plug'], matter: ['Matter', 'link'], clim: ['Climatisation', 'snow'], homekit: ['HomeKit', 'homeFill'], multimedia: ['Multimédia', 'speaker'], imprimante: ['Imprimantes', 'files'], nas: ['NAS et partages', 'nas'], box: ['Box internet', 'wifi'], autre: ['Autres', 'grid9'] };
+  const TYPES = { camera: ['Caméras', 'camera'], hub: ['Ponts et box', 'homeFill'], lampe: ['Éclairage', 'bulbFill'], prise: ['Prises et modules', 'plug'], telecommande: ['Télécommandes', 'tv'], module: ['Prises et modules', 'plug'], matter: ['Matter', 'link'], clim: ['Climatisation', 'snow'], homekit: ['HomeKit', 'homeFill'], multimedia: ['Multimédia', 'speaker'], imprimante: ['Imprimantes', 'files'], nas: ['NAS et partages', 'nas'], box: ['Box internet', 'wifi'], autre: ['Autres', 'grid9'] };
 
   /* ---------- caméras ajoutées → emplacements de caméra de Bêta home ---------- */
   function applyCams() {
@@ -39,6 +39,8 @@
     { ip: '192.168.1.90', type: 'module', name: 'capteur-garage', brand: 'ESPHome', via: ['mDNS'], link: 'brand:esphome' },
     { ip: '192.168.1.85', type: 'multimedia', name: 'Salon', brand: 'Sonos', model: 'Era 100', via: ['mDNS', 'UPnP'], link: 'brand:sonos' },
     { ip: '192.168.1.80', type: 'multimedia', name: 'Salon TV', brand: 'Google Cast', via: ['mDNS'], link: 'brand:cast' },
+    { ip: '192.168.1.62', type: 'multimedia', name: 'TV salon', brand: 'TV LG', model: 'OLED48C1', via: ['UPnP'], link: 'brand:lgtv' },
+    { ip: '192.168.1.71', type: 'prise', name: 'Prise bureau', brand: 'TP-Link Kasa', model: 'KP115', via: ['UDP'], link: 'brand:kasa' },
     { ip: '192.168.1.81', type: 'multimedia', name: 'Echo Dot cuisine', brand: 'Amazon Echo / Fire', via: ['mDNS'], link: 'alexa' },
     { ip: '192.168.1.20', type: 'nas', name: 'UGREEN DXP', brand: 'UGREEN', via: ['mDNS', 'UPnP'], link: '' },
     { ip: '192.168.1.1', type: 'box', name: 'Freebox', brand: 'Box internet', via: ['UPnP'], link: '' }] };
@@ -49,7 +51,6 @@
     const known = S.netcams.some(c => c.ip === d.ip);
     if (d.type === 'camera') return known ? '<span class="tag2">Ajoutée</span>' : '<button class="btn sm pri" data-act="dcAddCam" data-arg="' + i + '">' + ico('plus') + 'Ajouter</button>';
     if (/^brand:/.test(d.link)) return '<button class="btn sm" data-act="dcBrand" data-arg="' + i + '">' + ico('link') + 'Relier</button>';
-    if (d.link === 'matter') return '<span class="muted dsmall">Matter : module Matter du serveur (prochaine étape)</span>';
     if (d.link === 'homekit') return '<span class="muted dsmall">Accessoire HomeKit : app Maison</span>';
     if (d.link === 'airplay') return '<span class="muted dsmall">AirPlay : depuis l’iPhone</span>';
     if (d.link === 'alexa') return '<span class="muted dsmall">Via Alexa (Matter)</span>';
@@ -71,7 +72,7 @@
   B.act('dcScan', async () => { busy = true; paint(); try { res = await Srv().post('/api/discover', { rtsp: true }); } catch (e) { B.toast('Recherche impossible : ' + e.message, 'info'); } busy = false; paint(); });
   B.act('dcBrand', el => {
     const d = res.devices[+el.dataset.arg], id = d.link.slice(6); B.closeModal(); B.go('marques');
-    setTimeout(() => { if (B.ACT.hubOpen) B.ACT.hubOpen({ dataset: { arg: id } }); setTimeout(() => { const f = document.querySelector('form[data-submit="hubSave"][data-arg="' + id + '"]'); const one = f && f.querySelector('[name=host]'), many = f && f.querySelector('[name=hosts]'), val = id === 'cast' ? d.ip + ':' + d.name : d.ip; if (one && !one.value) one.value = d.ip; if (many && !many.value.includes(d.ip)) many.value = (many.value.trim() ? many.value.trim() + ', ' : '') + val; if (one || many) B.toast(d.ip + ' ajouté : « Enregistrer », puis « Tester » et « Ajouter les appareils »', 'link'); }, 250); }, 400);
+    setTimeout(() => { if (B.ACT.hubOpen) B.ACT.hubOpen({ dataset: { arg: id } }); setTimeout(() => { if (id === 'matter') return B.toast('Saisissez le code d’appairage de l’appareil, puis « Ajouter cet appareil »', 'link'); const f = document.querySelector('form[data-submit="hubSave"][data-arg="' + id + '"]'); const one = f && f.querySelector('[name=host]'), many = f && f.querySelector('[name=hosts]'), val = id === 'cast' ? d.ip + ':' + d.name : d.ip; if (one && !one.value) one.value = d.ip; if (many && !many.value.includes(d.ip)) many.value = (many.value.trim() ? many.value.trim() + ', ' : '') + val; if (one || many) B.toast(d.ip + ' ajouté : « Enregistrer », puis « Tester » et « Ajouter les appareils »', 'link'); }, 250); }, 400);
   });
 
   /* ---------- ajouter une caméra ---------- */

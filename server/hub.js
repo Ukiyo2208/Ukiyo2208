@@ -6,7 +6,7 @@ const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { request } = require('./hub/net');
 
 const BRANDS = {};
-['tahoma', 'hue', 'elgato', 'govee', 'smartthings', 'homeconnect', 'shelly', 'esphome', 'sonos', 'cast', 'wled', 'nanoleaf', 'yeelight', 'wiz', 'tasmota', 'denon', 'fully', 'daikin', 'roku', 'z2m'].forEach(n => { const m = require('./hub/' + n); BRANDS[m.id] = m; });
+['tahoma', 'hue', 'elgato', 'govee', 'smartthings', 'homeconnect', 'shelly', 'esphome', 'sonos', 'cast', 'wled', 'nanoleaf', 'yeelight', 'wiz', 'tasmota', 'denon', 'fully', 'daikin', 'roku', 'z2m', 'kasa', 'tapo', 'lifx', 'broadlink', 'philipstv', 'samsungtv', 'lgtv', 'musicassistant', 'matter'].forEach(n => { const m = require('./hub/' + n); BRANDS[m.id] = m; });
 
 module.exports = function hub(DATA, send, readBody) {
   const FILE = path.join(DATA, 'hub.json');
@@ -94,5 +94,8 @@ module.exports = function hub(DATA, send, readBody) {
     return send(res, 404, { error: 'route inconnue' });
   }
 
-  return { callback, api };
+  // pour les autres modules du serveur (notifications 24 h/24, pont Alexa)
+  async function command(brand, id, patch, cur) { const b = BRANDS[brand]; if (!b) throw new Error('marque inconnue'); await b.command(cfg(brand), id, patch || {}, cur || {}, helper(b)); if (cache[brand]) cache[brand].at = 0; }
+  const configured = () => Object.keys(BRANDS).filter(id => CFG[id] && Object.keys(CFG[id]).some(k => !['status', 'info'].includes(k)));
+  return { callback, api, states, command, configured, cfg: id => cfg(id) };
 };
