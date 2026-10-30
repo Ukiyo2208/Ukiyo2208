@@ -24,6 +24,7 @@
   /* ---------- écran de veille ---------- */
   let last = Date.now(), sv = null, slide = 0, svT = null;
   const PH = () => {
+    const fam = B.saverPhotos && B.saverPhotos(); if (fam && fam.length) return fam;   // cadre photo (photos du NAS / Immich)
     const rooms = ['rdc-salon', 'rdc-cuisine', 'rdc-sejour', 'e1-suite', 'ext-jardin', 'ext-terrasse', 'e1-chambre1'].map(n => 'assets/rooms/' + n + '.jpg');
     const own = (S.custom && S.custom.rooms || []).map(r => r.img).filter(Boolean);
     return own.concat(rooms);

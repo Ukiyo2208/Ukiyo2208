@@ -25,9 +25,15 @@
     ['Sécurité', [
       ['securite', 'Alarme et présence', 'Alarme maison, qui est là, absent automatique', 'shieldCheck', ['securite'], false],
       ['simulation', 'Simulation de présence', 'Lumières pendant les vacances', 'bulb', [], true],
-      ['detection', 'Détection caméras', 'Personnes et voitures avec Frigate', 'cctv', [], true]]],
+      ['detection', 'Détection caméras', 'Personnes et voitures avec Frigate', 'cctv', [], true],
+      ['sonnette', 'Sonnette : visiteurs et réponses', 'Photo du visiteur, réponses rapides', 'bellFill', [], false],
+      ['parental', 'Contrôle parental par la Bbox', 'Inutile si le Deco est en mode routeur (app Deco)', 'lock', [], false]]],
     ['Famille et loisirs', [
       ['listes', 'Listes et messages', 'Courses, tâches, mots sur les tablettes', 'check', ['listes'], false],
+      ['missions', 'Missions des enfants', 'Tâches, points, récompenses, baby-sitter', 'heart', ['missions'], false],
+      ['colis', 'Colis', 'Suivi depuis les mails', 'download', [], false],
+      ['photos', 'Cadre photo', 'Photos du NAS ou d’Immich en veille', 'photo', [], false],
+      ['bilan', 'Bilan du mois', 'La maison en chiffres', 'chart', ['bilan'], false],
       ['musique', 'Musique', 'Enceintes, radios, YouTube', 'musicFill', ['musique'], false],
       ['plex', 'Plex', 'Films et séries', 'plex', ['plex'], false],
       ['calendrier', 'Calendrier', 'Agenda de la famille', 'calendar', ['calendrier'], false],
@@ -40,6 +46,7 @@
   ];
   const ALL = MODS.flatMap(g => g[1]);
   const off = () => (S.settings.modsOff = S.settings.modsOff || {});
+  if (!S.settings.modsInit715) { off().parental = true; S.settings.modsInit715 = true; }   // contrôle parental : app Deco par défaut
   const modOn = id => !off()[id];
   B.modOn = modOn;
   const hiddenRoutes = () => ALL.filter(m => !modOn(m[0])).flatMap(m => m[4]);
@@ -48,7 +55,7 @@
   const nl0 = B.navList;
   B.navList = NAV => { const h = hiddenRoutes(); return (nl0 ? nl0(NAV) : NAV).filter(n => !h.includes(n[0])); };
   const nh0 = B.navHidden; B.navHidden = r => (nh0 ? nh0(r) : false) || hiddenRoutes().includes(r);   // barre du haut
-  const guard = () => { const r = location.hash.slice(1); if (hiddenRoutes().includes(r)) { location.hash = 'accueil'; B.toast('Module coupé (Paramètres › Modules)', 'grid9'); } };
+  const guard = () => { const r = location.hash.slice(1); if (hiddenRoutes().includes(r)) { setTimeout(() => B.go('accueil'), 0); B.toast('Module coupé (Paramètres › Modules)', 'grid9'); } };
   window.addEventListener('hashchange', guard); setTimeout(guard, 500);
   const bl = RENDER.blist; if (bl) RENDER.blist = () => modOn('regles') ? bl() : (RENDER.alist0 ? RENDER.alist0() : '');
   const sfx = RENDER.sfx; if (sfx) RENDER.sfx = s => { let h = sfx(s); if (!modOn('services')) h = h.replace(/<button class="btn sm" data-act="svcOpen">.*?<\/button>/, ''); return h.replace('<button class="btn sm" data-act="toolsOpen">', '<button class="btn sm" data-act="modOpen">' + ico('layers') + 'Modules</button><button class="btn sm" data-act="toolsOpen">'); };

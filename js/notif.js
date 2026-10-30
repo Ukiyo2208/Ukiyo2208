@@ -25,7 +25,9 @@
     ['tempo', 'boltPlain', 'Jour rouge Tempo', 'La veille, pour décaler machines et recharge', 'all'],
     ['health', 'heart', 'Santé de la maison', 'Appareil hors ligne, pile faible, sauvegarde ratée', 'admins'],
     ['energy', 'chart', 'Consommation inhabituelle', 'Plus de 1,5 fois la normale à la même heure', 'all'],
-    ['water', 'sprinkler', 'Arrosage annulé', 'Quand il a plu ou qu’il va pleuvoir', 'all']
+    ['water', 'sprinkler', 'Arrosage annulé', 'Quand il a plu ou qu’il va pleuvoir', 'all'],
+    ['network', 'wifi', 'Réseau', 'Appareil inconnu, coupure internet, débit en chute', 'admins'],
+    ['reminder', 'history', 'Rappels et bilan', 'Entretien de la maison, récompenses, bilan du mois', 'all']
   ];
   RULES.forEach(r => { if (!N.rules[r[0]]) N.rules[r[0]] = { on: r[0] !== 'away', who: r[4] }; });
   const isSender = () => { try { return localStorage.getItem('betaos.notifier') === '1'; } catch (e) { return false; } };

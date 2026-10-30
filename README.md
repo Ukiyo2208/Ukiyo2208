@@ -301,3 +301,23 @@ Tout se trouve dans **Paramètres › Outils**, et dans trois nouvelles pages : 
 - **Administration** (page réservée aux administrateurs) : version, durée depuis le démarrage, mémoire, charge, place libre sur le NAS, taille des données, historique et sauvegardes, modules actifs, état des marques et journal des dernières erreurs du serveur.
 
 Le QR code utilise la bibliothèque libre *qrcode-generator* (Kazuhiko Arase, licence MIT), copiée dans `js/vendor/`.
+
+## Famille et maison (7.15)
+
+- **Calendriers de l'iPhone** (Outils › Calendriers iPhone) : deux façons de les relier.
+  - Avec un **lien de calendrier public** (iPhone › Calendrier › ⓘ › Calendrier public).
+  - Avec votre **identifiant Apple et un mot de passe pour app** (appleid.apple.com), pour retrouver tous vos calendriers iCloud.
+  
+  Les évènements, y compris ceux qui se répètent, s'affichent dans le Calendrier, sur les tablettes et sur la page Matin, avec la couleur et le nom de la personne.
+- **Colis** (Outils › Colis) : le NAS lit l'objet et le début de vos mails (IMAP, lecture seule) et repère les numéros Colissimo, Chronopost, La Poste, UPS, DHL, GLS, DPD, Mondial Relay et les livraisons Amazon. On peut aussi ajouter un numéro à la main. Avec la clé gratuite de l'API Suivi de La Poste, l'état exact s'affiche. « Livraison aujourd'hui » apparaît sur l'accueil et sur la page Matin.
+- **Missions des enfants** (page Missions) : chaque enfant coche ses tâches du jour sur la tablette, gagne des points et les échange contre des récompenses (les parents sont prévenus).
+- **Mode baby-sitter** (Outils) : toutes les tablettes passent en profil invité et affichent une fiche avec le prénom, l'heure du coucher, les numéros utiles (plus 15, 18 et 112), les consignes et le Wi-Fi invités. Le mode s'arrête à l'heure prévue, ou avant avec le code d'un parent.
+- **Cadre photo** : l'écran de veille fait défiler les photos de famille du NAS (dossier monté sur `/photos`, voir `docker-compose.yml`) ou d'**Immich**, au hasard ou en mode « souvenirs » (ce jour-là, les années passées). Se choisit tablette par tablette, dans Paramètres › Cet écran.
+- **Mode vacances** (Sécurité, ou Outils) : en un bouton, mode absent, simulation de présence, chauffage hors-gel, alarme activée et arrosage qui continue. Le chauffage est relancé N heures avant le retour prévu.
+- **Pendant votre absence** : au retour, un résumé s'affiche et part en notification (coups de sonnette, colis, passages vus par les caméras, ouvertures, alarmes, coupures internet, consommation en euros).
+- **Bilan du mois** (page Bilan, et notification le 1er du mois) : électricité en euros comparée au mois précédent, jours Tempo, coupures internet, sonnette, détections, colis, missions, règles exécutées.
+- **Sonnette** : la photo du visiteur s'affiche sur toutes les tablettes avec des réponses rapides (« J'arrive ! », « Laissez le colis… »), lues à voix haute par la tablette de l'entrée. Historique des visiteurs avec photo.
+- **Recharge de la voiture** (Outils) : on indique le nombre d'heures de charge et l'heure à laquelle la voiture doit être prête. Bêta choisit les heures les moins chères (heures creuses, jours bleus Tempo) et évite les heures pleines des jours rouges.
+- **Grand texte** : dans Paramètres › Cet écran, pour agrandir textes et boutons sur une tablette.
+- **Nouvel écran en 30 secondes** : dans Paramètres › Sécurité › Associer un nouvel écran, un QR code s'affiche. Il suffit de le scanner avec la tablette ou le téléphone : Bêta home s'ouvre et se relie tout seul au NAS.
+- Le **contrôle parental par la Bbox** est coupé par défaut (Paramètres › Modules) : avec des Deco en mode routeur, il se fait dans l'app Deco.

@@ -22,6 +22,7 @@ services:
     volumes:
       - ./data:/data                                  # sauvegardes, journal, caméras, config go2rtc
       # - /mnt/@usb/sdb1/beta-backup:/backup          # clé USB : sauvegardes de la nuit copiées dans /backup (Paramètres › Sauvegarde)
+      # - /volume1/Photos:/photos:ro                 # cadre photo des tablettes (Outils › Cadre photo : dossier /photos)
 
   # Caméras : direct vidéo pour Bêta home + pont HomeKit (app Maison) pour les seules caméras.
   # Sa configuration (data/go2rtc.yaml) est écrite par Bêta home ; ne la modifiez pas à la main.

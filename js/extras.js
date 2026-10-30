@@ -364,8 +364,8 @@
   /* ======================= MENU iPHONE PAR SECTIONS ======================= */
   const GROUPS = [
     ['Pièces', 'rooms', id => /^(accueil|exterieur|rdc|etage1|etage2|pieces)$/.test(id) || /^niveau-/.test(id)],
-    ['Domotique', 'homeFill', id => /^(ia|energie|chauffage|voiture|routines|scenes|absence|securite|sante|reseau|journal)$/.test(id)],
-    ['Outils', 'grid9', id => /^(matin|musique|plex|nas|carte|calendrier|listes|interphone|mails)$/.test(id)],
+    ['Domotique', 'homeFill', id => /^(ia|energie|chauffage|voiture|routines|scenes|absence|securite|sante|reseau|bilan|journal)$/.test(id)],
+    ['Outils', 'grid9', id => /^(matin|musique|plex|nas|carte|calendrier|listes|missions|interphone|mails)$/.test(id)],
     ['Réglages', 'gearFill', id => /^(connexions|marques|parametres|admin)$/.test(id)]
   ];
   B.act('moreNav', () => {

@@ -387,7 +387,7 @@
   B.navList = NAV => { let out = (nl0 ? nl0(NAV) : NAV).slice(); const add = (id, label, icon, after) => { if (out.some(n => n[0] === id)) return; const i = out.findIndex(n => n[0] === after); out.splice(i < 0 ? out.length : i + 1, 0, [id, label, icon, icon, 'noside']); };
     add('scenes', 'Scènes', 'sparkle', 'routines'); add('chauffage', 'Chauffage', 'flame', 'energie'); add('listes', 'Listes', 'check', 'calendrier');
     if (kid()) out = out.filter(n => !KID_HIDE.includes(n[0])); return out; };
-  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (kid() && KID_HIDE.includes(h)) { location.hash = 'accueil'; B.toast('Page réservée aux parents', 'lock'); } });
+  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (kid() && KID_HIDE.includes(h)) { setTimeout(() => B.go('accueil'), 0); B.toast('Page réservée aux parents', 'lock'); } });
   let KU = null;
   function kidBody() {
     const kids = S.users.filter(u => !u.admin), u = S.users.find(x => x.id === KU) || kids[0];

@@ -31,8 +31,9 @@
   function qr(text, px) {
     if (!window.qrcode) return '<p class="warn">QR indisponible</p>';
     const q = window.qrcode(0, 'M'); q.addData(text); q.make();
-    return q.createSvgTag(px || 6, 2);
+    return '<img class="qrimg" alt="QR code" src="data:image/svg+xml;base64,' + btoa(q.createSvgTag(px || 6, 2)) + '">';   // en image : rendu net partout
   }
+  B.qr = qr;
   const wifiQ = (ssid, pass) => 'WIFI:T:' + (pass ? 'WPA' : 'nopass') + ';S:' + String(ssid).replace(/([\\;,:"])/g, '\\$1') + ';P:' + String(pass || '').replace(/([\\;,:"])/g, '\\$1') + ';;';
 
   /* ======================= 1. Wi-Fi invités ======================= */
@@ -95,7 +96,7 @@
     const nd = st.newDevs || [];
     const x = '<div class="netbox"><div class="nbh"><span class="nbdot ' + (st.online ? 'g' : st.online === false ? 'p' : '') + '"></span><div><b>Ligne internet</b><small>' + (st.online === false ? 'coupée depuis ' + hm(st.since) : st.online ? 'en ligne depuis ' + new Date(st.since).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : 'vérification…') + (hi.uptime != null ? ' · disponible ' + String(hi.uptime).replace('.', ',') + ' % sur 7 jours' : '') + '</small></div></div>' + spark +
       ((hi.outages || []).length ? '<div class="nbouts">' + hi.outages.slice(0, 5).map(o => '<span>' + ico('alert') + new Date(o.start).toLocaleString('fr-FR', { weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' · ' + (o.end ? Math.max(1, Math.round((o.end - o.start) / 6e4)) + ' min' : 'en cours') + '</span>').join('') + '</div>' : '<small class="muted">Aucune coupure ces 7 derniers jours.</small>') +
-      '<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="gwOpen">' + ico('wifi') + 'Wi-Fi invités</button><button class="btn sm" data-act="pcOpen">' + ico('lock') + 'Contrôle parental</button>' + (isAdmin() ? sw('netWatch', st.watch !== false, 'Prévenir d’un nouvel appareil') : '') + '</div></div>' +
+      '<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="gwOpen">' + ico('wifi') + 'Wi-Fi invités</button>' + (mod('parental') ? '<button class="btn sm" data-act="pcOpen">' + ico('lock') + 'Contrôle parental</button>' : '') + (isAdmin() ? sw('netWatch', st.watch !== false, 'Prévenir d’un nouvel appareil') : '') + '</div></div>' +
       (nd.length ? '<div class="netbox"><b>' + ico('alert') + ' Nouveaux appareils</b><div class="list">' + nd.map(n => '<div class="li netc"><span class="ic">' + ico(n.link === 'wifi' ? 'wifi' : 'link') + '</span><div><b>' + esc(n.name || n.mac) + '</b><small>' + esc([n.ip, n.mac, new Date(n.t).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })].join(' · ')) + '</small></div>' + (isAdmin() ? '<button class="btn sm" data-act="netKnown" data-arg="' + esc(n.mac) + '">' + ico('check') + 'Je le connais</button>' : '') + '</div>').join('') + '</div></div>' : '');
     return /^<div class="netboxes/.test(h) ? h.replace(/<\/div>$/, '') + x + '</div>' : h + '<div class="netboxes">' + x + '</div>';
   };
@@ -323,7 +324,7 @@
   /* ---------- menus et outils ---------- */
   const nl0 = B.navList;
   B.navList = NAV => { const out = (nl0 ? nl0(NAV) : NAV).slice(); const add = (id, label, icon, after) => { if (out.some(n => n[0] === id)) return; const i = out.findIndex(n => n[0] === after); out.splice(i < 0 ? out.length : i + 1, 0, [id, label, icon, icon, 'noside']); }; add('matin', 'Matin', 'sun', 'accueil'); add('interphone', 'Interphone', 'mic', 'listes'); if (isAdmin()) add('admin', 'Administration', 'server', 'reseau'); return out; };
-  const TOOLS2 = [['gwOpen', 'wifi', 'Wi-Fi invités', 'QR code, coupure automatique', 'reseau'], ['pcOpen', 'lock', 'Contrôle parental', 'Internet coupé par horaire (Bbox)', 'reseau'], ['wkOpen', 'sun', 'Réveil en douceur', 'Lumière, volets, radio, météo', 'reveil'], ['tpOpen', 'boltPlain', 'Conseiller Tempo', 'Jours rouges, heures creuses', 'energie'], ['mcOpen', 'route', 'Tableau du matin', 'Trajets, bus, tram, TER', 'matin'], ['rmOpen', 'history', 'Rappels de la maison', 'Filtres, chaudière, CT…', 'rappels']];
+  const TOOLS2 = [['gwOpen', 'wifi', 'Wi-Fi invités', 'QR code, coupure automatique', 'reseau'], ['pcOpen', 'lock', 'Contrôle parental', 'Internet coupé par horaire (Bbox)', 'parental'], ['wkOpen', 'sun', 'Réveil en douceur', 'Lumière, volets, radio, météo', 'reveil'], ['tpOpen', 'boltPlain', 'Conseiller Tempo', 'Jours rouges, heures creuses', 'energie'], ['mcOpen', 'route', 'Tableau du matin', 'Trajets, bus, tram, TER', 'matin'], ['rmOpen', 'history', 'Rappels de la maison', 'Filtres, chaudière, CT…', 'rappels']];
   const to0 = B.ACT && B.ACT.toolsOpen;
   if (to0) B.act('toolsOpen', el => { to0(el); const g = document.querySelector('.toolsmodal .tools'); if (g) g.insertAdjacentHTML('beforeend', TOOLS2.filter(t => mod(t[4])).map(t => '<button class="tool" data-act="' + t[0] + '">' + ico(t[1]) + '<b>' + t[2] + '</b><small>' + t[3] + '</small></button>').join('')); });
 })();

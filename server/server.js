@@ -37,7 +37,8 @@ const ENGINE = opt('engine', () => require('./engine')(DATA, send, readBody, { H
 if (BRIDGE && ENGINE) BRIDGE.setRunner((id, by) => ENGINE.runRoutine(id, by));   // « Alexa, allume Soirée ciné » exécuté par le NAS
 const PLUS = ENGINE ? opt('plus', () => require('./plus')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, AUTH })) : null;   // sauvegardes, scènes, chauffage, énergie, arrosage, Siri, listes, Frigate
 const EXTRA = ENGINE ? opt('extra', () => require('./extra')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, PLUS, LOGS, MODS: () => MODS })) : null;   // réseau, réveil, matin, interphone, rappels, administration
-const MODS = { hub: true, discover: true, notify: true, geo: !!GEO, bridge: !!BRIDGE, engine: !!ENGINE, auth: true, plus: !!PLUS, extra: !!EXTRA };
+const FAMILLE = ENGINE ? opt('famille', () => require('./famille')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, PLUS, EXTRA })) : null;   // calendriers, colis, missions, photos, vacances, sonnette, recharge
+const MODS = { hub: true, discover: true, notify: true, geo: !!GEO, bridge: !!BRIDGE, engine: !!ENGINE, auth: true, plus: !!PLUS, extra: !!EXTRA, famille: !!FAMILLE };
 
 /* ---------- API ---------- */
 async function api(req, res, url) {
@@ -49,11 +50,12 @@ async function api(req, res, url) {
   // les images de caméras s'affichent dans une balise <img> : la clé peut alors venir de l'adresse (?k=)
   // idem pour la sonnette appelée par un bouton (Shelly, ESPHome…) qui ne sait pas ajouter d'en-tête
   const w = AUTH.who(req, url);
-  const keyOk = w.ok || ((CAMS.mediaPath(p) || p === '/api/notify/ring') && url.searchParams.get('k') === KEY);
+  const keyOk = w.ok || ((CAMS.mediaPath(p) || p === '/api/notify/ring' || (FAMILLE && FAMILLE.mediaOk(p))) && url.searchParams.get('k') === KEY);
   if (!keyOk) return send(res, 401, { error: 'clé invalide' });
   if (AUTH.needAdmin(p, m) && !w.admin) return send(res, 401, { error: 'réservé à un administrateur (code PIN)', need: 'admin' });
   if (p === '/api/auth' || p.startsWith('/api/auth/')) { const r0 = await AUTH.api(req, res, url, w); if (r0 !== false) return; }
   if (ENGINE && (p === '/api/engine' || p.startsWith('/api/engine/') || p === '/api/history')) { const r0 = await ENGINE.api(req, res, url, w); if (r0 !== false) return; }
+  if (FAMILLE && (p === '/api/famille' || p.startsWith('/api/famille/') || p === '/api/photos' || p === '/api/photos/file')) { const r0 = await FAMILLE.api(req, res, url, w); if (r0 !== false) return; }
   if (EXTRA && (p === '/api/extra' || p.startsWith('/api/extra/'))) { const r0 = await EXTRA.api(req, res, url, w); if (r0 !== false) return; }
   if (PLUS && (p === '/api/plus' || p.startsWith('/api/plus/') || p === '/api/quick' || p === '/api/energy')) { const r0 = await PLUS.api(req, res, url, w); if (r0 !== false) return; }
   if (p === '/api/hub' || p.startsWith('/api/hub/')) return HUB.api(req, res, url);
