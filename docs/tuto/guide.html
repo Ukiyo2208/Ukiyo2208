@@ -8,7 +8,7 @@
 <body>
 
 <div class="cover">
-  <div class="top"><img src="../../assets/logo-mark.png" alt=""><div><div class="brand">Bêta home · version 7.17</div><b style="font-size:12pt">Maison intelligente, sans Home Assistant obligatoire</b></div></div>
+  <div class="top"><img src="../../assets/logo-mark.png" alt=""><div><div class="brand">Bêta home · version 7.18</div><b style="font-size:12pt">Maison intelligente, sans Home Assistant obligatoire</b></div></div>
   <div>
     <h1>Guide d'utilisation</h1>
     <div class="sub">Tablettes murales, iPhone et ordinateur : toutes les pages, les réglages et les automatismes, pas à pas.</div>
@@ -31,11 +31,12 @@
     <li>9. Enfants, invités, baby-sitter</li>
     <li>10. Réseau : Bbox et TP-Link Deco</li>
     <li>11. Les tablettes murales</li>
-    <li>12. L'iPhone : raccourcis, Siri, notifications</li>
-    <li>13. Réglages : tout retrouver</li>
-    <li>14. Modules : activer seulement ce qui vous sert</li>
-    <li>15. Sauvegarde et mises à jour</li>
-    <li>16. En cas de souci</li>
+    <li>12. Tablette debout, iPhone et panneaux des chambres</li>
+    <li>13. L'iPhone : raccourcis, Siri, notifications</li>
+    <li>14. Réglages : tout retrouver</li>
+    <li>15. Modules : activer seulement ce qui vous sert</li>
+    <li>16. Sauvegarde et mises à jour</li>
+    <li>17. En cas de souci</li>
   </ol>
 
   <h3>1. Comprendre Bêta home en 2 minutes</h3>
@@ -47,7 +48,7 @@
   <ul>
     <li><b>Sans serveur</b>, Bêta home fonctionne en mode démonstration (rien n'est piloté pour de vrai).</li>
     <li><b>Avec le serveur</b>, les automatismes continuent même quand toutes les tablettes sont éteintes.</li>
-    <li><b>Chaque fonction est un module indépendant</b> : vous pouvez couper le chauffage, l'arrosage, le contrôle parental… sans rien casser d'autre (chapitre 14).</li>
+    <li><b>Chaque fonction est un module indépendant</b> : vous pouvez couper le chauffage, l'arrosage, le contrôle parental… sans rien casser d'autre (chapitre 15).</li>
     <li><b>Home Assistant est facultatif</b> : vos appareils peuvent être reliés directement, par Home Assistant, ou un mélange des deux.</li>
   </ul>
 </section>
@@ -195,7 +196,37 @@
 </section>
 
 <section>
-  <h2><span class="n">12</span>L'iPhone : raccourcis, Siri, notifications</h2>
+  <h2><span class="n">12</span>Tablette debout, iPhone et panneaux des chambres</h2>
+  <p>Quand une tablette est tenue <b>à la verticale</b> (ou sur l'iPhone), l'accueil se réorganise tout seul en une colonne : tout tient sur l'écran, sans faire défiler. Les autres pages (Pièces, Sécurité, Énergie…) restent exactement les mêmes.</p>
+  <div class="duo" style="grid-template-columns:1.25fr 1fr">
+    <figure><img src="../img/accueil-portrait.jpg" alt="" style="max-height:120mm"><figcaption>Tablette debout : heure, météo, famille, état de la maison, raccourcis, 4 pièces, 2 caméras, agenda, musique. Bêta IA au centre de la barre du bas.</figcaption></figure>
+    <figure class="phone"><img src="../img/accueil-portrait-iphone.jpg" alt="" style="max-height:120mm"><figcaption>Le même accueil sur l'iPhone (la page défile).</figcaption></figure>
+  </div>
+  <ul>
+    <li>Les <b>4 raccourcis</b> sont ceux de la page Raccourcis de l'iPhone : on les règle une seule fois.</li>
+    <li>Les <b>pièces</b> et <b>caméras</b> affichées se choisissent par tablette : <span class="path">Paramètres › Cet écran › Accueil vertical</span>.</li>
+  </ul>
+  <h3>Panneau mural d'une chambre (DotStarTech Wall Panel, 4″)</h3>
+  <div class="duo">
+    <figure><img src="../img/panneau-main.jpg" alt=""><figcaption>La pièce : lumières, volet, chauffage, 2 scènes. Appui long sur une lumière : intensité et couleur. Glisser : volet / missions.</figcaption></figure>
+    <figure><img src="../img/panneau-wake.jpg" alt=""><figcaption>Réveil en douceur : « + 10 min » ou « Je suis levé » (le volet s'ouvre).</figcaption></figure>
+  </div>
+  <ol class="steps">
+    <li>Sur le panneau (Raspberry Pi OS, navigateur Chromium en plein écran), ouvrez <code>http://IP-du-NAS:8090/?panneau=chambre-1</code> (le nom de la pièce, sans accents ni espaces). Ajoutez <code>&amp;enfant=leo</code> pour une chambre d'enfant.</li>
+    <li>Associez-le comme une tablette (QR code ou code). Il reste ensuite sur sa pièce, même après un redémarrage.</li>
+    <li>Pour en sortir : <b>appui long (2-3 s) sur le nom de la pièce</b>, puis le code d'un parent.</li>
+  </ol>
+  <table>
+    <tr><th>Sonnette sur le panneau</th><th>Quand elle s'affiche</th></tr>
+    <tr><td>Automatique (par défaut)</td><td>Seulement si quelqu'un est réveillé dans la pièce : une lumière allumée ou un volet ouvert. Lumière éteinte et volet fermé : rien.</td></tr>
+    <tr><td>Chambre d'enfant</td><td>Jamais.</td></tr>
+    <tr><td>Toujours / Jamais</td><td>Au choix dans <span class="path">Paramètres › Cet écran</span>.</td></tr>
+  </table>
+  <div class="tip"><b>La nuit</b> Aux heures de nuit de l'écran (22 h – 7 h par défaut), le panneau passe sur une horloge ambrée très sombre qui n'éclaire pas la chambre ; un appui ramène la pièce.</div>
+</section>
+
+<section>
+  <h2><span class="n">13</span>L'iPhone : raccourcis, Siri, notifications</h2>
   <div class="duo" style="grid-template-columns:1fr 1fr">
     <figure class="phone"><img style="max-height:95mm" src="../img/raccourcis.jpg" alt=""><figcaption>Sur iPhone, Bêta home s'ouvre sur « Raccourcis » : météo, état de la maison, routines.</figcaption></figure>
     <figure class="phone"><img style="max-height:95mm" src="../img/accueil-iphone.jpg" alt=""><figcaption>L'accueil en colonne, avec la barre d'onglets en bas.</figcaption></figure>
@@ -211,7 +242,7 @@
 </section>
 
 <section>
-  <h2><span class="n">13</span>Réglages : tout retrouver</h2>
+  <h2><span class="n">14</span>Réglages : tout retrouver</h2>
   <figure class="half"><img src="../img/reglages.jpg" alt=""><figcaption>Le centre des réglages, rangé par thème, avec une recherche (« wifi », « alarme », « tempo »…).</figcaption></figure>
   <table>
     <tr><th>Thème</th><th>Contenu</th></tr>
@@ -227,7 +258,7 @@
 </section>
 
 <section>
-  <h2><span class="n">14</span>Modules : activer seulement ce qui vous sert</h2>
+  <h2><span class="n">15</span>Modules : activer seulement ce qui vous sert</h2>
   <p><span class="path">Réglages › Maison › Modules</span> : chaque fonction (chauffage, arrosage, alarme, missions, colis, calendriers, contrôle parental…) s'active ou se coupe indépendamment. Un module coupé disparaît des menus et le serveur ne l'exécute plus.</p>
   <figure class="half" style="margin-bottom:2mm"><img src="../img/marques.jpg" alt=""><figcaption>Marques et appareils : chaque marque se relie séparément (Bbox, Deco, Tapo, Zigbee2MQTT, Matter, caméras…).</figcaption></figure>
   <h3>Qui pilote quoi ? (éviter les conflits)</h3>
@@ -245,7 +276,7 @@
 </section>
 
 <section>
-  <h2><span class="n">15</span>Sauvegarde et mises à jour</h2>
+  <h2><span class="n">16</span>Sauvegarde et mises à jour</h2>
   <div class="duo">
     <figure><img src="../img/sauvegarde.jpg" alt=""><figcaption>Sauvegarde chiffrée chaque nuit (mot de passe de sauvegarde), copie possible sur une clé USB du NAS, restauration en un clic.</figcaption></figure>
     <figure><img src="../img/majs.jpg" alt=""><figcaption>Mises à jour : avec Watchtower, la nouvelle version s'installe depuis Bêta home.</figcaption></figure>
@@ -254,7 +285,7 @@
 </section>
 
 <section>
-  <h2><span class="n">16</span>En cas de souci</h2>
+  <h2><span class="n">17</span>En cas de souci</h2>
   <table>
     <tr><th>Symptôme</th><th>Solution</th></tr>
     <tr><td>« Serveur Bêta du NAS nécessaire »</td><td>Réglages › Maison › Connexions : adresse <code>http://IP-du-NAS:8090</code> et clé (ou associez l'écran par QR).</td></tr>

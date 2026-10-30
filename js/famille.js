@@ -223,7 +223,7 @@
   /* ======================= 9. sonnette : photo, réponses, visiteurs ======================= */
   let ringOv = null;
   B.on && B.on('nas', ev => {
-    if (ev.type !== 'ring' || !mod('sonnette')) return;
+    if (ev.type !== 'ring' || !mod('sonnette') || (B.ringAllowed && !B.ringAllowed())) return;   // panneau de chambre : voir portrait.js
     if (ringOv) ringOv.remove();
     ringOv = document.createElement('div'); ringOv.className = 'ringov';
     ringOv.innerHTML = '<div class="ringbox"><div class="ringh">' + ico('bellFill') + '<b>On sonne à la porte</b><small>' + hm(Date.now()) + '</small><button class="sq" data-ring="x">' + ico('x') + '</button></div>' + (ev.visit ? '<img src="' + esc(media('/api/famille/visit?id=' + ev.visit)) + '" alt="Visiteur">' : '') +

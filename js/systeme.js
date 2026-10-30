@@ -157,6 +157,7 @@
     if (f.t === 'dev') { const d = DATA.DEVICES[f.id]; if (!d) return null; const st = S.dev[f.id] || d.def || {}; return { icon: B.iconOf ? B.iconOf(d) : 'power', name: d.name, sub: B.stateText ? B.stateText(d, st) || (st.on ? 'Allumé' : 'Éteint') : '', on: !!(st.on || st.pos > 0 || st.locked) }; }
     if (f.t === 'page') { const n = (B.navList ? B.navList(B.NAV || []) : []).find(x => x[0] === f.id); return { icon: n ? n[3] : 'grid9', name: n ? n[1] : f.id, sub: 'Page' }; }
   };
+  B.qkFavs = favs; B.qkInfo = favInfo;   // repris par l'accueil vertical (portrait.js)
   RENDER.qkStatus = () => {
     const st = (S.brain || {}).status || {}, a = (st.alarm || {}).status, pres = Object.values(st.presence || {}), tp = st.tempo, w = B.WX && B.WX.now, al = (B.wxAlerts ? B.wxAlerts() : [])[0];
     return '<div class="qkst">' + (w ? '<span>' + (B.wxIcon ? ico(B.wxIcon(w.code, !w.day)) : '') + '<b>' + Math.round(w.temp) + '°</b></span>' : '') + (a ? '<span class="' + (a === 'disarmed' ? '' : 'g') + '">' + ico('shieldCheck') + (a === 'disarmed' ? 'Alarme coupée' : a === 'triggered' ? 'ALARME' : 'Alarme activée') + '</span>' : '') + (pres.length ? '<span>' + ico('family') + pres.filter(Boolean).length + '/' + pres.length + ' à la maison</span>' : '') + (S.away ? '<span class="y">' + ico('walk') + 'Mode absent</span>' : '') + (tp && tp.today ? '<span class="t-' + tp.today + '">' + ico('boltPlain') + 'Tempo ' + tp.today + '</span>' : '') + '</div>' + (al ? '<p class="qkal">' + ico(al.icon || 'info') + esc(al.text) + '</p>' : '');

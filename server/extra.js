@@ -102,7 +102,7 @@ module.exports = function extra(DATA, send, readBody, M) {
   }
 
   /* ======================= 4. réveil en douceur ======================= */
-  const running = {};
+  const running = {}, snoozeT = {};
   async function weatherLine() {
     const h = X.home(); try {
       const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + h.lat + '&longitude=' + h.lon + '&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=1&timezone=Europe%2FParis', { signal: AbortSignal.timeout(10000) });
@@ -117,6 +117,7 @@ module.exports = function extra(DATA, send, readBody, M) {
   async function wakeRun(w, by) {
     if (running[w.id]) return; running[w.id] = true;
     const steps = Math.max(1, +w.ramp || 15); X.note('Réveil « ' + w.name + ' »' + (by ? ' (' + by + ')' : ''), 'sun');
+    X.emit({ type: 'wakestart', id: w.id, name: w.name, who: w.who || '', lights: w.lights || [], covers: w.covers || [] });   // panneau de la chambre : écran de lever du soleil
     try {
       for (let i = 1; i <= steps && running[w.id]; i++) {
         const k = i / steps;
@@ -283,7 +284,9 @@ module.exports = function extra(DATA, send, readBody, M) {
     if (p === '/api/extra/kid' && m === 'POST') { const b = await readBody(req) || {}, k = C.kids.find(x => x.id === b.id); if (!k) return send(res, 404, { error: 'profil inconnu' }); k.pause = b.pause ? Date.now() + (+b.minutes || 60) * 6e4 : 0; persist(); await kidsTick(new Date()); return send(res, 200, { ok: true, pause: k.pause }); }
     if (p === '/api/extra/net/known' && m === 'POST') { const b = await readBody(req) || {}; C.net.newDevs = C.net.newDevs.filter(x => x.mac !== b.mac); persist(); return send(res, 200, { ok: true }); }
     if (p === '/api/extra/net/history' && m === 'GET') { const l = wanHist(Math.min(+url.searchParams.get('days') || 1, 31) * 864e5), day = 864e5; const up = l.length ? Math.round(l.filter(x => x[1]).length / l.length * 1000) / 10 : null; return send(res, 200, { points: l.filter((x, i) => i % Math.max(1, Math.ceil(l.length / 300)) === 0), uptime: up, outages: C.net.outages.filter(o => o.start > Date.now() - 7 * day) }); }
-    if (p === '/api/extra/wake' && m === 'POST') { const b = await readBody(req) || {}, wk = C.wakes.find(x => x.id === b.id) || C.wakes[0]; if (!wk) return send(res, 404, { error: 'aucun réveil' }); if (b.stop) { delete running[wk.id]; return send(res, 200, { ok: true }); } wakeRun(wk, b.by || 'manuel'); return send(res, 200, { ok: true }); }
+    if (p === '/api/extra/wake' && m === 'POST') { const b = await readBody(req) || {}, wk = C.wakes.find(x => x.id === b.id) || C.wakes[0]; if (!wk) return send(res, 404, { error: 'aucun réveil' }); if (b.stop) { delete running[wk.id]; if (b.up) (wk.covers || []).forEach(id => X.command(id, { pos: 100 }).catch(() => { })); return send(res, 200, { ok: true }); }
+      // « + 10 min » depuis le panneau de la chambre : on arrête et on recommence plus tard
+      if (b.snooze) { delete running[wk.id]; clearTimeout(snoozeT[wk.id]); snoozeT[wk.id] = setTimeout(() => wakeRun(wk, 'rappel'), Math.min(60, Math.max(1, +b.snooze)) * 6e4); return send(res, 200, { ok: true, at: Date.now() + Math.min(60, Math.max(1, +b.snooze)) * 6e4 }); } wakeRun(wk, b.by || 'manuel'); return send(res, 200, { ok: true }); }
     if (p === '/api/extra/mode' && m === 'POST') { const b = await readBody(req) || {}, sc = P && (P.scenes || []).find(x => x.id === b.id); if (!sc) return send(res, 404, { error: 'scène inconnue' }); modeRun(sc); return send(res, 200, { ok: true, dnd: C.dnd }); }
     if (p === '/api/extra/dnd' && m === 'POST') { const b = await readBody(req) || {}; C.dnd = +b.hours ? Date.now() + +b.hours * 36e5 : 0; persist(); X.emit({ type: 'dnd', until: C.dnd }); return send(res, 200, { dnd: C.dnd }); }
     if (p === '/api/extra/morning' && m === 'GET') { const [tr, tp, wl] = await Promise.all([traffic(), transit(), weatherLine()]); const today = X.ymd(new Date()); return send(res, 200, { traffic: tr, transit: tp.filter(x => x.err || x.at > Date.now() - 60000).slice(0, 12), weather: wl, trash: (await X.trashDays(2)), tempo: X.S.tempo, reminders: C.reminders.filter(r => r.on !== false && nextDue(r) <= today).map(r => r.name), dnd: C.dnd }); }

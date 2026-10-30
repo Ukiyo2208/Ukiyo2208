@@ -123,7 +123,7 @@
     if (document.hidden) return;
     try {
       const r = await B.Server.req('/api/notify/events?since=' + evAt);
-      if (evAt) r.events.forEach(ev => { if (ev.type !== 'doorbell') return; B.fire('doorbell', 'server'); const c = S.netcams && S.netcams.find(x => x.id === ev.cam), slot = c && (c.slot || 'cam.n_' + c.id); if (slot && DATA.CAMS[slot] && B.ACT.cam && N.tab.show) setTimeout(() => { const el = document.createElement('i'); el.dataset.id = slot; B.ACT.cam(el); }, 400); });
+      if (evAt) r.events.forEach(ev => { if (ev.type !== 'doorbell') return; B.fire('doorbell', 'server'); const c = S.netcams && S.netcams.find(x => x.id === ev.cam), slot = c && (c.slot || 'cam.n_' + c.id); if (slot && DATA.CAMS[slot] && B.ACT.cam && N.tab.show && !(B.ringAllowed && !B.ringAllowed())) setTimeout(() => { const el = document.createElement('i'); el.dataset.id = slot; B.ACT.cam(el); }, 400); });
       evAt = r.now;
     } catch (e) { }
   }, 4000);

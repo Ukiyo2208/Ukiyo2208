@@ -368,3 +368,13 @@ Le QR code utilise la bibliothèque libre *qrcode-generator* (Kazuhiko Arase, li
 - Le cache hors ligne garde une seule copie de `bundle.js` (avant, chaque mise à jour en ajoutait une d'environ 1 Mo sur les tablettes).
 - Les appareils se rafraîchissent dès qu'un écran redevient visible, sans attendre le prochain relevé.
 - L'image Docker n'embarque plus les tutoriels (`docs/` exclu).
+
+## Tablette debout, iPhone et panneaux des chambres (7.18)
+
+- **Accueil vertical** : quand une tablette est tenue à la verticale (ou sur l'iPhone), l'accueil se réorganise en une colonne qui tient sur l'écran sans défiler (Fire 8″ comprise) : heure, météo, famille, état de la maison, 4 raccourcis, 4 pièces avec interrupteur, 2 caméras, agenda du jour, musique. Barre du bas : Accueil, Pièces, Bêta IA, Sécurité, Énergie, Plus. Les autres pages ne changent pas. Sur l'iPhone, la même page en version compacte qui défile.
+  - Les raccourcis sont ceux de la page Raccourcis de l'iPhone ; les pièces et caméras se choisissent par tablette (Paramètres › Cet écran › Accueil vertical).
+- **Panneau mural d'une pièce** (DotStarTech Wall Panel CM4, écran carré 720 × 720) : adresse `http://NAS:8090/?panneau=chambre-1` (ajouter `&enfant=leo` pour une chambre d'enfant), ou Paramètres › Cet écran › Panneau mural. Le panneau reste sur sa pièce ; pour en sortir : appui long sur le nom de la pièce puis le code d'un parent.
+  - Écrans : la pièce (lumières, volet, chauffage, 2 scènes de la pièce ou Lecture / Dodo), réglage d'une lumière (appui long), volet et chauffage, missions (chambre d'enfant), écran de nuit ambré, réveil en douceur avec « + 10 min » et « Je suis levé ».
+  - **Sonnette** : en automatique, elle n'apparaît sur le panneau que si une lumière de la pièce est allumée ou un volet ouvert ; jamais dans une chambre d'enfant ; réglable (toujours / jamais).
+  - Le serveur prévient le panneau au début d'un réveil (`wakestart`) ; « + 10 min » reporte le réveil, « Je suis levé » l'arrête et ouvre les volets.
+- Correction : le filtre du mode nuit de l'interface n'enferme plus les éléments plein écran.

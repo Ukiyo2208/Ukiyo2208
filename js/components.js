@@ -33,23 +33,25 @@
   const unread = () => S.mails.filter(m => !m.read).length;
   const badgeHTML = id => id === 'mails' && unread() ? '<span class="badge">' + unread() + '</span>' : '';
 
-  function side(active) {
+  function side(active, o) {
     return '<aside class="side">' +
       '<button class="burger" data-act="lock" title="Verrouiller">' + ico('menu') + '</button><nav>' +
       navItems().filter(n => !n[4]).map(n => '<a href="#' + n[0] + '" class="' + (n[0] === active ? 'on' : '') + '">' + ico(n[0] === active ? n[3] : n[2]) + '<span>' + n[1] + '</span>' + badgeHTML(n[0]) + '</a>').join('') +
-      '</nav><button class="sside" data-act="search" title="Rechercher (Ctrl + K)">' + ico('search2') + '<span>Chercher</span></button><div class="seal">' + toriiSVG('', true) + '<b>家</b><b>夜</b></div></aside>' + dock(active) + fluidTop();
+      '</nav><button class="sside" data-act="search" title="Rechercher (Ctrl + K)">' + ico('search2') + '<span>Chercher</span></button><div class="seal">' + toriiSVG('', true) + '<b>家</b><b>夜</b></div></aside>' + dock(active) + (o && o.notop ? '' : fluidTop());
   }
   /* dock mobile : raccourcis essentiels + bouton Bêta IA central */
   function dock(active) {
     // boutons épinglés : réglables par appareil (menu › Personnaliser)
-    const all = navItems(), main = (B.dockItems ? B.dockItems() : ['accueil', 'rdc', 'etage1']).filter(id => all.some(n => n[0] === id)).slice(0, 3), more = all.filter(n => !main.includes(n[0]) && n[0] !== 'ia');
+    // en portrait (tablette verticale, iPhone) : 4 boutons, Bêta IA au centre
+    const nb = document.documentElement.classList.contains('portrait') ? 4 : 3;
+    const all = navItems(), main = (B.dockItems ? B.dockItems() : ['accueil', 'rdc', 'etage1']).filter(id => all.some(n => n[0] === id)).slice(0, nb), more = all.filter(n => !main.includes(n[0]) && n[0] !== 'ia');
     const it = n => n ? '<a href="#' + n[0] + '" class="' + (n[0] === active ? 'on' : '') + '">' + ico(n[0] === active ? n[3] : n[2]) + '<span>' + n[1] + '</span>' + badgeHTML(n[0]) + '</a>' : '';
     const m = main.map(id => all.find(n => n[0] === id));
-    return '<nav class="dock">' + it(m[0]) + it(m[1]) + '<button class="iafab" data-act="iaOpen" aria-label="Parler à Bêta IA">' + brainSVG() + '</button>' + it(m[2]) +
+    return '<nav class="dock">' + it(m[0]) + it(m[1]) + '<button class="iafab" data-act="iaOpen" aria-label="Parler à Bêta IA">' + brainSVG() + '</button>' + it(m[2]) + it(m[3]) +
       '<button data-act="moreNav" class="' + (more.some(n => n[0] === active) ? 'on' : '') + '">' + ico('grid9') + '<span>Plus</span>' + (unread() ? '<span class="badge">' + unread() + '</span>' : '') + '</button></nav>';
   }
   act('moreNav', el => {
-    const main = ['accueil', 'rdc', 'etage1'];
+    const main = B.dockItems ? B.dockItems() : ['accueil', 'rdc', 'etage1'];
     B.modal('<h2>' + ico('grid9') + 'Toutes les pages</h2><div class="navgrid">' + navItems().filter(n => !main.includes(n[0])).map(n => '<a href="#' + n[0] + '" class="tile" data-act="closeModalNav">' + ico(n[3]) + '<span>' + n[1] + '</span>' + badgeHTML(n[0]) + '</a>').join('') +
       '<button class="tile" data-act="lock">' + ico('lock') + '<span>Verrouiller</span></button></div>', 'sm sheet');
   });

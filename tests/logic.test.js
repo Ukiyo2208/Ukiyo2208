@@ -94,3 +94,21 @@ test('go2rtc : configuration dans un dossier, ancien fichier repris', () => {
   assert.ok(fs.statSync(path.join(d, 'go2rtc')).isDirectory());
   assert.strictEqual(fs.readFileSync(path.join(d, 'go2rtc', 'go2rtc.yaml'), 'utf8'), 'streams: {}\n');
 });
+
+test('réveil : le panneau de la chambre est prévenu, « + 10 min » reporte le réveil', async () => {
+  let out = null, body = {}; const D3 = tmp('wake'), M3 = mocks({ l1: { on: false } });
+  const send = (res, code, b) => { out = b; };
+  const E3 = require(R + 'engine')(D3, send, async () => body, { HUB: M3.HUB, NOTIFY: M3.NOTIFY, GEO: M3.GEO });
+  const P3 = require(R + 'plus')(D3, send, async () => body, { HUB: M3.HUB, NOTIFY: M3.NOTIFY, ENGINE: E3, AUTH: {} });
+  const X3 = require(R + 'extra')(D3, send, async () => body, { HUB: M3.HUB, NOTIFY: M3.NOTIFY, ENGINE: E3, PLUS: P3, LOGS: [], MODS: () => ({}) });
+  body = { wakes: [{ id: 'w1', name: 'Réveil Léo', who: 'Léo', time: '07:00', ramp: 1, lights: ['l1'], covers: [] }] };
+  await X3.api({ method: 'PUT' }, {}, new URL('http://x/api/extra'));
+  body = { id: 'w1', snooze: 10 };
+  await X3.api({ method: 'POST' }, {}, new URL('http://x/api/extra/wake'));
+  assert.strictEqual(out.ok, true); assert.ok(out.at > Date.now() + 9 * 6e4);
+  body = { id: 'w1' };
+  await X3.api({ method: 'POST' }, {}, new URL('http://x/api/extra/wake'));
+  await E3.api({ method: 'GET' }, {}, new URL('http://x/api/engine/events?since=0'));
+  const ev = out.events.find(e => e.type === 'wakestart');
+  assert.ok(ev, 'évènement wakestart'); assert.deepStrictEqual(ev.lights, ['l1']); assert.strictEqual(ev.who, 'Léo');
+});

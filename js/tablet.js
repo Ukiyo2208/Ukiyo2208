@@ -41,7 +41,7 @@
     if (t.photos) { const p = PH(); slide = (slide + 1) % p.length; const img = sv.querySelector('.svbg'); img.style.opacity = 0; setTimeout(() => { img.style.backgroundImage = 'url("' + p[slide] + '")'; img.style.opacity = 1; }, 700); }
   }
   function sleep() {
-    if (sv || !tab().on || document.querySelector('.modal')) return;
+    if (sv || !tab().on || document.querySelector('.modal') || document.documentElement.classList.contains('mini')) return;   // panneau mural : écran de nuit (portrait.js)
     sv = document.createElement('div'); sv.className = 'saver' + (tab().photos ? '' : ' nophoto');
     sv.innerHTML = '<div class="svbg"></div><div class="svbox"><div class="svt"></div><div class="svd"></div><div class="svw"></div><div class="sve"></div><div class="sva"></div></div><small class="svh">Touchez l’écran</small>';
     document.body.appendChild(sv); paintSv(); svT = setInterval(paintSv, 20000);

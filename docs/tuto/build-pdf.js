@@ -11,7 +11,7 @@ const DOCS = [['guide.html', 'Guide-Beta-home.pdf', 'Guide d’utilisation'], ['
     await p.pdf({
       path: path.join(__dirname, '..', out), format: 'A4', printBackground: true, preferCSSPageSize: true, displayHeaderFooter: true,
       headerTemplate: '<span></span>',
-      footerTemplate: '<div style="width:100%;font:8px Arial,sans-serif;color:#8a96ab;padding:0 15mm;display:flex;justify-content:space-between"><span>Bêta home 7.17 · ' + title + '</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>'
+      footerTemplate: '<div style="width:100%;font:8px Arial,sans-serif;color:#8a96ab;padding:0 15mm;display:flex;justify-content:space-between"><span>Bêta home 7.18 · ' + title + '</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>'
     });
     console.log('docs/' + out); await p.close();
   }

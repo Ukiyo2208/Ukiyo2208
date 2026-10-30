@@ -135,7 +135,8 @@
     '<div class="sugg"><button data-act="iaAsk" data-arg="Fais le point sur la maison">' + ico('sparkle') + 'Point maison</button><button data-act="iaAsk" data-arg="Quel temps fait-il ?">' + ico('cloudMoon') + 'Météo</button><button data-act="iaAsk" data-arg="Lance ma playlist Japon">' + ico('musicFill') + 'Playlist Japon</button></div>' +
     '<form data-submit="iaHome"><button type="button" data-act="mic" aria-label="Dicter">' + ico('mic') + '</button><input name="q" placeholder="Écrivez ou dictez…" autocomplete="off" enterkeyhint="send" aria-label="Question"><button aria-label="Envoyer">' + ico('send') + '</button></form></section>';
 
-  B.route('accueil', { title: 'Accueil', bg: A + 'bg/home.jpg', w: 1672, h: 941, render: () => {
+  B.route('accueil', { title: 'Accueil', bg: A + 'bg/home.jpg', w: 1672, h: 941, portrait: true, render: () => {
+    if (B.portraitHome && document.documentElement.classList.contains('portrait')) return B.portraitHome();   // tablette verticale, iPhone (portrait.js)
     const C = [692, 375];
     const cams = [['cam.cour-garage', [708, 428, 931, 655]], ['cam.cour', [945, 428, 1169, 655]], ['cam.sonnette', [1182, 428, 1406, 655]], ['cam.jardin', [1420, 428, 1646, 655]]];
     return B.side('accueil') + B.logo(px(110, 12, 250, 72)) +

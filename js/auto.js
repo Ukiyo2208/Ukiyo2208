@@ -116,6 +116,7 @@
   B.on('dev', d => { if (d.id === 'ext.arrosage' && d.patch.on && !(S.arroForce && Date.now() - S.arroForce < 6e4)) setTimeout(rainCheck, 300); });
   B.on('weather', rainCheck);
   B.on('doorbell', () => {
+    if (B.ringAllowed && !B.ringAllowed()) return;   // panneau d'une chambre où l'on dort, ou chambre d'enfant
     B.camState('cam.sonnette').ev = { type: 'person', ago: 0 }; B.emit('cam:cam.sonnette');
     if (B.fx) B.fx.sound('dingdong');
     const a = S.autos.find(x => x.on && x.trig.type === 'doorbell');

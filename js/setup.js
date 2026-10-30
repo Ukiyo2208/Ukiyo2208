@@ -270,13 +270,14 @@
   const devCfg = () => { try { return JSON.parse(localStorage.getItem(DK) || '{}'); } catch (e) { return {}; } };
   const setDevCfg = c => { try { localStorage.setItem(DK, JSON.stringify(c)); } catch (e) { } };
   const pages = () => (B.navList ? B.navList(B.NAV) : B.NAV).filter((n, i, a) => a.findIndex(x => x[0] === n[0]) === i && !(B.navHidden && B.navHidden(n[0])));
-  B.dockItems = () => { const c = devCfg(); if (c.dock && c.dock.length) return c.dock; const fl = B.floors().filter(f => f.level >= 0).concat(B.floors().filter(f => f.level < 0)).slice(0, 2).map(f => f.route); return ['accueil'].concat(fl).slice(0, 3); };
+  B.dockItems = () => { const c = devCfg(); if (c.dock && c.dock.length) return c.dock; if (document.documentElement.classList.contains('portrait')) return ['accueil', 'pieces', 'securite', 'energie']; const fl = B.floors().filter(f => f.level >= 0).concat(B.floors().filter(f => f.level < 0)).slice(0, 2).map(f => f.route); return ['accueil'].concat(fl).slice(0, 3); };
+  const dockMax = () => document.documentElement.classList.contains('portrait') ? 4 : 3;
   B.startPage = () => { const c = devCfg(); return c.start && B.ROUTES[c.start] ? c.start : 'accueil'; };
   function screenCfg() {
     const c = devCfg(), dock = B.dockItems(), ps = pages();
     B.modal('<h2>' + ico('monitor') + 'Cet écran</h2><div class="scfg"><p class="muted" style="margin:0 0 6px;font-size:13px">Ces réglages ne concernent que cet appareil (' + (document.documentElement.classList.contains('fluid') ? 'téléphone' : 'tablette / ordinateur') + ') : chaque écran de la maison peut avoir les siens.</p>' +
       '<label class="field">Page qui s’ouvre en premier<select data-change="scStart">' + ps.map(n => '<option value="' + n[0] + '"' + (B.startPage() === n[0] ? ' selected' : '') + '>' + esc(n[1]) + '</option>').join('') + '</select></label>' +
-      '<div class="field">Boutons épinglés dans la barre du bas (3 maximum, dans l’ordre)<div class="scpins">' + ps.filter(n => n[0] !== 'ia').map(n => { const i = dock.indexOf(n[0]); return '<button class="pinc' + (i >= 0 ? ' on' : '') + '" data-act="scPin" data-arg="' + n[0] + '">' + (i >= 0 ? '<b>' + (i + 1) + '</b>' : '') + ico(n[2]) + esc(n[1]) + '</button>'; }).join('') + '</div></div>' +
+      '<div class="field">Boutons épinglés dans la barre du bas (' + dockMax() + ' maximum, dans l’ordre)<div class="scpins">' + ps.filter(n => n[0] !== 'ia').map(n => { const i = dock.indexOf(n[0]); return '<button class="pinc' + (i >= 0 ? ' on' : '') + '" data-act="scPin" data-arg="' + n[0] + '">' + (i >= 0 ? '<b>' + (i + 1) + '</b>' : '') + ico(n[2]) + esc(n[1]) + '</button>'; }).join('') + '</div></div>' +
       '<label class="field">Nom de cet écran (pour s’y retrouver)<input value="' + esc(c.name || '') + '" placeholder="Tablette du salon" data-change="scName"></label>' +
       (B.screenExtra ? B.screenExtra(c) : '') +
       '<div class="row" style="justify-content:flex-end"><button class="btn" data-act="scReset">Valeurs par défaut</button><button class="btn pri" data-act="closeModal">' + ico('check') + 'OK</button></div></div>', 'sm scmodal');
@@ -284,7 +285,7 @@
   B.screenCfg = screenCfg;
   B.act('screenCfg', screenCfg);
   B.act('scStart', el => { const c = devCfg(); c.start = el.value; setDevCfg(c); B.toast('Cet écran s’ouvrira sur « ' + el.selectedOptions[0].textContent + ' »', 'monitor'); });
-  B.act('scPin', el => { const c = devCfg(), d = B.dockItems().slice(), id = el.dataset.arg, i = d.indexOf(id); if (i >= 0) d.splice(i, 1); else { if (d.length >= 3) d.shift(); d.push(id); } c.dock = d; setDevCfg(c); screenCfg(); B.show(); });
+  B.act('scPin', el => { const c = devCfg(), d = B.dockItems().slice(), id = el.dataset.arg, i = d.indexOf(id); if (i >= 0) d.splice(i, 1); else { if (d.length >= dockMax()) d.shift(); d.push(id); } c.dock = d; setDevCfg(c); screenCfg(); B.show(); });
   B.act('scName', el => { const c = devCfg(); c.name = el.value.trim(); setDevCfg(c); });
   B.act('scReset', () => { setDevCfg({}); screenCfg(); B.show(); });
   // le menu du téléphone gagne « Personnaliser cet écran »

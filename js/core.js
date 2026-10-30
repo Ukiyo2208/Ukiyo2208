@@ -108,18 +108,28 @@
   let stageW = 1536, stageH = 1024;
   // tablette modeste (Fire HD, Silk, peu de mémoire) : mode performance par défaut, sauf choix contraire dans « Cet écran »
   const WEAK = /\bKF[A-Z]{2,5}\b|Silk|Fire/i.test(navigator.userAgent) || !!(navigator.deviceMemory && navigator.deviceMemory <= 2) || !!(navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4 && /Android/.test(navigator.userAgent));
-  function fit() {
-    const st = $('.stage'); if (!st) return;
+  // classes de disposition (fluid, tab2, portrait, mini) : calculées avant chaque rendu et à chaque redimensionnement
+  function layout() {
     const vw = window.innerWidth, vh = window.innerHeight;
     // disposition choisie pour cet écran (Paramètres › Cet écran) : auto, grand écran, tablette (2 colonnes), téléphone
-    let lm = 'auto'; try { const c = JSON.parse(localStorage.getItem('betaos.device') || '{}'); lm = c.layout || 'auto'; document.documentElement.classList.toggle('perf', c.perf !== undefined ? !!c.perf : WEAK); } catch (e) { }
+    let lm = 'auto', mini = false; try { const c = JSON.parse(localStorage.getItem('betaos.device') || '{}'); lm = c.layout || 'auto'; mini = !!(c.panel && c.panel.room); document.documentElement.classList.toggle('perf', c.perf !== undefined ? !!c.perf : WEAK); } catch (e) { }
     const small = vw >= 700 && Math.min(vw / stageW, vh / stageH) < 0.62 && navigator.maxTouchPoints > 0;   // petite tablette tactile (8 pouces)
-    const fluid = lm === 'large' ? false : lm === 'tablet' || lm === 'phone' ? true : vw < 760 || (vh > vw * 1.05 && vw < 1000) || small;
-    document.documentElement.classList.toggle('fluid', fluid);
-    document.documentElement.classList.toggle('tab2', fluid && lm !== 'phone' && vw >= 700);
+    const fluid = mini || (lm === 'large' ? false : lm === 'tablet' || lm === 'phone' ? true : vw < 760 || (vh > vw * 1.05 && vw < 1000) || small);
+    // portrait : tablette tenue à la verticale ou téléphone → accueil en une colonne ; mini : panneau mural d'une seule pièce
+    const portrait = fluid && !mini && vh > vw * 1.05, H = document.documentElement;
+    H.classList.toggle('fluid', fluid);
+    H.classList.toggle('tab2', fluid && !mini && lm !== 'phone' && vw >= 700);
+    H.classList.toggle('portrait', portrait); H.classList.toggle('mini', mini);
+    return fluid;
+  }
+  function fit() {
+    const st = $('.stage'); if (!st) return;
+    const was = document.documentElement.classList.contains('portrait'), fluid = layout();
+    // l'accueil change de disposition quand on tourne la tablette
+    if (was !== document.documentElement.classList.contains('portrait') && current && ROUTES[current] && ROUTES[current].portrait) setTimeout(show, 0);
     if (fluid) { st.style.transform = ''; st.style.width = ''; st.style.height = ''; return; }
     st.style.width = stageW + 'px'; st.style.height = stageH + 'px';
-    const s = Math.min(vw / stageW, vh / stageH);
+    const vw = window.innerWidth, vh = window.innerHeight, s = Math.min(vw / stageW, vh / stageH);
     st.style.transform = 'translate(' + ((vw - stageW * s) / 2) + 'px,' + ((vh - stageH * s) / 2) + 'px) scale(' + s + ')';
   }
   window.addEventListener('resize', fit);
@@ -133,11 +143,14 @@
   function show() {
     let name = (location.hash || '').slice(1) || 'verrou';
     if (!ROUTES[name]) name = 'accueil';
-    if (name !== 'verrou' && !sessionStorage.getItem('betaos.unlocked') && !S.settings.skipLock) name = 'verrou';
+    const forced = window.BOS && window.BOS.forceRoute && window.BOS.forceRoute(name);   // panneau mural : toujours sa pièce
+    if (forced && ROUTES[forced]) name = forced;
+    else if (name !== 'verrou' && !sessionStorage.getItem('betaos.unlocked') && !S.settings.skipLock) name = 'verrou';
     const r = ROUTES[name];
     REG.clear(); uid = 0;
     stageW = r.w || 1536; stageH = r.h || 1024;
     const st = $('.stage');
+    layout();
     const bg = 'url("' + new URL(r.bg, location.href).href + '")';
     st.style.setProperty('--bg', bg);
     $('.backdrop').style.setProperty('--bg', bg);
@@ -286,6 +299,7 @@
       WX.at = Date.now();
       WX.days = j.daily.time.slice(1, 5).map((t, i) => ({ max: Math.round(j.daily.temperature_2m_max[i + 1]), min: Math.round(j.daily.temperature_2m_min[i + 1]), code: j.daily.weather_code[i + 1] }));
       WX.tomorrow = { max: Math.round(j.daily.temperature_2m_max[1]), min: Math.round(j.daily.temperature_2m_min[1]), code: j.daily.weather_code[1] };
+      WX.today = { max: Math.round(j.daily.temperature_2m_max[0]), min: Math.round(j.daily.temperature_2m_min[0]) };
       const h = j.hourly, now = Date.now();
       WX.hours = h.time.map((t, i) => ({ t: new Date(t), temp: h.temperature_2m[i], prob: h.precipitation_probability[i] || 0, mm: h.precipitation[i] || 0, gust: h.wind_gusts_10m[i] || 0, code: h.weather_code[i] })).filter(x => +x.t > now - 36e5).slice(0, 24);
       WX.sun = { rise: new Date(j.daily.sunrise[0]), set: new Date(j.daily.sunset[0]) };
