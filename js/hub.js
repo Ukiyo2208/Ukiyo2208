@@ -262,6 +262,61 @@
       fields: [['appKey', 'Clé d’application'], ['appSecret', 'Secret d’application', { pw: 1 }]],
       steps: ['Sur <b>developer.husqvarnagroup.cloud</b> : connectez-vous avec le compte de l’appli, <b>Create application</b>, puis connectez-y les API « Authentication », « Automower Connect » et/ou « GARDENA smart system ».', 'Copiez la clé et le secret, <b>Tester</b> puis <b>Ajouter les appareils</b> : tondeuses (tondre, garer), vannes d’arrosage, prises, capteurs du sol.'],
       note: 'API officielle et gratuite.' },
+    // 7.19 : nouvelles marques
+    { id: 'sonoff', name: 'Sonoff (eWeLink)', sub: 'Mini, BASIC, S26 en mode DIY', icon: 'plug', ready: true,
+      fields: [['hosts', 'Adresses IP des modules', { ph: '192.168.1.60, 192.168.1.61' }]],
+      steps: ['Passez chaque module en <b>mode DIY</b> : appli eWeLink › module › réglages › « LAN / DIY », ou maintenez le bouton 5 s (clignotement rapide) puis suivez sonoff.tech/diy.', 'Réservez son IP dans la box, saisissez les adresses, <b>Tester</b> puis <b>Ajouter les appareils</b>.'],
+      note: 'API locale, sans compte. Les modules flashés Tasmota ou ESPHome se relient par leur fiche.' },
+    { id: 'mystrom', name: 'myStrom', sub: 'Prises (consommation) et ampoules Wi-Fi', icon: 'plug', ready: true,
+      fields: [['hosts', 'Adresses IP', { ph: '192.168.1.70' }]], steps: ['Appli myStrom › appareil › infos : notez son <b>adresse IP</b> et réservez-la dans la box.', 'Saisissez les adresses, <b>Tester</b> puis <b>Ajouter les appareils</b> (prise, consommation, température).'], note: 'API locale, sans compte.' },
+    { id: 'twinkly', name: 'Twinkly', sub: 'Guirlandes et rideaux lumineux', icon: 'sparkle', ready: true,
+      fields: [['hosts', 'Adresses IP des décors', { ph: '192.168.1.80' }]], steps: ['Appli Twinkly › décor › réglages › <b>informations</b> : adresse IP. Réservez-la dans la box.', 'Saisissez les adresses, <b>Tester</b> puis <b>Ajouter les appareils</b> : marche, intensité, couleur.'], note: 'API locale, sans compte.' },
+    { id: 'homey', name: 'Homey Pro', sub: 'Tous les appareils de la box Athom', icon: 'homeFill', ready: true,
+      fields: [['host', 'Adresse IP de la Homey', { ph: '192.168.1.15' }], ['token', 'Clé API', { pw: 1 }]],
+      steps: ['my.homey.app › <b>Réglages › Clés API</b> › nouvelle clé « Bêta home », cochez <b>Appareils (lecture et contrôle)</b> et <b>Zones (lecture)</b>.', 'Collez la clé, <b>Tester</b> puis <b>Ajouter les appareils</b> : lumières, prises, volets, thermostats, capteurs, serrures.'], note: 'API locale de la Homey Pro (2019 et 2023).' },
+    { id: 'hubitat', name: 'Hubitat', sub: 'Tous les appareils de la box (Maker API)', icon: 'homeFill', ready: true,
+      fields: [['host', 'Adresse IP du Hubitat', { ph: '192.168.1.16' }], ['appId', 'Numéro de l’application Maker API', { ph: '12' }], ['token', 'Jeton d’accès', { pw: 1 }]],
+      steps: ['Hubitat › Apps › <b>Add Built-In App › Maker API</b> : choisissez les appareils à partager.', 'En bas de la page, les adresses montrent le numéro d’application (…/apps/api/<b>12</b>/…) et le jeton (access_token=…).', '<b>Tester</b> puis <b>Ajouter les appareils</b>.'], note: 'API locale.' },
+    { id: 'jeedom', name: 'Jeedom', sub: 'Tous les équipements de la box', icon: 'homeFill', ready: true,
+      fields: [['host', 'Adresse de Jeedom', { ph: '192.168.1.17' }], ['apikey', 'Clé API Jeedom', { pw: 1 }]],
+      steps: ['Jeedom › Réglages › Système › <b>Configuration › API</b> : copiez la <b>clé API</b> (et autorisez l’accès API « HTTP » et « JSON-RPC »).', 'Vérifiez les <b>types génériques</b> de vos équipements (Outils › Types génériques) : ils indiquent ce qui est une lumière, un volet, une prise…', '<b>Tester</b> puis <b>Ajouter les appareils</b>.'], note: 'API locale. Les ouvertures suivent la convention Jeedom (1 = fermé).' },
+    { id: 'eedomus', name: 'eedomus', sub: 'Les périphériques de la box', icon: 'homeFill', ready: true,
+      fields: [['host', 'Adresse IP de la box eedomus', { ph: '192.168.1.18' }], ['user', 'Code API utilisateur'], ['secret', 'Code API secret', { pw: 1 }]],
+      steps: ['eedomus › Configuration › <b>Mon compte › Paramètres › Consulter vos identifiants</b> : code utilisateur et code secret de l’API.', '<b>Tester</b> puis <b>Ajouter les appareils</b> : lumières, prises, volets et capteurs sont reconnus par leur usage.'], note: 'API locale de la box (le cloud eedomus n’est pas utilisé).' },
+    { id: 'domoticz', name: 'Domoticz', sub: 'Tous les appareils du serveur', icon: 'homeFill', ready: true,
+      fields: [['host', 'Adresse de Domoticz', { ph: '192.168.1.19:8080' }], ['user', 'Utilisateur (si protégé)'], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Domoticz › Réglages › Paramètres › <b>Réseaux locaux</b> : ajoutez l’adresse du NAS (ou créez un utilisateur pour Bêta home).', '<b>Tester</b> puis <b>Ajouter les appareils</b>.'], note: 'API JSON locale.' },
+    { id: 'fibaro', name: 'Fibaro / Yubii', sub: 'Home Center 2, 3, Lite et Yubii Home', icon: 'homeFill', ready: true,
+      fields: [['host', 'Adresse IP de la box', { ph: '192.168.1.21' }], ['user', 'Utilisateur', { ph: 'admin' }], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Créez de préférence un <b>utilisateur dédié</b> dans la box (Réglages › Utilisateurs) avec accès aux appareils.', '<b>Tester</b> puis <b>Ajouter les appareils</b> : modules Z-Wave, volets, dimmers, capteurs, serrures.'], note: 'API REST locale.' },
+    { id: 'heatzy', name: 'Heatzy', sub: 'Radiateurs électriques (fil pilote)', icon: 'flame', ready: true,
+      fields: [['user', 'E-mail du compte Heatzy'], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Utilisez les identifiants de l’<b>appli Heatzy</b>.', '<b>Tester</b> puis <b>Ajouter les appareils</b> : chaque radiateur passe en Confort, Éco, Hors-gel ou Arrêt (Préréglage).'], note: 'API cloud Heatzy. Le chauffage de Bêta home peut ensuite piloter ces radiateurs par pièce.' },
+    { id: 'melcloud', name: 'Mitsubishi MELCloud', sub: 'Climatisations et PAC air/air', icon: 'snow', ready: true,
+      fields: [['user', 'E-mail du compte MELCloud'], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Utilisez les identifiants de l’<b>appli MELCloud</b> (interface Wi-Fi MAC-5xx).', '<b>Tester</b> puis <b>Ajouter les appareils</b> : marche, mode, consigne, température de la pièce.'], note: '⚠️ API de l’appli (non officielle), relevé toutes les minutes. Les comptes « MELCloud Home » récents ne sont pas encore pris en charge.' },
+    { id: 'airzone', name: 'Airzone', sub: 'Clim gainable par zones (Easyzone, Flexa, Aidoo)', icon: 'snow', ready: true,
+      fields: [['host', 'Adresse IP du serveur Web Airzone', { ph: '192.168.1.22' }]], steps: ['Appli Airzone Cloud › installation › réglages : notez l’IP du <b>Webserver</b> (ou de l’Aidoo) et réservez-la dans la box.', '<b>Tester</b> puis <b>Ajouter les appareils</b> : une climatisation par zone.'], note: 'API locale (port 3000), sans compte.' },
+    { id: 'kodi', name: 'Kodi', sub: 'LibreELEC, OSMC, Shield : lecture, volume', icon: 'film', ready: true,
+      fields: [['hosts', 'Adresses IP', { ph: '192.168.1.40' }], ['user', 'Utilisateur', { ph: 'kodi' }], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Kodi › Réglages › Services › <b>Contrôle</b> : activez « Autoriser le contrôle à distance par HTTP » (port 8080), avec un utilisateur et un mot de passe.', '<b>Tester</b> puis <b>Ajouter les appareils</b>.'], note: 'JSON-RPC local.' },
+    { id: 'lms', name: 'Lyrion / Squeezebox', sub: 'Lecteurs Squeezebox, piCorePlayer', icon: 'speaker', ready: true,
+      fields: [['host', 'Adresse du serveur', { ph: '192.168.1.20:9000' }], ['user', 'Utilisateur (si protégé)'], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Saisissez l’adresse du <b>Lyrion Music Server</b> (souvent sur le NAS, port 9000).', '<b>Tester</b> puis <b>Ajouter les appareils</b> : un lecteur par Squeezebox.'], note: 'API locale.' },
+    { id: 'volumio', name: 'Volumio', sub: 'Lecteur audio réseau', icon: 'speaker', ready: true,
+      fields: [['hosts', 'Adresses IP', { ph: '192.168.1.41' }]], steps: ['Saisissez l’adresse IP du lecteur Volumio, <b>Tester</b> puis <b>Ajouter les appareils</b>.'], note: 'API REST locale.' },
+    { id: 'onkyo', name: 'Onkyo / Pioneer', sub: 'Amplis home-cinéma (Integra aussi)', icon: 'speaker', ready: true,
+      fields: [['hosts', 'Adresses IP des amplis', { ph: '192.168.1.42' }]], steps: ['Sur l’ampli : Réglages › Réseau › activez le <b>contrôle réseau</b> (« Network Standby » pour l’allumer à distance).', 'Saisissez son IP, <b>Tester</b> puis <b>Ajouter les appareils</b> : marche, volume, source.'], note: 'Protocole local eISCP.' },
+    { id: 'weatherlink', name: 'Davis WeatherLink', sub: 'Station Vantage Pro2 / Vue', icon: 'sun', ready: true,
+      fields: [['host', 'Adresse IP du WeatherLink Live', { ph: '192.168.1.23' }]], steps: ['Appli WeatherLink › réglages de l’appareil : notez l’IP du <b>WeatherLink Live</b> et réservez-la.', '<b>Tester</b> puis <b>Ajouter les appareils</b>.'], note: 'API locale, sans compte.' },
+    { id: 'nut', name: 'Onduleur (NUT)', sub: 'Batterie, autonomie, coupure de courant', icon: 'battery', ready: true,
+      fields: [['host', 'Adresse du serveur NUT', { ph: '192.168.1.20' }], ['user', 'Utilisateur (si demandé)'], ['password', 'Mot de passe', { pw: 1 }]],
+      steps: ['Sur le NAS (UGREEN : Panneau de configuration › Matériel › <b>Onduleur</b> ; Synology : Matériel › UPS) : branchez l’onduleur en USB et activez le <b>serveur réseau UPS</b> en autorisant l’adresse du NAS lui-même.', 'Saisissez l’adresse (le NAS : 127.0.0.1 si Bêta home tourne dessus), <b>Tester</b> puis <b>Ajouter les appareils</b>.', 'Ajoutez une règle « Si Coupure de courant s’ouvre → notification » pour être prévenu.'], note: 'Protocole NUT local (port 3493).' },
+    { id: 'ipp', name: 'Imprimantes', sub: 'Encre et toner (HP, Epson, Canon, Brother…)', icon: 'files', ready: true,
+      fields: [['hosts', 'Adresses IP des imprimantes', { ph: '192.168.1.30' }]], steps: ['Toute imprimante réseau compatible <b>AirPrint / IPP</b> : notez son IP (menu réseau de l’imprimante) et réservez-la.', '<b>Tester</b> puis <b>Ajouter les appareils</b> : une jauge par cartouche.'], note: 'Protocole IPP local, relevé toutes les 5 minutes.' },
+    { id: 'http', name: 'Adresse web (HTTP)', sub: 'Tout appareil commandé par une URL', icon: 'link', ready: true,
+      fields: [['devices', 'Un appareil par ligne : Nom | type | URL allumer | URL éteindre | URL état | clé', { area: 1, ph: 'Pompe piscine | prise | http://192.168.1.90/on | http://192.168.1.90/off | http://192.168.1.90/state | relay\nCuve | capteur | | | http://192.168.1.91/json | niveau | %' }]],
+      steps: ['Types : <b>prise</b>, <b>lumière</b>, <b>volet</b>, <b>capteur</b> (ajoutez l’unité en 7e colonne), <b>température</b>, <b>humidité</b>, <b>porte</b>, <b>mouvement</b>.', 'Clé : chemin dans la réponse JSON (ex. <code>status.relay</code>), ou une expression entre /…/ pour une page texte. « POST » devant une URL l’envoie en POST ; {val} est remplacé par l’intensité ou la position.', '<b>Tester</b> puis <b>Ajouter les appareils</b>.'], note: 'Pour les modules maison (ESPEasy, Arduino…), relais Wi-Fi et appareils sans fiche dédiée.' },
     // marques préparées : le tuto dit quoi faire dès maintenant, le connecteur arrive ensuite
     { id: 'viessmann', name: 'Viessmann', sub: 'Chaudière, PAC, eau chaude (ViCare)', icon: 'hotWater', ready: true, oauth: true,
       fields: [['clientId', 'Client ID']],
@@ -286,15 +341,15 @@
   /* ---------- catégories et marques masquées (Paramètres › Marques) ---------- */
   // une marque masquée disparaît de la page, n'est plus interrogée et ses appareils ne reçoivent plus d'ordres
   const CATS = [
-    ['lum', 'Éclairage', 'bulbFill', ['hue', 'elgato', 'govee', 'wled', 'nanoleaf', 'yeelight', 'wiz', 'lifx', 'dirigera']],
-    ['prise', 'Prises, modules et télécommandes', 'plug', ['shelly', 'esphome', 'tasmota', 'kasa', 'tapo', 'broadlink', 'switchbot', 'tuya']],
-    ['pont', 'Ponts et protocoles', 'link', ['homeassistant', 'matter', 'z2m', 'zwavejs', 'deconz', 'mqttha', 'smartthings', 'tahoma']],
-    ['media', 'TV, musique et vidéo', 'tv', ['sonos', 'cast', 'denon', 'musiccast', 'bose', 'musicassistant', 'spotify', 'philipstv', 'samsungtv', 'lgtv', 'bravia', 'androidtv', 'roku', 'jellyfin', 'homepod']],
-    ['climat', 'Chauffage et climatisation', 'therm', ['daikin', 'netatmo', 'tado', 'sensibo', 'cozytouch', 'viessmann', 'ecowitt']],
+    ['lum', 'Éclairage', 'bulbFill', ['hue', 'elgato', 'govee', 'wled', 'nanoleaf', 'yeelight', 'wiz', 'lifx', 'dirigera', 'twinkly']],
+    ['prise', 'Prises, modules et télécommandes', 'plug', ['shelly', 'esphome', 'tasmota', 'kasa', 'tapo', 'broadlink', 'switchbot', 'tuya', 'sonoff', 'mystrom', 'http']],
+    ['pont', 'Box domotiques, ponts et protocoles', 'link', ['homeassistant', 'jeedom', 'eedomus', 'homey', 'hubitat', 'domoticz', 'fibaro', 'matter', 'z2m', 'zwavejs', 'deconz', 'mqttha', 'smartthings', 'tahoma']],
+    ['media', 'TV, musique et vidéo', 'tv', ['sonos', 'cast', 'denon', 'musiccast', 'bose', 'musicassistant', 'spotify', 'philipstv', 'samsungtv', 'lgtv', 'bravia', 'androidtv', 'roku', 'jellyfin', 'homepod', 'kodi', 'lms', 'volumio', 'onkyo']],
+    ['climat', 'Chauffage, climatisation et météo', 'therm', ['daikin', 'netatmo', 'tado', 'sensibo', 'cozytouch', 'viessmann', 'heatzy', 'melcloud', 'airzone', 'ecowitt', 'weatherlink']],
     ['secu', 'Sécurité et caméras', 'camera', ['frigate', 'reolink', 'unifiprotect', 'hikvision', 'dahua', 'nuki', 'verisure']],
-    ['energie', 'Énergie, recharge et voiture', 'boltPlain', ['linky', 'solaire', 'ocpp', 'wallbox', 'easee', 'ford']],
+    ['energie', 'Énergie, recharge et voiture', 'boltPlain', ['linky', 'solaire', 'nut', 'ocpp', 'wallbox', 'easee', 'ford']],
     ['reseau', 'Box internet, Wi-Fi et tablettes', 'wifi', ['freebox', 'livebox', 'bbox', 'deco', 'fully']],
-    ['maison', 'Électroménager, robots et jardin', 'robotFill', ['homeconnect', 'valetudo', 'husqvarna', 'roborock', 'navimow']]
+    ['maison', 'Électroménager, robots et jardin', 'robotFill', ['homeconnect', 'valetudo', 'husqvarna', 'roborock', 'navimow', 'ipp']]
   ];
   const catOf = id => (CATS.find(c => c[3].includes(id)) || CATS[CATS.length - 1]);
   const off = () => (S.settings.brandsOff = S.settings.brandsOff || {});
@@ -393,7 +448,7 @@
     const b = BR(id), x = H.list[id] || { cfg: {} }, cfg = x.cfg || {}, s = status(id);
     const steps = '<ol class="steps">' + b.steps.map(t => '<li>' + t.replace('{callback}', esc(callback())) + '</li>').join('') + '</ol>';
     if (!b.ready) return B.modal('<h2>' + ico(b.icon) + esc(b.name) + '</h2><p class="muted" style="margin:-6px 0 12px;font-size:13px">' + esc(b.sub) + '</p><h4 style="margin:0 0 8px">À préparer dès maintenant</h4>' + steps + '<p class="muted" style="font-size:12.5px;margin:12px 0 0;line-height:1.5">' + esc(b.note) + '</p>', 'sm');
-    const fld = f => '<label class="field">' + f[1] + '<input name="' + f[0] + '" value="' + esc(f[2] && f[2].tmp ? '' : cfg[f[0]] == null ? '' : cfg[f[0]]) + '"' + (f[2] && f[2].pw ? ' type="password"' : '') + (f[2] && f[2].ph ? ' placeholder="' + esc(f[2].ph) + '"' : '') + ' spellcheck="false" autocomplete="off"' + (f[2] && f[2].tmp ? ' data-tmp="1"' : '') + '></label>';
+    const fld = f => f[2] && f[2].area ? '<label class="field">' + f[1] + '<textarea name="' + f[0] + '" rows="5" spellcheck="false" placeholder="' + esc(f[2].ph || '') + '">' + esc(cfg[f[0]] == null ? '' : cfg[f[0]]) + '</textarea></label>' : '<label class="field">' + f[1] + '<input name="' + f[0] + '" value="' + esc(f[2] && f[2].tmp ? '' : cfg[f[0]] == null ? '' : cfg[f[0]]) + '"' + (f[2] && f[2].pw ? ' type="password"' : '') + (f[2] && f[2].ph ? ' placeholder="' + esc(f[2].ph) + '"' : '') + ' spellcheck="false" autocomplete="off"' + (f[2] && f[2].tmp ? ' data-tmp="1"' : '') + '></label>';
     B.modal('<h2>' + ico(b.icon) + esc(b.name) + ' <span class="tag2 ' + s[0] + '" style="margin-left:8px">' + esc(s[1]) + '</span></h2>' +
       '<p class="muted" style="margin:-6px 0 12px;font-size:13px">' + esc(b.sub) + (x.info ? ' · ' + esc(x.info) : '') + '</p>' +
       '<h4 style="margin:0 0 8px">Tuto</h4>' + steps +
@@ -406,7 +461,7 @@
       (x.status === 'ok' ? '<button type="button" class="btn" data-act="hubImport" data-arg="' + id + '">' + ico('download') + 'Ajouter les appareils</button>' : '') + '</div></form>' +
       '<p class="muted" style="font-size:12.5px;margin:12px 0 0;line-height:1.5">' + esc(b.note) + ' Les identifiants sont gardés sur le NAS, jamais dans le navigateur.</p>', 'wide');
   }
-  const formData = (el, all) => { const f = el.closest('.box').querySelector('form'), o = {}; f.querySelectorAll('input[name]').forEach(i => { if (all || !i.dataset.tmp) o[i.name] = i.value.trim(); }); return o; };
+  const formData = (el, all) => { const f = el.closest('.box').querySelector('form'), o = {}; f.querySelectorAll('input[name], textarea[name]').forEach(i => { if (all || !i.dataset.tmp) o[i.name] = i.value.trim(); }); return o; };
   const guard = () => { if (!isAdmin()) { B.toast('Réservé aux administrateurs', 'lock'); return false; } if (!B.Server.ok()) { B.toast('Installez d’abord le serveur Bêta (Connexions)', 'server'); return false; } return true; };
   const reopen = id => { if (document.querySelector('.modal .box')) sheet(id); B.emit('hub'); };
 

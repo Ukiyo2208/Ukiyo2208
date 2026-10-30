@@ -10,7 +10,7 @@ const ROOT = path.resolve(process.env.APP_DIR || path.join(__dirname, '..'));
 const DATA = path.resolve(process.env.DATA_DIR || path.join(__dirname, 'data'));
 const KEY = process.env.BETA_KEY || '';
 const KEEP = +process.env.BACKUP_KEEP || 30;
-const VERSION = '7.18';
+const VERSION = '7.19';
 for (const d of ['', 'store', 'backups']) fs.mkdirSync(path.join(DATA, d), { recursive: true });
 if (!KEY) console.warn('⚠️  BETA_KEY n’est pas défini : l’API est ouverte à tout le réseau.');
 

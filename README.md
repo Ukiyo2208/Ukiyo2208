@@ -378,3 +378,19 @@ Le QR code utilise la bibliothèque libre *qrcode-generator* (Kazuhiko Arase, li
   - **Sonnette** : en automatique, elle n'apparaît sur le panneau que si une lumière de la pièce est allumée ou un volet ouvert ; jamais dans une chambre d'enfant ; réglable (toujours / jamais).
   - Le serveur prévient le panneau au début d'un réveil (`wakestart`) ; « + 10 min » reporte le réveil, « Je suis levé » l'arrête et ouvre les volets.
 - Correction : le filtre du mode nuit de l'interface n'enferme plus les éléments plein écran.
+
+## 20 marques de plus (7.19)
+
+Toutes dans **Marques**, avec le tuto pas à pas. Sauf mention, elles fonctionnent **en local, sans compte**.
+
+| Catégorie | Nouvelles marques |
+|---|---|
+| Box domotiques | **Jeedom** et **eedomus** (box françaises), **Homey Pro**, **Hubitat**, **Domoticz**, **Fibaro / Yubii** : tous leurs appareils d'un coup (lumières, prises, volets, thermostats, serrures, capteurs) |
+| Prises et lumières | **Sonoff** (mode DIY), **myStrom** (prise avec consommation, ampoules), **Twinkly** (guirlandes : marche, intensité, couleur) |
+| Chauffage et clim | **Heatzy** (radiateurs fil pilote : Confort, Éco, Hors-gel, Arrêt — cloud Heatzy), **Mitsubishi MELCloud** (clim / PAC — cloud MELCloud), **Airzone** (clim gainable par zones) |
+| Multimédia | **Kodi**, **Lyrion / Squeezebox**, **Volumio**, amplis **Onkyo / Pioneer / Integra** |
+| Météo | **Davis WeatherLink Live** |
+| Énergie | **Onduleur (NUT)** : batterie, autonomie, charge, et « Coupure de courant » (le NAS UGREEN peut servir de serveur NUT) |
+| Divers | **Imprimantes** IPP / AirPrint (niveaux d'encre), **Adresse web (HTTP)** : tout appareil qui se commande par une URL (une ligne par appareil) |
+
+Chaque connecteur est testé contre un faux appareil qui répond comme le vrai (`tests/connectors2.test.js`). Ils n'ont pas pu être essayés sur du vrai matériel : en cas de souci, le bouton **Tester** de la fiche donne le message d'erreur exact.
