@@ -236,6 +236,7 @@
     const id = el.dataset.id, d = DATA.DEVICES[id], C = S.custom, cd = C.devices.find(x => x.id === id);
     B.modal('<h2>' + ico('edit') + 'Modifier « ' + esc(d.name) + ' »</h2><form data-submit="pdevSave" data-arg="' + id + '" style="display:flex;flex-direction:column;gap:12px">' +
       '<label class="field">Nom affiché<input name="name" value="' + esc(d.name) + '" required></label>' +
+      '<div class="grid3 pplace"><label class="field">Affiché comme' + B.devKindSel(B.kindOf(d), 'name="kind"') + '</label><label class="field">Étage<select name="floor" data-change="pdevFloor">' + B.floors(true).map(x => '<option value="' + x.id + '"' + (x.id === B.floorOf(id) ? ' selected' : '') + '>' + esc(x.name) + '</option>').join('') + '</select></label><label class="field">Pièce<select name="room">' + B.devRoomOpts(B.floorOf(id), d.room) + '</select></label></div>' +
       '<label class="field">Entité Home Assistant<input name="ha" value="' + esc(HA.entity(id)) + '" list="haents3" spellcheck="false"><datalist id="haents3">' + Object.keys(HA.states || {}).slice(0, 600).map(e => '<option value="' + esc(e) + '">').join('') + '</datalist></label>' +
       '<div class="row" style="justify-content:space-between;flex-wrap:wrap">' + (cd ? '<button type="button" class="btn dan" data-act="devDel" data-arg="' + id + '">' + ico('trash') + 'Supprimer</button>' : '<button type="button" class="btn" data-act="devHide2" data-arg="' + id + '">' + ico('x') + 'Masquer cet appareil</button>') +
       '<span class="row"><button type="button" class="btn" data-act="closeModal">Annuler</button><button class="btn pri">' + ico('check') + 'Enregistrer</button></span></div></form>', 'sm');
@@ -243,7 +244,11 @@
   B.act('pdevSave', el => {
     const id = el.dataset.arg, f = new FormData(el), C = S.custom, cd = C.devices.find(x => x.id === id), name = String(f.get('name')).trim(), ha = String(f.get('ha')).trim();
     if (cd) { cd.name = name; cd.ha = ha; } else { C.devNames[id] = name; S.settings.haMap = Object.assign({}, S.settings.haMap, { [id]: ha || '-' }); }
+    const fl = String(f.get('floor')); let room = String(f.get('room')); if (room === '__new') room = B.devNewRoom(fl);
+    const d0 = DATA.DEVICES[id], pl = {}; if (f.get('kind') !== B.kindOf(d0)) pl.kind = String(f.get('kind')); if (room && (room !== d0.room || fl !== B.floorOf(id))) Object.assign(pl, { floor: fl, room });
+    if (Object.keys(pl).length) B.devPlace(id, pl);
     B.registerCustom(); B.save(); B.closeModal(); refresh(id); B.show(); B.toast('Appareil mis à jour', 'check');
   });
+  B.act('pdevFloor', el => { const r = el.form.room; r.innerHTML = B.devRoomOpts(el.value, ''); });
   B.act('devHide2', el => { S.custom.hidden[el.dataset.arg] = true; B.save(); B.closeModal(); close(el.dataset.arg); B.show(); B.toast('Appareil masqué (réaffichable dans Gérer › Appareils)', 'x'); });
 })();

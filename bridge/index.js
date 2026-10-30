@@ -4,6 +4,7 @@
 // - appareils reliés en direct (Shelly, Hue, Zigbee2MQTT…) : lumières, prises, volets, capteurs
 // - routines Bêta : des « boutons » (Alexa, lance Soirée ciné)
 // - déclencheurs : des capteurs d'ouverture que Bêta ouvre (sonnette, mode absent) pour lancer des routines Alexa
+// Le même conteneur publie aussi un pont HomeKit (app Maison d'Apple) : voir homekit.js.
 import { Endpoint, Environment, ServerNode, VendorId } from '@matter/main';
 import { BridgedDeviceBasicInformationServer } from '@matter/main/behaviors/bridged-device-basic-information';
 import { WindowCoveringServer } from '@matter/main/behaviors/window-covering';
@@ -18,11 +19,16 @@ import { OccupancySensorDevice } from '@matter/main/devices/occupancy-sensor';
 import { TemperatureSensorDevice } from '@matter/main/devices/temperature-sensor';
 import { HumiditySensorDevice } from '@matter/main/devices/humidity-sensor';
 import { AggregatorEndpoint } from '@matter/main/endpoints/aggregator';
+import { startHomeKit } from './homekit.js';
 
 const BETA = (process.env.BETA_URL || 'http://127.0.0.1:8090').replace(/\/+$/, ''), KEY = process.env.BETA_KEY || '';
+let matterOk = false, hk = null, matterErr = '';
 const PORT = +process.env.BRIDGE_PORT || 5540, PASSCODE = +process.env.BRIDGE_PASSCODE || 20252025, DISCR = +process.env.BRIDGE_DISCRIMINATOR || 3125;
 // appairages gardés dans MATTER_STORAGE_PATH (variable lue par matter.js ; /data dans le conteneur)
 if (!process.env.MATTER_STORAGE_PATH) Environment.default.vars.set('storage.path', './data');
+// une panne de Matter (IPv6 absente sur le réseau…) ne doit pas couper le pont HomeKit : on la note et on continue
+Environment.default.vars.set('runtime.unhandlederrors', false);
+process.on('unhandledRejection', e => { matterErr = (e && e.message) || String(e); console.warn('Matter : ' + matterErr); });
 
 async function beta(path, body) {
   const r = await fetch(BETA + path, { method: body ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json', 'X-Beta-Key': KEY }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(8000) });
@@ -66,15 +72,19 @@ function attrs(t, s) {
   return {};
 }
 
-const server = await ServerNode.create({
-  id: 'beta-home-bridge',
-  network: { port: PORT },
-  commissioning: { passcode: PASSCODE, discriminator: DISCR },
-  productDescription: { name: 'Bêta home', deviceType: AggregatorEndpoint.deviceType },
-  basicInformation: { vendorName: 'Bêta home', vendorId: VendorId(0xfff1), nodeLabel: 'Bêta home', productName: 'Bêta home', productLabel: 'Bêta home', productId: 0x8000, serialNumber: 'BH-0001', uniqueId: 'beta-home-bridge' }
-});
-const aggregator = new Endpoint(AggregatorEndpoint, { id: 'aggregator' });
-await server.add(aggregator);
+let server = null, aggregator = null;
+// Matter est créé après HomeKit (voir en bas) : sans IPv6, il peut rester bloqué
+async function initMatter() {
+  server = await ServerNode.create({
+    id: 'beta-home-bridge',
+    network: { port: PORT },
+    commissioning: { passcode: PASSCODE, discriminator: DISCR },
+    productDescription: { name: 'Bêta home', deviceType: AggregatorEndpoint.deviceType },
+    basicInformation: { vendorName: 'Bêta home', vendorId: VendorId(0xfff1), nodeLabel: 'Bêta home', productName: 'Bêta home', productLabel: 'Bêta home', productId: 0x8000, serialNumber: 'BH-0001', uniqueId: 'beta-home-bridge' }
+  });
+  aggregator = new Endpoint(AggregatorEndpoint, { id: 'aggregator' });
+  await server.add(aggregator);
+}
 
 const live = new Map();   // clé → { ep, t, last }
 const epId = key => 'e_' + hashKey(key);
@@ -100,7 +110,7 @@ async function addItem(it) {
 }
 async function sync() {
   let data; try { data = await beta('/api/bridge/state'); } catch (e) { return console.warn(e.message); }
-  const want = new Map((data.items || []).map(it => [it.key, it]));
+  const want = new Map((data.items || []).filter(it => it.matter !== false).map(it => [it.key, it]));   // case « Alexa » cochée
   for (const [k, r] of live) if (!want.has(k)) { live.delete(k); await r.ep.delete().catch(() => { }); console.log('- ' + k); }
   for (const it of want.values()) {
     const r = live.get(it.key);
@@ -110,14 +120,24 @@ async function sync() {
   }
 }
 async function status() {
-  const c = server.state.commissioning, codes = c.pairingCodes || {};
-  await beta('/api/bridge/status', { manual: codes.manualPairingCode, qr: codes.qrPairingCode, commissioned: !!c.commissioned, fabrics: Object.values(c.fabrics || {}).map(f => f.label || ('fabric ' + f.fabricIndex)), devices: live.size, at: Date.now() }).catch(() => { });
+  const out = { at: Date.now(), hk: hk ? hk.status() : null, matterErr };
+  if (matterOk) { const c = server.state.commissioning, codes = c.pairingCodes || {}; Object.assign(out, { manual: codes.manualPairingCode, qr: codes.qrPairingCode, commissioned: !!c.commissioned, fabrics: Object.values(c.fabrics || {}).map(f => f.label || ('fabric ' + f.fabricIndex)), devices: live.size }); }
+  await beta('/api/bridge/status', out).catch(() => { });
 }
 
-await server.start();
-await sync();
-const codes = server.state.commissioning.pairingCodes;
-console.log('Pont Matter Bêta home prêt — code d’appairage : ' + codes.manualPairingCode + ' — QR : ' + codes.qrPairingCode);
+// HomeKit d'abord : il fonctionne même si Matter ne peut pas démarrer (IPv6 absente…)
+if (process.env.HOMEKIT !== 'off') {
+  try { hk = await startHomeKit({ beta, send, store: process.env.MATTER_STORAGE_PATH || './data', port: +process.env.HOMEKIT_PORT || 51826 }); }
+  catch (e) { console.warn('HomeKit : ' + e.message); }
+}
+try {
+  await Promise.race([initMatter(), new Promise((ok, ko) => setTimeout(() => ko(new Error('démarrage trop long (IPv6 ?)')), 20000))]);
+  await server.start();
+  await sync();
+  matterOk = true;
+  const codes = server.state.commissioning.pairingCodes;
+  console.log('Pont Matter Bêta home prêt — code d’appairage : ' + codes.manualPairingCode + ' — QR : ' + codes.qrPairingCode);
+  setInterval(sync, 2000);
+} catch (e) { matterErr = e.message; console.warn('Matter indisponible : ' + e.message); }
 await status();
-setInterval(sync, 2000);
 setInterval(status, 30000);

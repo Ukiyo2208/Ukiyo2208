@@ -1,11 +1,11 @@
 {
   "name": "beta-home-matter-bridge",
   "version": "1.0.0",
-  "description": "Pont Matter de Bêta home : expose les appareils choisis à Alexa, Google Home ou Apple Maison, sans Home Assistant",
+  "description": "Pont Matter de Bêta home : expose les appareils choisis à Alexa, Google Home (Matter) et à l’app Maison d’Apple (HomeKit), sans Home Assistant",
   "type": "module",
   "private": true,
   "main": "index.js",
   "scripts": { "start": "node index.js" },
   "engines": { "node": ">=20" },
-  "dependencies": { "@matter/main": "0.18.0" }
+  "dependencies": { "@matter/main": "0.18.0", "hap-nodejs": "0.14.3" }
 }

@@ -24,7 +24,7 @@ module.exports = function bridge(DATA, send, readBody, HUB, NOTIFY) {
     if (p === '/api/bridge' && m === 'GET') return send(res, 200, { items: C.items, status: C.status && Date.now() - C.status.at < 90000 ? C.status : (C.status ? Object.assign({}, C.status, { offline: true }) : null) });
     if (p === '/api/bridge' && m === 'PUT') {
       const b = await readBody(req) || {}; if (!Array.isArray(b.items)) return send(res, 400, { error: 'liste attendue' });
-      C.items = b.items.slice(0, 120).filter(i => i && i.key && i.name).map(i => ({ key: String(i.key), name: String(i.name).slice(0, 32), type: i.type || 'device', kind: i.kind || '', brand: i.brand || '', id: String(i.id || ''), room: i.room || '' }));
+      C.items = b.items.slice(0, 150).filter(i => i && i.key && i.name).map(i => ({ key: String(i.key), name: String(i.name).slice(0, 32), type: i.type || 'device', kind: i.kind || '', brand: i.brand || '', id: String(i.id || ''), room: i.room || '', matter: i.matter !== false && i.kind !== 'lock', homekit: !!i.homekit })).filter(i => i.matter || i.homekit);   // matter : Alexa ; homekit : app Maison
       persist(); return send(res, 200, { items: C.items });
     }
     // utilisés par le conteneur du pont

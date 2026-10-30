@@ -214,3 +214,9 @@ HomePod passe déjà par Music Assistant (AirPlay), les Roborock récents par Ma
 4. **masque toutes les autres marques**, pour une page Marques qui ne montre que les vôtres.
 
 L'assistant se relance à tout moment depuis **Marques › Plug & play** (il ajoute alors ce qui est nouveau sans rien effacer). Les comptes à relier par OAuth (Netatmo, Spotify, SmartThings…) se terminent dans leur fiche (« Se connecter »).
+
+## Type, étage et pièce de chaque appareil · Pont Maison (7.10)
+
+**Gérer › Appareils** : chaque appareil a trois menus — **type d'affichage** (éclairage, prise, volet, clim, capteur…), **étage** et **pièce** (ou « + Nouvelle pièce… »). Ça marche aussi pour les appareils d'origine (le changement est réversible) et dans la fiche « Modifier » d'un appareil (bouton … › crayon).
+
+**Connexions › Alexa et Maison** : le conteneur `matter-bridge` publie maintenant **deux ponts** : Matter (Alexa, Google Home) et **HomeKit** (app Maison d'Apple, Siri), comme celui des caméras. Pour chaque appareil relié en direct, routine (« Dis Siri, Soirée ciné ») ou déclencheur (Sonnette, Mode absent), cochez « Alexa » et/ou « Maison ». Dans l'app Maison : + › Ajouter un accessoire › Plus d'options › « Bêta home » › code Maison affiché dans Bêta home. Lumières (luminosité), prises, interrupteurs, ventilateurs, volets, thermostats/clims, serrures (Maison seulement), capteurs de température, humidité, CO₂, ouverture, mouvement et fuite. Le pont HomeKit continue de fonctionner même si Matter ne peut pas démarrer.

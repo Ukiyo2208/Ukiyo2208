@@ -2077,3 +2077,21 @@ html.fluid .ftop .fright { flex-shrink: 0; }
 .pp-acts { gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .pp .grid2 { margin-top: 6px; }
 @media (max-width: 640px) { .pp-grid { grid-template-columns: 1fr; } .pp-bh { flex-wrap: wrap; } .pp-st { width: 100%; justify-content: flex-start; } }
+
+/* ---------- 7.10 : type, étage et pièce de chaque appareil ---------- */
+.mdev { flex-wrap: wrap; }
+.mdname { flex: 1 1 200px; min-width: 0; }
+.mdsel { display: flex; gap: 6px; flex-wrap: wrap; }
+.mdsel select, .pplace select { height: 32px; padding: 0 8px; border-radius: 8px; background: rgba(6, 16, 40, .8); border: 1px solid rgba(90, 160, 255, .3); color: #fff; font-size: 12.5px; max-width: 170px; }
+.pplace { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.pplace select { max-width: none; width: 100%; height: 38px; margin-top: 4px; }
+@media (max-width: 560px) { .pplace { grid-template-columns: 1fr; } .mdsel select { max-width: 31%; } }
+
+/* ---------- 7.10 : ponts Alexa et Maison ---------- */
+.mbrow { cursor: default; }
+.mbrow > span { flex: 1; min-width: 0; }
+.mbto { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 8px; background: rgba(47, 182, 255, .08); font-size: 12px; cursor: pointer; white-space: nowrap; }
+.mbto input { width: 16px !important; height: 16px !important; }
+.mbto.dis { opacity: .4; cursor: not-allowed; }
+.mbstat.hk > .ico { color: #ffb35c; }
+.mbstat.ok.hk > .ico { color: #ffd23f; }

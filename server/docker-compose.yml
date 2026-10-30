@@ -105,9 +105,9 @@ services:
   #   volumes:
   #     - ./data/ntfy:/var/cache/ntfy
 
-  # Pont Matter : Alexa (et Google Home, Apple Maison) pilote les appareils choisis dans
-  # Bêta home › Connexions › Alexa par Matter. Sans Home Assistant ni abonnement. IPv6 du NAS activée.
-  # Le code d'appairage s'affiche dans Bêta home (et dans le journal du conteneur).
+  # Ponts Matter (Alexa, Google Home) et HomeKit (app Maison d'Apple, Siri) : les appareils choisis dans
+  # Bêta home › Connexions › Alexa et Maison. Sans Home Assistant ni abonnement. IPv6 du NAS activée pour Matter.
+  # Les codes d'appairage s'affichent dans Bêta home (et dans le journal du conteneur).
   # matter-bridge:
   #   build:
   #     context: ../bridge
@@ -118,6 +118,7 @@ services:
   #     - BETA_URL=http://127.0.0.1:8090
   #     - BETA_KEY=changez-moi-par-une-longue-phrase   # la même que pour beta-home
   #     - BRIDGE_PORT=5540
+  #     - HOMEKIT_PORT=51826                          # pont Maison (mettez HOMEKIT=off pour le couper)
   #     - TZ=Europe/Paris
   #   volumes:
   #     - ./data/matter-bridge:/data                   # appairages (ne pas supprimer)

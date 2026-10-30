@@ -53,6 +53,8 @@
       DATA.DEVICES[cd.id] = { id: cd.id, type: k[2], kind: KIND[cd.type] ? cd.type : 'plug', name: cd.name, room: cd.room, floor: cd.floor, def: Object.assign({}, k[4]), ha: cd.ha || '', custom: true };
     });
     Object.keys(C.devNames).forEach(id => { if (DATA.DEVICES[id]) DATA.DEVICES[id].name = C.devNames[id]; });
+    // appareils d'origine déplacés ou changés de type (Gérer › Appareils)
+    Object.values(DATA.DEVICES).forEach(d => { if (d.custom) return; if (!d._o) d._o = { room: d.room, kind: d.kind, type: d.type }; const o = (C.devOv || {})[d.id] || {}; d.room = o.room || d._o.room; d.kind = o.kind || d._o.kind; d.type = o.kind && KIND[o.kind] ? KIND[o.kind][2] : d._o.type; d.movedFloor = o.floor || ''; });
   }
   registerCustom();
   B.registerCustom = registerCustom;
@@ -86,7 +88,7 @@
   const WCIMG = { rdc: 'rdc-wc', e1: 'e1-wc' };
   function floorOf(id) {
     const d = DATA.DEVICES[id]; if (!d) return '';
-    if (!d.custom) return id.split('.')[0];
+    if (!d.custom) return d.movedFloor || id.split('.')[0];
     if (d.floor) return d.floor;
     const r = C.rooms.find(x => x.name === d.room); if (r) return r.floor;
     const b = Object.values(DATA.DEVICES).find(x => !x.custom && x.room === d.room);
@@ -96,7 +98,7 @@
   const rkey = (f, n) => f + '|' + n;
   function rooms(fid, all) {
     const map = new Map();
-    Object.values(DATA.DEVICES).forEach(d => { if (d.custom) return; const f = d.id.split('.')[0]; if (fid && f !== fid) return; const k = rkey(f, d.room); if (!map.has(k)) map.set(k, { key: k, floor: f, name: d.room, builtin: true }); });
+    Object.values(DATA.DEVICES).forEach(d => { if (d.custom) return; const f = floorOf(d.id); if (fid && f !== fid) return; const k = rkey(f, d.room); if (!map.has(k)) map.set(k, { key: k, floor: f, name: d.room, builtin: true }); });
     C.rooms.forEach(r => { if (fid && r.floor !== fid) return; const k = rkey(r.floor, r.name); map.set(k, Object.assign(map.get(k) || {}, { key: k, floor: r.floor, name: r.name, custom: r.id, icon: r.icon, img: r.img })); });
     let list = [...map.values()].filter(r => all || !C.hiddenRooms[r.key]);
     list.forEach(r => {
@@ -338,10 +340,36 @@
         '</div><button class="btn sm" style="margin-top:6px" data-act="roomAdd2" data-arg="' + f.id + '">' + ico('plus') + 'Pièce à « ' + esc(f.name) + ' »</button>').join('');
     } else if (mtab === 'devices') {
       body = '<div class="row" style="margin-bottom:10px"><button class="btn pri sm" data-act="devAddAny">' + ico('plus') + 'Ajouter un appareil</button></div>' + floors(true).map(f => rooms(f.id, true).filter(r => r.devs.length).map(r => '<div class="mroom"><div class="row"><b>' + esc(r.label) + '</b><small class="muted">' + esc(f.name) + '</small></div>' +
-        r.devs.map(d => '<div class="mdev"><span>' + ico(iconOf(d)).replace('class="ico', 'style="display:inline;vertical-align:-3px;margin-right:6px;color:#8fd0ff" class="ico') + esc(d.name) + ' <small class="muted">' + ((KIND[kindOf(d)] || [])[0] || d.type) + (B.HA.entity(d.id) ? ' · ' + esc(B.HA.entity(d.id)) : '') + '</small></span><span class="row" style="gap:6px"><button class="sq" data-act="panel" data-id="' + d.id + '" aria-label="Réglages">' + ico('dots') + '</button>' + (d.custom ? '<button class="sq" data-act="devDel" data-arg="' + d.id + '" aria-label="Supprimer">' + ico('trash') + '</button>' : '<button class="sw sm' + (C.hidden[d.id] ? '' : ' on') + '" data-act="devHide" data-arg="' + d.id + '" role="switch" aria-label="Installé"></button>') + '</span></div>').join('') + '</div>').join('')).join('');
+        r.devs.map(d => '<div class="mdev"><span class="mdname">' + ico(iconOf(d)).replace('class="ico', 'style="display:inline;vertical-align:-3px;margin-right:6px;color:#8fd0ff" class="ico') + esc(d.name) + ' <small class="muted">' + ((KIND[kindOf(d)] || [])[0] || d.type) + (B.HA.entity(d.id) ? ' · ' + esc(B.HA.entity(d.id)) : '') + '</small></span>' + placeSel(d) + '<span class="row" style="gap:6px"><button class="sq" data-act="panel" data-id="' + d.id + '" aria-label="Réglages">' + ico('dots') + '</button>' + (d.custom ? '<button class="sq" data-act="devDel" data-arg="' + d.id + '" aria-label="Supprimer">' + ico('trash') + '</button>' : '<button class="sw sm' + (C.hidden[d.id] ? '' : ' on') + '" data-act="devHide" data-arg="' + d.id + '" role="switch" aria-label="Installé"></button>') + '</span></div>').join('') + '</div>').join('')).join('');
     } else body = importBody();
     B.modal('<h2>' + ico('rooms') + 'Niveaux, pièces et appareils</h2>' + tabs + '<div class="scroll" style="max-height:62vh;padding-right:6px">' + body + '</div>', 'wide mgrm');
   }
+  /* ---------- type d'affichage, étage et pièce de chaque appareil ---------- */
+  const kindSel = (k, attrs) => '<select ' + attrs + '>' + GROUPS.map(g => '<optgroup label="' + esc(g[0]) + '">' + g[1].filter(t => KIND[t]).map(t => '<option value="' + t + '"' + (t === k ? ' selected' : '') + '>' + esc(KIND[t][0]) + '</option>').join('') + '</optgroup>').join('') + '</select>';
+  const roomOpts = (fid, cur) => rooms(fid, true).map(r => '<option value="' + esc(r.name) + '"' + (r.name === cur ? ' selected' : '') + '>' + esc(r.label) + '</option>').join('') + '<option value="__new">+ Nouvelle pièce…</option>';
+  function placeSel(d) {
+    const f = floorOf(d.id);
+    return '<span class="mdsel">' + kindSel(kindOf(d), 'data-change="devKind" data-arg="' + d.id + '" aria-label="Type d’affichage"') +
+      '<select data-change="devFloor" data-arg="' + d.id + '" aria-label="Étage">' + floors(true).map(x => '<option value="' + x.id + '"' + (x.id === f ? ' selected' : '') + '>' + esc(x.name) + '</option>').join('') + '</select>' +
+      '<select data-change="devRoom" data-arg="' + d.id + '" aria-label="Pièce">' + roomOpts(f, d.room) + '</select></span>';
+  }
+  // applique un changement : appareil ajouté → sa fiche ; appareil d'origine → une surcharge (réversible)
+  function place(id, patch) {
+    const d = DATA.DEVICES[id]; if (!d) return;
+    const cd = C.devices.find(x => x.id === id);
+    if (cd) { if (patch.kind) cd.type = patch.kind; if (patch.floor) cd.floor = patch.floor; if (patch.room) cd.room = patch.room; }
+    else { C.devOv = C.devOv || {}; const o = C.devOv[id] = Object.assign({}, C.devOv[id], patch); if (o.kind === (d._o.kind || kindOf(Object.assign({}, d, { kind: d._o.kind, type: d._o.type })))) delete o.kind; if (o.room === d._o.room && (!o.floor || o.floor === id.split('.')[0])) { delete o.room; delete o.floor; } if (!Object.keys(o).length) delete C.devOv[id]; }
+    const of = id.split('.')[0], lay = x => { const fo = floor(x); if (fo && fo.builtin) C.layout[x] = 'auto'; };   // les niveaux d'origine passent en disposition automatique
+    if (!cd) { lay(of); if (patch.floor) lay(patch.floor); }
+    registerCustom();
+    if (patch.kind) { const def = (KIND[patch.kind] || [])[4] || {}; Object.keys(def).forEach(k => { if (B.dev(id)[k] === undefined) B.dev(id)[k] = def[k]; }); }
+    const fo = floor(floorOf(id)); if (fo && fo.builtin && !C.layout[fo.id]) C.layout[fo.id] = 'auto';
+  }
+  function newRoom(fid) { const n = (prompt('Nom de la nouvelle pièce') || '').trim(); if (!n) return ''; if (!rooms(fid, true).some(r => r.name === n)) C.rooms.push({ id: uid('r'), name: n, floor: fid, icon: 'homeFill' }); return n; }
+  B.devPlace = place; B.devPlaceSel = placeSel; B.devKindSel = kindSel; B.devRoomOpts = roomOpts; B.devNewRoom = newRoom;
+  B.act('devKind', el => { place(el.dataset.arg, { kind: el.value }); refresh(); B.toast('Affiché comme « ' + KIND[el.value][0] + ' »', 'check'); });
+  B.act('devFloor', el => { const id = el.dataset.arg, f = el.value, rs = rooms(f, true); let room = (rs.find(r => r.name === DATA.DEVICES[id].room) || rs[0] || {}).name; if (!room) room = newRoom(f); if (!room) return refresh(); place(id, { floor: f, room }); refresh(); });
+  B.act('devRoom', el => { const id = el.dataset.arg, f = floorOf(id); let room = el.value; if (room === '__new') room = newRoom(f); if (!room) return refresh(); place(id, { floor: f, room }); refresh(); });
   B.act('roomsManager', manager);
   B.act('mgrTab', el => { mtab = el.dataset.arg; manager(); if (mtab === 'import') loadImport(); });
   const refresh = () => { registerCustom(); B.save(); B.emit('fgrid'); B.emit('house'); manager(); };
