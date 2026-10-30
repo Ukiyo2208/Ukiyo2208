@@ -173,7 +173,7 @@
   const WMO = c => c == null ? '' : c === 0 ? 'Ciel dégagé' : c <= 3 ? 'Quelques nuages' : c <= 48 ? 'Brouillard' : c <= 67 ? 'Pluie' : c <= 77 ? 'Neige' : c <= 82 ? 'Averses' : 'Orages';
   RENDER.mWeather = () => {
     const m = V.morning || {}, w = m.weather, now = new Date(), tr = (m.trash || []).filter(e => e.date === F.ymd(new Date(Date.now() + 864e5))), tp = m.tempo;
-    return '<div class="mwx"><div class="mwxt"><b>' + F.time(now) + '</b><span>' + F.dayMonth(now) + '</span></div>' + (w ? '<div class="mwxn">' + (B.wxIcon ? B.wxIcon(w.code, false) : '') + '<b>' + w.now + '°</b><small>' + WMO(w.code) + ' · ' + w.min + '° / ' + w.max + '°' + (w.rain >= 30 ? ' · pluie ' + w.rain + ' %' : '') + '</small></div>' : B.WX && B.WX.now ? '<div class="mwxn"><b>' + Math.round(B.WX.now.temp) + '°</b></div>' : '') +
+    return '<div class="mwx"><div class="mwxt"><b>' + F.time(now) + '</b><span>' + F.dayMonth(now) + '</span></div>' + (w ? '<div class="mwxn">' + (B.wxIcon ? ico(B.wxIcon(w.code, false)) : '') + '<b>' + w.now + '°</b><small>' + WMO(w.code) + ' · ' + w.min + '° / ' + w.max + '°' + (w.rain >= 30 ? ' · pluie ' + w.rain + ' %' : '') + '</small></div>' : B.WX && B.WX.now ? '<div class="mwxn"><b>' + Math.round(B.WX.now.temp) + '°</b></div>' : '') +
       '<div class="mchips">' + (tp && tp.today ? '<span class="t-' + tp.today + '">' + ico('boltPlain') + 'Tempo ' + tp.today + '</span>' : '') + tr.map(e => '<span>' + ico('trash') + 'Ce soir : ' + esc(e.name) + '</span>').join('') + (m.reminders || []).map(r => '<span>' + ico('history') + esc(r) + '</span>').join('') + ((B.P && B.P.board) || []).slice(0, 2).map(x => '<span>' + ico('chat') + esc(x.text) + '</span>').join('') + '</div></div>';
   };
   RENDER.mAgenda = () => {

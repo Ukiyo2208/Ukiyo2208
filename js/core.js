@@ -106,11 +106,13 @@
 
   /* ---------- scène : mise à l'échelle ---------- */
   let stageW = 1536, stageH = 1024;
+  // tablette modeste (Fire HD, Silk, peu de mémoire) : mode performance par défaut, sauf choix contraire dans « Cet écran »
+  const WEAK = /\bKF[A-Z]{2,5}\b|Silk|Fire/i.test(navigator.userAgent) || !!(navigator.deviceMemory && navigator.deviceMemory <= 2) || !!(navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4 && /Android/.test(navigator.userAgent));
   function fit() {
     const st = $('.stage'); if (!st) return;
     const vw = window.innerWidth, vh = window.innerHeight;
     // disposition choisie pour cet écran (Paramètres › Cet écran) : auto, grand écran, tablette (2 colonnes), téléphone
-    let lm = 'auto'; try { const c = JSON.parse(localStorage.getItem('betaos.device') || '{}'); lm = c.layout || 'auto'; document.documentElement.classList.toggle('perf', !!c.perf); } catch (e) { }
+    let lm = 'auto'; try { const c = JSON.parse(localStorage.getItem('betaos.device') || '{}'); lm = c.layout || 'auto'; document.documentElement.classList.toggle('perf', c.perf !== undefined ? !!c.perf : WEAK); } catch (e) { }
     const small = vw >= 700 && Math.min(vw / stageW, vh / stageH) < 0.62 && navigator.maxTouchPoints > 0;   // petite tablette tactile (8 pouces)
     const fluid = lm === 'large' ? false : lm === 'tablet' || lm === 'phone' ? true : vw < 760 || (vh > vw * 1.05 && vw < 1000) || small;
     document.documentElement.classList.toggle('fluid', fluid);

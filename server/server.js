@@ -39,6 +39,16 @@ const PLUS = ENGINE ? opt('plus', () => require('./plus')(DATA, send, readBody, 
 const EXTRA = ENGINE ? opt('extra', () => require('./extra')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, PLUS, LOGS, MODS: () => MODS })) : null;   // réseau, réveil, matin, interphone, rappels, administration
 const FAMILLE = ENGINE ? opt('famille', () => require('./famille')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, PLUS, EXTRA })) : null;   // calendriers, colis, missions, photos, vacances, sonnette, recharge
 const MODS = { hub: true, discover: true, notify: true, geo: !!GEO, bridge: !!BRIDGE, engine: !!ENGINE, auth: true, plus: !!PLUS, extra: !!EXTRA, famille: !!FAMILLE };
+const DIAG = require('./diag')(DATA, send, { HUB, AUTH, KEY, MODS: () => MODS, ENGINE });   // « Tester toute la maison »
+// fichiers qui contiennent des mots de passe : lisibles par le serveur seulement
+['hub.json', 'auth.json', 'notify.json', 'plus.json', 'extra.json', 'famille.json', 'engine.json', 'geo.json', 'bridge.json'].forEach(f => { try { fs.chmodSync(path.join(DATA, f), 0o600); } catch (e) { } });
+
+/* ---------- essais refusés : 30 par adresse en 10 minutes, puis blocage ---------- */
+const FAILS = new Map();
+const ipOf = req => (req.socket && req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+function fail(req, w) { const ip = ipOf(req), now = Date.now(), f = FAILS.get(ip) || { n: 0, at: now }; if (now - f.at > 10 * 6e4) { f.n = 0; f.at = now; } f.n += w || 1; FAILS.set(ip, f); if (f.n === 30) console.warn('trop d’essais refusés depuis ' + ip + ' : bloqué 10 minutes'); }
+const blocked = req => { const f = FAILS.get(ipOf(req)); return !!f && f.n >= 30 && Date.now() - f.at < 10 * 6e4; };
+setInterval(() => { const t = Date.now(); FAILS.forEach((f, ip) => { if (t - f.at > 10 * 6e4) FAILS.delete(ip); }); }, 6e4);
 
 /* ---------- API ---------- */
 async function api(req, res, url) {
@@ -46,15 +56,17 @@ async function api(req, res, url) {
   if (p === '/api/ping') return send(res, 200, Object.assign({ ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now(), sha: process.env.BETA_SHA || 'dev' }, MODS));
   if (p === '/api/hub/oauth/callback') return HUB.callback(req, res, url);
   if (p === '/api/owntracks') return GEO ? GEO.api(req, res, url) : send(res, 503, { error: 'module géolocalisation coupé' });   // identifiants propres à chaque téléphone
-  if (p === '/api/auth/pair' && m === 'POST') return AUTH.pair(req, res);   // association d'un écran avec le code à 6 chiffres
+  if (p === '/api/auth/pair' && m === 'POST') { if (blocked(req)) return send(res, 429, { error: 'trop d’essais : réessayez dans 10 minutes' }); fail(req, 3); return AUTH.pair(req, res); }   // compte comme 1/3 d'échec : 10 codes essayés au plus   // association d'un écran avec le code à 6 chiffres
   // les images de caméras s'affichent dans une balise <img> : la clé peut alors venir de l'adresse (?k=)
   // idem pour la sonnette appelée par un bouton (Shelly, ESPHome…) qui ne sait pas ajouter d'en-tête
+  if (blocked(req)) return send(res, 429, { error: 'trop d’essais refusés : réessayez dans 10 minutes' });
   const w = AUTH.who(req, url);
   const keyOk = w.ok || ((CAMS.mediaPath(p) || p === '/api/notify/ring' || (FAMILLE && FAMILLE.mediaOk(p))) && url.searchParams.get('k') === KEY);
-  if (!keyOk) return send(res, 401, { error: 'clé invalide' });
+  if (!keyOk) { fail(req); return send(res, 401, { error: 'clé invalide' }); }
   if (AUTH.needAdmin(p, m) && !w.admin) return send(res, 401, { error: 'réservé à un administrateur (code PIN)', need: 'admin' });
   if (p === '/api/auth' || p.startsWith('/api/auth/')) { const r0 = await AUTH.api(req, res, url, w); if (r0 !== false) return; }
   if (ENGINE && (p === '/api/engine' || p.startsWith('/api/engine/') || p === '/api/history')) { const r0 = await ENGINE.api(req, res, url, w); if (r0 !== false) return; }
+  if (p === '/api/diag') { const r0 = await DIAG.api(req, res, url); if (r0 !== false) return; }
   if (FAMILLE && (p === '/api/famille' || p.startsWith('/api/famille/') || p === '/api/photos' || p === '/api/photos/file')) { const r0 = await FAMILLE.api(req, res, url, w); if (r0 !== false) return; }
   if (EXTRA && (p === '/api/extra' || p.startsWith('/api/extra/'))) { const r0 = await EXTRA.api(req, res, url, w); if (r0 !== false) return; }
   if (PLUS && (p === '/api/plus' || p.startsWith('/api/plus/') || p === '/api/quick' || p === '/api/energy')) { const r0 = await PLUS.api(req, res, url, w); if (r0 !== false) return; }
@@ -118,13 +130,54 @@ function imapLogin(o) {
 }
 
 /* ---------- fichiers de l'application ---------- */
+// - les fichiers texte partent compressés (gzip) avec un ETag : les tablettes ne retéléchargent que ce qui a changé
+// - « un seul fichier » : index.html charge bundle.js, qui regroupe les ~45 scripts (beaucoup plus rapide sur une tablette Fire)
+//   chaque script est isolé (une erreur n'empêche pas les suivants) ; BETA_BUNDLE=0 pour revenir aux fichiers séparés
+const zlib = require('zlib'), vm = require('vm'), crypto = require('crypto');
+const BUNDLE = process.env.BETA_BUNDLE !== '0';
+const SC = new Map();   // fichier → { key, etag, raw, gz, type }
+const HIDDEN = /(^|\/)(\.[^/]*|server|livrable|tests|tools|node_modules|docs)(\/|$)/;   // jamais servis : .git, sources du serveur, archives…
+function cached(key, type, build) {
+  const c = SC.get(type); if (c && c.key === key) return c;
+  const raw = Buffer.isBuffer(build) ? build : Buffer.from(build()), etag = '"' + crypto.createHash('sha1').update(raw).digest('base64').slice(0, 20) + '"';
+  const o = { key, etag, raw, gz: zlib.gzipSync(raw, { level: 9 }), type }; SC.set(type, o); return o;
+}
+function bundleParts() {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'), files = [...html.matchAll(/<script src="(js\/[^"?]+)"><\/script>\n?/g)].map(m => m[1]);
+  const key = files.map(f => { try { return f + ':' + fs.statSync(path.join(ROOT, f)).mtimeMs; } catch (e) { return f; } }).join('|') + '|' + fs.statSync(path.join(ROOT, 'index.html')).mtimeMs;
+  return { html, files, key };
+}
+function bundleJs() {
+  const { files, key } = bundleParts();
+  return cached(key, 'bundle', () => files.map(f => {
+    let code = ''; try { code = fs.readFileSync(path.join(ROOT, f), 'utf8'); new vm.Script(code, { filename: f }); }
+    catch (e) { console.warn('bundle : ' + f + ' ignoré (' + e.message + ')'); return '/* ' + f + ' : erreur de syntaxe, ignoré */'; }
+    return '/* ' + f + ' */\ntry {\n' + code + '\n} catch (e) { console.error("' + f + ' : " + (e && e.message)); }';
+  }).join('\n;\n'));
+}
+function bundleHtml() {
+  const { html, key } = bundleParts(), js = bundleJs();
+  return cached(key, 'html', () => { let first = true; return html.replace(/<script src="js\/[^"?]+"><\/script>\n?/g, () => first ? (first = false, '<script src="bundle.js?v=' + js.etag.replace(/\W/g, '').slice(0, 10) + '"></script>\n') : ''); });
+}
+function sendC(req, res, c, type, cache) {
+  const h = { 'Content-Type': type, 'Cache-Control': cache || 'no-cache', ETag: c.etag, Vary: 'Accept-Encoding', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' };
+  if (req.headers['if-none-match'] === c.etag) { res.writeHead(304, h); return res.end(); }
+  const gz = /\bgzip\b/.test(req.headers['accept-encoding'] || ''); if (gz) h['Content-Encoding'] = 'gzip';
+  res.writeHead(200, h); res.end(gz ? c.gz : c.raw);
+}
 function serveStatic(req, res, url) {
   let rel = decodeURIComponent(url.pathname); if (rel.endsWith('/')) rel += 'index.html';
   const f = path.resolve(ROOT, '.' + rel);
-  if (!f.startsWith(ROOT) || f.startsWith(DATA) || /\/server\//.test(f.slice(ROOT.length))) return send(res, 403, 'Interdit', 'text/plain');
+  if (!f.startsWith(ROOT) || f.startsWith(DATA) || HIDDEN.test(f.slice(ROOT.length))) return send(res, 403, 'Interdit', 'text/plain');
+  try {
+    if (BUNDLE && rel === '/index.html') return sendC(req, res, bundleHtml(), MIME['.html']);
+    if (BUNDLE && rel === '/bundle.js') return sendC(req, res, bundleJs(), MIME['.js'], url.searchParams.get('v') ? 'max-age=31536000, immutable' : 'no-cache');
+  } catch (e) { console.warn('bundle : ' + e.message); }
   fs.stat(f, (e, st) => {
     if (e || !st.isFile()) return send(res, 404, 'Introuvable', 'text/plain');
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(f).toLowerCase()] || 'application/octet-stream', 'Cache-Control': /\.(jpg|png|webp|svg)$/.test(f) ? 'max-age=86400' : 'no-cache' });
+    const ext = path.extname(f).toLowerCase(), type = MIME[ext] || 'application/octet-stream';
+    if (/\.(js|css|html|json|svg|webmanifest)$/.test(ext) && st.size < 5e6) return sendC(req, res, cached(st.mtimeMs + ':' + st.size, f, () => fs.readFileSync(f)), type, ext === '.svg' ? 'max-age=86400' : 'no-cache');
+    res.writeHead(200, { 'Content-Type': type, 'Cache-Control': /\.(jpg|jpeg|png|webp|gif)$/.test(ext) ? 'max-age=604800' : 'no-cache', 'X-Content-Type-Options': 'nosniff' });
     fs.createReadStream(f).pipe(res);
   });
 }

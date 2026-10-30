@@ -32,7 +32,7 @@ module.exports = function auth(DATA, send, readBody, MASTER) {
     return { master: !!MASTER && key === MASTER, device: d ? d.name : '', ok: (!MASTER || key === MASTER) || !!d, user: s ? s.user : '', name: s ? s.name : '', admin: s ? s.admin : false };
   }
   // routes de réglages : session admin exigée en mode sécurisé
-  const ADMIN = [[/^\/api\/hub\/\w+$/, ['PUT', 'DELETE']], [/^\/api\/hub\/\w+\/action\//, ['POST']], [/^\/api\/notify$/, ['PUT']], [/^\/api\/bridge$/, ['PUT']], [/^\/api\/geo\/(user|home)$/, ['POST', 'PUT']], [/^\/api\/engine$/, ['PUT']], [/^\/api\/cams$/, ['POST']], [/^\/api\/auth\/(secure|pair\/start|revoke|users|reset)$/, ['POST']], [/^\/api\/plus$/, ['PUT']], [/^\/api\/plus\/(backup|backup\/now|restore|update)$/, ['POST']], [/^\/api\/plus\/backups\//, ['GET']], [/^\/api\/extra$/, ['PUT']], [/^\/api\/famille$/, ['PUT']], [/^\/api\/famille\/(vacances|sitter)$/, ['POST']], [/^\/api\/extra\/admin$/, ['GET']]];
+  const ADMIN = [[/^\/api\/hub\/\w+$/, ['PUT', 'DELETE']], [/^\/api\/hub\/\w+\/action\//, ['POST']], [/^\/api\/notify$/, ['PUT']], [/^\/api\/bridge$/, ['PUT']], [/^\/api\/geo\/(user|home)$/, ['POST', 'PUT']], [/^\/api\/engine$/, ['PUT']], [/^\/api\/cams$/, ['POST']], [/^\/api\/auth\/(secure|pair\/start|revoke|users|reset)$/, ['POST']], [/^\/api\/plus$/, ['PUT']], [/^\/api\/plus\/(backup|backup\/now|restore|update)$/, ['POST']], [/^\/api\/plus\/backups\//, ['GET']], [/^\/api\/extra$/, ['PUT']], [/^\/api\/famille$/, ['PUT']], [/^\/api\/famille\/(vacances|sitter)$/, ['POST']], [/^\/api\/extra\/admin$/, ['GET']], [/^\/api\/diag$/, ['GET']]];
   const needAdmin = (p, m) => secure() && ADMIN.some(([re, ms]) => re.test(p) && ms.includes(m));
 
   async function api(req, res, url, w) {

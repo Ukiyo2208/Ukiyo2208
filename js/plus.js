@@ -378,7 +378,7 @@
   if (ac0) RENDER.alarmCard = () => { const h = ac0(); return h.includes('data-act="presenceCfg"') ? h.replace(/<button class="btn sm" data-act="presenceCfg">/, (mod('simulation') ? '<button class="btn sm" data-act="simOpen">' + ico('bulb') + 'Simulation de présence</button>' : '') + (mod('detection') ? '<button class="btn sm" data-act="detOpen">' + ico('cctv') + 'Détection caméras</button>' : '') + '<button class="btn sm" data-act="presenceCfg">') : h; };
 
   /* ======================= 10. PROFILS ENFANTS ======================= */
-  const KID_HIDE = ['parametres', 'connexions', 'marques', 'securite', 'sante', 'journal', 'routines', 'absence', 'chauffage', 'energie', 'voiture', 'mails', 'nas'];
+  const KID_HIDE = ['parametres', 'reglages', 'installation', 'connexions', 'marques', 'securite', 'sante', 'journal', 'routines', 'absence', 'chauffage', 'energie', 'voiture', 'mails', 'nas'];
   const kid = () => { const u = B.user(); return u && u.child ? u : null; };
   const SENS = d => ['garage', 'lock', 'alarm'].includes(B.kindOf(d));
   function kidDeny(u) { if (!u.child) return; const rooms = (u.kid || {}).rooms || []; u.deny = Object.values(DATA.DEVICES).filter(d => SENS(d) || (rooms.length && !rooms.includes(d.room))).map(d => d.id); }

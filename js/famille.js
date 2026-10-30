@@ -161,7 +161,7 @@
 
   const nl0 = B.navList;
   B.navList = NAV => { let out = (nl0 ? nl0(NAV) : NAV).slice(); const add = (id, label, icon, after) => { if (out.some(n => n[0] === id)) return; const i = out.findIndex(n => n[0] === after); out.splice(i < 0 ? out.length : i + 1, 0, [id, label, icon, icon, 'noside']); }; add('missions', 'Missions', 'heart', 'listes'); add('bilan', 'Bilan', 'chart', 'energie'); if (document.documentElement.classList.contains('sitter')) { add('babysitter', 'Baby-sitter', 'heart', 'accueil'); out = out.filter(n => ['accueil', 'babysitter', 'exterieur', 'rdc', 'etage1', 'etage2', 'musique', 'listes', 'interphone'].includes(n[0]) || /^niveau-/.test(n[0])); } return out; };
-  window.addEventListener('hashchange', () => { if (document.documentElement.classList.contains('sitter') && /^(parametres|connexions|marques|securite|admin|sante|routines|energie|chauffage|reseau|journal|bilan|missions)$/.test(location.hash.slice(1))) setTimeout(() => B.go('babysitter'), 0); });
+  window.addEventListener('hashchange', () => { if (document.documentElement.classList.contains('sitter') && /^(parametres|reglages|installation|connexions|marques|securite|admin|sante|routines|energie|chauffage|reseau|journal|bilan|missions)$/.test(location.hash.slice(1))) setTimeout(() => B.go('babysitter'), 0); });
   B.on && B.on('nas', ev => { if (ev.type === 'sitter') load(); });
 
   /* ======================= 5. cadre photo (écran de veille) ======================= */

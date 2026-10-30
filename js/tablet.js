@@ -35,7 +35,7 @@
     const now = new Date(), w = WX && WX.now ? WX.now : null, t = tab();
     sv.querySelector('.svt').textContent = F.time(now);
     sv.querySelector('.svd').textContent = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-    sv.querySelector('.svw').innerHTML = w ? (B.wxIcon ? B.wxIcon(w.code, !w.day) : '') + '<b>' + Math.round(w.temp) + '°</b><span>' + esc(S.settings.city || '') + '</span>' : '';
+    sv.querySelector('.svw').innerHTML = w ? (B.wxIcon ? ico(B.wxIcon(w.code, !w.day)) : '') + '<b>' + Math.round(w.temp) + '°</b><span>' + esc(S.settings.city || '') + '</span>' : '';
     sv.querySelector('.sve').textContent = nextEv();
     const al = (B.wxAlerts ? B.wxAlerts() : [])[0]; sv.querySelector('.sva').textContent = al ? al.text : '';
     if (t.photos) { const p = PH(); slide = (slide + 1) % p.length; const img = sv.querySelector('.svbg'); img.style.opacity = 0; setTimeout(() => { img.style.backgroundImage = 'url("' + p[slide] + '")'; img.style.opacity = 1; }, 700); }

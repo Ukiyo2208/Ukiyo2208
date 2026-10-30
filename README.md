@@ -321,3 +321,22 @@ Le QR code utilise la bibliothèque libre *qrcode-generator* (Kazuhiko Arase, li
 - **Grand texte** : dans Paramètres › Cet écran, pour agrandir textes et boutons sur une tablette.
 - **Nouvel écran en 30 secondes** : dans Paramètres › Sécurité › Associer un nouvel écran, un QR code s'affiche. Il suffit de le scanner avec la tablette ou le téléphone : Bêta home s'ouvre et se relie tout seul au NAS.
 - Le **contrôle parental par la Bbox** est coupé par défaut (Paramètres › Modules) : avec des Deco en mode routeur, il se fait dans l'app Deco.
+
+## Installer, vérifier, régler (7.16)
+
+- **Page Installation** (Réglages › Installation) : les 10 étapes de l'installation dans l'ordre (serveur, clé, écrans, marques, tablettes Fully, notifications, codes PIN, sauvegarde, iPhone, accès extérieur), chacune vérifiée avec ✅, ⚠️ ou ❌ et un bouton pour la régler.
+- **Tester toute la maison** : le NAS essaie chaque marque, les tablettes, ntfy, internet, go2rtc, le pont Alexa/Maison, la place disque et le fuseau horaire. Il fait aussi un **contrôle de sécurité** : clé trop courte ou d'exemple, administrateurs sans code, mode sécurisé, écrans oubliés, droits des fichiers de mots de passe, accès extérieur. Cet écran vérifie de son côté sa connexion, https, Fully Kiosk et l'installation en application. « Copier le rapport » donne un texte prêt à envoyer.
+- **Page Réglages** : tous les réglages rangés par thème (Maison, Sécurité, Énergie et confort, Famille, Écrans et iPhone, Réseau, Système), avec une recherche (« wifi », « code », « photo »…).
+- **Tablettes Fire 8″** :
+  - le serveur envoie l'application **en un seul fichier compressé** (≈ 340 Ko au lieu de 45 fichiers et 1,2 Mo) ; les tablettes ne retéléchargent que ce qui a changé ;
+  - les images sont allégées (−3 Mo) ;
+  - le **mode performance** s'active tout seul sur les tablettes Fire et les appareils modestes (réglable dans Cet écran). `BETA_BUNDLE=0` revient aux fichiers séparés.
+- **Sécurité renforcée** :
+  - le serveur ne sert plus les dossiers `.git`, `livrable`, `tests`, `tools`, `docs` ni les sources du serveur ;
+  - après 30 essais refusés (mauvaise clé ou code d'association), l'adresse est bloquée 10 minutes ;
+  - les fichiers de mots de passe sont remis en lecture « serveur seulement » au démarrage ;
+  - le `.dockerignore` évite de mettre les archives et l'historique git dans l'image Docker ;
+  - en-têtes `nosniff` et `no-referrer`.
+- **« Bêta, … »** (Réglages › Commande vocale) : un bouton micro sur l'écran, ou l'écoute permanente du mot « Bêta » sur une tablette murale (« Bêta, allume le salon », « Bêta, état de la maison »). Bêta répond à voix haute. Il faut un navigateur avec reconnaissance vocale (Chrome, Safari) et souvent une adresse https (Tailscale). La WebView de Fully Kiosk sur les Fire peut ne pas la proposer : sur ces tablettes, Alexa reste le plus simple.
+- **Page Raccourcis** : une version simple pour l'iPhone, avec l'état de la maison et vos boutons favoris (routines, scènes, appareils, pages). C'est la première page sur un téléphone, sauf si vous en choisissez une autre dans Cet écran.
+- **Tests automatiques** : `npm run check` (syntaxe des 139 scripts) et `npm test` (19 tests : connecteurs Deco, Bbox et Home Assistant, énergie et Tempo, chauffage, calendriers, colis, recharge, sauvegarde chiffrée, règles, serveur complet). Ils tournent sur GitHub à chaque envoi (`.github/workflows/tests.yml`), sans aucune dépendance à installer.

@@ -1,0 +1,10 @@
+{
+  "name": "beta-home",
+  "private": true,
+  "description": "Bêta home — tableau de bord domotique (sans dépendance)",
+  "scripts": {
+    "test": "node --test --test-force-exit tests/*.test.js",
+    "check": "node tests/check-syntax.js"
+  },
+  "engines": { "node": ">=20" }
+}
