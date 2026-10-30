@@ -6,14 +6,15 @@
    - Énergie : coûts en euros par jour et par appareil */
 (function () {
   const B = window.BOS, { S, DATA, esc, F, T, RENDER, box } = B;
-  const srv = () => B.Server && B.Server.ok();
+  const srv = () => B.Server && B.Server.ok() && !P.noPlus;   // serveur Bêta joignable et module « plus » présent (sinon : repli sur cet écran)
+  const mod = id => !id || !B.modOn || B.modOn(id);   // module activé (Paramètres › Modules)
   const isAdmin = () => !!(B.isAdmin ? B.isAdmin() : B.user() && B.user().admin);
   const req = (p, b, m) => B.Server.req(p, b, m);
   const hubMap = () => S.settings.hubMap || {};
-  const hubDevs = f => Object.keys(hubMap()).filter(id => DATA.DEVICES[id]).map(id => Object.assign({ id, k: B.kindOf(DATA.DEVICES[id]) }, DATA.DEVICES[id])).filter(f || (() => true));
+  const hubDevs = f => (B.nasDevs ? B.nasDevs() : Object.keys(hubMap()).filter(id => DATA.DEVICES[id]).map(id => Object.assign({ id, k: B.kindOf(DATA.DEVICES[id]) }, DATA.DEVICES[id]))).filter(f || (() => true));
   const dlabel = d => (d.room ? d.room + ' · ' : '') + d.name;
   const P = B.P = { cfg: null, state: null, lists: null, board: [], cams: null };
-  async function load() { if (!srv()) return null; try { const r = await req('/api/plus'); P.state = r.state; delete r.state; P.cfg = r; } catch (e) { } B.emit('plus'); return P.cfg; }
+  async function load() { if (!(B.Server && B.Server.ok())) return null; try { const r = await req('/api/plus'); P.state = r.state; delete r.state; P.cfg = r; P.noPlus = false; } catch (e) { if (/route inconnue|404/.test(e.message)) { P.noPlus = true; loadLists(); } } B.emit('plus'); return P.cfg; }
   const save = async patch => { try { const r = await req('/api/plus', patch, 'PUT'); P.cfg = Object.assign(P.cfg || {}, r); B.emit('plus'); return true; } catch (e) { B.toast('Serveur Bêta : ' + e.message, 'info'); return false; } };
   setTimeout(load, 3000);
   const need = () => { if (!srv()) { B.toast('Serveur Bêta du NAS nécessaire (Connexions)', 'server'); return false; } return true; };
@@ -37,7 +38,7 @@
   const TOOLS = [['bkOpen', 'cloudUp', 'Sauvegarde', 'Fichier chiffré, restauration, copie chaque nuit'], ['upOpen', 'download', 'Mises à jour', 'Nouvelle version en un clic'], ['iphOpen', 'mic', 'iPhone : Siri et widgets', 'Raccourcis et widget de l’écran d’accueil'],
     ['enOpen', 'boltPlain', 'Tarif et coûts', 'Euros par appareil, alerte de consommation'], ['waOpen', 'sprinkler', 'Arrosage', 'Selon la pluie d’hier et de demain'], ['detOpen', 'cctv', 'Détection caméras', 'Personnes et voitures avec Frigate'],
     ['simOpen', 'bulb', 'Simulation de présence', 'Lumières pendant les vacances'], ['kidOpen', 'family', 'Profils enfants', 'Pièces autorisées, couvre-feu']];
-  B.act('toolsOpen', () => B.modal('<h2>' + ico('gear') + 'Outils de la maison</h2><div class="tools">' + TOOLS.map(t => '<button class="tool" data-act="' + t[0] + '">' + ico(t[1]) + '<b>' + t[2] + '</b><small>' + t[3] + '</small></button>').join('') + '</div>', 'wide toolsmodal'));
+  B.act('toolsOpen', () => B.modal('<h2>' + ico('gear') + 'Outils de la maison</h2><div class="tools">' + TOOLS.filter(t => mod({ enOpen: 'energie', waOpen: 'arrosage', detOpen: 'detection', simOpen: 'simulation' }[t[0]])).map(t => '<button class="tool" data-act="' + t[0] + '">' + ico(t[1]) + '<b>' + t[2] + '</b><small>' + t[3] + '</small></button>').join('') + '</div>', 'wide toolsmodal'));
   const sfx1 = B.RENDER.sfx;
   if (sfx1) B.RENDER.sfx = s => sfx1(s).replace('<button class="btn sm" data-act="brandsCfg">', '<button class="btn sm" data-act="toolsOpen">' + ico('grid9') + 'Outils</button><button class="btn sm" data-act="brandsCfg">');
 
@@ -172,7 +173,7 @@
   // l'écran applique la scène : les appareils reliés en direct passent par le NAS, les autres (Home Assistant, démo) aussi via setDev
   function applyScene(sc, fromNas) {
     if (!sc) return; const m = moment();
-    Object.keys(sc.states || {}).forEach(id => { if (!DATA.DEVICES[id] || (fromNas && hubMap()[id])) return; let p = sc.states[id]; const k = B.kindOf(DATA.DEVICES[id]); if (sc.adaptive && p.on && (k === 'light' || k === 'rgb')) p = Object.assign({}, p, { bri: m.bri, ct: m.ct }); B.setDev(id, p); });
+    Object.keys(sc.states || {}).forEach(id => { if (!DATA.DEVICES[id] || (fromNas && (B.nasMap ? B.nasMap(id) : hubMap()[id]))) return; let p = sc.states[id]; const k = B.kindOf(DATA.DEVICES[id]); if (sc.adaptive && p.on && (k === 'light' || k === 'rgb')) p = Object.assign({}, p, { bri: m.bri, ct: m.ct }); B.setDev(id, p); });
     if (!fromNas) B.toast('Scène « ' + sc.name + ' »', 'sparkle');
   }
   const capture = id => { const d = DATA.DEVICES[id], s = S.dev[id] || (d && d.def) || {}, k = B.kindOf(d); return ['cover', 'awning', 'garage'].includes(k) ? { pos: +s.pos || 0 } : k === 'light' || k === 'rgb' ? Object.assign({ on: !!s.on }, s.on && s.bri != null ? { bri: s.bri } : {}, s.on && s.color ? { color: s.color } : {}) : k === 'clim' || d.type === 'heater' ? Object.assign({ on: !!s.on }, s.temp != null ? { temp: s.temp } : {}) : { on: !!s.on }; };
@@ -374,7 +375,7 @@
   B.act('dtCam', el => { const [id, k] = el.dataset.arg.split('|'), cams = Object.assign({}, P.cfg.detect.cams), cc = camCfg(id); cc[k] = k === 'off' ? !el.checked : el.checked; cams[id] = cc; dtSave({ cams }); });
   // raccourcis depuis la page Sécurité
   const ac0 = RENDER.alarmCard;
-  if (ac0) RENDER.alarmCard = () => { const h = ac0(); return h.includes('data-act="presenceCfg"') ? h.replace(/<button class="btn sm" data-act="presenceCfg">/, '<button class="btn sm" data-act="simOpen">' + ico('bulb') + 'Simulation de présence</button><button class="btn sm" data-act="detOpen">' + ico('cctv') + 'Détection caméras</button><button class="btn sm" data-act="presenceCfg">') : h; };
+  if (ac0) RENDER.alarmCard = () => { const h = ac0(); return h.includes('data-act="presenceCfg"') ? h.replace(/<button class="btn sm" data-act="presenceCfg">/, (mod('simulation') ? '<button class="btn sm" data-act="simOpen">' + ico('bulb') + 'Simulation de présence</button>' : '') + (mod('detection') ? '<button class="btn sm" data-act="detOpen">' + ico('cctv') + 'Détection caméras</button>' : '') + '<button class="btn sm" data-act="presenceCfg">') : h; };
 
   /* ======================= 10. PROFILS ENFANTS ======================= */
   const KID_HIDE = ['parametres', 'connexions', 'marques', 'securite', 'sante', 'journal', 'routines', 'absence', 'chauffage', 'energie', 'voiture', 'mails', 'nas'];
@@ -420,19 +421,26 @@
   });
 
   /* ======================= 11-12. LISTES ET MESSAGES ======================= */
-  async function loadLists() { if (!srv()) return; try { const r = await req('/api/plus/lists'); P.lists = r.lists; P.board = r.board; B.emit('lists'); B.emit('house'); } catch (e) { } }
+  // sans serveur Bêta : les listes restent sur cet écran (localStorage)
+  const LL = () => (S.listsLocal = S.listsLocal || { courses: [], taches: [] }), LB = () => (S.boardLocal = (S.boardLocal || []).filter(m => m.until > Date.now()));
+  function localOp(b) {
+    const L = LL()[b.list]; if (!L) return;
+    if (b.op === 'add') b.text.split(/\s*(?:,|\bet\b)\s*/).filter(Boolean).forEach(t => L.push({ id: 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), text: t.charAt(0).toUpperCase() + t.slice(1), done: false, by: b.by || '', who: b.who || '', due: b.due || '', at: Date.now() }));
+    else if (b.op === 'toggle') { const x = L.find(i => i.id === b.id); if (x) x.done = !x.done; }
+    else if (b.op === 'del' || b.op === 'clear') LL()[b.list] = L.filter(i => b.op === 'del' ? i.id !== b.id : !i.done);
+    P.lists = LL(); B.save(); B.emit('lists');
+  }
+  async function loadLists() { if (!srv()) { P.lists = LL(); P.board = LB(); B.emit('lists'); return; } try { const r = await req('/api/plus/lists'); P.lists = r.lists; P.board = r.board; B.emit('lists'); B.emit('house'); } catch (e) { } }
   setTimeout(loadLists, 3500); setInterval(() => { if (!document.hidden) loadLists(); }, 60000);
-  const listOp = async b => { try { const r = await req('/api/plus/lists', Object.assign({ by: B.user().name }, b)); P.lists = r.lists; P.board = r.board; B.emit('lists'); } catch (e) { B.toast(e.message, 'info'); } };
+  const listOp = async b => { if (!srv()) return localOp(Object.assign({ by: B.user().name }, b)); try { const r = await req('/api/plus/lists', Object.assign({ by: B.user().name }, b)); P.lists = r.lists; P.board = r.board; B.emit('lists'); } catch (e) { B.toast(e.message, 'info'); } };
   B.listAdd = (list, text) => listOp({ op: 'add', list, text });
   const item = (l, x) => '<div class="li lsi' + (x.done ? ' done' : '') + '"><button class="lsck" data-act="lsTog" data-arg="' + l + '|' + x.id + '" aria-label="Fait">' + (x.done ? ico('check') : '') + '</button><div><b>' + esc(x.text) + '</b><small>' + [x.who ? '→ ' + esc((S.users.find(u => u.id === x.who) || {}).name || x.who) : '', x.due ? 'pour le ' + new Date(x.due + 'T12:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }) : '', x.by ? 'par ' + esc(x.by) : ''].filter(Boolean).join(' · ') + '</small></div><button class="sq" data-act="lsDel" data-arg="' + l + '|' + x.id + '" aria-label="Supprimer">' + ico('x') + '</button></div>';
   RENDER.lsList = s => {
-    if (!srv()) return '<p class="warn">Les listes partagées sont gardées sur le serveur Bêta du NAS : reliez-le d’abord.</p>';
     const L = (P.lists || {})[s.list] || [], todo = L.filter(x => !x.done), done = L.filter(x => x.done);
     return '<div class="lsbox"><form class="lsadd" data-list="' + s.list + '"><input placeholder="' + (s.list === 'courses' ? 'Lait, pain et œufs…' : 'Sortir le chien…') + '" enterkeyhint="done">' + (s.list === 'taches' ? '<select>' + '<option value="">pour qui ?</option>' + S.users.map(u => '<option value="' + u.id + '">' + esc(u.name) + '</option>').join('') + '</select><input type="date">' : '') + '<button class="btn pri sm">' + ico('plus') + '</button></form>' +
-      '<div class="list scroll">' + (todo.map(x => item(s.list, x)).join('') || '<p class="muted" style="font-size:13px">' + (s.list === 'courses' ? 'La liste est vide.' : 'Rien à faire !') + '</p>') + (done.length ? '<div class="lsdone"><small class="muted">Fait (' + done.length + ')</small><button class="btn sm" data-act="lsClear" data-arg="' + s.list + '">' + ico('trash') + 'Retirer</button></div>' + done.map(x => item(s.list, x)).join('') : '') + '</div></div>';
+      (srv() ? '' : '<small class="muted">' + ico('info') + ' Sans serveur Bêta, la liste reste sur cet écran.</small>') + '<div class="list scroll">' + (todo.map(x => item(s.list, x)).join('') || '<p class="muted" style="font-size:13px">' + (s.list === 'courses' ? 'La liste est vide.' : 'Rien à faire !') + '</p>') + (done.length ? '<div class="lsdone"><small class="muted">Fait (' + done.length + ')</small><button class="btn sm" data-act="lsClear" data-arg="' + s.list + '">' + ico('trash') + 'Retirer</button></div>' + done.map(x => item(s.list, x)).join('') : '') + '</div></div>';
   };
   RENDER.lsBoard = () => {
-    if (!srv()) return '';
     return '<div class="lsbox"><form class="lsmsg"><input placeholder="Je rentre tard, à table sans moi !" maxlength="200"><select><option value="2">2 h</option><option value="6">6 h</option><option value="12" selected>12 h</option><option value="24">1 jour</option><option value="72">3 jours</option></select><button class="btn pri sm">' + ico('send') + '</button></form>' +
       '<div class="list scroll">' + ((P.board || []).map(m => '<div class="li lsm"><span class="ic">' + ico('chat') + '</span><div><b>' + esc(m.text) + '</b><small>' + esc(m.by || '') + ' · ' + new Date(m.at).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) + ' · jusqu’à ' + new Date(m.until).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) + '</small></div><button class="sq" data-act="bdDel" data-arg="' + m.id + '" aria-label="Retirer">' + ico('x') + '</button></div>').join('') || '<p class="muted" style="font-size:13px">Aucun message. Il s’affiche sur toutes les tablettes (et leur écran de veille).</p>') + '</div>' +
       '<p class="muted" style="font-size:12px;margin:8px 0 0">' + ico('mic') + ' « Dis Siri, ajoute aux courses » : Paramètres › Outils › iPhone. Ici : Bêta IA, « ajoute du lait à la liste de courses ».</p></div>';
@@ -444,14 +452,15 @@
   document.addEventListener('submit', e => {
     const f = e.target; if (!f.classList || !(f.classList.contains('lsadd') || f.classList.contains('lsmsg'))) return; e.preventDefault();
     const [inp, sel, date] = f.querySelectorAll('input,select'), text = inp.value.trim(); if (!text) return;
-    if (f.classList.contains('lsmsg')) req('/api/plus/board', { text, by: B.user().name, hours: +sel.value }).then(r => { P.board = r.board; B.emit('lists'); B.emit('house'); }, er => B.toast(er.message, 'info'));
+    if (f.classList.contains('lsmsg') && !srv()) { S.boardLocal = LB(); S.boardLocal.unshift({ id: 'm' + Date.now().toString(36), text, by: B.user().name, at: Date.now(), until: Date.now() + +sel.value * 36e5 }); P.board = S.boardLocal; B.save(); B.emit('lists'); B.emit('house'); }
+    else if (f.classList.contains('lsmsg')) req('/api/plus/board', { text, by: B.user().name, hours: +sel.value }).then(r => { P.board = r.board; B.emit('lists'); B.emit('house'); }, er => B.toast(er.message, 'info'));
     else listOp({ op: 'add', list: f.dataset.list, text, who: sel && f.dataset.list === 'taches' ? sel.value : '', due: date ? date.value : '' });
     inp.value = '';
   });
   B.act('lsTog', el => { const [list, id] = el.dataset.arg.split('|'); listOp({ op: 'toggle', list, id }); });
   B.act('lsDel', el => { const [list, id] = el.dataset.arg.split('|'); listOp({ op: 'del', list, id }); });
   B.act('lsClear', el => listOp({ op: 'clear', list: el.dataset.arg }));
-  B.act('bdDel', el => req('/api/plus/board', { del: el.dataset.arg }).then(r => { P.board = r.board; B.emit('lists'); B.emit('house'); }).catch(() => { }));
+  B.act('bdDel', el => !srv() ? (S.boardLocal = LB().filter(m => m.id !== el.dataset.arg), P.board = S.boardLocal, B.save(), B.emit('lists')) : req('/api/plus/board', { del: el.dataset.arg }).then(r => { P.board = r.board; B.emit('lists'); B.emit('house'); }).catch(() => { }));
   // messages : en tête des alertes de l'accueil, de l'écran de verrouillage et de l'écran de veille
   const wx0 = B.wxAlerts;
   B.wxAlerts = () => (P.board || []).filter(m => m.until > Date.now()).slice(0, 2).map(m => ({ icon: 'chat', text: (m.by ? m.by + ' : ' : '') + m.text, board: true })).concat(wx0 ? wx0() : []);
@@ -459,7 +468,7 @@
   const LISTRE = /^(?:peux[- ]tu |tu peux )?(?:ajoute|rajoute|mets|met|note)\s+(.+?)\s+(?:a|à|sur|dans)\s+(?:la\s+)?liste(?:\s+(?:de|des)\s+(courses|taches|tâches))?\s*[.!]?$/i;
   function iaList(text) {
     const t = String(text || '').trim(), m = t.match(LISTRE);
-    if (m && srv()) { const list = /t[aâ]ches/i.test(m[2] || '') ? 'taches' : 'courses', what = m[1].replace(/^(?:du|de la|des|de l’|de l'|un|une|le|la|les)\s+/i, ''); listOp({ op: 'add', list, text: what }); return 'C’est noté : « ' + what + ' » sur la liste ' + (list === 'courses' ? 'de courses' : 'des tâches') + '.'; }
+    if (m) { const list = /t[aâ]ches/i.test(m[2] || '') ? 'taches' : 'courses', what = m[1].replace(/^(?:du|de la|des|de l’|de l'|un|une|le|la|les)\s+/i, ''); listOp({ op: 'add', list, text: what }); return 'C’est noté : « ' + what + ' » sur la liste ' + (list === 'courses' ? 'de courses' : 'des tâches') + '.'; }
     if (/(?:qu.?y a.?t.?il|quoi|lis|montre).*(?:liste de courses|liste des courses|courses)/i.test(t) && P.lists) { const l = P.lists.courses.filter(x => !x.done); return l.length ? 'Sur la liste : ' + l.map(x => x.text).join(', ') + '.' : 'La liste de courses est vide.'; }
     return null;
   }

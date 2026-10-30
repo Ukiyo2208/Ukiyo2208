@@ -52,5 +52,13 @@ module.exports = {
     });
     return out;
   },
+  async info(c) {
+    const [cn, sys, hosts, wifi] = await Promise.all([api(c, '/connection/'), api(c, '/system/').catch(() => ({})), api(c, '/lan/browser/pub/'), api(c, '/wifi/config/').catch(() => null)]);
+    const mb = v => v != null ? Math.round(+v / 125000) : null;   // octets/s → Mbit/s
+    return { box: { name: 'Freebox', model: sys.board_name || sys.model_info && sys.model_info.pretty_name || 'Freebox', firmware: sys.firmware_version || '', uptime: +sys.uptime_val || null,
+      wan: { state: cn.state === 'up' ? 'connecté' : cn.state, type: cn.media === 'ftth' ? 'Fibre' : cn.media === 'xdsl' ? 'ADSL/VDSL' : cn.media || '', ip: cn.ipv4 || '', ip6: cn.ipv6 || '', down: mb(cn.rate_down), up: mb(cn.rate_up), maxDown: cn.bandwidth_down ? Math.round(cn.bandwidth_down / 1e6) : null, maxUp: cn.bandwidth_up ? Math.round(cn.bandwidth_up / 1e6) : null },
+      wifi: wifi ? { on: !!wifi.enabled } : null },
+      clients: hosts.map(h => { const ap = (h.access_point || {}), wl = ap.type === 'wifi'; return { name: h.primary_name || (h.l2ident || {}).id, ip: ((h.l3connectivities || []).find(x => x.af === 'ipv4') || {}).addr || '', mac: String((h.l2ident || {}).id || '').toLowerCase(), online: !!h.active, link: wl ? 'wifi' : 'ethernet', band: wl ? (((ap.wifi_information || {}).band || '').replace('2d4g', '2,4 GHz').replace('5g', '5 GHz')) : '', type: h.host_type || '' }; }), actions: [] };
+  },
   async command(c, id, p) { if (id === 'wifi' && 'on' in p) await api(c, '/wifi/config/', { method: 'PUT', body: { enabled: !!p.on } }); }
 };

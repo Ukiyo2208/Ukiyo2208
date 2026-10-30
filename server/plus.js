@@ -22,10 +22,11 @@ module.exports = function plus(DATA, send, readBody, M) {
     water: { on: false, devs: [], times: ['06:30'], days: [], dur: 15, rain: 3, fcst: 4, cold: 8 },
     sim: { mode: 'away', devs: [], end: '23:30', jitter: 10 },
     detect: { on: false, labels: ['person'], cams: {}, away: false, cool: 3 },
-    lists: { courses: [], taches: [] }, board: [], tempoDays: {}
+    lists: { courses: [], taches: [] }, board: [], tempoDays: {}, off: []   // off : modules coupés dans Paramètres › Modules
   };
   let C = {}; try { C = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch (e) { }
   Object.keys(DEF).forEach(k => { C[k] = DEF[k] && typeof DEF[k] === 'object' && !Array.isArray(DEF[k]) ? Object.assign({}, DEF[k], C[k]) : C[k] !== undefined ? C[k] : DEF[k]; });
+  const on = m => !(C.off || []).includes(m), syncOff = () => { X.EXT.off.clear(); (C.off || []).forEach(m => X.EXT.off.add(m)); };
   let pT = 0; const persist = () => { clearTimeout(pT); pT = setTimeout(() => fs.writeFile(FILE, JSON.stringify(C, null, 1), { mode: 0o600 }, () => { }), 300); };
   const kind = id => (E.devices[id] || {}).kind || '', dname = id => (E.devices[id] || {}).name || id, cur = () => X.cur();
   const uid = () => Date.now().toString(36) + crypto.randomBytes(3).toString('hex');
@@ -269,7 +270,7 @@ module.exports = function plus(DATA, send, readBody, M) {
   /* ======================= 14. détection de personnes (Frigate) ======================= */
   const seen = new Set(), recent = [], coolT = {}; let detAfter = Date.now() / 1000 - 30;
   async function detectTick() {
-    if (!C.detect.on || !HUB.configured().includes('frigate')) return;
+    if (!on('detection') || !C.detect.on || !HUB.configured().includes('frigate')) return;
     const F = HUB.brand('frigate'), fc = HUB.cfg('frigate'); let evs;
     try { evs = await F.events(fc, detAfter - 60); } catch (e) { return; }
     for (const e of (evs || []).slice().reverse()) {
@@ -319,11 +320,12 @@ module.exports = function plus(DATA, send, readBody, M) {
     simRecord(changes);
     if (!minute) return;
     if (X.S.tempo && X.S.tempo.today) { const k = X.S.tempo.date ? String(X.S.tempo.date).slice(0, 10) : X.ymd(new Date(Date.now() - 6 * 36e5)); if (C.tempoDays[k] !== X.S.tempo.today) { C.tempoDays[k] = X.S.tempo.today; const ks = Object.keys(C.tempoDays).sort(); ks.slice(0, Math.max(0, ks.length - 400)).forEach(x => delete C.tempoDays[x]); persist(); } }
-    heatTick(now); simTick(now);
-    if (now.getMinutes() % 10 === 0) adaptTick();
-    if (/:05$/.test(t)) energyAlert();
+    if (on('chauffage')) heatTick(now);
+    if (on('simulation')) simTick(now);
+    if (on('scenes') && now.getMinutes() % 10 === 0) adaptTick();
+    if (on('energie') && /:05$/.test(t)) energyAlert();
     if (C.backup.auto && t === (C.backup.at || '03:30')) autoBackup();
-    const w = C.water; if (w.on && (w.times || []).includes(t) && (!w.days || !w.days.length || w.days.includes(now.getDay()))) waterRun('programmé');
+    const w = C.water; if (on('arrosage') && w.on && (w.times || []).includes(t) && (!w.days || !w.days.length || w.days.includes(now.getDay()))) waterRun('programmé');
   });
 
   /* ======================= API ======================= */
@@ -365,7 +367,7 @@ module.exports = function plus(DATA, send, readBody, M) {
     if (p === '/api/plus' && m === 'GET') return send(res, 200, Object.assign(view(), { state: { heat: heatState, water: W, sim: { active: simActive(), done: simDone.slice(0, 15), learned: simEvents(Date.now() - 14 * 864e5, Date.now() + 1).length }, detect: recent.slice(0, 15), moment: moment(), version: SHA, update: upd, watchtower: !!WTK, backups: listBackups() } }));
     if (p === '/api/plus' && m === 'PUT') {
       const b = await readBody(req) || {};
-      ['scenes'].forEach(k => { if (Array.isArray(b[k])) C[k] = b[k]; });
+      ['scenes', 'off'].forEach(k => { if (Array.isArray(b[k])) C[k] = b[k]; }); syncOff();
       ['adaptive', 'heat', 'water', 'sim', 'detect', 'tariff'].forEach(k => { if (b[k] && typeof b[k] === 'object') C[k] = Object.assign(C[k], b[k]); });
       if (b.backup) { const old = C.backup.pass; C.backup = Object.assign(C.backup, b.backup); if (b.backup.pass === '••••' || b.backup.pass == null) C.backup.pass = old; }
       enCache.at = 0; persist(); if (b.heat) heatTick(new Date());
@@ -402,6 +404,6 @@ module.exports = function plus(DATA, send, readBody, M) {
     return false;
   }
   function listBackups() { try { return fs.readdirSync(path.join(DATA, 'backups')).filter(n => /^auto-/.test(n)).sort().reverse().slice(0, 30).map(n => ({ name: n, size: fs.statSync(path.join(DATA, 'backups', n)).size, enc: /\.betabak$/.test(n) })); } catch (e) { return []; } }
-  setTimeout(() => checkUpdate().catch(() => { }), 20000);
+  syncOff(); setTimeout(() => checkUpdate().catch(() => { }), 20000);
   return { api, _test: { moment, price, hourly, energy, heatTarget, waterDecide, encrypt, decrypt, collect, simTick, C } };
 };

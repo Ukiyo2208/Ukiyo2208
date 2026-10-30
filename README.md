@@ -268,3 +268,20 @@ Tout se trouve dans **Paramètres › Outils**, et dans trois nouvelles pages : 
 - **Messages sur les tablettes** : un mot (« Je rentre tard ») affiché sur toutes les tablettes, leur écran de veille et l'accueil, annoncé à voix haute, avec une durée.
 - **Simulation de présence** (Sécurité) : en mode absent, le NAS rejoue vos vrais gestes de la semaine précédente (lumières, volets), décalés de quelques minutes, du coucher du soleil à l'heure choisie. Tant qu'il n'a rien appris, il suit un scénario de soirée.
 - **Détection sur les caméras** (Sécurité, avec Frigate) : notification avec photo seulement pour les personnes, les voitures, les colis… (pas les chats ni les branches), par caméra et par zone, seulement en absence si vous le voulez. Une personne détectée peut déclencher l'alarme. La détection sert aussi de déclencheur dans les règles.
+
+## Chaque service indépendant · Réseau Bbox et TP-Link Deco (7.13)
+
+**Paramètres › Modules** : activez seulement ce que vous utilisez (règles, scènes, chauffage, énergie, arrosage, Tempo/vigilance/collectes, santé, réseau, alarme, simulation, détection, listes, musique, Plex, calendrier, mails, carte, voiture, NAS, Bêta IA, journal). Un module coupé disparaît du menu et de ses raccourcis, et le NAS arrête de le faire tourner. Les autres ne sont pas touchés, et ses réglages sont gardés.
+
+**Avec ou sans Home Assistant** :
+- **Sans Home Assistant** : tout passe par les marques reliées en direct (Marques).
+- **Avec Home Assistant seulement** : activez « Le NAS pilote aussi les appareils Home Assistant » (Paramètres › Modules). Règles, scènes, chauffage, alarme, simulation et Siri utilisent alors les appareils de Home Assistant, même tablettes éteintes (connecteur `homeassistant` du serveur, jeton longue durée).
+- **Les deux** : un appareil peut venir de l'un ou de l'autre, sans doublon.
+
+**Sans serveur, ou avec un serveur partiel** : chaque module du serveur est facultatif. Un module qui plante est désactivé sans arrêter les autres. On peut aussi en couper volontairement avec `BETA_OFF=engine,plus,bridge,geo`. Sans le module concerné, les listes et les scènes restent sur l'écran, les règles reviennent aux automatismes de l'écran, et les pages qui ont besoin du NAS l'indiquent simplement.
+
+**Page Réseau** :
+- **Bbox (Bouygues Telecom)** : état de la ligne (fibre, ADSL/VDSL), IP v4/v6, débit en cours et maximum (ou débit de synchro), version, durée depuis l'allumage, Wi-Fi, appareils connectés (Wi-Fi 2,4/5 GHz ou câble) et redémarrage. Le redémarrage et la coupure du Wi-Fi demandent le mot de passe admin.
+- **TP-Link Deco** (nouveau connecteur, API locale chiffrée) : bornes principale et satellites (en ligne, IP, firmware), IP internet, processeur et mémoire, appareils connectés avec la bande Wi-Fi et le débit, et redémarrage. Se connecter peut déconnecter l'app Deco ouverte au même moment.
+- **Freebox** : mêmes informations.
+- Le bouton **Suivre** sur un appareil l'ajoute à la détection de présence de sa box. Ajoutez ensuite son détecteur (Marques › Ajouter les appareils), puis Sécurité › Présence.

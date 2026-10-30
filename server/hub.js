@@ -6,7 +6,7 @@ const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { request } = require('./hub/net');
 
 const BRANDS = {};
-['tahoma', 'hue', 'elgato', 'govee', 'smartthings', 'homeconnect', 'shelly', 'esphome', 'sonos', 'cast', 'wled', 'nanoleaf', 'yeelight', 'wiz', 'tasmota', 'denon', 'fully', 'daikin', 'roku', 'z2m', 'kasa', 'tapo', 'lifx', 'broadlink', 'philipstv', 'samsungtv', 'lgtv', 'musicassistant', 'matter', 'frigate', 'reolink', 'unifiprotect', 'hikvision', 'dahua', 'freebox', 'livebox', 'bbox', 'linky', 'solaire', 'wallbox', 'easee', 'ocpp', 'cozytouch', 'netatmo', 'tado', 'sensibo', 'ecowitt', 'viessmann', 'tuya', 'dirigera', 'zwavejs', 'deconz', 'switchbot', 'mqttha', 'nuki', 'verisure', 'spotify', 'musiccast', 'bose', 'bravia', 'jellyfin', 'androidtv', 'husqvarna', 'valetudo'].forEach(n => { const m = require('./hub/' + n); BRANDS[m.id] = m; });
+['tahoma', 'hue', 'elgato', 'govee', 'smartthings', 'homeconnect', 'shelly', 'esphome', 'sonos', 'cast', 'wled', 'nanoleaf', 'yeelight', 'wiz', 'tasmota', 'denon', 'fully', 'daikin', 'roku', 'z2m', 'kasa', 'tapo', 'lifx', 'broadlink', 'philipstv', 'samsungtv', 'lgtv', 'musicassistant', 'matter', 'frigate', 'reolink', 'unifiprotect', 'hikvision', 'dahua', 'freebox', 'livebox', 'bbox', 'linky', 'solaire', 'wallbox', 'easee', 'ocpp', 'cozytouch', 'netatmo', 'tado', 'sensibo', 'ecowitt', 'viessmann', 'tuya', 'dirigera', 'zwavejs', 'deconz', 'switchbot', 'mqttha', 'nuki', 'verisure', 'spotify', 'musiccast', 'bose', 'bravia', 'jellyfin', 'androidtv', 'husqvarna', 'valetudo', 'deco', 'homeassistant'].forEach(n => { const m = require('./hub/' + n); BRANDS[m.id] = m; });
 
 module.exports = function hub(DATA, send, readBody) {
   const FILE = path.join(DATA, 'hub.json');
@@ -85,6 +85,7 @@ module.exports = function hub(DATA, send, readBody) {
       try { const info = await b.test(c, helper(b)); update(b.id, { status: 'ok', info }); } catch (e) { update(b.id, { status: 'err', info: e.message }); }
       return send(res, 200, view(b));
     }
+    if (what === 'info' && m === 'GET') { if (!b.info) return send(res, 404, { error: 'pas d’informations pour cette marque' }); try { return send(res, 200, await b.info(c, helper(b))); } catch (e) { return send(res, 502, { error: e.message }); } }
     if (what === 'devices' && m === 'GET') { const list = await b.devices(c, helper(b)); return send(res, 200, list); }
     if (what === 'action' && m === 'POST' && b.actions && b.actions[r[3]]) { const patch = await b.actions[r[3]](c, await readBody(req) || {}); update(b.id, patch || {}); return send(res, 200, view(b)); }
     if (what === 'oauth' && m === 'GET' && b.oauth) {

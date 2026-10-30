@@ -22,19 +22,24 @@ const safe = s => /^[\w.-]{1,80}$/.test(s) && !s.includes('..');
 const HUB = require('./hub')(DATA, send, readBody);   // appareils connectés en direct (Somfy, Hue, SmartThings…)
 const CAMS = require('./cams')(DATA, send, readBody); // découverte du réseau, caméras et pont HomeKit (go2rtc)
 const NOTIFY = require('./notify')(DATA, send, readBody, HUB, CAMS);   // notifications ntfy, sonnette, surveillance 24 h/24
-const GEO = require('./geo')(DATA, send, readBody, NOTIFY);           // positions OwnTracks
-const BRIDGE = require('./bridge')(DATA, send, readBody, HUB, NOTIFY); // pont Matter : Alexa, Google Home, Maison
+// modules facultatifs : chacun peut manquer ou être coupé (BETA_OFF=geo,bridge,engine,plus) sans gêner les autres
+const OFF = String(process.env.BETA_OFF || '').split(/[,; ]+/).filter(Boolean);
+const opt = (name, f) => { if (OFF.includes(name)) { console.log('module ' + name + ' coupé (BETA_OFF)'); return null; } try { return f(); } catch (e) { console.warn('⚠️  module ' + name + ' désactivé : ' + e.message); return null; } };
+const GEO = opt('geo', () => require('./geo')(DATA, send, readBody, NOTIFY));           // positions OwnTracks
+const BRIDGE = opt('bridge', () => require('./bridge')(DATA, send, readBody, HUB, NOTIFY)); // pont Matter : Alexa, Google Home, Maison
 const AUTH = require('./auth')(DATA, send, readBody, KEY);             // écrans associés, codes PIN, mode sécurisé
-const ENGINE = require('./engine')(DATA, send, readBody, { HUB, NOTIFY, GEO, BRIDGE, CAMS, AUTH });   // cerveau : routines, règles, présence, alarme
-BRIDGE.setRunner((id, by) => ENGINE.runRoutine(id, by));   // « Alexa, allume Soirée ciné » exécuté par le NAS
-const PLUS = require('./plus')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, AUTH });   // sauvegardes, scènes, chauffage, énergie, arrosage, Siri, listes, Frigate
+const GEO0 = GEO || { inside: () => ({}), home: () => null, last: () => null };
+const ENGINE = opt('engine', () => require('./engine')(DATA, send, readBody, { HUB, NOTIFY, GEO: GEO0, BRIDGE, CAMS, AUTH }));   // cerveau : routines, règles, présence, alarme
+if (BRIDGE && ENGINE) BRIDGE.setRunner((id, by) => ENGINE.runRoutine(id, by));   // « Alexa, allume Soirée ciné » exécuté par le NAS
+const PLUS = ENGINE ? opt('plus', () => require('./plus')(DATA, send, readBody, { HUB, NOTIFY, ENGINE, AUTH })) : null;   // sauvegardes, scènes, chauffage, énergie, arrosage, Siri, listes, Frigate
+const MODS = { hub: true, discover: true, notify: true, geo: !!GEO, bridge: !!BRIDGE, engine: !!ENGINE, auth: true, plus: !!PLUS };
 
 /* ---------- API ---------- */
 async function api(req, res, url) {
   const p = url.pathname, m = req.method;
-  if (p === '/api/ping') return send(res, 200, { ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now(), hub: true, discover: true, notify: true, geo: true, bridge: true, engine: true, auth: true, plus: true, sha: process.env.BETA_SHA || 'dev' });
+  if (p === '/api/ping') return send(res, 200, Object.assign({ ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now(), sha: process.env.BETA_SHA || 'dev' }, MODS));
   if (p === '/api/hub/oauth/callback') return HUB.callback(req, res, url);
-  if (p === '/api/owntracks') return GEO.api(req, res, url);   // identifiants propres à chaque téléphone
+  if (p === '/api/owntracks') return GEO ? GEO.api(req, res, url) : send(res, 503, { error: 'module géolocalisation coupé' });   // identifiants propres à chaque téléphone
   if (p === '/api/auth/pair' && m === 'POST') return AUTH.pair(req, res);   // association d'un écran avec le code à 6 chiffres
   // les images de caméras s'affichent dans une balise <img> : la clé peut alors venir de l'adresse (?k=)
   // idem pour la sonnette appelée par un bouton (Shelly, ESPHome…) qui ne sait pas ajouter d'en-tête
@@ -43,12 +48,12 @@ async function api(req, res, url) {
   if (!keyOk) return send(res, 401, { error: 'clé invalide' });
   if (AUTH.needAdmin(p, m) && !w.admin) return send(res, 401, { error: 'réservé à un administrateur (code PIN)', need: 'admin' });
   if (p === '/api/auth' || p.startsWith('/api/auth/')) { const r0 = await AUTH.api(req, res, url, w); if (r0 !== false) return; }
-  if (p === '/api/engine' || p.startsWith('/api/engine/') || p === '/api/history') { const r0 = await ENGINE.api(req, res, url, w); if (r0 !== false) return; }
-  if (p === '/api/plus' || p.startsWith('/api/plus/') || p === '/api/quick' || p === '/api/energy') { const r0 = await PLUS.api(req, res, url, w); if (r0 !== false) return; }
+  if (ENGINE && (p === '/api/engine' || p.startsWith('/api/engine/') || p === '/api/history')) { const r0 = await ENGINE.api(req, res, url, w); if (r0 !== false) return; }
+  if (PLUS && (p === '/api/plus' || p.startsWith('/api/plus/') || p === '/api/quick' || p === '/api/energy')) { const r0 = await PLUS.api(req, res, url, w); if (r0 !== false) return; }
   if (p === '/api/hub' || p.startsWith('/api/hub/')) return HUB.api(req, res, url);
   if (p === '/api/discover' || p.startsWith('/api/cams')) { const r0 = await CAMS.api(req, res, url); if (r0 !== false) return; }
-  if (p === '/api/bridge' || p.startsWith('/api/bridge/')) { const r0 = await BRIDGE.api(req, res, url); if (r0 !== false) return; }
-  if (p === '/api/geo' || p.startsWith('/api/geo/')) { const r0 = await GEO.api(req, res, url); if (r0 !== false) return; }
+  if (BRIDGE && (p === '/api/bridge' || p.startsWith('/api/bridge/'))) { const r0 = await BRIDGE.api(req, res, url); if (r0 !== false) return; }
+  if (GEO && (p === '/api/geo' || p.startsWith('/api/geo/'))) { const r0 = await GEO.api(req, res, url); if (r0 !== false) return; }
   if (p === '/api/notify' || p.startsWith('/api/notify/')) { const r0 = await NOTIFY.api(req, res, url); if (r0 !== false) return; }
 
   let r;

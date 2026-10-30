@@ -10,7 +10,10 @@
   const srv = () => B.Server && B.Server.ok();
   const isAdmin = () => !!(B.isAdmin ? B.isAdmin() : B.user() && B.user().admin);
   const hubMap = () => S.settings.hubMap || {};
-  const hubDevs = () => Object.keys(hubMap()).filter(id => DATA.DEVICES[id] && !(B.brandOff && B.brandOff(hubMap()[id].brand))).map(id => Object.assign({ id, k: B.kindOf(DATA.DEVICES[id]) }, DATA.DEVICES[id]));
+  // appareils que le NAS sait piloter : reliés en direct (Marques) et, si on le veut, ceux de Home Assistant (Paramètres › Modules)
+  const nasMap = id => hubMap()[id] || (S.settings.haNas && S.settings.haUrl && B.HA && B.HA.entity(id) && B.HA.entity(id) !== '-' && DATA.DEVICES[id] ? { brand: 'homeassistant', id: B.HA.entity(id) } : null);
+  const hubDevs = () => Object.keys(DATA.DEVICES).filter(id => { const m = nasMap(id); return m && !(B.brandOff && B.brandOff(m.brand)); }).map(id => Object.assign({ id, k: B.kindOf(DATA.DEVICES[id]) }, DATA.DEVICES[id]));
+  B.nasMap = nasMap; B.nasDevs = hubDevs;
   const req = (p, body, m) => B.Server.req(p, body, m);
 
   /* ---------- envoi de la configuration au NAS ---------- */
@@ -30,8 +33,8 @@
     return { id: r.id, name: r.name, actions: act, away: r.id === 'depart' ? true : r.id === 'retour' ? false : undefined, alarm: a.alarm === 'on' ? 'armed_away' : a.alarm === 'off' ? 'off' : undefined, sched: !!r.sched, time: r.time, days: r.days };
   }
   function payload() {
-    const devices = {}; hubDevs().forEach(d => { const m = hubMap()[d.id]; devices[d.id] = { brand: m.brand, bid: m.id, kind: d.k, name: d.name, room: d.room || '' }; });
-    const users = S.users.map(u => { const p = u.presence || {}; return { id: u.id, name: u.name, admin: !!u.admin, ot: !!p.ot, net: (p.net || []).map(k => { const m = hubMap()[k]; return m && { brand: m.brand, bid: m.id }; }).filter(Boolean) }; });
+    const devices = {}; hubDevs().forEach(d => { const m = nasMap(d.id); devices[d.id] = { brand: m.brand, bid: m.id, kind: d.k, name: d.name, room: d.room || '' }; });
+    const users = S.users.map(u => { const p = u.presence || {}; return { id: u.id, name: u.name, admin: !!u.admin, ot: !!p.ot, net: (p.net || []).map(k => { const m = nasMap(k); return m && { brand: m.brand, bid: m.id }; }).filter(Boolean) }; });
     return { devices, routines: (S.routines || []).map(compile), users, home: { lat: +S.settings.lat || 48.4917, lon: +S.settings.lon || 7.6806 } };
   }
   let syncT = 0, lastSent = '';
@@ -227,7 +230,7 @@
     const conv = [];
     (S.autos || []).forEach(a => {
       const t = a.trig, c = a.act, when = t.type === 'time' ? [{ type: 'time', at: t.v, days: t.days || [] }] : /sun/.test(t.type) ? [{ type: 'sun', ev: t.type, off: +t.v || 0 }] : t.type === 'doorbell' ? [{ type: 'doorbell' }] : null;
-      let then = c.type === 'routine' ? [{ type: 'routine', id: c.v }] : c.type === 'notify' ? [{ type: 'notify', who: 'all', title: 'Bêta home', message: c.v }] : c.type === 'device' && hubMap()[c.v] ? [{ type: 'device', dev: c.v, patch: toPatch({ act: c.a === 'status' ? 'start' : c.a }) }] : c.type === 'light' && hubMap()[c.v] ? [{ type: 'device', dev: c.v, patch: { on: true } }] : c.type === 'ext' ? hubDevs().filter(d => /^ext/.test(B.floorOf(d.id)) && (d.k === 'light' || d.k === 'rgb')).map(d => ({ type: 'device', dev: d.id, patch: { on: c.v === 'on' } })) : null;
+      let then = c.type === 'routine' ? [{ type: 'routine', id: c.v }] : c.type === 'notify' ? [{ type: 'notify', who: 'all', title: 'Bêta home', message: c.v }] : c.type === 'device' && nasMap(c.v) ? [{ type: 'device', dev: c.v, patch: toPatch({ act: c.a === 'status' ? 'start' : c.a }) }] : c.type === 'light' && nasMap(c.v) ? [{ type: 'device', dev: c.v, patch: { on: true } }] : c.type === 'ext' ? hubDevs().filter(d => /^ext/.test(B.floorOf(d.id)) && (d.k === 'light' || d.k === 'rgb')).map(d => ({ type: 'device', dev: d.id, patch: { on: c.v === 'on' } })) : null;
       if (when && then && then.length) conv.push({ id: 'imp' + a.id, name: (a.note || 'Repris de l’écran'), on: a.on, when, if: t.night ? [{ type: 'night', is: true }] : [], then });
     });
     if (!conv.length) return B.toast('Aucun automatisme reprenable (il faut des appareils reliés en direct)', 'info');
@@ -238,7 +241,7 @@
 
   /* ---------- présence et mode absent automatique ---------- */
   function presenceBody() {
-    const c = (BR.cfg && BR.cfg.presence) || {}, st = (BR.status && BR.status.presence) || {}, netDevs = hubDevs().filter(d => d.k === 'motion' || /^p:/.test(hubMap()[d.id].id));
+    const c = (BR.cfg && BR.cfg.presence) || {}, st = (BR.status && BR.status.presence) || {}, netDevs = hubDevs().filter(d => d.k === 'motion' || /^p:/.test(nasMap(d.id).id));
     return '<h2>' + ico('family') + 'Présence et mode absent</h2><p class="muted" style="margin:0 0 12px;font-size:13px;line-height:1.5">Pour chaque personne : OwnTracks (position du téléphone) et/ou un appareil « présence » de la box (téléphone connecté au Wi-Fi). Le NAS sait alors qui est là, même tablettes éteintes.</p>' +
       '<div class="list">' + S.users.map(u => { const p = u.presence || {}; return '<div class="li prow"><img src="' + esc(u.avatar) + '" alt=""><div><b>' + esc(u.name) + ' <small class="tag2 ' + (st[u.id] === true ? '' : st[u.id] === false ? 'off' : 'wait') + '">' + (st[u.id] === true ? 'à la maison' : st[u.id] === false ? 'absent' : 'inconnu') + '</small></b>' +
         '<label class="rlck"><input type="checkbox" data-change="prOt" data-arg="' + u.id + '"' + (p.ot ? ' checked' : '') + '>OwnTracks</label>' + netDevs.map(d => '<label class="rlck"><input type="checkbox" data-change="prNet" data-arg="' + u.id + '|' + d.id + '"' + ((p.net || []).includes(d.id) ? ' checked' : '') + '>' + esc(d.name) + '</label>').join('') +
