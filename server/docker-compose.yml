@@ -31,3 +31,29 @@ services:
       - TZ=Europe/Paris
     volumes:
       - ./data/go2rtc.yaml:/config/go2rtc.yaml
+
+  # Broker MQTT : utilisé par Zigbee2MQTT (et Tasmota, ESPHome, LinknLink si vous le souhaitez).
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./data/mosquitto:/mosquitto/data
+
+  # Zigbee2MQTT : décommentez quand la clé Zigbee USB est branchée sur le NAS.
+  # Interface : http://IP-du-NAS:8080 · Bêta home › Marques › Zigbee2MQTT (broker : IP du NAS, port 1883).
+  # zigbee2mqtt:
+  #   image: koenkk/zigbee2mqtt:latest
+  #   container_name: zigbee2mqtt
+  #   restart: unless-stopped
+  #   network_mode: host
+  #   environment:
+  #     - TZ=Europe/Paris
+  #     - ZIGBEE2MQTT_CONFIG_MQTT_SERVER=mqtt://127.0.0.1:1883
+  #     - ZIGBEE2MQTT_CONFIG_FRONTEND_PORT=8080
+  #   volumes:
+  #     - ./data/zigbee2mqtt:/app/data
+  #   devices:
+  #     - /dev/ttyUSB0:/dev/ttyACM0   # adaptez au nom de votre clé (ls /dev/serial/by-id/)

@@ -6,7 +6,7 @@ const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { request } = require('./hub/net');
 
 const BRANDS = {};
-['tahoma', 'hue', 'elgato', 'govee', 'smartthings', 'homeconnect', 'shelly', 'esphome', 'sonos', 'cast'].forEach(n => { const m = require('./hub/' + n); BRANDS[m.id] = m; });
+['tahoma', 'hue', 'elgato', 'govee', 'smartthings', 'homeconnect', 'shelly', 'esphome', 'sonos', 'cast', 'wled', 'nanoleaf', 'yeelight', 'wiz', 'tasmota', 'denon', 'fully', 'daikin', 'roku', 'z2m'].forEach(n => { const m = require('./hub/' + n); BRANDS[m.id] = m; });
 
 module.exports = function hub(DATA, send, readBody) {
   const FILE = path.join(DATA, 'hub.json');

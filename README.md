@@ -158,3 +158,13 @@ Page **Marques** : quatre nouveaux connecteurs 100 % locaux, sans compte.
 - **Google Cast** (Chromecast, Nest, TV) : volume, lecture/pause, arrêt, et diffusion des radios.
 
 Les enceintes Sonos et Google Cast apparaissent dans **« Où écouter ? »**.
+
+## Encore plus de marques en local (7.6)
+
+Page **Marques**, sans Home Assistant ni cloud :
+- **Zigbee2MQTT** : tous les appareils Zigbee (Aqara, IKEA, Xiaomi, Philips, Lidl, Tuya…) par le broker MQTT. Mosquitto et Zigbee2MQTT sont prévus dans le docker-compose ; un client MQTT minimal est intégré au serveur, sans dépendance.
+- **Denon / Marantz** (marche, volume, source), **Roku** (TV).
+- **Fully Kiosk** (tablettes murales) : écran, luminosité, annonces vocales, ouverture d'une page.
+- **WLED**, **Nanoleaf**, **Yeelight**, **Philips WiZ** (lumières), **Tasmota** (prises et modules), **Daikin** (clims avec adaptateur Wi-Fi local).
+
+La découverte reconnaît aussi WLED, Nanoleaf, Denon/Marantz (HEOS), Roku et les brokers MQTT.

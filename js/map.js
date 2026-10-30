@@ -146,7 +146,7 @@
       L.circleMarker([t.pts[0][0], t.pts[0][1]], { radius: 7, color: '#fff', weight: 2, fillColor: '#22e3a4', fillOpacity: 1 }).bindTooltip('Départ'),
       L.circleMarker([t.pts[t.pts.length - 1][0], t.pts[t.pts.length - 1][1]], { radius: 7, color: '#fff', weight: 2, fillColor: '#ff5a6a', fillOpacity: 1 }).bindTooltip('Arrivée')
     ]).addTo(map);
-    map.fitBounds(L.latLngBounds(t.pts.map(p => [p[0], p[1]])), { padding: [40, 40] });
+    map.fitBounds(L.latLngBounds(t.pts.map(p => [p[0], p[1]])), { padding: [40, 40], animate: false });
   }
   function drawRec() { if (!map || !rec) return; if (recLine) recLine.remove(); recLine = L.polyline(rec.pts.map(p => [p[0], p[1]]), { color: veh(rec.veh).color, weight: 5 }).addTo(map); const l = rec.pts[rec.pts.length - 1]; if (l) map.panTo([l[0], l[1]]); }
   async function mount() {
@@ -162,8 +162,8 @@
     setTimeout(() => { place(); if (t && G.tab === 'trajets') showTrip(t); else fitFamily(); }, 250);
     drawRec();
   }
-  function fitFamily() { if (!map) return; const pts = [home()].concat(S.users.map(u => G.users[u.id]).filter(Boolean).map(p => [p.lat, p.lon])); if (pts.length > 1) map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 14 }); }
-  function unmount() { if (map) { map.remove(); map = null; } if (layer) { layer.remove(); layer = null; } markers = {}; tripLine = recLine = null; }
+  function fitFamily() { if (!map) return; const pts = [home()].concat(S.users.map(u => G.users[u.id]).filter(Boolean).map(p => [p.lat, p.lon])); if (pts.length > 1) map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 14, animate: false }); }
+  function unmount() { if (map) { try { map.stop(); map.remove(); } catch (e) { } map = null; } if (layer) { layer.remove(); layer = null; } markers = {}; tripLine = recLine = null; }
   window.addEventListener('hashchange', () => { if (B.current !== 'carte') unmount(); });
   window.addEventListener('resize', () => setTimeout(place, 60));
   window.addEventListener('scroll', () => { if (!fluid()) place(); }, true);

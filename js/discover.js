@@ -9,7 +9,7 @@
   const key = () => ((S.conn || {}).server || {}).key || '';
   const media = (id, kind) => Srv().url() + '/api/cams/' + kind + '/' + id + '?k=' + encodeURIComponent(key()) + (kind === 'frame' ? '&t=' + Math.floor(Date.now() / 10000) : '');
   const fmtPin = p => p ? p.slice(0, 3) + '-' + p.slice(3, 5) + '-' + p.slice(5) : '';
-  const TYPES = { camera: ['Caméras', 'camera'], hub: ['Ponts et box', 'homeFill'], lampe: ['Éclairage', 'bulbFill'], prise: ['Prises et modules', 'plug'], module: ['Prises et modules', 'plug'], matter: ['Matter', 'link'], homekit: ['HomeKit', 'homeFill'], multimedia: ['Multimédia', 'speaker'], imprimante: ['Imprimantes', 'files'], nas: ['NAS et partages', 'nas'], box: ['Box internet', 'wifi'], autre: ['Autres', 'grid9'] };
+  const TYPES = { camera: ['Caméras', 'camera'], hub: ['Ponts et box', 'homeFill'], lampe: ['Éclairage', 'bulbFill'], prise: ['Prises et modules', 'plug'], module: ['Prises et modules', 'plug'], matter: ['Matter', 'link'], clim: ['Climatisation', 'snow'], homekit: ['HomeKit', 'homeFill'], multimedia: ['Multimédia', 'speaker'], imprimante: ['Imprimantes', 'files'], nas: ['NAS et partages', 'nas'], box: ['Box internet', 'wifi'], autre: ['Autres', 'grid9'] };
 
   /* ---------- caméras ajoutées → emplacements de caméra de Bêta home ---------- */
   function applyCams() {

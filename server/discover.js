@@ -6,7 +6,7 @@ const dgram = require('dgram'), net = require('net'), os = require('os'), http =
 
 /* ---------- mDNS / Bonjour ---------- */
 const SERVICES = ['_hap._tcp', '_matter._tcp', '_matterc._udp', '_hue._tcp', '_elg._tcp', '_shelly._tcp', '_googlecast._tcp', '_airplay._tcp', '_raop._tcp', '_sonos._tcp',
-  '_spotify-connect._tcp', '_home-assistant._tcp', '_esphomelib._tcp', '_kizboxdev._tcp', '_rtsp._tcp', '_axis-video._tcp', '_ipp._tcp', '_printer._tcp', '_smb._tcp', '_amzn-wplay._tcp', '_http._tcp'];
+  '_spotify-connect._tcp', '_home-assistant._tcp', '_esphomelib._tcp', '_kizboxdev._tcp', '_rtsp._tcp', '_axis-video._tcp', '_ipp._tcp', '_printer._tcp', '_smb._tcp', '_amzn-wplay._tcp', '_wled._tcp', '_nanoleafapi._tcp', '_mqtt._tcp', '_heos-audio._tcp', '_http._tcp'];
 function dnsName(name) { return Buffer.concat(name.split('.').filter(Boolean).map(l => { const b = Buffer.from(l); return Buffer.concat([Buffer.from([b.length]), b]); }).concat([Buffer.from([0])])); }
 function dnsQuery(names) {
   const h = Buffer.alloc(12); h.writeUInt16BE(names.length, 4);
@@ -120,6 +120,8 @@ const KIND = [
   [/_matterc?\._(tcp|udp)/i, 'matter', 'Matter', 'matter'], [/_hap\._tcp/i, 'homekit', 'HomeKit', 'homekit'],
   [/_sonos|sonos/i, 'multimedia', 'Sonos', 'brand:sonos'], [/_googlecast|chromecast|google home|nest/i, 'multimedia', 'Google Cast', 'brand:cast'], [/_airplay|_raop/i, 'multimedia', 'AirPlay', 'airplay'],
   [/_spotify-connect/i, 'multimedia', 'Spotify Connect', ''], [/_amzn-wplay|amazon|echo/i, 'multimedia', 'Amazon Echo / Fire', 'alexa'],
+  [/_wled\._tcp|wled/i, 'lampe', 'WLED', 'brand:wled'], [/_nanoleaf|nanoleaf/i, 'lampe', 'Nanoleaf', 'brand:nanoleaf'], [/_mqtt\._tcp|mosquitto/i, 'hub', 'Broker MQTT', 'brand:z2m'],
+  [/_heos-audio|denon|marantz/i, 'multimedia', 'Denon / Marantz', 'brand:denon'], [/roku/i, 'multimedia', 'Roku', 'brand:roku'], [/yeelight/i, 'lampe', 'Yeelight', 'brand:yeelight'], [/daikin/i, 'clim', 'Daikin', 'brand:daikin'],
   [/_ipp|_printer|printer|imprim/i, 'imprimante', 'Imprimante', ''], [/_smb\._tcp|nas|ugreen|synology|qnap/i, 'nas', 'NAS / partage', ''],
   [/mediarenderer|samsung|lg |webos|bravia|philips tv|tv/i, 'multimedia', 'TV / lecteur', ''], [/internetgatewaydevice|freebox|livebox|bbox|fritz/i, 'box', 'Box internet', '']
 ];
