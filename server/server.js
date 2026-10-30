@@ -20,14 +20,18 @@ const cors = (req, res) => { res.setHeader('Access-Control-Allow-Origin', req.he
 const readBody = req => new Promise((ok, ko) => { let n = 0; const ch = []; req.on('data', c => { n += c.length; if (n > 25e6) { ko(new Error('trop gros')); req.destroy(); } else ch.push(c); }); req.on('end', () => { try { const t = Buffer.concat(ch).toString('utf8'); ok(t ? JSON.parse(t) : null); } catch (e) { ko(new Error('JSON invalide')); } }); });
 const safe = s => /^[\w.-]{1,80}$/.test(s) && !s.includes('..');
 const HUB = require('./hub')(DATA, send, readBody);   // appareils connectés en direct (Somfy, Hue, SmartThings…)
+const CAMS = require('./cams')(DATA, send, readBody); // découverte du réseau, caméras et pont HomeKit (go2rtc)
 
 /* ---------- API ---------- */
 async function api(req, res, url) {
   const p = url.pathname, m = req.method;
-  if (p === '/api/ping') return send(res, 200, { ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now(), hub: true });
+  if (p === '/api/ping') return send(res, 200, { ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now(), hub: true, discover: true });
   if (p === '/api/hub/oauth/callback') return HUB.callback(req, res, url);
-  if (KEY && req.headers['x-beta-key'] !== KEY) return send(res, 401, { error: 'clé invalide' });
+  // les images de caméras s'affichent dans une balise <img> : la clé peut alors venir de l'adresse (?k=)
+  const keyOk = !KEY || req.headers['x-beta-key'] === KEY || (CAMS.mediaPath(p) && url.searchParams.get('k') === KEY);
+  if (!keyOk) return send(res, 401, { error: 'clé invalide' });
   if (p === '/api/hub' || p.startsWith('/api/hub/')) return HUB.api(req, res, url);
+  if (p === '/api/discover' || p.startsWith('/api/cams')) { const r0 = await CAMS.api(req, res, url); if (r0 !== false) return; }
 
   let r;
   if ((r = p.match(/^\/api\/store\/([\w-]+)$/))) {

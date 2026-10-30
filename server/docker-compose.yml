@@ -1,17 +1,33 @@
-# Serveur Bêta pour NAS UGREEN (UGOS Pro › Docker › Projet › Créer)
+# Bêta home pour NAS (UGREEN, Synology…), Raspberry Pi ou PC — UGOS Pro › Docker › Projet › Créer.
 # Placez ce fichier dans le dossier « server » de Bêta home, puis lancez le projet.
+#
+# Réseau « hôte » (network_mode: host) : indispensable pour que la découverte (caméras ONVIF, Bonjour,
+# UPnP) et le pont HomeKit des caméras voient le réseau de la maison. Bêta home : http://IP-du-NAS:8090
 services:
-  beta-os:
+  beta-home:
     build:
       context: ..
       dockerfile: server/Dockerfile
-    container_name: beta-os
+    container_name: beta-home
     restart: unless-stopped
-    ports:
-      - "8090:8090"
+    network_mode: host
     environment:
+      - PORT=8090
       - BETA_KEY=changez-moi-par-une-longue-phrase   # même clé dans Bêta home › Connexions
       - BACKUP_KEEP=30                                # nombre de sauvegardes gardées
+      - GO2RTC_URL=http://127.0.0.1:1984             # go2rtc ci-dessous
       - TZ=Europe/Paris
     volumes:
-      - ./data:/data                                  # sauvegardes, journal, données
+      - ./data:/data                                  # sauvegardes, journal, caméras, config go2rtc
+
+  # Caméras : direct vidéo pour Bêta home + pont HomeKit (app Maison) pour les seules caméras.
+  # Sa configuration (data/go2rtc.yaml) est écrite par Bêta home ; ne la modifiez pas à la main.
+  go2rtc:
+    image: alexxit/go2rtc:latest
+    container_name: go2rtc
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TZ=Europe/Paris
+    volumes:
+      - ./data/go2rtc.yaml:/config/go2rtc.yaml

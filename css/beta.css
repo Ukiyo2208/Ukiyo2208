@@ -1960,3 +1960,26 @@ html.fluid .mapslot { height: 58vh; flex: none; }
 html.fluid .ftop .logo { min-width: 0; gap: 8px; }
 html.fluid .ftop .fright { flex-shrink: 0; }
 @media (max-width: 430px) { html.fluid .wxchip span { display: none; } html.fluid .wxchip { padding: 0 12px; } html.fluid .ftop .logo .name { font-size: 26px !important; } }
+/* ===== v7.4 — Découvrir le réseau, caméras & HomeKit ===== */
+.modal .box.discover { width: min(820px, 100%); display: flex; flex-direction: column; gap: 12px; max-height: 88vh; }
+.dintro p { margin: 0 0 12px; line-height: 1.55; font-size: 14px; }
+.dscan { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 40px 0; text-align: center; }
+.dscan small { color: var(--soft); }
+.dring { width: 64px; height: 64px; border-radius: 50%; border: 3px solid rgba(47, 182, 255, .2); border-top-color: #2fd3ff; animation: spin 1s linear infinite; margin-bottom: 8px; }
+.dsum { margin: 0; font-size: 13px; }
+.dlist { display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0; max-height: 56vh; }
+.dlist h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 12px; letter-spacing: 1.2px; text-transform: uppercase; color: #7fb6ff; }
+.dlist h4 .ico { color: #2fd3ff; font-size: 16px; }
+.list .li.dli, .dli { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(20, 44, 96, .3); border: 1px solid rgba(90, 160, 255, .15); margin-bottom: 6px; }
+.dli b { font-weight: 500; display: block; } .dli small { color: var(--soft); font-size: 12px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dsmall { font-size: 12px; }
+.camf { display: flex; flex-direction: column; gap: 12px; }
+.cfstreams { display: flex; flex-direction: column; gap: 6px; }
+.cfstreams label { gap: 8px; align-items: flex-start; font-size: 13px; } .cfstreams small { display: block; color: var(--soft); font-size: 11.5px; word-break: break-all; } .cfstreams b { font-weight: 500; }
+.cfhk { gap: 10px; align-items: center; font-size: 13.5px; } .cfhk small { display: block; color: var(--soft); font-size: 11.5px; } .cfhk b { font-weight: 500; }
+.cmgr .li { grid-template-columns: 40px minmax(0, 1fr) auto; }
+.cmgr b { font-weight: 500; } .cmgr small { display: block; color: var(--soft); font-size: 12px; }
+.hkcode { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 3px 10px; border-radius: 10px; font-size: 12.5px; background: rgba(255, 210, 63, .12); border: 1px solid rgba(255, 210, 63, .35); color: #ffe08a; }
+.hkcode b { font-family: ui-monospace, Menlo, monospace; letter-spacing: 1px; color: #fff; }
+.hkhelp { display: flex; gap: 10px; margin: 12px 0; padding: 10px 12px; border-radius: 12px; background: rgba(30, 90, 200, .2); border: 1px solid rgba(90, 160, 255, .25); font-size: 12.5px; line-height: 1.5; } .hkhelp > .ico { flex: none; color: #2fd3ff; font-size: 18px; }
+.mqdisc { position: absolute; right: 18px; top: 14px; z-index: 2; }

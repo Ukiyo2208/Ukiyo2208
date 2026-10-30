@@ -138,3 +138,12 @@ Menu › Outils › **Carte** :
 - Bêta IA : « où est Sarah ? », « combien de km à moto ce mois ? ».
 
 Les positions et les trajets restent sur l'appareil. Seul le fond de carte (OpenStreetMap / CARTO) vient d'internet. La bibliothèque Leaflet est incluse dans le projet (assets/vendor/leaflet, licence BSD-2).
+
+## Découvrir le réseau, caméras et HomeKit (7.4)
+
+Connexions › **Découvrir** (et page Marques) : le serveur Bêta cherche les appareils du réseau local.
+- **Caméras** : par ONVIF (presque toutes les caméras IP) et par le port RTSP. « Ajouter » récupère automatiquement l'adresse vidéo avec l'identifiant de la caméra. L'adresse et le mot de passe restent sur le NAS.
+- **Ponts et box** (Hue, TaHoma, Elgato) : « Relier » ouvre la fiche de la marque avec l'adresse préremplie.
+- **Le reste** (Shelly, ESPHome, Matter, HomeKit, Chromecast, Sonos, AirPlay, imprimantes…) : un lien ouvre directement l'ajout de l'intégration dans Home Assistant.
+
+**Caméras & HomeKit** : un interrupteur par caméra la publie dans l'app Maison d'Apple, avec son code à 8 chiffres. Ce pont ne concerne que les caméras. Il passe par **go2rtc** (gratuit, libre), qui fournit aussi le direct vidéo dans Bêta home. Le fichier `server/docker-compose.yml` lance Bêta home et go2rtc en réseau « hôte », indispensable pour la découverte et HomeKit.
