@@ -2411,7 +2411,8 @@ html.portrait .ph::after { content: ""; position: fixed; inset: 0; z-index: -1; 
 html.portrait .page:has(.ph) { gap: 0; }
 /* iPhone (et petites largeurs) : mêmes blocs, la page défile, quelques grilles passent à 2 colonnes */
 @media (max-width: 559px) {
-  html.portrait .ph { --u: .86px; padding: 0; }
+  html.portrait .ph { --u: clamp(.8px, calc(100vw / 450), 1px); padding: 0; }   /* petit iPhone (SE, mini) → grand (Plus, Pro Max) */
+  .phcams .cam .nm { font-size: 14px; max-width: calc(100% - 80px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .phtop { padding-top: calc(4px + env(safe-area-inset-top)); }
   .phstatus { grid-template-columns: 1fr 1fr; } .phstatus a:nth-child(2) { border-right: 0; } .phstatus a:nth-child(-n+2) { border-bottom: 1px solid var(--line2); }
   .phduo { grid-template-columns: 1fr; }
