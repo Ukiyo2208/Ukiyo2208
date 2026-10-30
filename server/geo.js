@@ -81,5 +81,5 @@ module.exports = function geo(DATA, send, readBody, NOTIFY) {
     }
     return false;
   }
-  return { api };
+  return { api, inside: () => Object.assign({}, G.inside), last: () => G.last, home: () => G.home };
 };

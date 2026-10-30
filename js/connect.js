@@ -11,9 +11,12 @@
   const Server = {
     url: () => (K.server.url || '').replace(/\/+$/, ''),
     ok: () => !!(Server.url() && K.status.server === 'ok'),
-    async req(path, body, method) {
-      const r = await fetch(Server.url() + path, { method: method || (body ? 'POST' : 'GET'), headers: { 'Content-Type': 'application/json', 'X-Beta-Key': K.server.key || '' }, body: body ? JSON.stringify(body) : undefined });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
+    // clé maître (BETA_KEY) ou jeton de cet écran associé, + session de la personne (code PIN) en mode sécurisé
+    headers() { let ses = ''; try { ses = sessionStorage.getItem('betaos.session') || ''; } catch (e) { } return Object.assign({ 'Content-Type': 'application/json' }, K.server.key ? { 'X-Beta-Key': K.server.key } : {}, K.server.device ? { 'X-Beta-Device': K.server.device } : {}, ses ? { 'X-Beta-Session': ses } : {}); },
+    async req(path, body, method, again) {
+      const r = await fetch(Server.url() + path, { method: method || (body ? 'POST' : 'GET'), headers: Server.headers(), body: body ? JSON.stringify(body) : undefined });
+      if (r.status === 401 && !again && B.adminLogin) { const j = await r.clone().json().catch(() => ({})); if (j.need === 'admin' && await B.adminLogin()) return Server.req(path, body, method, true); }
+      if (!r.ok) { const j = await r.json().catch(() => null); throw new Error((j && j.error) || 'HTTP ' + r.status); }
       return r.json();
     },
     post(path, body) { return this.req(path, body, 'POST'); },

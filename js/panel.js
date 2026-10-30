@@ -186,7 +186,7 @@
   let z = 90;
   function body(id) {
     const d = DATA.DEVICES[id], lk = B.canUse && !B.canUse(id), ent = HA.entity(id);
-    return (lk ? '<div class="plock">' + ico('lock') + 'Accès réservé : vous pouvez consulter, pas commander.</div>' : '') + '<div class="pctl' + (lk ? ' ro' : '') + '">' + controls(id) + '</div>' + history(id) +
+    return (lk ? '<div class="plock">' + ico('lock') + 'Accès réservé : vous pouvez consulter, pas commander.</div>' : '') + '<div class="pctl' + (lk ? ' ro' : '') + '">' + controls(id) + '</div>' + history(id) + (B.panelExtra ? B.panelExtra(id) : '') +
       '<div class="pfoot"><span class="muted">' + (ent ? ico('homeFill') + esc(ent) : 'Non relié à Home Assistant') + '</span>' + (B.isAdmin && B.isAdmin() ? '<button class="btn sm" data-act="pdevEdit" data-id="' + id + '">' + ico('edit') + 'Modifier</button>' : '') + '</div>';
   }
   function refresh(id) {

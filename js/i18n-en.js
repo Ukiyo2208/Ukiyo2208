@@ -1,0 +1,70 @@
+/* Bêta home — traduction anglaise de l'interface (phrases exactes). Liste complète des phrases : i18n/phrases-fr.json
+   (node tools/i18n-extract.js). Les phrases absentes restent en français. */
+window.BETA_EN = {
+  // navigation, pages
+  'Accueil': 'Home', 'Extérieur': 'Outdoor', 'RDC': 'Ground floor', 'Étage 1': 'Floor 1', 'Étage 2': 'Floor 2', 'Énergie': 'Energy', 'Musique': 'Music', 'Calendrier': 'Calendar', 'Mails': 'Mail', 'Bêta IA': 'Bêta AI',
+  'Routines': 'Routines', 'Pièces': 'Rooms', 'Absence': 'Away', 'Journal': 'Log', 'Connexions': 'Connections', 'Marques': 'Brands', 'Paramètres': 'Settings', 'Carte': 'Map', 'Voiture': 'Car', 'Sécurité': 'Security', 'Santé': 'Health',
+  'Plus': 'More', 'Chercher': 'Search', 'Verrouiller': 'Lock', 'Domotique': 'Smart home', 'Outils': 'Tools', 'Réglages': 'Settings', 'Maison intelligente': 'Smart home', 'MAISON INTELLIGENTE': 'SMART HOME',
+  'Contrôlez et gérez votre rez-de-chaussée': 'Control and manage your ground floor', 'Contrôlez et gérez votre 1er étage': 'Control and manage your first floor', 'Contrôlez et gérez votre 2e étage': 'Control and manage your second floor',
+  'Contrôlez et surveillez vos espaces extérieurs': 'Control and watch your outdoor areas', 'Famille, véhicules et balades': 'Family, vehicles and rides', 'Sécurité : tout vérifier avant de partir': 'Security: check everything before leaving',
+  'Toute la maison, pièce par pièce': 'The whole house, room by room', 'Tous les services de la maison au même endroit': 'All home services in one place', 'Qui a fait quoi, quand, et par quel temps': 'Who did what, when, and in what weather',
+  'En direct, sans Home Assistant': 'Direct, without Home Assistant', 'Scénarios et automatismes de la maison': 'Home scenes and automations', 'Alarme, présence et journal de la maison': 'Alarm, presence and home log',
+  'Santé de la maison': 'Home health', 'Appareils hors ligne, piles faibles, services': 'Offline devices, low batteries, services', 'Pièces et appareils': 'Rooms and devices',
+  // titres de blocs
+  'Alarme maison': 'Home alarm', 'Automatisations': 'Automations', 'Caméras': 'Cameras', 'Cette semaine': 'This week', 'Conversation': 'Conversation', 'Courrier': 'Mail', 'Encore allumé': 'Still on', 'Habitudes repérées': 'Detected habits',
+  'Informations de la maison': 'Home information', 'Journal du NAS': 'NAS log', 'Ma voiture': 'My car', 'Mode absence': 'Away mode', 'Météo': 'Weather', 'Prochains départs': 'Next departures', 'Qui est là ?': 'Who’s home?', 'Qui est à la maison': 'Who is home',
+  'Stockage': 'Storage', 'Toutes les actions': 'All actions', 'Utilisateurs': 'Users', 'Vidéosurveillance': 'CCTV', 'État du véhicule': 'Vehicle status', 'Consommation de la maison': 'Home consumption', 'À l’écoute': 'Now playing', 'Suggestions': 'Suggestions',
+  // météo
+  'Ciel dégagé': 'Clear sky', 'Peu nuageux': 'Mostly clear', 'Partiellement nuageux': 'Partly cloudy', 'Couvert': 'Overcast', 'Brouillard': 'Fog', 'Brouillard givrant': 'Freezing fog', 'Bruine légère': 'Light drizzle', 'Bruine': 'Drizzle', 'Bruine dense': 'Dense drizzle',
+  'Pluie faible': 'Light rain', 'Pluie': 'Rain', 'Forte pluie': 'Heavy rain', 'Pluie verglaçante': 'Freezing rain', 'Neige faible': 'Light snow', 'Neige': 'Snow', 'Forte neige': 'Heavy snow', 'Grains de neige': 'Snow grains', 'Averses': 'Showers', 'Fortes averses': 'Heavy showers',
+  'Averses de neige': 'Snow showers', 'Orage': 'Thunderstorm', 'Orage et grêle': 'Thunderstorm with hail', 'Humidité': 'Humidity', 'Indice UV': 'UV index', 'Vent': 'Wind', 'Ressenti': 'Feels like', 'Lever': 'Sunrise', 'Coucher': 'Sunset',
+  'Lun': 'Mon', 'Mar': 'Tue', 'Mer': 'Wed', 'Jeu': 'Thu', 'Ven': 'Fri', 'Sam': 'Sat', 'Dim': 'Sun', 'Aujourd’hui': 'Today', 'aujourd’hui': 'today', 'Demain': 'Tomorrow', 'demain': 'tomorrow', 'Hier': 'Yesterday',
+  'Janvier': 'January', 'Février': 'February', 'Mars': 'March', 'Avril': 'April', 'Mai': 'May', 'Juin': 'June', 'Juillet': 'July', 'Août': 'August', 'Septembre': 'September', 'Octobre': 'October', 'Novembre': 'November', 'Décembre': 'December',
+  // états, boutons
+  'Allumé': 'On', 'allumé': 'on', 'Allumée': 'On', 'allumée': 'on', 'Éteint': 'Off', 'éteint': 'off', 'Éteinte': 'Off', 'Ouvert': 'Open', 'Ouverte': 'Open', 'Fermé': 'Closed', 'Fermée': 'Closed', 'Verrouillée': 'Locked', 'Déverrouillée': 'Unlocked', 'En marche': 'Running', 'En pause': 'Paused', 'En veille': 'Standby',
+  'Activée': 'On', 'activée': 'on', 'Désactivée': 'Off', 'désactivée': 'off', 'Connecté': 'Connected', 'Connectée': 'Connected', 'En ligne': 'Online', 'Hors ligne': 'Offline', 'En attente': 'Pending', 'En cours': 'In progress', 'Arrêté': 'Stopped', 'Arrêt': 'Off',
+  'Enregistrer': 'Save', 'Annuler': 'Cancel', 'Supprimer': 'Delete', 'Modifier': 'Edit', 'Ajouter': 'Add', 'Fermer': 'Close', 'Tester': 'Test', 'Configurer': 'Set up', 'Continuer': 'Continue', 'Suivant': 'Next', 'Retour': 'Back', 'Terminer': 'Finish', 'Valider': 'Confirm', 'Ouvrir': 'Open',
+  'Lancer': 'Run', 'Allumer': 'Turn on', 'Éteindre': 'Turn off', 'Gérer': 'Manage', 'Découvrir': 'Discover', 'Appareils': 'Devices', 'Créer': 'Create', 'Se connecter': 'Sign in', 'Rechercher': 'Search', 'Tout afficher': 'Show all', 'C’est parti': 'Let’s go', 'C’est parti !': 'Let’s go!',
+  'Oui': 'Yes', 'Non': 'No', 'oui': 'yes', 'non': 'no', 'Tous': 'All', 'Admins': 'Admins', 'Invité': 'Guest', 'Démo': 'Demo', 'Manuel': 'Manual', 'Assisté': 'Assisted', 'Automatique': 'Automatic', 'Plug & play': 'Plug & play',
+  'Je pars': 'I’m leaving', 'Je rentre': 'I’m home', 'Bonne nuit': 'Good night', 'Réveil': 'Wake up', 'Tout éteindre': 'All off', 'Volets fermés': 'Shutters closed', 'Mode soir': 'Evening mode', 'Mode jour': 'Day mode',
+  // pièces et types
+  'Cuisine': 'Kitchen', 'Salon': 'Living room', 'Séjour': 'Lounge', 'Entrée': 'Hallway', 'Garage': 'Garage', 'Buanderie': 'Laundry', 'Chambre 1': 'Bedroom 1', 'Chambre 2': 'Bedroom 2', 'Suite parentale': 'Master suite', 'Salle de bains': 'Bathroom', 'Escalier & Couloir': 'Stairs & hallway',
+  'Grenier 1': 'Attic 1', 'Grenier 2': 'Attic 2', 'Bureau': 'Office', 'Jardin': 'Garden', 'Terrasse': 'Terrace', 'Cour': 'Yard', 'Maison': 'House', 'La Maison': 'The house', 'Chambre d’amis': 'Guest room', 'Chambre d’enfant': 'Kid’s room',
+  'Éclairage': 'Lighting', 'Éclairage RGB': 'RGB lighting', 'Prise connectée': 'Smart plug', 'Volet roulant': 'Roller shutter', 'Store': 'Awning', 'Porte de garage': 'Garage door', 'Climatisation / chauffage': 'Air conditioning / heating', 'Télévision': 'TV', 'Enceinte': 'Speaker',
+  'Ventilateur': 'Fan', 'Vanne / arrosage': 'Valve / watering', 'Serrure': 'Lock', 'Chauffe-eau': 'Water heater', 'Aspirateur robot': 'Robot vacuum', 'Tondeuse robot': 'Robot mower', 'Électroménager': 'Appliance', 'Capteur de température': 'Temperature sensor', 'Capteur d’humidité': 'Humidity sensor',
+  'Qualité de l’air (CO₂)': 'Air quality (CO₂)', 'Compteur de puissance': 'Power meter', 'Ouverture porte / fenêtre': 'Door / window contact', 'Détecteur de mouvement': 'Motion sensor', 'Détecteur de fuite': 'Leak sensor', 'Scène / script': 'Scene / script', 'Affiché comme': 'Shown as', 'Étage': 'Floor', 'Pièce': 'Room',
+  'Éclairage & prises': 'Lighting & plugs', 'Ouvrants': 'Openings', 'Confort': 'Comfort', 'Capteurs': 'Sensors', '+ Nouvelle pièce…': '+ New room…', 'Niveaux, pièces et appareils': 'Floors, rooms and devices', 'Niveaux': 'Floors', 'Ajouter un appareil': 'Add a device',
+  // écran de verrouillage, utilisateurs
+  'Touchez l’empreinte pour déverrouiller': 'Touch the fingerprint to unlock', 'Entrez votre code': 'Enter your code', 'Code administrateur': 'Admin code', 'Bonjour': 'Hello', 'Bonsoir': 'Good evening', 'Bon après-midi': 'Good afternoon', 'Bon retour à la maison !': 'Welcome home!',
+  'À la maison': 'Home', 'à la maison': 'home', 'absent': 'away', 'non suivi': 'not tracked', 'inconnu': 'unknown', 'Mode absent': 'Away mode', 'Ajouter un profil': 'Add a profile',
+  // routines, règles
+  'Nouvelle règle': 'New rule', 'Modifier la règle': 'Edit rule', 'Quand…': 'When…', 'Seulement si…': 'Only if…', 'Alors…': 'Then…', 'Déclencheur': 'Trigger', 'Condition': 'Condition', 'Action': 'Action', 'Nom': 'Name', 'Présence': 'Presence',
+  'À une heure': 'At a time', 'Lever / coucher du soleil': 'Sunrise / sunset', 'Un appareil change': 'A device changes', 'Présence de la famille': 'Family presence', 'On sonne': 'Doorbell rings', 'Couleur Tempo de demain': 'Tomorrow’s Tempo colour', 'Vigilance Météo-France': 'Météo-France warning', 'Alarme': 'Alarm',
+  'Nuit / jour': 'Night / day', 'Entre deux heures': 'Between two times', 'Certains jours': 'Some days', 'État d’un appareil': 'Device state', 'Quelqu’un à la maison': 'Someone home', 'État de l’alarme': 'Alarm state',
+  'Commander un appareil': 'Control a device', 'Lancer une routine': 'Run a routine', 'Envoyer une notification': 'Send a notification', 'Annonce sur les tablettes': 'Announce on tablets', 'Attendre': 'Wait', 'Aucune règle pour l’instant.': 'No rules yet.',
+  'il fait nuit': 'it is night', 'il fait jour': 'it is day', 'tout le monde est parti': 'everyone has left', 'le premier rentre': 'the first person gets home', 'une personne arrive': 'someone arrives', 'une personne part': 'someone leaves', 'n’importe qui': 'anyone',
+  'Règle enregistrée sur le NAS': 'Rule saved on the NAS', 'Présence et mode absent': 'Presence and away mode', 'Mode absent automatique': 'Automatic away mode', 'Routine au départ': 'Routine when leaving', 'Routine au retour': 'Routine when back',
+  // alarme
+  'Absence': 'Away', 'Nuit': 'Night', 'Désactiver': 'Disarm', 'code demandé': 'code required', 'Réglages de l’alarme': 'Alarm settings', 'Présence et absent auto': 'Presence & auto away', 'Configurer l’alarme': 'Set up the alarm', 'Alarme : saisissez votre code': 'Alarm: enter your code',
+  'Alarme activée dans': 'Alarm armed in', 'ALARME DÉCLENCHÉE': 'ALARM TRIGGERED', 'Alarme désactivée': 'Alarm disarmed', 'Activation…': 'Arming…', 'DÉCLENCHÉE': 'TRIGGERED', 'Entrée détectée': 'Entry detected', 'Rien pour l’instant.': 'Nothing yet.', 'Alarme active': 'Alarm on',
+  'Détecteurs en mode Absence': 'Sensors in Away mode', 'Détecteurs en mode Nuit': 'Sensors in Night mode', 'Portes d’entrée': 'Entry doors', 'Sirènes et lumières à déclencher': 'Sirens and lights to trigger', 'Délai d’entrée (s)': 'Entry delay (s)', 'Délai de sortie (s)': 'Exit delay (s)',
+  // santé, services, sécurité
+  'Tout va bien': 'All good', 'Services': 'Services', 'Serveur Bêta': 'Bêta server', 'Notifications': 'Notifications', 'Configurées': 'Configured', 'À configurer': 'To set up', 'Non installé': 'Not installed', 'Relié': 'Linked', 'En attente d’appairage': 'Waiting for pairing', 'Indisponible': 'Unavailable',
+'Piles faibles': 'Low batteries', 'Marques en erreur': 'Brands with errors', 'Appareils suivis': 'Tracked devices', 'Services de la maison': 'Home services', 'Collectes des déchets': 'Waste collection', 'Collecte': 'Collection', 'Modèle Eurométropole': 'Eurométropole template',
+  'chaque semaine': 'every week', 'une semaine sur deux': 'every other week', 'Écrans associés': 'Paired screens', 'Associer un nouvel écran': 'Pair a new screen', 'Mode sécurisé': 'Secure mode', 'code défini': 'code set', 'pas de code': 'no code', 'Retirer': 'Remove',
+  'J’ai un code d’association': 'I have a pairing code', 'Associer cet écran par code': 'Pair this screen with a code',
+  // tablette
+  'Cet écran': 'This screen', 'Disposition': 'Layout', 'Grand écran (tableau complet)': 'Large screen (full dashboard)', 'Tablette 8″ (2 colonnes, gros boutons)': '8″ tablet (2 columns, big buttons)', 'Téléphone (1 colonne)': 'Phone (1 column)',
+  'Tablette murale': 'Wall tablet', 'Écran de veille et luminosité automatique': 'Screensaver and automatic brightness', 'Veille après (min)': 'Sleep after (min)', 'Luminosité le jour (%)': 'Day brightness (%)', 'Nuit de': 'Night from', 'à': 'to', 'Luminosité la nuit (%)': 'Night brightness (%)',
+  'Voir l’écran de veille': 'Show the screensaver', 'Touchez l’écran': 'Touch the screen', 'Page qui s’ouvre en premier': 'Start page', 'Valeurs par défaut': 'Defaults', 'Langue': 'Language',
+  // marques
+'Choisir les marques': 'Choose brands', 'Chercher une marque…': 'Search a brand…', 'Marques affichées': 'Shown brands', 'Seulement celles que j’utilise': 'Only the ones I use', 'Ajouter les appareils': 'Add devices', 'Tuto': 'Guide',
+'Prises, modules et télécommandes': 'Plugs, modules and remotes', 'Ponts et protocoles': 'Bridges and protocols', 'TV, musique et vidéo': 'TV, music and video', 'Chauffage et climatisation': 'Heating and cooling', 'Sécurité et caméras': 'Security and cameras',
+  'Énergie, recharge et voiture': 'Energy, charging and car', 'Box internet et tablettes': 'Internet boxes and tablets', 'Électroménager, robots et jardin': 'Appliances, robots and garden', 'Bientôt': 'Soon', 'Masquées': 'Hidden', 'Marques reliées': 'Linked brands', 'Appareils en direct': 'Direct devices',
+  'Alexa et Maison': 'Alexa and Apple Home', 'Appareils partagés': 'Shared devices', 'Routines Bêta': 'Bêta routines', 'Déclencheurs (automatisations)': 'Triggers (automations)',
+  // assistant
+  'Bienvenue dans Bêta home': 'Welcome to Bêta home', 'Comment voulez-vous commencer ?': 'How would you like to start?', 'Qui habite ici ?': 'Who lives here?', 'Vos niveaux': 'Your floors', 'Le serveur Bêta du NAS': 'The Bêta server on your NAS', 'Tester la connexion': 'Test connection',
+  'Chercher mes appareils': 'Find my devices', 'Recherche de vos appareils…': 'Looking for your devices…', 'Vous avez aussi… ?': 'Do you also have…?', 'Les infos importantes': 'The important details', 'Tout connecter': 'Connect everything', 'Votre maison est prête': 'Your home is ready', 'Prénom': 'First name',
+  // 7.11 compléments
+  'Profils, connexions et préférences': 'Profiles, connections and preferences', 'Règles actives': 'Active rules', 'L’alarme maison tourne sur le serveur Bêta du NAS : reliez-le d’abord (Connexions).': 'The home alarm runs on the Bêta server of your NAS: connect it first (Connections).',
+};

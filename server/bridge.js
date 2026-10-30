@@ -9,6 +9,7 @@ module.exports = function bridge(DATA, send, readBody, HUB, NOTIFY) {
   C = Object.assign({ items: [], status: null }, C);
   const persist = () => fs.writeFileSync(FILE, JSON.stringify(C, null, 1));
   const trig = {}, events = [];
+  let runner = null;   // le cerveau du serveur exécute les routines demandées à Alexa / Siri
   const fire = id => { trig[id] = Date.now() + 8000; };          // capteur « ouvert » 8 s : de quoi lancer une routine Alexa
   NOTIFY.hooks.ring.push(() => fire('sonnette'));
 
@@ -32,7 +33,7 @@ module.exports = function bridge(DATA, send, readBody, HUB, NOTIFY) {
     if (p === '/api/bridge/status' && m === 'POST') { C.status = await readBody(req) || {}; C.status.at = Date.now(); persist(); return send(res, 200, { ok: true }); }
     if (p === '/api/bridge/command' && m === 'POST') {
       const b = await readBody(req) || {}, it = C.items.find(i => i.key === b.key); if (!it) return send(res, 404, { error: 'appareil non partagé' });
-      if (it.type === 'button') { events.push({ t: Date.now(), type: 'button', id: it.id, name: it.name }); while (events.length > 50) events.shift(); return send(res, 200, { ok: true }); }
+      if (it.type === 'button') { if (runner) runner(it.id, 'Alexa / Siri'); events.push({ t: Date.now(), type: 'button', id: it.id, name: it.name }); while (events.length > 50) events.shift(); return send(res, 200, { ok: true }); }
       if (it.type === 'trigger') return send(res, 200, { ok: true });
       await HUB.command(it.brand, it.id, b.patch || {});
       return send(res, 200, { ok: true });
@@ -44,5 +45,5 @@ module.exports = function bridge(DATA, send, readBody, HUB, NOTIFY) {
     if (p === '/api/bridge/events' && m === 'GET') { const t = +url.searchParams.get('since') || 0; return send(res, 200, { now: Date.now(), events: events.filter(e => e.t > t) }); }
     return false;
   }
-  return { api };
+  return { api, setRunner: f => { runner = f; } };
 };

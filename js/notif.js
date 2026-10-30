@@ -79,7 +79,7 @@
     const [hh, mm] = (N.trashAt || '18:30').split(':').map(Number);
     if (now.getHours() * 60 + now.getMinutes() >= hh * 60 + mm) {
       const tm = F.ymd(new Date(Date.now() + 864e5)), ev = S.events.filter(e => e.date === tm && /poubelle|ordure|d[ée]chet|collecte|verre|bio ?d[ée]chet|encombrant|papier/i.test(e.title));
-      if (ev.length) once('trash:' + tm, 20 * 36e5, () => send('trash', 'Poubelles', 'À sortir ce soir : ' + ev.map(e => e.title).join(', '), { go: 'calendrier' }));
+      if (ev.length && !N.trashServer) once('trash:' + tm, 20 * 36e5, () => send('trash', 'Poubelles', 'À sortir ce soir : ' + ev.map(e => e.title).join(', '), { go: 'calendrier' }));
     }
     const a = (B.wxAlerts ? B.wxAlerts() : [])[0];
     if (a) once('wx:' + a.icon, 6 * 36e5, () => send('weather', 'Alerte météo', a.text + ' (' + S.settings.city + ')', { go: 'accueil' }));

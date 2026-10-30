@@ -109,8 +109,12 @@
   function fit() {
     const st = $('.stage'); if (!st) return;
     const vw = window.innerWidth, vh = window.innerHeight;
-    const fluid = vw < 760 || (vh > vw * 1.05 && vw < 1000);
+    // disposition choisie pour cet écran (Paramètres › Cet écran) : auto, grand écran, tablette (2 colonnes), téléphone
+    let lm = 'auto'; try { const c = JSON.parse(localStorage.getItem('betaos.device') || '{}'); lm = c.layout || 'auto'; document.documentElement.classList.toggle('perf', !!c.perf); } catch (e) { }
+    const small = vw >= 700 && Math.min(vw / stageW, vh / stageH) < 0.62 && navigator.maxTouchPoints > 0;   // petite tablette tactile (8 pouces)
+    const fluid = lm === 'large' ? false : lm === 'tablet' || lm === 'phone' ? true : vw < 760 || (vh > vw * 1.05 && vw < 1000) || small;
     document.documentElement.classList.toggle('fluid', fluid);
+    document.documentElement.classList.toggle('tab2', fluid && lm !== 'phone' && vw >= 700);
     if (fluid) { st.style.transform = ''; st.style.width = ''; st.style.height = ''; return; }
     st.style.width = stageW + 'px'; st.style.height = stageH + 'px';
     const s = Math.min(vw / stageW, vh / stageH);

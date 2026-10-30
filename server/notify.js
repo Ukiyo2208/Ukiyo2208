@@ -6,16 +6,16 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 
-const RULES = ['doorbell', 'person', 'garage', 'leak', 'alarm', 'trash', 'appliance', 'weather', 'away', 'presence'];
+const RULES = ['doorbell', 'person', 'garage', 'leak', 'alarm', 'trash', 'appliance', 'weather', 'away', 'presence', 'tempo', 'health'];
 module.exports = function notify(DATA, send, readBody, HUB, CAMS) {
   const FILE = path.join(DATA, 'notify.json');
   let C = {}; try { C = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch (e) { }
   C = Object.assign({ ntfy: { url: 'https://ntfy.sh', token: '' }, users: {}, rules: {}, watch: [], tablets: { say: true, show: true, text: 'On sonne à la porte', tv: false }, cam: '', away: false, site: '', garageMin: 10 }, C);
-  RULES.forEach(r => { C.rules[r] = Object.assign({ on: r !== 'away', who: r === 'away' || r === 'presence' ? 'admins' : 'all' }, C.rules[r]); });
+  RULES.forEach(r => { C.rules[r] = Object.assign({ on: r !== 'away', who: r === 'away' || r === 'presence' || r === 'health' ? 'admins' : 'all' }, C.rules[r]); });
   const persist = () => fs.writeFileSync(FILE, JSON.stringify(C, null, 1), { mode: 0o600 });
   const events = [];   // derniers évènements (sonnette…) lus par les écrans ouverts
   const sent = {};     // anti-rafale : clé → date du dernier envoi
-  const hooks = { ring: [] };   // autres modules prévenus (pont Alexa : capteur « sonnette »)
+  const hooks = { ring: [], away: [] };   // autres modules prévenus (pont Alexa : capteur « sonnette », cerveau : absence)
 
   /* ---------- ntfy ---------- */
   // en-têtes HTTP en ASCII : les accents passent en encodage RFC 2047 (compris par ntfy)
@@ -107,8 +107,7 @@ module.exports = function notify(DATA, send, readBody, HUB, CAMS) {
     }
     // la maison passe en absence (ou revient) : sert aux alertes « mouvement pendant l'absence »
     if (p === '/api/notify/away' && m === 'POST') {
-      const b = await readBody(req) || {}, was = C.away; C.away = !!b.away; persist();
-      if (was !== C.away) notifyRule('away', { title: C.away ? 'Mode absent activé' : 'Retour à la maison', message: C.away ? 'Maison sécurisée' + (b.by ? ' par ' + b.by : '') : 'Le mode absent est désactivé' + (b.by ? ' par ' + b.by : ''), go: 'absence', tags: ['house'] });
+      const b = await readBody(req) || {}; setAway(!!b.away, b.by, 'écran');
       return send(res, 200, { away: C.away });
     }
     // envoi demandé par un écran (poubelles, météo… calculés dans Bêta home)
@@ -126,5 +125,17 @@ module.exports = function notify(DATA, send, readBody, HUB, CAMS) {
     if (p === '/api/notify/events' && m === 'GET') { const t = +url.searchParams.get('since') || 0; return send(res, 200, { now: Date.now(), away: C.away, events: events.filter(e => e.t > t) }); }
     return false;
   }
-  return { api, ring, notifyRule, hooks, isAway: () => !!C.away };
+  // mode absent : depuis un écran, une règle ou la présence automatique
+  function setAway(on, by, src) {
+    const was = C.away; C.away = !!on; persist(); if (was === C.away) return false;
+    notifyRule('away', { title: C.away ? 'Mode absent activé' : 'Retour à la maison', message: (C.away ? 'Maison sécurisée' : 'Le mode absent est désactivé') + (by ? ' par ' + by : '') + (src === 'auto' ? ' (automatique)' : ''), go: 'absence', tags: ['house'] });
+    hooks.away.forEach(f => { try { f(C.away, by, src); } catch (e) { } });
+    return true;
+  }
+  // envoi libre (règles « Si… alors… », alarme, santé) : à tous, aux admins ou à des personnes précises
+  async function sendTo(o, who) {
+    const ids = Object.keys(C.users).filter(id => C.users[id].topic && (who === 'all' || !who || (who === 'admins' ? C.users[id].admin : [].concat(who).includes(id))));
+    let n = 0; for (const id of ids) { try { await publish(C.users[id].topic, o); n++; } catch (e) { } } return n;
+  }
+  return { api, ring, notifyRule, hooks, sendTo, setAway, snapshot: id => CAMS.snapshot(id || C.cam), isAway: () => !!C.away, cam: () => C.cam };
 };

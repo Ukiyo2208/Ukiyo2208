@@ -5,6 +5,7 @@
 # UPnP) et le pont HomeKit des caméras voient le réseau de la maison. Bêta home : http://IP-du-NAS:8090
 services:
   beta-home:
+    image: ghcr.io/ukiyo2208/beta-home:latest        # image prête (construite par GitHub) ; « docker compose build » la reconstruit en local
     build:
       context: ..
       dockerfile: server/Dockerfile
@@ -109,6 +110,7 @@ services:
   # Bêta home › Connexions › Alexa et Maison. Sans Home Assistant ni abonnement. IPv6 du NAS activée pour Matter.
   # Les codes d'appairage s'affichent dans Bêta home (et dans le journal du conteneur).
   # matter-bridge:
+  #   image: ghcr.io/ukiyo2208/beta-home-bridge:latest
   #   build:
   #     context: ../bridge
   #   container_name: beta-matter-bridge
@@ -122,3 +124,24 @@ services:
   #     - TZ=Europe/Paris
   #   volumes:
   #     - ./data/matter-bridge:/data                   # appairages (ne pas supprimer)
+
+  # Accès à distance sécurisé avec Tailscale (gratuit) : Bêta home, OwnTracks et les notifications marchent hors de la maison
+  # sans ouvrir la box, et en https (https://beta-home.<votre-tailnet>.ts.net) — utile aussi pour Spotify, Netatmo, SmartThings.
+  # 1. admin.tailscale.com › Settings › Keys › « Generate auth key » ; 2. activez HTTPS (DNS › HTTPS Certificates) ;
+  # 3. installez l'appli Tailscale sur les téléphones avec le même compte.
+  # tailscale:
+  #   image: tailscale/tailscale:latest
+  #   container_name: tailscale
+  #   restart: unless-stopped
+  #   network_mode: host
+  #   cap_add: [NET_ADMIN, NET_RAW]
+  #   devices:
+  #     - /dev/net/tun:/dev/net/tun
+  #   environment:
+  #     - TS_AUTHKEY=tskey-auth-xxxxxxxx
+  #     - TS_HOSTNAME=beta-home
+  #     - TS_STATE_DIR=/var/lib/tailscale
+  #     - TS_SERVE_CONFIG=/config/serve.json         # https://beta-home.<tailnet>.ts.net → Bêta home (port 8090)
+  #   volumes:
+  #     - ./data/tailscale:/var/lib/tailscale
+  #     - ./tailscale:/config

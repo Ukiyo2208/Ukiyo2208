@@ -165,7 +165,7 @@
     const st = steps[w.step] || 'hello', last = w.step >= steps.length - 1;
     let h = '';
     if (st === 'hello') h = '<div class="sw-hero"><img src="' + A + 'icon-512.png" alt=""><h2>Bienvenue dans Bêta home</h2><p>Le tableau de bord de votre maison. En quelques étapes, on le prépare pour <b>votre</b> maison.</p>' +
-      '<label class="field" style="max-width:260px;margin:6px auto 0">Langue<select data-change="swLang"><option value="fr" selected>Français</option><option value="en" disabled>English (bientôt)</option></select></label></div>';
+      '<label class="field" style="max-width:260px;margin:6px auto 0">Langue<select data-change="swLang"><option value="fr"' + (window.BETA_LANG !== 'en' ? ' selected' : '') + '>Français</option><option value="en"' + (window.BETA_LANG === 'en' ? ' selected' : '') + '>English</option></select></label></div>';
     if (st === 'mode') h = '<h3>Comment voulez-vous commencer ?</h3><div class="sw-modes">' + MODES.map(m => '<button class="sw-mode' + (w.mode === m[0] ? ' on' : '') + '" data-act="swMode" data-arg="' + m[0] + '">' + ico(m[1]) + '<b>' + m[2] + '</b><small>' + m[3] + '</small></button>').join('') + '</div>' +
       (w.mode === 'scan' || w.mode === 'auto' ? '<p class="muted" style="font-size:12.5px;margin:10px 0 0">Il faudra l’adresse de Home Assistant et un jeton d’accès (profil › Sécurité › Jetons longue durée).</p>' : '');
     if (st === 'users') h = '<h3>Qui habite ici ?</h3><p class="muted" style="margin:0 0 10px;font-size:13px">4 profils maximum. Le premier est administrateur (réglages, pièces, droits).</p><div class="sw-users">' +
@@ -196,7 +196,7 @@
   }
   function startWizard() { W = { step: 0, mode: '', users: [{ id: 'u1', name: '', avatar: AV[12].src, ring: AV[12].ring, admin: true, place: 'home', bat: 100 }], floors: ['RDC', 'Étage 1'] }; wiz(); }
   B.setupWizard = startWizard;
-  B.act('swLang', () => { });
+  B.act('swLang', el => { if (el.value !== window.BETA_LANG) window.betaSetLang(el.value); });
   B.act('swMode', el => { W.mode = el.dataset.arg; wiz(); });
   B.act('swNext', () => { if (W.step === 2 && !W.users.some(u => u.name.trim())) return B.toast('Indiquez au moins un prénom', 'user'); W.step++; wiz(); });
   B.act('swPrev', () => { W.step--; if (W.step < 3) W.plan = null; wiz(); });
@@ -278,7 +278,8 @@
       '<label class="field">Page qui s’ouvre en premier<select data-change="scStart">' + ps.map(n => '<option value="' + n[0] + '"' + (B.startPage() === n[0] ? ' selected' : '') + '>' + esc(n[1]) + '</option>').join('') + '</select></label>' +
       '<div class="field">Boutons épinglés dans la barre du bas (3 maximum, dans l’ordre)<div class="scpins">' + ps.filter(n => n[0] !== 'ia').map(n => { const i = dock.indexOf(n[0]); return '<button class="pinc' + (i >= 0 ? ' on' : '') + '" data-act="scPin" data-arg="' + n[0] + '">' + (i >= 0 ? '<b>' + (i + 1) + '</b>' : '') + ico(n[2]) + esc(n[1]) + '</button>'; }).join('') + '</div></div>' +
       '<label class="field">Nom de cet écran (pour s’y retrouver)<input value="' + esc(c.name || '') + '" placeholder="Tablette du salon" data-change="scName"></label>' +
-      '<div class="row" style="justify-content:flex-end"><button class="btn" data-act="scReset">Valeurs par défaut</button><button class="btn pri" data-act="closeModal">' + ico('check') + 'OK</button></div></div>', 'sm');
+      (B.screenExtra ? B.screenExtra(c) : '') +
+      '<div class="row" style="justify-content:flex-end"><button class="btn" data-act="scReset">Valeurs par défaut</button><button class="btn pri" data-act="closeModal">' + ico('check') + 'OK</button></div></div>', 'sm scmodal');
   }
   B.screenCfg = screenCfg;
   B.act('screenCfg', screenCfg);

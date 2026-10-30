@@ -14,9 +14,9 @@ const VERSION = '1.0.0';
 for (const d of ['', 'store', 'backups']) fs.mkdirSync(path.join(DATA, d), { recursive: true });
 if (!KEY) console.warn('⚠️  BETA_KEY n’est pas défini : l’API est ouverte à tout le réseau.');
 
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
 const send = (res, code, body, type) => { res.writeHead(code, { 'Content-Type': type || 'application/json; charset=utf-8' }); res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body)); };
-const cors = (req, res) => { res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*'); res.setHeader('Vary', 'Origin'); res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Beta-Key'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); };
+const cors = (req, res) => { res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*'); res.setHeader('Vary', 'Origin'); res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Beta-Key, X-Beta-Device, X-Beta-Session'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); };
 const readBody = req => new Promise((ok, ko) => { let n = 0; const ch = []; req.on('data', c => { n += c.length; if (n > 25e6) { ko(new Error('trop gros')); req.destroy(); } else ch.push(c); }); req.on('end', () => { try { const t = Buffer.concat(ch).toString('utf8'); ok(t ? JSON.parse(t) : null); } catch (e) { ko(new Error('JSON invalide')); } }); });
 const safe = s => /^[\w.-]{1,80}$/.test(s) && !s.includes('..');
 const HUB = require('./hub')(DATA, send, readBody);   // appareils connectés en direct (Somfy, Hue, SmartThings…)
@@ -24,17 +24,25 @@ const CAMS = require('./cams')(DATA, send, readBody); // découverte du réseau,
 const NOTIFY = require('./notify')(DATA, send, readBody, HUB, CAMS);   // notifications ntfy, sonnette, surveillance 24 h/24
 const GEO = require('./geo')(DATA, send, readBody, NOTIFY);           // positions OwnTracks
 const BRIDGE = require('./bridge')(DATA, send, readBody, HUB, NOTIFY); // pont Matter : Alexa, Google Home, Maison
+const AUTH = require('./auth')(DATA, send, readBody, KEY);             // écrans associés, codes PIN, mode sécurisé
+const ENGINE = require('./engine')(DATA, send, readBody, { HUB, NOTIFY, GEO, BRIDGE, CAMS, AUTH });   // cerveau : routines, règles, présence, alarme
+BRIDGE.setRunner((id, by) => ENGINE.runRoutine(id, by));   // « Alexa, allume Soirée ciné » exécuté par le NAS
 
 /* ---------- API ---------- */
 async function api(req, res, url) {
   const p = url.pathname, m = req.method;
-  if (p === '/api/ping') return send(res, 200, { ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now(), hub: true, discover: true, notify: true, geo: true, bridge: true });
+  if (p === '/api/ping') return send(res, 200, { ok: true, name: 'Serveur Bêta', version: VERSION, time: Date.now(), hub: true, discover: true, notify: true, geo: true, bridge: true, engine: true, auth: true });
   if (p === '/api/hub/oauth/callback') return HUB.callback(req, res, url);
   if (p === '/api/owntracks') return GEO.api(req, res, url);   // identifiants propres à chaque téléphone
+  if (p === '/api/auth/pair' && m === 'POST') return AUTH.pair(req, res);   // association d'un écran avec le code à 6 chiffres
   // les images de caméras s'affichent dans une balise <img> : la clé peut alors venir de l'adresse (?k=)
   // idem pour la sonnette appelée par un bouton (Shelly, ESPHome…) qui ne sait pas ajouter d'en-tête
-  const keyOk = !KEY || req.headers['x-beta-key'] === KEY || ((CAMS.mediaPath(p) || p === '/api/notify/ring') && url.searchParams.get('k') === KEY);
+  const w = AUTH.who(req, url);
+  const keyOk = w.ok || ((CAMS.mediaPath(p) || p === '/api/notify/ring') && url.searchParams.get('k') === KEY);
   if (!keyOk) return send(res, 401, { error: 'clé invalide' });
+  if (AUTH.needAdmin(p, m) && !w.admin) return send(res, 401, { error: 'réservé à un administrateur (code PIN)', need: 'admin' });
+  if (p === '/api/auth' || p.startsWith('/api/auth/')) { const r0 = await AUTH.api(req, res, url, w); if (r0 !== false) return; }
+  if (p === '/api/engine' || p.startsWith('/api/engine/') || p === '/api/history') { const r0 = await ENGINE.api(req, res, url, w); if (r0 !== false) return; }
   if (p === '/api/hub' || p.startsWith('/api/hub/')) return HUB.api(req, res, url);
   if (p === '/api/discover' || p.startsWith('/api/cams')) { const r0 = await CAMS.api(req, res, url); if (r0 !== false) return; }
   if (p === '/api/bridge' || p.startsWith('/api/bridge/')) { const r0 = await BRIDGE.api(req, res, url); if (r0 !== false) return; }

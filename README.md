@@ -220,3 +220,32 @@ L'assistant se relance à tout moment depuis **Marques › Plug & play** (il ajo
 **Gérer › Appareils** : chaque appareil a trois menus — **type d'affichage** (éclairage, prise, volet, clim, capteur…), **étage** et **pièce** (ou « + Nouvelle pièce… »). Ça marche aussi pour les appareils d'origine (le changement est réversible) et dans la fiche « Modifier » d'un appareil (bouton … › crayon).
 
 **Connexions › Alexa et Maison** : le conteneur `matter-bridge` publie maintenant **deux ponts** : Matter (Alexa, Google Home) et **HomeKit** (app Maison d'Apple, Siri), comme celui des caméras. Pour chaque appareil relié en direct, routine (« Dis Siri, Soirée ciné ») ou déclencheur (Sonnette, Mode absent), cochez « Alexa » et/ou « Maison ». Dans l'app Maison : + › Ajouter un accessoire › Plus d'options › « Bêta home » › code Maison affiché dans Bêta home. Lumières (luminosité), prises, interrupteurs, ventilateurs, volets, thermostats/clims, serrures (Maison seulement), capteurs de température, humidité, CO₂, ouverture, mouvement et fuite. Le pont HomeKit continue de fonctionner même si Matter ne peut pas démarrer.
+
+## La maison qui réfléchit toute seule (7.11)
+
+Le serveur Bêta du NAS (`server/engine.js`) fait maintenant tourner la maison **même quand aucun écran n'est ouvert** :
+
+- **Routines et automatismes côté serveur** : les routines et règles sont envoyées au NAS, qui les exécute (heures, jours, lever/coucher du soleil calculés pour votre adresse, appareils, « pendant N minutes »). Les routines restent déclenchables depuis Alexa/Siri via le pont.
+- **Éditeur « Si… alors… »** (Routines) : *Quand* (appareil, heure, soleil, arrivée/départ, alarme…) · *Si* (nuit, quelqu'un à la maison, mode absent…) · *Alors* (allumer, routine, notification, annonce sur les tablettes…). Chaque règle se relit en français. « Importer » convertit les anciens automatismes.
+- **Mode absent automatique** (Sécurité › Présence) : chaque personne est suivie par OwnTracks et/ou par son téléphone vu sur la box. Quand tout le monde est parti depuis N minutes → mode absent, routine de départ, alarme si vous le voulez ; au retour → routine d'arrivée.
+- **Alarme maison** (Sécurité) : capteurs d'ouverture/mouvement, temporisations d'entrée/sortie, armement « absent » ou « nuit », sirènes, annonce sur les tablettes, notification critique avec photo. Désarmement par code (vérifié par le NAS).
+- **Santé de la maison** (Domotique › Santé) : marques injoignables, piles faibles, appareils silencieux, état du NAS et des ponts.
+- **Historique et courbes** : bouton « Historique » dans la fiche de chaque appareil (24 h, 7 jours, 30 jours), données gardées sur le NAS (`data/history`).
+- **Services** (Paramètres › Services) :
+  - **EDF Tempo** : couleur du jour et du lendemain (api-couleur-tempo.fr, gratuit, sans compte) affichée sur Énergie, notification la veille des jours rouges.
+  - **Vigilance Météo-France** du Bas-Rhin (67) : demandez une clé gratuite sur portail-api.meteofrance.fr (API « Données Publiques Vigilance »), collez-la ici. Alerte affichée sur la météo et notification à partir du niveau choisi.
+  - **Collectes des déchets** (Fegersheim / Eurométropole) : l'Eurométropole n'a pas d'API publique, donc les jours se saisissent une fois (bouton « Modèle Eurométropole » à ajuster selon votre calendrier de collecte, ou un lien .ics). Les collectes apparaissent dans le calendrier et un rappel part la veille à l'heure choisie.
+- **Tablettes murales** (Paramètres › Cet écran) : écran de veille (heure, météo, prochain évènement, photos), luminosité réduite la nuit, réveil par la détection de mouvement de Fully Kiosk, annonces lues à voix haute. **Disposition** : automatique, grand écran, **tablette 8″** (2 colonnes, gros boutons, idéale pour les Fire HD 8) ou téléphone, plus un **mode performance** sans flous ni animations.
+- **Comptes et coffre** (Paramètres › Sécurité) : le code PIN de chaque personne est vérifié par le NAS (haché, jamais renvoyé). En **mode sécurisé**, tous les réglages exigent un administrateur. **Associer un écran** : un code à 6 chiffres sur un écran admin suffit à autoriser une tablette, sans recopier la clé BETA_KEY.
+- **Application installable** : sur iPhone, Safari › Partager › « Sur l'écran d'accueil » ; sur Android « Installer l'application ».
+- **English** : Paramètres › Cet écran › Langue. La traduction couvre l'interface principale ; certaines fiches (tutoriels des marques) restent en français.
+
+### Accès depuis l'extérieur avec Tailscale
+
+1. Créez un compte gratuit sur tailscale.com, une clé d’authentification (Settings › Keys) et activez HTTPS (DNS › HTTPS Certificates).
+2. Dans `server/docker-compose.yml`, décommentez le bloc `tailscale`, mettez la clé dans `TS_AUTHKEY`, puis `docker compose up -d`.
+3. Installez Tailscale sur l'iPhone : Bêta home est alors joignable en HTTPS à l'adresse `https://beta-home.<votre-réseau>.ts.net` (fichier `server/tailscale/serve.json`), sans ouvrir de port sur la box.
+
+### Images Docker toutes prêtes
+
+À chaque envoi sur GitHub, l'action `.github/workflows/docker.yml` construit `ghcr.io/ukiyo2208/beta-home` et `ghcr.io/ukiyo2208/beta-home-bridge` (x86 et ARM). Sur le NAS UGREEN, `docker compose pull && docker compose up -d` suffit ; `build:` reste disponible pour construire en local. Rendez les paquets publics sur GitHub (Packages › Package settings) ou connectez le NAS avec `docker login ghcr.io`.

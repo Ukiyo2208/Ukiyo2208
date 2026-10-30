@@ -295,12 +295,7 @@
 
   /* ---------- client du serveur ---------- */
   // comme B.Server.req, mais remonte le message d'erreur du serveur (ex. « appuyez sur le bouton du pont »)
-  async function call(path, body, method) {
-    const r = await fetch(B.Server.url() + path, { method: method || (body ? 'POST' : 'GET'), headers: { 'Content-Type': 'application/json', 'X-Beta-Key': S.conn.server.key || '' }, body: body ? JSON.stringify(body) : undefined });
-    const j = await r.json().catch(() => null);
-    if (!r.ok) throw new Error((j && j.error) || 'HTTP ' + r.status);
-    return j;
-  }
+  const call = (path, body, method) => B.Server.req(path, body, method);   // en-têtes, session admin et message d'erreur gérés par B.Server
   const H = { list: {}, loaded: false, err: '' };
   async function load() {
     if (!B.Server.ok()) { H.err = 'serveur'; B.emit('hub'); return; }
