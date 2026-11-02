@@ -2283,3 +2283,8 @@ select.inline { display: inline-block; width: auto; padding: 4px 8px; margin: 0 
 .ns-line.empty { height: auto; font-size: .85rem; color: var(--muted); }
 .ns-set { display: grid; gap: 10px; margin-bottom: 8px; }
 .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+
+/* Accueil rangé par thèmes */
+.home-cat { display: flex; align-items: center; gap: 8px; }
+.home-cat .home-cat-ic { width: 24px; height: 24px; border-radius: 7px; flex: none; box-shadow: none; }
+.home-cat .home-cat-ic svg.i { width: 14px; height: 14px; margin: 0; vertical-align: 0; }

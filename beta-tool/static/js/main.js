@@ -1,7 +1,7 @@
 // Coquille du site : configuration, menu, navigation, recherche, notifications, aide, suggestions.
 import { $, $$, esc, icon, hydrateIcons, toast, openPanel, closePanel, sizeStr } from "./ui.js";
 import { HELP } from "./help.js";
-import { TOOLS, SYSTEM, CATS, byId } from "./registry.js";
+import { TOOLS, SYSTEM, byId, themeGroups } from "./registry.js";
 import { state, isAdmin, enabled, api, ago } from "./state.js";
 import * as downloader from "./downloader.js";
 import * as converter from "./converter.js";
@@ -32,10 +32,7 @@ document.addEventListener("click", e => {
 const visible = t => enabled(t.id) && (!t.admin || isAdmin());
 
 function buildNav() {
-  const groups = CATS.map(([cat, label]) => {
-    const items = TOOLS.filter(t => t.cat === cat && visible(t));
-    return items.length ? `<div class="nav-label">${label}</div>` + items.map(navLink).join("") : "";
-  }).join("");
+  const groups = themeGroups(visible).map(([, label, , , items]) => `<div class="nav-label">${esc(label)}</div>` + items.map(navLink).join("")).join("");
   $("#nav").innerHTML = `<a href="#/" data-route="home" title="Accueil">${icon("home")}<span>Accueil</span></a>` + groups
     + `<div class="nav-label">Bêta Tool</div>` + SYSTEM.map(navLink).join("");
   const u = state.config.user;
@@ -51,10 +48,7 @@ function buildNav() {
     </div>`;
   setTheme(getTheme());
   $("#tab-files").hidden = !enabled("fichiers");
-  $("#sheet-body").innerHTML = CATS.map(([cat, label]) => {
-    const items = TOOLS.filter(t => t.cat === cat && visible(t));
-    return items.length ? `<div class="nav-label">${label}</div><div class="sheet-grid">${items.map(sheetLink).join("")}</div>` : "";
-  }).join("") + `<div class="nav-label">Bêta Tool</div><div class="sheet-grid">${SYSTEM.map(sheetLink).join("")}</div>`
+  $("#sheet-body").innerHTML = themeGroups(visible).map(([, label, , , items]) => `<div class="nav-label">${esc(label)}</div><div class="sheet-grid">${items.map(sheetLink).join("")}</div>`).join("") + `<div class="nav-label">Bêta Tool</div><div class="sheet-grid">${SYSTEM.map(sheetLink).join("")}</div>`
     + $("#side-user").innerHTML;
   $("#suggest-tool").innerHTML = `<option value="general">Le site en général</option>`
     + [...TOOLS, ...SYSTEM.filter(t => t.id === "reglages")].map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
@@ -69,10 +63,8 @@ function buildHome() {
   renderPins();
   $("#home-tools").innerHTML = `
     <details class="all-tools" id="all-tools" ${open ? "open" : ""}><summary>${icon("grid")}Tous les outils <span class="count">${TOOLS.filter(visible).length}</span></summary>
-    ${CATS.map(([cat, label]) => {
-      const items = TOOLS.filter(t => t.cat === cat && visible(t));
-      if (!items.length) return "";
-      return `<div class="home-cat">${label}</div><div class="tools">${items.map(t => `
+    ${themeGroups(visible).map(([, label, ic, tile, items]) => {
+      return `<div class="home-cat"><span class="tile ${tile} home-cat-ic">${icon(ic)}</span>${esc(label)}</div><div class="tools">${items.map(t => `
         <a class="card tool" href="#/${t.id}">
           <button class="pin-btn ${pins.includes(t) ? "on" : ""}" data-pin="${t.id}" title="${pins.includes(t) ? "Désépingler" : "Épingler sur l'accueil"}">${icon("pin")}</button>
           <span class="tile ${t.tile}">${icon(t.icon)}</span>

@@ -115,3 +115,11 @@ export const SYSTEM = [
 ];
 
 export const byId = id => TOOLS.find(t => t.id === id) || SYSTEM.find(t => t.id === id);
+
+/** Outils rangés par thème (menu, accueil, réglages) : [id, nom, icône, couleur, [outils]], les outils sans thème dans « Autres ». */
+export function themeGroups(filter = () => true) {
+  const known = new Set(THEMES.flatMap(t => t[4]));
+  return [...THEMES, ["autres", "Autres", "grid", "", TOOLS.filter(t => !known.has(t.id)).map(t => t.id)]]
+    .map(([id, name, ic, tile, ids]) => [id, name, ic, tile, ids.map(byId).filter(t => t && TOOLS.includes(t) && filter(t))])
+    .filter(g => g[4].length);
+}

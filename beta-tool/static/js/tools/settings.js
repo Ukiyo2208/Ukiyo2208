@@ -1,6 +1,6 @@
 // Réglages : outils, comptes, mises à jour, apparence, à propos.
 import { $, $$, esc, icon, toast, modal, closePanel } from "../ui.js";
-import { TOOLS, CATS, THEMES } from "../registry.js";
+import { TOOLS, THEMES } from "../registry.js";
 import { state, isAdmin, api, ago } from "../state.js";
 import { pageHead, reloadConfig, setTheme, savePrefs } from "../main.js";
 import * as push from "../push.js";
