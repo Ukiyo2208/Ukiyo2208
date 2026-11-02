@@ -14,6 +14,7 @@ export async function render(root, parts, query) {
   tab = TABS.some(t => t[0] === parts[0]) ? parts[0] : "apercu";
   const bk = { ok: ["Banque reliée : les opérations arrivent dans le Budget", "ok"], refus: ["Accès refusé dans l'appli de la banque", "err"], expire: ["Délai dépassé, recommence", "err"], erreur: ["La banque n'a pas répondu, réessaie", "err"] }[query?.banque];
   if (bk) { setTimeout(() => toast(...bk), 400); history.replaceState(null, "", "#/budget/reglages"); }
+  if (query?.q != null) { txFilter = { q: query.q, category: "", all: true }; history.replaceState(null, "", "#/budget/operations"); }
   root.innerHTML = pageHead("budget", `<button class="btn ghost" id="bg-add">${icon("plus")}Opération</button><button class="btn" id="bg-import">${icon("upload")}Importer un relevé</button>`)
     + `<div class="seg bg-tabs" id="bg-tabs">${TABS.map(([k, l, ic]) => `<label><input type="radio" name="bgt" value="${k}" ${k === tab ? "checked" : ""}>${icon(ic)}<span>${l}</span></label>`).join("")}</div><div id="bg-body"></div>`;
   $("#bg-import").onclick = importPanel;

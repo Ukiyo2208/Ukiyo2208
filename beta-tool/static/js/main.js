@@ -385,11 +385,12 @@ $("#palette-q").addEventListener("input", e => {
     } catch {}
   }, 220);
 });
-const TYPE_ICON = { contact: "user", sub: "rss", clip: "clipboard", paper: "receipt", recipe: "utensils", event: "calendar", document: "doc", note: "notebook", file: "file", folder: "folder", form: "form", share: "send", link: "link", photo: "image", media: "play" };
-const TYPE_LABEL = { contact: "Contacts", sub: "Abonnements", clip: "Presse-papier", paper: "Paperasse", recipe: "Recettes", event: "Agenda", tool: "Outils", document: "Documents", note: "Notes", file: "Fichiers", folder: "Fichiers", form: "Questionnaires", share: "Partages", link: "Liens", photo: "Photos", media: "Médias" };
+const TYPE_ICON = { contact: "user", sub: "rss", clip: "clipboard", paper: "receipt", recipe: "utensils", event: "calendar", document: "doc", note: "notebook", file: "file", folder: "folder", form: "form", share: "send", link: "link", photo: "image", media: "play", task: "check", tx: "list", asset: "landmark", home: "home", item: "archive", upkeep: "settings", health: "heart", parcel: "send", person: "user", mail: "mail" };
+const TYPE_LABEL = { contact: "Contacts", sub: "Abonnements", clip: "Presse-papier", paper: "Paperasse", recipe: "Recettes", event: "Agenda", tool: "Outils", document: "Documents", note: "Notes", file: "Fichiers", folder: "Fichiers", form: "Questionnaires", share: "Partages", link: "Liens", photo: "Photos", media: "Médias", task: "Tâches", tx: "Budget", asset: "Patrimoine", home: "Immobilier", item: "Inventaire", upkeep: "Entretien", health: "Santé", parcel: "Colis", person: "Personnes", mail: "Mails" };
+const fold = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 function palette(q, remote = []) {
-  const n = q.toLowerCase();
-  const tools = [...TOOLS.filter(visible), ...SYSTEM].filter(t => !n || t.name.toLowerCase().includes(n) || (t.desc || "").toLowerCase().includes(n))
+  const n = fold(q);
+  const tools = [...TOOLS.filter(visible), ...SYSTEM].filter(t => !n || fold(t.name).includes(n) || fold(t.desc).includes(n))
     .map(t => ({ type: "tool", title: t.name, sub: t.desc || "", link: "#/" + t.id, icon: t.icon, tile: t.tile }));
   palItems = [...tools.slice(0, n ? 6 : 20), ...remote];
   palIndex = 0;

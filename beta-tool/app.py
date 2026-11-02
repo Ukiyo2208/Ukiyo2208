@@ -6,11 +6,13 @@ import re
 import os
 import secrets
 import shutil
+import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import wraps
 from urllib.parse import urlparse
 
-from flask import Flask, abort, g, jsonify, redirect, request, send_file, send_from_directory, session
+from flask import Flask, abort, copy_current_request_context, g, jsonify, redirect, request, send_file, send_from_directory, session
 from waitress import serve
 
 import accounts
@@ -63,6 +65,7 @@ import recipes
 import roots
 import sante
 import nas
+import recherche
 import scanner
 import settings
 import storage
@@ -433,6 +436,7 @@ def dashboard():
 
 COUNTERS = {}  # outils qui exposent un compteur pour le tableau de bord (notes, partages…)
 SEARCHERS = {}  # outils qui participent à la recherche globale
+_search_pool = ThreadPoolExecutor(max_workers=8)
 
 
 @app.get("/api/search")
@@ -441,17 +445,22 @@ def search():
     if len(q) < 2:
         return jsonify([])
     results = []
-    tools = settings.get()["tools"]
+    tools = famille.allowed_tools(g.user, settings.get()["tools"])
     if tools.get("work"):
         results += [{"type": "document", "title": d["name"], "sub": "Bêta Work", "link": f"#/work/{d['id']}", "kind": d["kind"]}
                     for d in work.list_docs() if q in d["name"].lower()][:8]
+    # toutes les sources en parallèle ; une source lente (serveur mail…) est abandonnée au bout de 4 s
+    user, jobs = g.user["name"], {}
     for tool, fn in SEARCHERS.items():
         if tools.get(tool, True):
-            try:
-                results += fn(q, g.user["name"])
-            except Exception as e:  # une source en panne ne casse pas la recherche
-                print("recherche", tool, e)
-    return jsonify(results[:40])
+            jobs[tool] = _search_pool.submit(copy_current_request_context(fn), q, user)
+    deadline = time.time() + 4
+    for tool, job in jobs.items():
+        try:
+            results += job.result(timeout=max(0.05, deadline - time.time()))
+        except Exception as e:  # une source en panne ou trop lente ne casse pas la recherche
+            print("recherche", tool, type(e).__name__, e)
+    return jsonify(results[:80])
 
 
 # --- Téléchargeur -----------------------------------------------------------
@@ -668,6 +677,7 @@ def secret_key():
 
 for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones, profil, patrimoine, immo, banque, visages, entretien, sante, nas):
     app.register_blueprint(module.bp)
+SEARCHERS.update(recherche.SOURCES)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,
                  paperasse=paperasse.search, recettes=recipes.search, agenda=agenda.search, contacts=contacts.search, **{"presse-papier": clipboard.search})
