@@ -13,7 +13,7 @@ export const CATS = [
 export const THEMES = [
   ["quotidien", "Au quotidien", "sun", "ambre", ["journee", "agenda", "taches", "recettes", "inventaire"]],
   ["communication", "Mails, contacts et colis", "mail", "bleu-vert", ["mails", "contacts", "colis"]],
-  ["argent", "Argent et papiers", "receipt", "vert", ["budget", "paperasse", "scanner"]],
+  ["argent", "Argent et papiers", "receipt", "vert", ["budget", "patrimoine", "paperasse", "scanner"]],
   ["medias", "Vidéos, musique et photos", "play", "rose", ["telecharger", "abonnements", "medias", "photos"]],
   ["creation", "Retouche et transcription", "wand", "violet", ["video", "image", "transcription", "traduction"]],
   ["bureau", "Documents et bureautique", "briefcase", "bleu", ["convertir", "pdf", "work", "notes", "questionnaires"]],
@@ -77,6 +77,8 @@ export const TOOLS = [
     desc: "Tes relevés bancaires rangés par catégorie, tes charges fixes et des pistes d'économies (assurances, box, abonnements…).", chips: ["Relevés CSV / OFX", "Économies", "Assurances"] },
   { id: "sauvegarde-tel", name: "Téléphones", icon: "phone", tile: "bleu-vert", cat: "maison", load: () => import("./tools/telephones.js"),
     desc: "Sauvegarde les photos, documents et SMS de vos téléphones sur le NAS, et relis tes anciens SMS.", chips: ["Photos", "SMS", "WebDAV"] },
+  { id: "patrimoine", name: "Patrimoine", icon: "landmark", tile: "violet", cat: "maison", load: () => import("./tools/patrimoine.js"),
+    desc: "Tes actions (Revolut, actions de l'entreprise), tes crédits et ce qu'il reste à rembourser, ton immobilier et un simulateur d'achat pour louer.", chips: ["Actions", "Crédits", "Projet locatif"] },
   { id: "inventaire", name: "Inventaire", icon: "archive", tile: "bleu", cat: "maison", load: () => import("./tools/inventaire.js"),
     desc: "Ce qu'il y a à la maison : photos, factures, garanties, péremptions, et la liste prête pour l'assurance.", chips: ["Garanties", "Assurance", "Congélateur"] },
   { id: "contacts", name: "Contacts", icon: "users", tile: "violet", cat: "maison", load: () => import("./tools/contacts.js"),

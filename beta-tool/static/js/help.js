@@ -678,6 +678,21 @@ export const HELP = {
     faq: [["Comment exporter mes opérations ?", "Sur le site de la banque (pas toujours dans l'appli) : « Mes comptes » › « Télécharger » ou « Exporter », format CSV, Excel/CSV, OFX ou Money/Quicken (QIF)."],
           ["C'est quoi la loi Hamon ?", "Après un an de contrat, tu peux résilier ton assurance auto, moto ou habitation à tout moment, sans frais ; le nouvel assureur s'occupe des démarches. La mutuelle santé se résilie aussi à tout moment après un an."]],
   },
+  patrimoine: {
+    title: "Tuto · Patrimoine", icon: "landmark", tile: "violet",
+    lead: "Ce que tu possèdes et ce que tu dois : actions, épargne salariale, crédits, immobilier, et un simulateur d'achat pour louer.",
+    steps: [
+      ["Importe ton relevé Revolut", "Appli Revolut › Investir › … › Documents › Relevé de compte, format Excel / CSV, toute la période. Achats, ventes et dividendes sont lus, le prix de revient est calculé."],
+      ["Ajoute tes actions de l'entreprise", "PEE, PERCO, RSU, ESPP : nombre de parts et valeur du relevé (ou le symbole de l'action pour un cours automatique), date de disponibilité."],
+      ["Saisis tes crédits", "Montant, taux, durée et première échéance de l'offre de prêt : capital restant dû, intérêts restants et date de fin sont calculés chaque mois."],
+      ["Ajoute tes biens", "Valeur, loyer, taxe foncière, charges ; relie le crédit qui les finance pour voir ce qui est vraiment à toi et le cash-flow."],
+      ["Simule un achat locatif", "Prix, apport, taux, loyer, charges : mensualité, rendement, cash-flow avant et après impôt, et ton taux d'endettement avec ce projet."],
+    ],
+    tips: ["Les avis de taxe foncière déposés dans Paperasse apparaissent tout seuls.", "Les prélèvements de prêt repérés dans le Budget sont proposés pour être ajoutés.",
+           "Les cours viennent de Yahoo Finance, convertis en euros avec les taux de la BCE : seuls les symboles sont envoyés."],
+    faq: [["Pourquoi le cours n'apparaît pas ?", "Le symbole n'est pas reconnu : ouvre la ligne et indique le symbole Yahoo Finance (ex. MC.PA pour LVMH à Paris) ou le cours à la main (valeur de la part pour l'épargne salariale)."],
+          ["Le simulateur est-il fiable ?", "Il donne un ordre de grandeur : la banque, un courtier ou un notaire confirmeront le taux, les frais et la fiscalité (le régime réel ou le LMNP au réel réduisent souvent l'impôt)."]],
+  },
   inventaire: {
     title: "Tuto · Inventaire", icon: "archive", tile: "bleu",
     lead: "Ce qu'il y a à la maison, avec photos, factures et garanties.",

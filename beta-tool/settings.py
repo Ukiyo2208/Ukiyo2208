@@ -32,6 +32,7 @@ TOOLS = {
     "taches": (["/api/tasks"], True),
     "inventaire": (["/api/inventory"], True),
     "budget": (["/api/budget"], True),
+    "patrimoine": (["/api/patrimoine"], True),
     "sauvegarde-tel": (["/api/phones"], True),
     "agenda": (["/api/agenda"], True),
     "contacts": (["/api/contacts"], True),
