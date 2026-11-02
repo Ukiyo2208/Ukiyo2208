@@ -360,7 +360,7 @@ function calcImpot(v) {
   const parts = base + (kids >= 1 ? .5 : 0) + (kids >= 2 ? .5 : 0) + Math.max(0, kids - 2) + (v.isole && !couple && kids ? .5 : 0);
   const sal = n("salaires");
   const abat = v.frais_reels ? n("frais") : Math.min(BAREME.abat[1] * (couple ? 2 : 1), Math.max(BAREME.abat[0], sal * .1));
-  const rni = Math.max(0, sal - abat + n("foncier") + n("autres"));
+  const rni = Math.max(0, sal - abat + Math.max(-10700, n("foncier")) + n("autres"));  // déficit foncier imputable sur le revenu global dans la limite de 10 700 €
   let impot = impotBrut(rni, parts);
   const plafond = impotBrut(rni, base) - (parts - base) * 2 * BAREME.qf;  // plafonnement du quotient familial
   if (plafond > impot) impot = plafond;
@@ -370,7 +370,7 @@ function calcImpot(v) {
   if (impot < 61) impot = 0;  // pas de recouvrement sous 61 €
   const q = rni / parts;
   const tmi = (BAREME.tranches.find(([lim]) => q <= lim) || [0, .45])[1];
-  const ps = Math.round(n("foncier") * n("ps") / 100);
+  const ps = Math.round(Math.max(0, n("foncier")) * n("ps") / 100);
   return { parts, abat: Math.round(abat), rni: Math.round(rni), impot, tmi, moyen: rni ? impot / rni * 100 : 0, ps, total: impot + ps, decote: Math.max(0, Math.round(decote)),
     pas: sal + n("foncier") ? impot / (sal + n("foncier") + n("autres")) * 100 : 0 };
 }

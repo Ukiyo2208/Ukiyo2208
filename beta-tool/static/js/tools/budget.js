@@ -288,10 +288,10 @@ async function objectifs(el) {
     ${r.goals.length ? `<div class="pt-loans">${r.goals.map(gl => {
       const s = gl.state;
       return `<button class="card pt-loan bg-goalc" data-g="${gl.id}"><div class="pt-loan-h"><span class="bg-emoji">${esc(gl.emoji || "🎯")}</span><div class="grow"><b>${esc(gl.name)}</b>
-          <small class="meta">${eur(s.current, false)} sur ${eur(gl.target, false)}${gl.deadline ? ` · avant le ${new Date(gl.deadline + "T12:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}` : ""}</small></div>
+          <small class="meta">${euros(s.current, false)} sur ${euros(gl.target, false)}${gl.deadline ? ` · avant le ${new Date(gl.deadline + "T12:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}` : ""}</small></div>
           ${s.done ? `<span class="cx-st ok">Atteint 🎉</span>` : `<b>${s.pct} %</b>`}</div>
         <div class="bg-bar bg-goalbar"><i style="width:${s.pct}%"></i></div>
-        <small class="meta">${s.done ? "Bravo, objectif atteint !" : [s.monthly_needed ? `${eur(s.monthly_needed, false)} par mois pour tenir la date` : "", s.pace ? `rythme actuel ${eur(s.pace, false)} / mois` : "", s.eta ? `atteint vers ${new Date(s.eta + "T12:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}` : ""].filter(Boolean).join(" · ") || `Il reste ${eur(s.left, false)}`}</small></button>`;
+        <small class="meta">${s.done ? "Bravo, objectif atteint !" : [s.monthly_needed ? `${euros(s.monthly_needed, false)} par mois pour tenir la date` : "", s.pace ? `rythme actuel ${euros(s.pace, false)} / mois` : "", s.eta ? `atteint vers ${new Date(s.eta + "T12:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}` : ""].filter(Boolean).join(" · ") || `Il reste ${euros(s.left, false)}`}</small></button>`;
     }).join("")}</div>` : `<div class="card empty">${icon("star")}<b>Aucun objectif</b>Par exemple « Apport appartement : 25 000 € avant juin 2028 » : la barre avance avec tes virements vers l'épargne ou la valeur de tes placements, et je te dis combien mettre de côté chaque mois.</div>`}`;
   const form = (gl = {}) => {
     const m = modal(gl.id ? gl.name : "Nouvel objectif", `<form>

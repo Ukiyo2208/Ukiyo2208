@@ -19,6 +19,7 @@ COPY *.py VERSION ./
 COPY scripts ./scripts
 COPY static ./static
 COPY templates ./templates
+COPY models ./models
 
 ENV DOWNLOAD_DIR=/downloads CONVERT_DIR=/converted PDF_DIR=/pdf UNZIP_DIR=/extracted DOCS_DIR=/documents \
     PHOTOS_DIR=/photos RECEIVE_DIR=/depots BACKUP_DIR=/backup TZ=Europe/Paris \

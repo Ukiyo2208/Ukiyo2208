@@ -2216,3 +2216,48 @@ select.inline { display: inline-block; width: auto; padding: 4px 8px; margin: 0 
 .bg-emoji { font-size: 1.8rem; line-height: 1; width: 40px; text-align: center; }
 .bg-goalbar { height: 12px; border-radius: 6px; }
 .bg-goalbar i { border-radius: 6px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+/* ---------- Album : ce jour-là, personnes ---------- */
+.ph-memories { padding: 14px 16px; }
+.ph-memo-row { display: grid; gap: 2px; margin-bottom: 10px; }
+.ph-memo-strip { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0; }
+.ph-memo { flex: none; width: 110px; height: 110px; padding: 0; border: 0; border-radius: 12px; overflow: hidden; cursor: pointer; background: var(--surface-2); }
+.ph-memo img { width: 100%; height: 100%; object-fit: cover; }
+.pp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 14px; }
+.pp-person { display: grid; justify-items: center; gap: 4px; text-decoration: none; color: inherit; text-align: center; }
+.pp-person img, .pp-person .avatar { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; font-size: 2rem; }
+.pp-faces { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.pp-face { position: relative; display: grid; gap: 6px; padding: 6px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); }
+.pp-face img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; cursor: zoom-in; }
+.pp-face input { padding: 5px 8px; font-size: .85rem; }
+.pp-sugg { display: flex; align-items: center; justify-content: space-between; gap: 4px; font-weight: 600; font-size: .88rem; }
+.pp-sugg span { display: flex; gap: 2px; }
+.pp-x { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgb(0 0 0 / .5); color: #fff; display: grid; place-items: center; cursor: pointer; opacity: 0; transition: opacity .15s; }
+.pp-x svg.i { width: 14px; height: 14px; }
+.pp-face:hover .pp-x { opacity: 1; }
+@media (hover: none) { .pp-x { opacity: .8; } }
+.jr-memo { display: grid; gap: 8px; }
+.jr-memo a { display: grid; gap: 4px; text-decoration: none; color: inherit; }
+.jr-memo span { display: flex; gap: 4px; }
+.jr-memo img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
+
+/* Entretien */
+.cx-st.bad { background: rgb(239 68 68 / .15); color: var(--err); }
+.en-item { display: grid; gap: 10px; }
+.en-item > .btn.small { justify-self: start; }
+.en-tasks { display: grid; gap: 4px; }
+.en-task { display: flex; align-items: center; gap: 10px; padding: 8px; border: 0; background: none; border-radius: 10px; text-align: left; font: inherit; color: inherit; cursor: pointer; width: 100%; }
+.en-task:hover { background: var(--surface-2); }
+.en-kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.en-kinds label { cursor: pointer; }
+.en-kinds input { position: absolute; opacity: 0; pointer-events: none; }
+.en-kinds span { display: flex; align-items: center; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 12px; }
+.en-kinds input:checked + span { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.en-kinds input:focus-visible + span { outline: 2px solid var(--accent); }
+.en-tpl { display: grid; gap: 6px; }
+.en-tpl small { display: block; margin-left: 26px; }
+.en-hist { display: grid; gap: 2px; }
+
+/* Santé */
+.sa-due { border-left: 3px solid var(--warn); }
+.sa-member { display: grid; gap: 8px; }
+.sa-vax { display: grid; gap: 4px; }

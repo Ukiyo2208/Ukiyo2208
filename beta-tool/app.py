@@ -29,6 +29,7 @@ import contacts
 import converter
 import downloader
 import drop
+import entretien
 import famille
 import files
 import forms
@@ -49,6 +50,7 @@ import taches
 import telephones
 import translate
 import vault
+import visages
 import videotool
 import vpn
 import passkeys
@@ -59,6 +61,7 @@ import pdftools
 import push
 import recipes
 import roots
+import sante
 import scanner
 import settings
 import storage
@@ -662,12 +665,12 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones, profil, patrimoine, immo, banque):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones, profil, patrimoine, immo, banque, visages, entretien, sante):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,
                  paperasse=paperasse.search, recettes=recipes.search, agenda=agenda.search, contacts=contacts.search, **{"presse-papier": clipboard.search})
-COUNTERS.update(taches=taches.count, inventaire=inventaire.count, colis=colis.count, mails=mail.count, contacts=contacts.count, recettes=recipes.count, paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
+COUNTERS.update(entretien=entretien.count, taches=taches.count, inventaire=inventaire.count, colis=colis.count, mails=mail.count, contacts=contacts.count, recettes=recipes.count, paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
 
 
 if __name__ == "__main__":
@@ -702,6 +705,9 @@ if __name__ == "__main__":
     banque.start()
     patrimoine.start()
     immo.start()
+    visages.start()
+    entretien.start()
+    sante.start()
     mounts = {}
     dav = agenda.radicale_app()
     if dav:  # serveur CalDAV des agendas (synchronisation des téléphones)

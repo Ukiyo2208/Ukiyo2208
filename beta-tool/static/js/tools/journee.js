@@ -41,6 +41,9 @@ async function paint() {
       ${enabled("agenda") ? card("calendar", "Rendez-vous", list(b.events, "Aucun rendez-vous."), `#/agenda?date=${iso(day)}`) : ""}
       ${b.tasks !== undefined ? card("check", "Tâches", list(b.tasks, "Rien à faire, profites-en !"), "#/taches") : ""}
       ${b.mail ? card("mail", "Mails", `<p class="jr-big"><b>${b.mail.unread}</b> non lu${b.mail.unread > 1 ? "s" : ""}</p>${b.mail.important.length ? `<small class="meta">De tes contacts :</small>${list(b.mail.important)}` : ""}`, "#/mails") : ""}
+      ${b.upkeep?.length ? card("settings", "Entretien", list(b.upkeep, ""), "#/entretien") : ""}
+      ${b.health?.length ? card("heart", "Santé", list(b.health, ""), "#/sante") : ""}
+      ${b.memories?.length ? card("clock", "Ce jour-là", `<div class="jr-memo">${b.memories.map(m => `<a href="#/photos"><b>Il y a ${m.ago} an${m.ago > 1 ? "s" : ""}</b><span>${m.photos.map(p => `<img loading="lazy" src="/api/fs/thumb?root=photos&path=${encodeURIComponent(p)}&s=160" alt="">`).join("")}</span></a>`).join("")}</div>`, "#/photos") : ""}
       ${b.rent?.length ? card("home", "Location", list(b.rent, ""), "#/immo/location") : ""}
       ${b.stock?.length ? card("archive", "Inventaire", list(b.stock, ""), "#/inventaire") : ""}
       ${b.parcels !== undefined ? card("send", "Colis", list(b.parcels, "Aucun colis en route."), "#/colis") : ""}

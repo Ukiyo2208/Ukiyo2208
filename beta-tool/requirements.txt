@@ -14,3 +14,4 @@ requests>=2.31
 cryptography>=42
 wsgidav>=4.3
 fpdf2>=2.7
+opencv-contrib-python-headless>=4.9
