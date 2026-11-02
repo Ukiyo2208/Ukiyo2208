@@ -2180,3 +2180,36 @@ select.inline { display: inline-block; width: auto; padding: 4px 8px; margin: 0 
 .pt-fl.in b { color: var(--ok); }
 .pt-fl.total { background: var(--accent-soft); font-weight: 600; }
 @media (max-width: 900px) { .pt-proj { grid-template-columns: 1fr; } .pt-res { position: static; } .pt-loans { grid-template-columns: 1fr; } }
+/* ---------- Immobilier ---------- */
+.im-add .row { display: flex; gap: 8px; flex-wrap: wrap; }
+.im-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.im-card { padding: 0; overflow: hidden; cursor: pointer; margin: 0; display: flex; flex-direction: column; }
+.im-card:hover { border-color: var(--accent); }
+.im-card.dim { opacity: .6; }
+.im-img { aspect-ratio: 16 / 9; background: var(--surface-2); overflow: hidden; }
+.im-img img { width: 100%; height: 100%; object-fit: cover; }
+.im-body { padding: 12px 14px 14px; display: grid; gap: 4px; }
+.im-top { display: flex; align-items: center; gap: 8px; }
+.im-top b { font-size: 1.25rem; }
+.im-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.im-body .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.im-tenant { display: grid; gap: 10px; }
+.im-months { display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 6px; }
+.im-m { display: grid; justify-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; color: inherit; font: inherit; }
+.im-m small { font-size: .7rem; color: var(--muted); }
+.im-m b svg.i { width: 14px; height: 14px; }
+.im-m.ok { background: rgb(16 185 129 / .14); border-color: transparent; color: var(--ok); }
+.im-m.bad { background: rgb(208 47 58 / .12); border-color: transparent; color: var(--err); }
+.im-m.warn { background: rgb(240 169 43 / .16); border-color: transparent; color: var(--warn); }
+.im-note { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); font-size: .9rem; }
+.im-note.ok { background: rgb(16 185 129 / .1); }
+.im-note svg.i { width: 16px; height: 16px; }
+.im-tenant .row { display: flex; flex-wrap: wrap; gap: 6px; }
+.im-room { border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin: 10px 0; display: grid; gap: 8px; }
+.im-room .row { display: flex; gap: 8px; }
+.im-photos { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.im-photos img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; }
+.im-regimes { display: grid; gap: 10px; }
+.im-reg { display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); }
+.im-reg.best { border-color: var(--ok); background: rgb(16 185 129 / .06); }
+.im-reg .cx-st { justify-self: start; }

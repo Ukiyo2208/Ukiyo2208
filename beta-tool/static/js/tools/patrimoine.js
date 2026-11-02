@@ -19,7 +19,10 @@ export async function render(root, parts) {
 
 async function load() { data = await api("/api/patrimoine"); paint(); }
 function go(t) { tab = t; document.querySelector(`#pt-tabs input[value="${t}"]`).checked = true; history.replaceState(null, "", `#/patrimoine/${t}`); paint(); }
-function paint() { const el = $("#pt-body"); if (el) ({ synthese, placements, credits, immobilier, projet })[tab](el); }
+function paint() { const el = $("#pt-body"); if (el) ({ synthese, placements, credits, immobilier, projet: x => projet(x, prefill()) })[tab](el); }
+function prefill() {  // annonce envoyée depuis l'outil Immobilier
+  try { const p = JSON.parse(sessionStorage.getItem("bt-projet") || "null"); sessionStorage.removeItem("bt-projet"); return p ? Object.fromEntries(Object.entries(p).filter(([, v]) => v !== "" && v != null)) : null; } catch { return null; }
+}
 
 // --- Synthèse ----------------------------------------------------------------------------------------------------
 

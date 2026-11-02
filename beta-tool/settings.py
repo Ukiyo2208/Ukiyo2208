@@ -33,6 +33,7 @@ TOOLS = {
     "inventaire": (["/api/inventory"], True),
     "budget": (["/api/budget"], True),
     "patrimoine": (["/api/patrimoine"], True),
+    "immo": (["/api/immo"], True),
     "sauvegarde-tel": (["/api/phones"], True),
     "agenda": (["/api/agenda"], True),
     "contacts": (["/api/contacts"], True),
