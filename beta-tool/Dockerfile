@@ -7,7 +7,7 @@ FROM python:3.12-slim-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg pandoc poppler-utils librsvg2-bin calibre \
         ghostscript tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng unpaper pngquant \
-        7zip libarchive-tools rsync tzdata \
+        7zip libarchive-tools rsync tzdata smartmontools \
         libreoffice-writer-nogui libreoffice-calc-nogui libreoffice-impress-nogui \
         fonts-dejavu fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto-core \
     && rm -rf /var/lib/apt/lists/*

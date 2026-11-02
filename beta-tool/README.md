@@ -13,7 +13,7 @@ fichier n'est envoyé à un service externe.
 | **Fichiers** | Explorateur de tous les dossiers du NAS : aperçu, envoi de dossiers entiers, renommer, déplacer, corbeille, zip, et « Ouvrir avec » les autres outils. |
 | **Bêta Drop** | Partage des fichiers par lien (mot de passe, date d'expiration, nombre de téléchargements) ou crée une page de dépôt pour recevoir des fichiers. |
 | **Médiathèque** | Regarde tes vidéos et écoute ta musique depuis le navigateur ; le lecteur continue quand tu changes de page. |
-| **Album photo** | Tes photos rangées par date de prise de vue (EXIF), diaporama, import depuis le téléphone. |
+| **Album photo** | Tes photos rangées par date de prise de vue (EXIF), diaporama, import depuis le téléphone, **visages reconnus sur le NAS** (onglet Personnes) et « Ce jour-là » (les photos du même jour les années précédentes). |
 | **Compresseur vidéo** | Vise une taille (ex. 25 Mo pour Discord, 2 Go pour un mail) ou une qualité ; découpe et redimensionnement. |
 | **Studio Image** | Recadrer, pivoter, luminosité, contraste, filtres, redimensionner, et **détourage automatique** (suppression du fond, IA locale). |
 | **Transcription** | Transforme un audio ou une vidéo en texte ou en sous-titres (SRT, VTT), en local avec Whisper. |
@@ -25,6 +25,7 @@ fichier n'est envoyé à un service externe.
 | **Coffre** | Gestionnaire de mots de passe compatible Bitwarden (Vaultwarden), optionnel. |
 | **Abonnements** | Suis des chaînes YouTube, playlists ou podcasts : notification à chaque nouvelle vidéo (avec la miniature) et téléchargement automatique au choix. |
 | **Presse-papier** | Copie un texte, un lien, une image ou un fichier sur un appareil, retrouve-le aussitôt sur les autres. |
+| **Santé du NAS** | Espace de chaque disque avec la date probable où il sera plein, processeur, mémoire, températures, état SMART des disques, réseau, programmes gourmands ; alertes à seuils (administrateurs). |
 | **Surveillance** | Vérifie sites, services (port TCP), ping et espace disque ; alerte en cas de panne et au retour ; page de statut publique `/statut`. |
 | **Scanner** | Photo d'un document → bords détectés, page redressée et nettoyée (filtres « document »), PDF avec texte cherchable. |
 | **Paperasse** | Factures, fiches de paie, impôts… lus (OCR), reconnus, renommés et rangés par catégorie et année ; échéances avec rappels ; recherche dans le texte. |
@@ -35,15 +36,18 @@ fichier n'est envoyé à un service externe.
 | **Recettes** | Import depuis un lien (Marmiton, 750g…), portions ajustables, mode cuisine avec minuteurs, liste de courses partagée triée par rayon. |
 | **Ma journée** | Le résumé du jour sur une page et en notification le matin : météo, rendez-vous, poubelles à sortir, anniversaires et fêtes, tâches, mails importants, colis, papiers à payer, budget. |
 | **Tâches** | Listes perso ou partagées avec la maison, tâches confiées à quelqu'un (avec notification), dates et répétitions (la suivante revient toute seule). |
-| **Budget** | Relevés bancaires CSV / OFX / QIF importés sans doublons, rangés par catégorie, budgets par mois, charges fixes repérées, et **pistes d'économies** : assurances (loi Hamon, mutuelle, assurance de prêt), énergie, box et forfaits, abonnements, frais bancaires, doubles prélèvements, hausses de prix. |
-| **Patrimoine** | Actions et ETF (relevé Revolut en CSV), épargne salariale et actions de l'entreprise (avec date de disponibilité), cours automatiques convertis en euros, crédits (capital restant dû, intérêts restants, date de fin), biens immobiliers avec taxe foncière et cash-flow, simulateur d'achat locatif (mensualité, rendement, cash-flow après impôt, taux d'endettement). |
+| **Budget** | Relevés bancaires CSV / OFX / QIF importés sans doublons, rangés par catégorie, budgets par mois, charges fixes repérées, **synchro bancaire automatique** (Enable Banking, lecture seule), **objectifs d'épargne**, et **pistes d'économies** : assurances (loi Hamon, mutuelle, assurance de prêt), énergie, box et forfaits, abonnements, frais bancaires, doubles prélèvements, hausses de prix. |
+| **Patrimoine** | Actions et ETF (relevé Revolut en CSV), épargne salariale et actions de l'entreprise (avec date de disponibilité), cours automatiques convertis en euros, crédits (capital restant dû, intérêts restants, date de fin), biens immobiliers avec taxe foncière et cash-flow, simulateur d'achat locatif (mensualité, rendement, cash-flow après impôt, taux d'endettement), **alertes de cours**, **dividendes** estimés et **estimation de l'impôt sur le revenu**. |
+| **Immobilier** | Annonces suivies avec **alerte de baisse de prix**, **prix réels du quartier** (ventes DVF), gestion locative (loyers repérés dans le Budget, **quittances PDF** par mail, **révision IRL**, état des lieux avec photos, dépôt de garantie) et **récapitulatif pour la déclaration** (micro ou réel, cases à remplir). |
 | **Inventaire** | Objets de la maison par pièce avec photo, prix, garantie, n° de série et facture (depuis Paperasse) ; péremptions (congélateur, pharmacie) ; liste avec valeur totale pour l'assurance habitation. |
+| **Entretien** | Voiture, chaudière, logement, jardin : entretiens réguliers proposés (vidange, contrôle technique, chaudière, ramonage…), au temps et au kilométrage, historique avec prix et factures, rappels avant chaque échéance. |
+| **Santé** | La santé de la famille, privée par compte : fiches (groupe sanguin, allergies, médecin), vaccins et rappels DTP, rendez-vous médicaux dans l'Agenda, ordonnances et remboursements (Paperasse, Budget), reste à charge. |
 | **Colis** | Numéros de suivi repérés tout seuls dans les mails, avancement mis à jour par les mails du transporteur, clé La Poste optionnelle pour le suivi en direct, et synchro avec l'appli **Parcel** (iPhone / Mac, Premium) : colis envoyés à Parcel, suivi et date de livraison prévue rapatriés, commandes Amazon comprises. |
 | **Téléphones** | Dossier WebDAV par compte pour sauvegarder photos, documents et SMS des téléphones (PhotoSync, FolderSync, SMS Backup & Restore), et lecture des SMS et appels sauvegardés. |
 | **Traduction** | Textes, documents (Word, OpenDocument, PDF) et sous-titres traduits sur le NAS (Argos Translate), sans service en ligne. |
 | **VPN** | Accès à la maison depuis l'extérieur avec WireGuard (wg-easy) : appareils, QR codes, état des connexions. Optionnel. |
 
-Autour des outils : **tableau de bord** (espace disque, outils épinglés, activité récente), **recherche globale** (`Ctrl K`),
+Autour des outils : **menu et accueil rangés par thèmes**, **tableau de bord** (espace disque, outils épinglés, activité récente), **recherche partout** (`Ctrl K` : fichiers, notes, mails, tâches, opérations, placements, objets, entretiens, santé, colis, personnes…),
 **notifications push** sur le téléphone et l'ordinateur (même Bêta Tool fermé), **comptes utilisateurs** avec
 **double authentification** et **clés d'accès** (empreinte, visage), **profils enfants** (outils, heures et temps d'écran),
 **commandes vocales** (micro de l'appli, Siri, Google Assistant) et **widget** d'écran d'accueil, **mode hors ligne**, **appli installable** sur le téléphone (avec « Partager vers Bêta Tool »), interface en
@@ -271,6 +275,32 @@ Entre deux langues étrangères, la traduction passe par l'anglais.
 Le conteneur [wg-easy](https://github.com/wg-easy/wg-easy) utilise le module WireGuard du noyau : il est présent sur
 la plupart des Linux, QNAP et Unraid, mais **pas sur Synology DSM** (il faut d'abord installer un paquet communautaire
 WireGuard pour DSM). Alternative la plus simple : [Tailscale](https://tailscale.com) (paquet officiel sur Synology).
+
+## Immobilier, banque et impôts (2.8)
+
+- **Annonces suivies** : colle le lien d'une annonce (SeLoger, Leboncoin, PAP, Bien'ici, agence…). Le prix est revérifié
+  deux fois par jour ; certains sites bloquent la lecture automatique, il faut alors saisir les chiffres à la main.
+- **Prix du quartier** : ventes réelles publiées par l'État (DVF, `files.data.gouv.fr`) et géocodage par
+  `api-adresse.data.gouv.fr`. Le NAS doit pouvoir joindre ces deux adresses ; les fichiers sont gardés dans `/data/immo/dvf`.
+- **Quittances** : envoyées depuis une boîte de l'outil Mails. L'indice IRL vient de l'INSEE (ou se saisit à la main).
+- **Synchro bancaire** (Budget › Réglages › Banque) : crée un compte gratuit sur [enablebanking.com](https://enablebanking.com),
+  une application en mode « restricted production » avec l'adresse de retour affichée dans Bêta Tool, puis colle
+  l'identifiant et la clé privée `.pem`. L'accès est en lecture seule et se renouvelle tous les 90 à 180 jours dans
+  l'appli de la banque (rappel 7 jours et 1 jour avant). Vérifie que ta banque est dans la liste au moment de relier.
+- **Impôts** (Patrimoine › Impôts) : estimation avec le barème 2025 (revenus 2024), indicative.
+- **Cours et dividendes** : Yahoo Finance (seuls les symboles sont envoyés), vérifiés toutes les heures si une alerte existe.
+
+## Album photo : visages
+
+La reconnaissance utilise OpenCV (`opencv-contrib-python-headless`, installé par la mise à jour) avec un détecteur LBP
+fourni dans `models/` : rien n'est téléchargé, aucune photo ne quitte le NAS. Active « Chercher les visages » dans
+Album photo › Personnes ; la première analyse prend environ une seconde par photo. Les vignettes sont dans `/data/visages`.
+
+## Santé du NAS
+
+Lit `/proc` et `/sys` du conteneur. Pour l'état SMART des disques, il faut `smartmontools` dans l'image et l'accès aux
+disques (`privileged: true` ou `devices: ["/dev/sda:/dev/sda"]` dans `docker-compose.yml`). Les températures visibles
+dépendent de ce que le NAS expose au conteneur.
 
 ## Version anglaise
 
