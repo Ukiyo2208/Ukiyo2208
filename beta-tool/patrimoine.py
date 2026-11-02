@@ -13,10 +13,11 @@ import csv
 import io
 import os
 import re
+import statistics
 import threading
 import time
 import uuid
-from datetime import date
+from datetime import date, timedelta
 
 import requests
 from flask import Blueprint, g, jsonify, request
@@ -133,13 +134,101 @@ def refresh_quotes(user, force=False):
     return n
 
 
+def check_alerts(user):
+    """Prévient quand un cours franchit un seuil (une fois, puis se réarme quand il repasse de l'autre côté)."""
+    import activity
+    out = []
+
+    def go(d):
+        cache = store.load("patrimoine/cours", {})
+        for p in d["positions"]:
+            sym = p.get("symbol") or p.get("ticker")
+            c = cache.get(sym) or {}
+            price = c.get("price")
+            if not price or not p.get("alerts"):
+                continue
+            for a in p["alerts"]:
+                ref = a.get("ref") or price
+                a.setdefault("ref", price)
+                hit = (a["type"] == "above" and price >= a["value"]) or (a["type"] == "below" and price <= a["value"]) or \
+                      (a["type"] == "drop" and price <= ref * (1 - a["value"] / 100)) or (a["type"] == "rise" and price >= ref * (1 + a["value"] / 100))
+                if hit and not a.get("fired"):
+                    a["fired"] = True
+                    what = {"above": f"dépasse {a['value']:g}", "below": f"passe sous {a['value']:g}", "drop": f"a baissé de {a['value']:g} %", "rise": f"a monté de {a['value']:g} %"}[a["type"]]
+                    out.append(f"{p['name']} {what} : {price:,.2f} {c.get('currency') or ''}".replace(",", " "))
+                elif not hit and a.get("fired"):
+                    a["fired"] = False
+                    if a["type"] in ("drop", "rise"):
+                        a["ref"] = price
+    store.update(key(user), EMPTY, go)
+    for text in out:
+        activity.log(user, "patrimoine", text, "#/patrimoine/placements", title="📈 Alerte de cours")
+    return out
+
+
+def dividends_of(sym):
+    """Dividendes versés par action sur 2 ans (Yahoo Finance), gardés 24 h : [{date, amount}], devise."""
+    cache = store.load("patrimoine/dividendes", {})
+    c = cache.get(sym) or {}
+    if time.time() - c.get("at", 0) < 86400:
+        return c.get("items", []), c.get("currency")
+    items, cur = [], None
+    try:
+        r = requests.get(QUOTE_URL.format(sym=requests.utils.quote(sym)), params={"range": "2y", "interval": "1mo", "events": "div"}, timeout=12,
+                         headers={"User-Agent": "Mozilla/5.0 (BetaTool)"}).json()["chart"]["result"][0]
+        cur = r.get("meta", {}).get("currency")
+        for v in ((r.get("events") or {}).get("dividends") or {}).values():
+            items.append({"date": date.fromtimestamp(int(v["date"])).isoformat(), "amount": float(v["amount"])})
+    except (requests.RequestException, ValueError, KeyError, IndexError, TypeError):
+        return c.get("items", []), c.get("currency")
+    items.sort(key=lambda x: x["date"])
+    store.update("patrimoine/dividendes", {}, lambda x: x.__setitem__(sym, {"at": time.time(), "items": items, "currency": cur}))
+    return items, cur
+
+
+def dividends(user):
+    d = load(user)
+    rates = fx_rates()
+    out, total = [], 0.0
+    year_ago = (date.today().replace(year=date.today().year - 1)).isoformat()
+    for p in d["positions"]:
+        sym = p.get("symbol") or p.get("ticker")
+        if not sym or p.get("kind") not in ("action", "etf", "rsu"):
+            continue
+        items, cur = dividends_of(sym)
+        last12 = [x for x in items if x["date"] >= year_ago]
+        if not last12:
+            continue
+        per_share = sum(x["amount"] for x in last12)
+        annual = to_eur(per_share * float(p.get("qty") or 0), cur or p.get("currency"), rates) or 0
+        total += annual
+        dates = [date.fromisoformat(x["date"]) for x in items]
+        gaps = [(b - a).days for a, b in zip(dates, dates[1:])]
+        gap = statistics.median(gaps) if gaps else 365
+        nxt = dates[-1] + timedelta(days=round(gap))
+        while nxt < date.today():
+            nxt += timedelta(days=round(gap))
+        out.append({"id": p["id"], "name": p["name"], "symbol": sym, "per_share": round(per_share, 4), "currency": cur, "annual_eur": round(annual, 2),
+                    "frequency": "trimestriel" if gap < 120 else "semestriel" if gap < 250 else "annuel", "last": items[-1]["date"], "next": nxt.isoformat(),
+                    "yield": None})
+    received = {}
+    for t in d["trades"]:
+        if t["type"] == "dividend":
+            received[t["date"][:4]] = received.get(t["date"][:4], 0) + (to_eur(abs(t["amount"]), t["currency"], rates) or 0)
+    return {"holdings": sorted(out, key=lambda x: x["next"]), "annual_eur": round(total, 2), "received": {k: round(v, 2) for k, v in sorted(received.items())}}
+
+
 def loop():
     while True:
         time.sleep(3600)
         try:
             for name in os.listdir(store.path("patrimoine")):
-                if name.endswith(".json") and name not in ("cours.json", "change.json"):
-                    refresh_quotes(name[:-5])
+                if name.endswith(".json") and name not in ("cours.json", "change.json", "dividendes.json"):
+                    user = name[:-5]
+                    has_alerts = any(p.get("alerts") for p in load(user)["positions"])
+                    refresh_quotes(user, force=has_alerts)
+                    if has_alerts:
+                        check_alerts(user)
         except Exception as e:  # noqa: BLE001
             print("patrimoine", e, flush=True)
 
@@ -389,6 +478,13 @@ def _clean_position(f, old=None):
         if a:
             date.fromisoformat(a)
         p["available"] = a
+    if isinstance(f.get("alerts"), list):  # alertes de cours : au-dessus / en dessous d'un prix, baisse / hausse en %
+        al = []
+        for a in f["alerts"][:6]:
+            if a.get("type") in ("above", "below", "drop", "rise") and num(a.get("value")):
+                old_a = next((x for x in (old or {}).get("alerts", []) if x.get("type") == a["type"] and x.get("value") == num(a["value"])), {})
+                al.append({"type": a["type"], "value": num(a["value"]), "ref": old_a.get("ref") or num(a.get("ref")), "fired": old_a.get("fired", False)})
+        p["alerts"] = al
     if not p.get("name"):
         raise ValueError("Donne un nom à la ligne (ex. Apple, Fonds PEE Actions)")
     if not p.get("qty"):
@@ -425,9 +521,15 @@ def del_position(pid):
     return jsonify(ok=True)
 
 
+@bp.get("/api/patrimoine/dividends")
+def dividends_route():
+    return jsonify(dividends(g.user["name"]))
+
+
 @bp.post("/api/patrimoine/quotes")
 def quotes_now():
     n = refresh_quotes(g.user["name"], force=True)
+    check_alerts(g.user["name"])
     return jsonify(updated=n)
 
 

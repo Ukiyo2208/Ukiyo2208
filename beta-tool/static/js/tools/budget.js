@@ -8,10 +8,12 @@ const euros = (n, dec = true) => (n ?? 0).toLocaleString("fr-FR", { style: "curr
 const monthName = m => { const s = new Date(m + "-15").toLocaleDateString("fr-FR", { month: "long", year: "numeric" }); return s.charAt(0).toUpperCase() + s.slice(1); };
 const shift = (m, n) => { const d = new Date(m + "-15"); d.setMonth(d.getMonth() + n); return d.toISOString().slice(0, 7); };
 const catOf = name => data.categories.find(c => c.name === name) || { icon: "file", color: "" };
-const TABS = [["apercu", "Aperçu", "pie"], ["operations", "Opérations", "list"], ["economies", "Économies", "sparkles"], ["fixes", "Charges fixes", "refresh"], ["reglages", "Réglages", "settings"]];
+const TABS = [["apercu", "Aperçu", "pie"], ["operations", "Opérations", "list"], ["economies", "Économies", "sparkles"], ["objectifs", "Objectifs", "star"], ["fixes", "Charges fixes", "refresh"], ["reglages", "Réglages", "settings"]];
 
-export async function render(root, parts) {
+export async function render(root, parts, query) {
   tab = TABS.some(t => t[0] === parts[0]) ? parts[0] : "apercu";
+  const bk = { ok: ["Banque reliée : les opérations arrivent dans le Budget", "ok"], refus: ["Accès refusé dans l'appli de la banque", "err"], expire: ["Délai dépassé, recommence", "err"], erreur: ["La banque n'a pas répondu, réessaie", "err"] }[query?.banque];
+  if (bk) { setTimeout(() => toast(...bk), 400); history.replaceState(null, "", "#/budget/reglages"); }
   root.innerHTML = pageHead("budget", `<button class="btn ghost" id="bg-add">${icon("plus")}Opération</button><button class="btn" id="bg-import">${icon("upload")}Importer un relevé</button>`)
     + `<div class="seg bg-tabs" id="bg-tabs">${TABS.map(([k, l, ic]) => `<label><input type="radio" name="bgt" value="${k}" ${k === tab ? "checked" : ""}>${icon(ic)}<span>${l}</span></label>`).join("")}</div><div id="bg-body"></div>`;
   $("#bg-import").onclick = importPanel;
@@ -29,8 +31,8 @@ async function load() {
 function paint() {
   const el = $("#bg-body");
   if (!el) return;
-  if (!data.count && tab !== "reglages") return el.innerHTML = emptyState();
-  ({ apercu, operations, economies, fixes, reglages })[tab](el);
+  if (!data.count && !["reglages", "objectifs"].includes(tab)) return el.innerHTML = emptyState();
+  ({ apercu, operations, economies, objectifs, fixes, reglages })[tab](el);
 }
 
 function emptyState() {
@@ -215,6 +217,7 @@ function reglages(el) {
         ${data.rules.length ? data.rules.map((r, i) => `<div class="bg-row"><span class="grow">« ${esc(r.match)} » → <b>${esc(r.category)}</b></span><button class="icon-btn plain" data-rule="${i}" title="Supprimer">${icon("trash")}</button></div>`).join("")
           : `<p class="meta">Aucune. Quand tu changes la catégorie d'une opération, coche « Toujours ranger… ».</p>`}
         <button class="btn ghost small" id="bg-recat" style="margin-top:8px">${icon("refresh")}Re-ranger toutes les opérations</button></div>
+      <div class="card" id="bg-bank"><p class="meta"><span class="spinner"></span></p></div>
       <div class="card"><div class="card-title">${icon("landmark")}Comptes</div>
         ${data.accounts.length ? data.accounts.map(a => `<div class="bg-row"><span class="grow"><b>${esc(a.name)}</b></span><button class="icon-btn plain" data-acc="${a.id}" title="Supprimer le compte et ses opérations">${icon("trash")}</button></div>`).join("") : `<p class="meta">Aucun compte : importe un relevé.</p>`}
         ${data.imports.length ? `<p class="meta" style="margin-top:8px">Derniers imports : ${data.imports.map(i => `${esc(i.file || i.account)} (+${i.added})`).join(", ")}</p>` : ""}</div></div></div>`;
@@ -224,6 +227,7 @@ function reglages(el) {
     await api("/api/budget/budgets", { method: "PUT", json: vals });
     toast("Budgets enregistrés"); load();
   };
+  bankCard($("#bg-bank"));
   el.onclick = async e => {
     const b = e.target.closest("[data-rule],[data-acc],#bg-recat");
     if (!b) return;
@@ -231,6 +235,88 @@ function reglages(el) {
     if (b.dataset.rule) { await api(`/api/budget/rules/${b.dataset.rule}`, { method: "DELETE" }); return load(); }
     if (b.dataset.acc && confirm("Supprimer ce compte et toutes ses opérations ?")) { await api(`/api/budget/accounts/${b.dataset.acc}`, { method: "DELETE" }); load(); }
   };
+}
+
+// --- Banque reliée (Enable Banking) ---------------------------------------------------------------------
+
+async function bankCard(box) {
+  const s = await api("/api/budget/bank");
+  box.innerHTML = `<div class="card-title">${icon("refresh")}Synchro automatique avec ta banque</div>
+    ${s.accounts.length ? `<p class="pill-ok">${icon("check")}${esc(s.bank)} reliée · ${s.accounts.map(a => esc(a.label)).join(", ")}</p>
+        <small class="meta">${s.last ? `Dernière synchro ${new Date(s.last * 1000).toLocaleString("fr-FR")}` : ""}${s.valid_until ? ` · accès valable jusqu'au ${new Date(s.valid_until).toLocaleDateString("fr-FR")}` : ""}</small>
+        ${s.error ? `<p class="pill-warn">${esc(s.error)}</p>` : ""}
+        <div class="row" style="margin-top:8px"><button class="btn small" data-bk="sync">${icon("refresh")}Synchroniser</button><button class="btn ghost small" data-bk="renew">Renouveler l'accès</button><button class="btn ghost small" data-bk="off">${icon("x")}Délier</button></div>`
+      : s.configured ? `<p class="hint" style="margin-top:0">Application Enable Banking enregistrée. Choisis ta banque : tu valideras l'accès (lecture seule) dans son appli.</p>
+        <div class="row"><input type="search" id="bk-q" placeholder="Ta banque (ex. Crédit Agricole Anjou Maine)" style="flex:1"><button class="btn small" data-bk="find">${icon("search")}Chercher</button></div><div id="bk-list" class="ml-dates" style="margin-top:8px"></div>
+        <button class="btn ghost small" data-bk="remove" style="margin-top:8px">${icon("x")}Retirer l'application</button>`
+      : `<p class="hint" style="margin-top:0">Les opérations de ta banque arrivent toutes seules chaque nuit, en lecture seule, grâce à <b>Enable Banking</b> (agréé DSP2, gratuit pour tes propres comptes).</p>
+        <ol class="ac-steps"><li>Crée un compte sur <a href="https://enablebanking.com" target="_blank" rel="noopener">enablebanking.com</a> › Control panel › <b>Applications</b> › nouvelle application en mode <b>restreint</b> (« restricted production »).</li>
+          <li>Indique cette adresse de retour : <code>${esc(s.redirect_url)}</code></li>
+          <li>Télécharge la clé privée (.pem) et copie l'identifiant de l'application, puis colle-les ici.</li></ol>
+        <form id="bk-form"><label class="field">Identifiant de l'application</label><input type="text" name="app_id" required>
+          <label class="field">Clé privée (contenu du fichier .pem)</label><textarea name="key" rows="4" required placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
+          <button class="btn" style="margin-top:8px">${icon("check")}Enregistrer</button></form>`}
+    <p class="hint">${icon("lock")} L'accès est en lecture seule et se renouvelle tous les 90 jours (règle européenne) : je te préviens avant. L'import de fichiers reste possible.</p>`;
+  $("#bk-form")?.addEventListener("submit", async e => {
+    e.preventDefault();
+    try { await api("/api/budget/bank/config", { method: "PUT", json: { app_id: e.target.app_id.value, key: e.target.key.value } }); toast("Application enregistrée"); bankCard(box); } catch (err) { toast(err.message, "err"); }
+  });
+  box.onclick = async e => {
+    const b = e.target.closest("[data-bk],[data-bank]");
+    if (!b) return;
+    try {
+      if (b.dataset.bank) { const r = await api("/api/budget/bank/connect", { json: { bank: b.dataset.bank } }); location.href = r.url; return; }
+      const a = b.dataset.bk;
+      if (a === "renew") { const r = await api("/api/budget/bank/connect", { json: { bank: s.bank } }); location.href = r.url; return; }
+      if (a === "find") {
+        const r = await api(`/api/budget/bank/aspsps?q=${encodeURIComponent($("#bk-q").value)}`);
+        $("#bk-list").innerHTML = r.banks.map(x => `<button class="acc-prov" data-bank="${esc(x.name)}">${x.logo ? `<img src="${esc(x.logo)}" alt="" width="24" height="24" style="object-fit:contain">` : icon("landmark")}<span class="grow"><b>${esc(x.name)}</b></span></button>`).join("") || `<p class="meta">Aucune banque trouvée.</p>`;
+      }
+      if (a === "sync") { b.disabled = true; const r = await api("/api/budget/bank/sync", { json: {} }); toast(`${r.added} nouvelle${r.added > 1 ? "s" : ""} opération${r.added > 1 ? "s" : ""}`); load(); }
+      if (a === "off" && confirm("Délier la banque ? Les opérations déjà importées restent.")) { await api("/api/budget/bank/disconnect", { json: {} }); bankCard(box); }
+      if (a === "remove" && confirm("Retirer l'application Enable Banking ?")) { await api("/api/budget/bank/config", { method: "PUT", json: { remove: true } }); bankCard(box); }
+    } catch (err) { toast(err.message, "err"); b.disabled = false; }
+  };
+}
+
+// --- Objectifs d'épargne ------------------------------------------------------------------------------
+
+async function objectifs(el) {
+  el.innerHTML = `<p class="meta"><span class="spinner"></span></p>`;
+  const r = await api("/api/budget/goals");
+  el.innerHTML = `<div class="ot-top"><button class="btn" id="bg-goal">${icon("plus")}Nouvel objectif</button></div>
+    ${r.goals.length ? `<div class="pt-loans">${r.goals.map(gl => {
+      const s = gl.state;
+      return `<button class="card pt-loan bg-goalc" data-g="${gl.id}"><div class="pt-loan-h"><span class="bg-emoji">${esc(gl.emoji || "🎯")}</span><div class="grow"><b>${esc(gl.name)}</b>
+          <small class="meta">${eur(s.current, false)} sur ${eur(gl.target, false)}${gl.deadline ? ` · avant le ${new Date(gl.deadline + "T12:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}` : ""}</small></div>
+          ${s.done ? `<span class="cx-st ok">Atteint 🎉</span>` : `<b>${s.pct} %</b>`}</div>
+        <div class="bg-bar bg-goalbar"><i style="width:${s.pct}%"></i></div>
+        <small class="meta">${s.done ? "Bravo, objectif atteint !" : [s.monthly_needed ? `${eur(s.monthly_needed, false)} par mois pour tenir la date` : "", s.pace ? `rythme actuel ${eur(s.pace, false)} / mois` : "", s.eta ? `atteint vers ${new Date(s.eta + "T12:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}` : ""].filter(Boolean).join(" · ") || `Il reste ${eur(s.left, false)}`}</small></button>`;
+    }).join("")}</div>` : `<div class="card empty">${icon("star")}<b>Aucun objectif</b>Par exemple « Apport appartement : 25 000 € avant juin 2028 » : la barre avance avec tes virements vers l'épargne ou la valeur de tes placements, et je te dis combien mettre de côté chaque mois.</div>`}`;
+  const form = (gl = {}) => {
+    const m = modal(gl.id ? gl.name : "Nouvel objectif", `<form>
+      <div class="grid2"><div><label class="field">Nom</label><input type="text" name="name" value="${esc(gl.name || "")}" required placeholder="Ex. Apport appartement"></div>
+        <div><label class="field">Emoji</label><input type="text" name="emoji" value="${esc(gl.emoji || "🎯")}" maxlength="4"></div></div>
+      <div class="grid2"><div><label class="field">Montant à atteindre (€)</label><input type="text" inputmode="decimal" name="target" value="${gl.target ?? ""}" required></div>
+        <div><label class="field">Avant le</label><input type="date" name="deadline" value="${esc(gl.deadline || "")}"></div></div>
+      <label class="field">Ce qui compte pour l'objectif</label><select name="source" style="width:100%">
+        <option value="manuel" ${(gl.source || "manuel") === "manuel" ? "selected" : ""}>Le montant que je saisis</option>
+        <option value="epargne" ${gl.source === "epargne" ? "selected" : ""}>Mes virements vers l'épargne (catégorie Épargne du Budget)</option>
+        <option value="placements" ${gl.source === "placements" ? "selected" : ""}>Tous mes placements (Patrimoine)</option>
+        ${r.placements.map(a => `<option value="placements:${esc(a)}" ${gl.source === "placements:" + a ? "selected" : ""}>Placements : ${esc(a)}</option>`).join("")}</select>
+      <label class="field">Déjà mis de côté (€)</label><input type="text" inputmode="decimal" name="current" value="${gl.current ?? ""}" placeholder="0">
+      <div class="modal-foot">${gl.id ? `<button type="button" class="btn ghost danger" data-del>${icon("trash")}Supprimer</button>` : ""}<span class="grow"></span>
+        <button type="button" class="btn ghost" data-close>Annuler</button><button class="btn">${icon("check")}Enregistrer</button></div></form>`, { ic: "star" });
+    const f = m.querySelector("form");
+    f.onsubmit = async e => {
+      e.preventDefault();
+      try { await api(gl.id ? `/api/budget/goals/${gl.id}` : "/api/budget/goals", { method: gl.id ? "PUT" : "POST", json: Object.fromEntries([...new FormData(f)]) }); closePanel(); objectifs(el); }
+      catch (err) { toast(err.message, "err"); }
+    };
+    m.querySelector("[data-del]")?.addEventListener("click", async () => { await api(`/api/budget/goals/${gl.id}`, { method: "DELETE" }); closePanel(); objectifs(el); });
+  };
+  $("#bg-goal").onclick = () => form();
+  el.querySelectorAll("[data-g]").forEach(b => b.onclick = () => form(r.goals.find(x => x.id === b.dataset.g)));
 }
 
 // --- Import et ajout ----------------------------------------------------------------------------------

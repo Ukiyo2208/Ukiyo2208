@@ -21,6 +21,7 @@ import archives
 import auth
 import backup
 import clipboard
+import banque
 import budget
 import colis
 import commande
@@ -661,7 +662,7 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones, profil, patrimoine, immo):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones, profil, patrimoine, immo, banque):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,
@@ -698,6 +699,7 @@ if __name__ == "__main__":
     taches.start()
     inventaire.start()
     budget.start()
+    banque.start()
     patrimoine.start()
     immo.start()
     mounts = {}

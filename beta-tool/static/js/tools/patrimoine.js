@@ -4,7 +4,7 @@ import { api } from "../state.js";
 import { pageHead } from "../main.js";
 
 let data = null, tab = "synthese";
-const TABS = [["synthese", "Synthèse", "pie"], ["placements", "Placements", "chart"], ["credits", "Crédits", "landmark"], ["immobilier", "Immobilier", "home"], ["projet", "Projet locatif", "key"]];
+const TABS = [["synthese", "Synthèse", "pie"], ["placements", "Placements", "chart"], ["credits", "Crédits", "landmark"], ["immobilier", "Immobilier", "home"], ["projet", "Projet locatif", "key"], ["impots", "Impôts", "landmark"]];
 const eur = (n, dec = 0) => n == null || isNaN(n) ? "—" : Number(n).toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: dec, minimumFractionDigits: dec });
 const money = (n, cur) => n == null ? "—" : Number(n).toLocaleString("fr-FR", { style: "currency", currency: cur || "EUR", maximumFractionDigits: 2 });
 const pct = n => n == null || isNaN(n) ? "—" : `${n > 0 ? "+" : ""}${Number(n).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`;
@@ -19,7 +19,7 @@ export async function render(root, parts) {
 
 async function load() { data = await api("/api/patrimoine"); paint(); }
 function go(t) { tab = t; document.querySelector(`#pt-tabs input[value="${t}"]`).checked = true; history.replaceState(null, "", `#/patrimoine/${t}`); paint(); }
-function paint() { const el = $("#pt-body"); if (el) ({ synthese, placements, credits, immobilier, projet: x => projet(x, prefill()) })[tab](el); }
+function paint() { const el = $("#pt-body"); if (el) ({ synthese, placements, credits, immobilier, projet: x => projet(x, prefill()), impots })[tab](el); }
 function prefill() {  // annonce envoyée depuis l'outil Immobilier
   try { const p = JSON.parse(sessionStorage.getItem("bt-projet") || "null"); sessionStorage.removeItem("bt-projet"); return p ? Object.fromEntries(Object.entries(p).filter(([, v]) => v !== "" && v != null)) : null; } catch { return null; }
 }
@@ -84,11 +84,23 @@ function placements(el) {
           <span class="pt-val"><b>${eur(p.value_eur)}</b><small class="${(p.gain_pct || 0) >= 0 ? "pt-up" : "pt-down"}">${p.gain_pct != null ? pct(p.gain_pct) : ""}</small></span></button>`).join("")}</div></div>`;
     }).join("") : `<div class="card empty">${icon("chart")}<b>Aucun placement</b><p>Dans l'appli Revolut : onglet <b>Investir</b> › <b>…</b> › <b>Documents</b> › <b>Relevé de compte</b>, format <b>Excel / CSV</b>, toute la période. Dépose le fichier ici : tes actions, leur prix de revient et tes dividendes sont recalculés.
       Pour les actions de ton entreprise (PEE, RSU, ESPP), « Ajouter une ligne » avec le nombre de parts de ton relevé et la date de disponibilité.</p></div>`}
+    <div class="card" id="pt-divs"><p class="meta"><span class="spinner"></span></p></div>
     <p class="hint">${icon("lock")} Les cours viennent de Yahoo Finance (seuls les symboles sont envoyés) et sont convertis en euros avec les taux de la BCE. Valeurs indicatives, avec un léger différé.</p>`;
+  if (data.positions.length) divsCard($("#pt-divs")); else $("#pt-divs").remove();
   $("#pt-import").onclick = importPanel;
   $("#pt-add").onclick = () => positionForm();
   $("#pt-quotes").onclick = async e => { e.target.disabled = true; const r = await api("/api/patrimoine/quotes", { json: {} }); toast(`${r.updated} cours mis à jour`); load(); };
   el.querySelectorAll("[data-p]").forEach(b => b.onclick = () => positionForm(data.positions.find(p => p.id === b.dataset.p)));
+}
+
+async function divsCard(box) {
+  const r = await api("/api/patrimoine/dividends").catch(() => null);
+  if (!r || (!r.holdings.length && !Object.keys(r.received).length)) { box.remove(); return; }
+  box.innerHTML = `<div class="card-title">${icon("chart")}Dividendes<span class="grow"></span>${r.annual_eur ? `<b>≈ ${eur(r.annual_eur)} / an</b>` : ""}</div>
+    ${r.holdings.length ? r.holdings.map(h => `<div class="bg-row"><span class="grow bg-lbl"><b>${esc(h.name)}</b><small class="meta">${h.per_share.toLocaleString("fr-FR")} ${esc(h.currency || "")} par action sur 12 mois · ${h.frequency} · dernier le ${dfr(h.last)}</small></span>
+      <span class="pt-val"><b>${eur(h.annual_eur)} / an</b><small class="meta">prochain vers le ${new Date(h.next + "T12:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</small></span></div>`).join("") : ""}
+    ${Object.keys(r.received).length ? `<p class="meta" style="margin:10px 0 0">Reçus (relevé Revolut) : ${Object.entries(r.received).map(([y, v]) => `${y} : ${eur(v, 2)}`).join(" · ")}</p>` : ""}
+    <p class="hint" style="margin-bottom:0">Prochaines dates estimées d'après le rythme des versements passés.</p>`;
 }
 
 function importPanel() {
@@ -122,6 +134,10 @@ function positionForm(p = {}) {
     <div class="grid2"><div><label class="field">Cours à la main</label><input type="text" inputmode="decimal" name="price_manual" value="${p.price_manual ?? ""}" placeholder="Ex. valeur de la part du relevé"></div>
       <div><label class="field">Disponible le</label><input type="date" name="available" value="${esc(p.available || "")}"><small class="meta">Épargne salariale : fin de blocage</small></div></div>
     <label class="field">Note</label><input type="text" name="note" value="${esc(p.note || "")}">
+    <label class="field">Alertes de cours</label><div class="pt-alerts">${[...(p.alerts || []), {}].map((a, i) => `<div class="row pt-alert">
+        <select name="atype" style="width:auto"><option value="">—</option>${[["above", "Monte au-dessus de"], ["below", "Descend sous"], ["drop", "Baisse de (%)"], ["rise", "Hausse de (%)"]].map(([k, l]) => `<option value="${k}" ${a.type === k ? "selected" : ""}>${l}</option>`).join("")}</select>
+        <input type="text" inputmode="decimal" name="avalue" value="${a.value ?? ""}" placeholder="${p.price ? `cours actuel ${p.price}` : "valeur"}" style="flex:1">${a.fired ? `<span class="cx-st warn">Déclenchée</span>` : ""}</div>`).join("")}</div>
+    <small class="meta">Notification quand le cours franchit le seuil (vérifié toutes les heures).</small>
     ${p.auto ? `<p class="hint">${icon("refresh")} Ligne calculée depuis ton relevé ${esc(p.account)} : la quantité sera recalculée au prochain import.</p>` : ""}
     <div class="modal-foot">${p.id ? `<button type="button" class="btn ghost danger" data-del>${icon("trash")}Supprimer</button>` : ""}<span class="grow"></span>
       <button type="button" class="btn ghost" data-close>Annuler</button><button class="btn">${icon("check")}Enregistrer</button></div></form>`, { ic: "chart" });
@@ -130,6 +146,7 @@ function positionForm(p = {}) {
     e.preventDefault();
     const body = Object.fromEntries(["kind", "account", "name", "qty", "pru", "symbol", "currency", "price_manual", "available", "note"].map(k => [k, f[k].value]));
     body.ticker = p.ticker || body.symbol.split(".")[0];
+    body.alerts = [...f.querySelectorAll(".pt-alert")].map(r => ({ type: r.querySelector("[name=atype]").value, value: r.querySelector("[name=avalue]").value, ref: p.price })).filter(a => a.type && a.value);
     try { await api(p.id ? `/api/patrimoine/positions/${p.id}` : "/api/patrimoine/positions", { method: p.id ? "PUT" : "POST", json: body }); closePanel(); load(); }
     catch (err) { toast(err.message, "err"); }
   };
@@ -319,5 +336,100 @@ function projet(el, inputs) {
     toast("Projet enregistré"); data = await api("/api/patrimoine"); projet(el, read());
   };
   $("#pt-load")?.addEventListener("change", e => { const p = data.projects.find(x => x.id === e.target.value); if (p) projet(el, p.inputs); });
+  show();
+}
+
+// --- Impôts ------------------------------------------------------------------------------------------------------
+
+// Barème de l'impôt 2025 sur les revenus 2024 (à mettre à jour chaque année)
+const BAREME = { year: 2025, tranches: [[11497, 0], [29315, .11], [83823, .30], [180294, .41], [Infinity, .45]], abat: [495, 14171], qf: 1791,
+  decote: { seul: [1964, 889], couple: [3248, 1470], taux: .4525 } };
+
+function impotBrut(rni, parts) {
+  const q = rni / parts;
+  let t = 0, prev = 0;
+  for (const [lim, rate] of BAREME.tranches) { if (q > prev) t += (Math.min(q, lim) - prev) * rate; prev = lim; }
+  return t * parts;
+}
+
+function calcImpot(v) {
+  const n = k => Number(String(v[k] ?? "").replace(",", ".")) || 0;
+  const couple = v.situation === "couple";
+  const kids = n("kids");
+  const base = couple ? 2 : 1;
+  const parts = base + (kids >= 1 ? .5 : 0) + (kids >= 2 ? .5 : 0) + Math.max(0, kids - 2) + (v.isole && !couple && kids ? .5 : 0);
+  const sal = n("salaires");
+  const abat = v.frais_reels ? n("frais") : Math.min(BAREME.abat[1] * (couple ? 2 : 1), Math.max(BAREME.abat[0], sal * .1));
+  const rni = Math.max(0, sal - abat + n("foncier") + n("autres"));
+  let impot = impotBrut(rni, parts);
+  const plafond = impotBrut(rni, base) - (parts - base) * 2 * BAREME.qf;  // plafonnement du quotient familial
+  if (plafond > impot) impot = plafond;
+  const [seuil, montant] = BAREME.decote[couple ? "couple" : "seul"];
+  const decote = impot < seuil ? Math.min(impot, montant - impot * BAREME.decote.taux) : 0;
+  impot = Math.max(0, Math.round(impot - Math.max(0, decote)));
+  if (impot < 61) impot = 0;  // pas de recouvrement sous 61 €
+  const q = rni / parts;
+  const tmi = (BAREME.tranches.find(([lim]) => q <= lim) || [0, .45])[1];
+  const ps = Math.round(n("foncier") * n("ps") / 100);
+  return { parts, abat: Math.round(abat), rni: Math.round(rni), impot, tmi, moyen: rni ? impot / rni * 100 : 0, ps, total: impot + ps, decote: Math.max(0, Math.round(decote)),
+    pas: sal + n("foncier") ? impot / (sal + n("foncier") + n("autres")) * 100 : 0 };
+}
+
+async function impots(el) {
+  let foncier = "";
+  try {
+    const d = await api(`/api/immo/declaration?year=${new Date().getFullYear() - 1}`);
+    const t = d.properties.reduce((a, p) => a + (p.regimes[p.best].taxable || 0), 0);
+    if (d.properties.length) foncier = Math.round(t);
+  } catch {}
+  const v = { situation: "seul", kids: 0, isole: false, salaires: data.income ? Math.round(data.income * 12 * 1.08) : "", frais_reels: false, frais: "", foncier, autres: 0, ps: 17.2 };
+  const num = (k, l, unit = "€", hint = "") => `<div><label class="field">${l}</label><div class="pt-in"><input type="number" name="${k}" value="${v[k]}" ${hint ? `placeholder="${hint}"` : ""}><span>${unit}</span></div></div>`;
+  el.innerHTML = `<div class="pt-proj"><form class="card" id="ip-form"><div class="card-title">${icon("user")}Ton foyer</div>
+      <div class="grid2"><div><label class="field">Situation</label><select name="situation" style="width:100%"><option value="seul">Célibataire, divorcé·e, veuf·ve</option><option value="couple">Marié·e ou pacsé·e</option></select></div>
+        ${num("kids", "Enfants à charge", "")}</div>
+      <label class="check"><input type="checkbox" name="isole"> Je vis seul·e avec mes enfants (case T)</label>
+      <div class="card-title" style="margin-top:14px">${icon("receipt")}Revenus ${BAREME.year - 1}</div>
+      ${num("salaires", "Salaires nets imposables du foyer", "€ / an", "Sur ta fiche de paie de décembre")}
+      <label class="check"><input type="checkbox" name="frais_reels"> Frais réels au lieu de l'abattement de 10 %</label>
+      <div id="ip-frais" hidden>${num("frais", "Frais réels", "€ / an")}</div>
+      <div class="grid2">${num("foncier", "Revenus fonciers imposables", "€", foncier !== "" ? "Depuis l'outil Immobilier" : "")}${num("autres", "Autres revenus imposables", "€")}</div>
+      ${num("ps", "Prélèvements sociaux sur les revenus fonciers", "%")}
+      <div class="card-title" style="margin-top:14px">${icon("calendar")}Ne rien oublier</div>
+      <div class="row" style="flex-wrap:wrap;gap:8px"><button type="button" class="btn ghost small" data-rem="decl">${icon("bell")}Rappel déclaration (avril)</button>
+        <button type="button" class="btn ghost small" data-rem="tf">${icon("bell")}Rappel taxe foncière (octobre)</button>
+        <a class="btn ghost small" href="https://www.impots.gouv.fr" target="_blank" rel="noopener">${icon("external")}impots.gouv.fr</a></div>
+    </form><div class="pt-res" id="ip-res"></div></div>`;
+  const f = $("#ip-form");
+  const read = () => ({ ...Object.fromEntries([...new FormData(f)]), isole: f.isole.checked, frais_reels: f.frais_reels.checked });
+  const show = () => {
+    $("#ip-frais").hidden = !f.frais_reels.checked;
+    const c = calcImpot(read());
+    $("#ip-res").innerHTML = `<div class="card"><div class="card-title">${icon("landmark")}Impôt sur le revenu estimé</div>
+        <div class="pt-loan-k"><div><small class="meta">Impôt</small><b>${eur(c.impot)}</b></div><div><small class="meta">Taux moyen</small><b>${c.moyen.toFixed(1).replace(".", ",")} %</b></div><div><small class="meta">Tranche marginale</small><b>${Math.round(c.tmi * 100)} %</b></div></div>
+        <div class="pt-flow"><div class="pt-fl"><span class="grow">Parts fiscales</span><b>${String(c.parts).replace(".", ",")}</b></div>
+          <div class="pt-fl"><span class="grow">${read().frais_reels ? "Frais réels" : "Abattement de 10 %"}</span><b>−${eur(c.abat)}</b></div>
+          <div class="pt-fl"><span class="grow">Revenu net imposable</span><b>${eur(c.rni)}</b></div>
+          ${c.decote ? `<div class="pt-fl in"><span class="grow">Décote</span><b>−${eur(c.decote)}</b></div>` : ""}
+          ${c.ps ? `<div class="pt-fl"><span class="grow">Prélèvements sociaux (revenus fonciers)</span><b>${eur(c.ps)}</b></div>` : ""}
+          <div class="pt-fl total"><span class="grow">Total à payer sur l'année</span><b>${eur(c.total)}</b></div></div>
+        <small class="meta">Taux de prélèvement à la source correspondant : environ ${c.pas.toFixed(1).replace(".", ",")} % · ${eur(c.total / 12)} par mois.</small></div>
+      <div class="card"><div class="card-title">${icon("lightbulb")}À savoir</div>
+        <p class="meta" style="margin:0">Chaque euro de plus est imposé à ${Math.round(c.tmi * 100)} %${c.ps ? " (+ prélèvements sociaux sur les loyers)" : ""}. Un versement sur un PER est déductible : 1 000 € versés font économiser environ ${eur(1000 * c.tmi)} d'impôt.
+        La déclaration en ligne ouvre mi-avril ; la date limite (fin mai ou début juin) dépend de ton département.</p></div>
+      <p class="hint">${icon("alert")} Estimation simplifiée avec le barème ${BAREME.year} (revenus ${BAREME.year - 1}) : réductions et crédits d'impôt (dons, emploi à domicile, garde d'enfants) non comptés. Le simulateur officiel est sur impots.gouv.fr.</p>`;
+  };
+  f.oninput = show;
+  el.querySelectorAll("[data-rem]").forEach(b => b.onclick = async () => {
+    const y = new Date().getFullYear(), now = new Date();
+    const decl = b.dataset.rem === "decl";
+    let d = new Date(decl ? y : y, decl ? 3 : 9, decl ? 10 : 1);
+    if (d < now) d.setFullYear(y + 1);
+    const day = d.toISOString().slice(0, 10);
+    try {
+      await api("/api/agenda/events", { json: { cal: "personnel", allday: true, start: day, end: day, reminder: "-480",
+        title: decl ? "Déclaration de revenus en ligne (impots.gouv.fr)" : "Taxe foncière à payer (vers le 15 octobre)" } });
+      toast(`Rappel ajouté à l'agenda le ${d.toLocaleDateString("fr-FR")}`);
+    } catch (err) { toast(err.message, "err"); }
+  });
   show();
 }

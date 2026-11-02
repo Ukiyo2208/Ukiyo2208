@@ -2213,3 +2213,6 @@ select.inline { display: inline-block; width: auto; padding: 4px 8px; margin: 0 
 .im-reg { display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); }
 .im-reg.best { border-color: var(--ok); background: rgb(16 185 129 / .06); }
 .im-reg .cx-st { justify-self: start; }
+.bg-emoji { font-size: 1.8rem; line-height: 1; width: 40px; text-align: center; }
+.bg-goalbar { height: 12px; border-radius: 6px; }
+.bg-goalbar i { border-radius: 6px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }

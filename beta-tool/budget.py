@@ -6,6 +6,7 @@ Rien n'est envoyé à l'extérieur : pas de connexion à la banque, tout est cal
 à partir des fichiers que tu importes. Chaque compte Bêta Tool a son propre budget."""
 
 import io
+import math
 import re
 import statistics
 import time
@@ -276,7 +277,7 @@ def key(user):
     return "budget/" + re.sub(r"[^\w-]", "_", user)
 
 
-EMPTY = {"accounts": [], "tx": [], "budgets": {}, "rules": [], "dismissed": [], "imports": []}
+EMPTY = {"accounts": [], "tx": [], "budgets": {}, "rules": [], "dismissed": [], "imports": [], "goals": []}
 
 
 def load(user):
@@ -788,3 +789,98 @@ def delete_account(aid):
 
 def count(user):
     return None
+
+
+# --- Objectifs d'épargne -------------------------------------------------------------------------------------------
+
+def goal_state(user, d, gl):
+    """Montant atteint d'un objectif : saisi à la main, virements « Épargne » depuis le début, ou placements du Patrimoine."""
+    src = gl.get("source") or "manuel"
+    cur = float(gl.get("current") or 0)
+    if src == "epargne":
+        since = gl.get("start") or "0000"
+        cur = float(gl.get("current") or 0) + sum(-t["amount"] for t in d["tx"] if t["category"] == "Épargne" and t["amount"] < 0 and t["date"] >= since)
+    elif src.startswith("placements"):
+        try:
+            import patrimoine
+            pos = patrimoine.valued(patrimoine.load(user))
+            acc = src.split(":", 1)[1] if ":" in src else ""
+            cur = sum(p["value_eur"] or 0 for p in pos if not acc or p.get("account") == acc)
+        except Exception:  # noqa: BLE001
+            pass
+    target = float(gl.get("target") or 0)
+    left = max(0.0, target - cur)
+    months = None
+    if gl.get("deadline"):
+        dl = date.fromisoformat(gl["deadline"])
+        months = max(1, (dl.year - date.today().year) * 12 + dl.month - date.today().month)
+    # rythme des 3 derniers mois (virements vers l'épargne)
+    recent = sum(-t["amount"] for t in d["tx"] if t["category"] == "Épargne" and t["amount"] < 0 and t["date"] >= (date.today() - timedelta(days=92)).isoformat()) / 3
+    eta = None
+    if left and recent > 0:
+        m = math.ceil(left / recent)
+        y, mo = divmod(date.today().month - 1 + m, 12)
+        eta = date(date.today().year + y, mo + 1, 1).isoformat()
+    return {"current": round(cur, 2), "pct": round(min(100, cur / target * 100), 1) if target else 0, "left": round(left, 2),
+            "monthly_needed": round(left / months, 2) if months and left else 0, "months": months, "pace": round(recent, 2), "eta": eta, "done": target and cur >= target}
+
+
+@bp.get("/api/budget/goals")
+def goals():
+    user = g.user["name"]
+    d = load(user)
+    accounts_ = []
+    try:
+        import patrimoine
+        accounts_ = sorted({p.get("account") for p in patrimoine.load(user)["positions"] if p.get("account")})
+    except Exception:  # noqa: BLE001
+        pass
+    return jsonify(goals=[gl | {"state": goal_state(user, d, gl)} for gl in d["goals"]], placements=accounts_)
+
+
+@bp.post("/api/budget/goals")
+def add_goal():
+    user, f = g.user["name"], request.get_json(force=True)
+    gl = _clean_goal(f, {"id": uuid.uuid4().hex[:8], "start": date.today().isoformat()})
+    store.update(key(user), EMPTY, lambda d: d.setdefault("goals", []).append(gl))
+    return jsonify(gl)
+
+
+@bp.put("/api/budget/goals/<gid>")
+def edit_goal(gid):
+    user, f = g.user["name"], request.get_json(force=True)
+
+    def go(d):
+        gl = next((x for x in d.get("goals", []) if x["id"] == gid), None)
+        if not gl:
+            raise ValueError("Objectif introuvable")
+        gl.update(_clean_goal(f, gl))
+    store.update(key(user), EMPTY, go)
+    return jsonify(ok=True)
+
+
+@bp.delete("/api/budget/goals/<gid>")
+def del_goal(gid):
+    store.update(key(g.user["name"]), EMPTY, lambda d: d.__setitem__("goals", [x for x in d.get("goals", []) if x["id"] != gid]))
+    return jsonify(ok=True)
+
+
+def _clean_goal(f, old):
+    gl = dict(old)
+    if "name" in f:
+        gl["name"] = str(f["name"] or "").strip()[:60]
+    if "emoji" in f:
+        gl["emoji"] = str(f["emoji"] or "")[:4]
+    for k in ("target", "current"):
+        if k in f:
+            gl[k] = parse_amount(f[k]) or 0
+    if "deadline" in f:
+        v = str(f["deadline"] or "")[:10]
+        if v:
+            date.fromisoformat(v)
+        gl["deadline"] = v
+    if "source" in f:
+        gl["source"] = str(f["source"] or "manuel")[:60]
+    if not gl.get("name") or not gl.get("target"):
+        raise ValueError("Donne un nom et un montant à atteindre")
+    return gl
