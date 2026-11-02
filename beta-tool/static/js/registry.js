@@ -18,7 +18,7 @@ export const THEMES = [
   ["creation", "Retouche et transcription", "wand", "violet", ["video", "image", "transcription", "traduction"]],
   ["bureau", "Documents et bureautique", "briefcase", "bleu", ["convertir", "pdf", "work", "notes", "questionnaires"]],
   ["fichiers", "Fichiers et sauvegardes", "folder", "", ["fichiers", "drop", "decompresser", "stockage", "sauvegardes", "sauvegarde-tel"]],
-  ["reseau", "Partage, sécurité et réseau", "shield", "bleu-vert", ["presse-papier", "qr", "liens", "surveillance", "vpn", "coffre"]],
+  ["reseau", "Partage, sécurité et réseau", "shield", "bleu-vert", ["presse-papier", "qr", "liens", "nas", "surveillance", "vpn", "coffre"]],
 ];
 
 export const TOOLS = [
@@ -99,6 +99,8 @@ export const TOOLS = [
     desc: "Crée un QR code (lien, Wi-Fi, contact) ou lis-en un.", chips: ["Wi-Fi", "Contact", "Lecture"] },
   { id: "liens", name: "Liens courts", icon: "link", tile: "", cat: "utilitaires", load: () => import("./tools/links.js"),
     desc: "Raccourcis un long lien et compte les clics.", chips: ["Lien court", "Statistiques"] },
+  { id: "nas", name: "Santé du NAS", icon: "server", tile: "vert", cat: "utilitaires", load: () => import("./tools/nas.js"), admin: true,
+    desc: "Disques, processeur, mémoire, températures et état SMART, avec la date où le disque sera plein.", chips: ["Disques", "Températures", "SMART"] },
   { id: "surveillance", name: "Surveillance", icon: "pulse", tile: "vert", cat: "utilitaires", load: () => import("./tools/monitor.js"), admin: true,
     desc: "Sois prévenu si un site, un service ou le NAS ne répond plus.", chips: ["Sites", "Services", "Disque"] },
   { id: "vpn", name: "VPN", icon: "globe", tile: "bleu-vert", cat: "utilitaires", load: () => import("./tools/vpn.js"), admin: true,

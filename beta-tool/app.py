@@ -62,6 +62,7 @@ import push
 import recipes
 import roots
 import sante
+import nas
 import scanner
 import settings
 import storage
@@ -665,7 +666,7 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones, profil, patrimoine, immo, banque, visages, entretien, sante):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones, profil, patrimoine, immo, banque, visages, entretien, sante, nas):
     app.register_blueprint(module.bp)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,
@@ -708,6 +709,7 @@ if __name__ == "__main__":
     visages.start()
     entretien.start()
     sante.start()
+    nas.start()
     mounts = {}
     dav = agenda.radicale_app()
     if dav:  # serveur CalDAV des agendas (synchronisation des téléphones)

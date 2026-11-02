@@ -47,6 +47,7 @@ TOOLS = {
     "vpn": (["/api/vpn"], False),
     "stockage": (["/api/storage"], True),
     "sauvegardes": (["/api/backup"], True),
+    "nas": (["/api/nas"], True),
     "surveillance": (["/api/monitor", "/statut", "/api/public/status"], True),
 }
 DEFAULTS = {"tools": {}, "storage_name": "", "update_url": "", "site_name": "Bêta Tool"}

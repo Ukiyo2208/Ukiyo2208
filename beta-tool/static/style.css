@@ -2261,3 +2261,25 @@ select.inline { display: inline-block; width: auto; padding: 4px 8px; margin: 0 
 .sa-due { border-left: 3px solid var(--warn); }
 .sa-member { display: grid; gap: 8px; }
 .sa-vax { display: grid; gap: 4px; }
+
+/* Santé du NAS */
+.ns-state { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.ns-state > .i { width: 28px; height: 28px; flex: none; }
+.ns-state.ok > .i { color: var(--ok); }
+.ns-state.bad { border-left: 3px solid var(--err); }
+.ns-state.bad > .i { color: var(--err); }
+.ns-state .grow { display: grid; gap: 2px; }
+.ns-kpi.warn b { color: var(--warn); }
+.ns-kpi.bad b { color: var(--err); }
+.ns-net { font-size: 1.15rem !important; }
+.ns-disks { display: grid; gap: 16px; }
+.ns-disk { display: grid; gap: 4px; }
+.ns-disk .row { display: flex; align-items: center; gap: 10px; }
+.ns-disk .bar { margin-top: 2px; }
+.ns-grid { margin: 16px 0; align-items: start; }
+.ns-line { width: 100%; height: 48px; display: block; margin: 2px 0 10px; }
+.ns-line .stroke { fill: none; stroke: var(--accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.ns-line .area { fill: var(--accent-soft); }
+.ns-line.empty { height: auto; font-size: .85rem; color: var(--muted); }
+.ns-set { display: grid; gap: 10px; margin-bottom: 8px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
