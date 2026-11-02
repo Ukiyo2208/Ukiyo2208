@@ -20,7 +20,7 @@ function when(s) {
   const parts = [];
   if (s.days != null) parts.push(s.days < 0 ? `en retard de ${-s.days} j` : s.days === 0 ? "aujourd'hui" : `le ${new Date(s.next_date + "T12:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}`);
   if (s.km_left != null) parts.push(s.km_left < 0 ? `dépassé de ${(-s.km_left).toLocaleString("fr-FR")} km` : `dans ${s.km_left.toLocaleString("fr-FR")} km`);
-  return parts.join(" · ") || "date du dernier entretien inconnue";
+  return parts.map(x => `<span>${x}</span>`).join(" · ") || "<span>date du dernier entretien inconnue</span>";
 }
 
 function paint() {
@@ -31,7 +31,7 @@ function paint() {
         <small class="meta">${esc(data.kinds[it.kind]?.name || "")}${it.details ? ` · ${esc(it.details)}` : ""}${it.km ? ` · ${it.km.toLocaleString("fr-FR")} km` : ""}</small></div>
         ${it.kind === "voiture" ? `<button class="btn ghost small" data-km>${icon("edit")}Kilométrage</button>` : ""}<button class="icon-btn plain" data-edit title="Modifier">${icon("settings")}</button></div>
       <div class="en-tasks">${it.tasks.map(t => `<button class="en-task" data-t="${t.id}"><span class="cx-st ${ST[t.state.status][1]}">${ST[t.state.status][0]}</span>
-          <span class="grow bg-lbl"><b>${esc(t.name)}</b><small class="meta">${when(t.state)}${t.every_months ? ` · tous les ${t.every_months} mois` : ""}${t.every_km ? ` / ${t.every_km.toLocaleString("fr-FR")} km` : ""}</small></span>
+          <span class="grow bg-lbl"><b>${esc(t.name)}</b><small class="meta">${when(t.state)}${t.every_months ? ` · <span>tous les ${t.every_months} mois</span>` : ""}${t.every_km ? ` <span>/ ${t.every_km.toLocaleString("fr-FR")} km</span>` : ""}</small></span>
           <span class="btn ghost small" data-done>${icon("check")}Fait</span></button>`).join("") || `<p class="meta">Aucun entretien : ajoute-en un.</p>`}</div>
       <button class="btn ghost small" data-addtask>${icon("plus")}Entretien</button></div>`).join("")
     : `<div class="card empty">${icon("settings")}<b>Rien à entretenir pour l'instant</b>Ajoute ta voiture, ta chaudière ou ton logement : les entretiens habituels (vidange, contrôle technique, entretien annuel de la chaudière, ramonage…) sont proposés, avec un rappel avant chaque échéance.</div>`;

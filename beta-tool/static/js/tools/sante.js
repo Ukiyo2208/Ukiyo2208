@@ -22,11 +22,11 @@ function famille(el) {
       <span class="cx-st ${x.days < 0 ? "bad" : "warn"}">${x.days < 0 ? "En retard" : `le ${dfr(x.date)}`}</span></div>`).join("")}</div>` : ""}
     <div class="ot-top"><button class="btn" id="sa-addm">${icon("plus")}Ajouter quelqu'un</button></div>
     <div class="pt-loans">${data.members.map(m => `<div class="card sa-member" data-m="${m.id}">
-      <div class="pt-loan-h"><span class="avatar">${esc(m.name[0] || "?")}</span><div class="grow"><b>${esc(m.name)}</b><small class="meta">${m.age != null ? `${m.age} ans` : "date de naissance ?"}${m.blood ? ` · groupe ${esc(m.blood)}` : ""}</small></div>
+      <div class="pt-loan-h"><span class="avatar">${esc(m.name[0] || "?")}</span><div class="grow"><b>${esc(m.name)}</b><small class="meta">${m.age != null ? `<span>${m.age} ans</span>` : "date de naissance ?"}${m.blood ? ` · <span>groupe ${esc(m.blood)}</span>` : ""}</small></div>
         <button class="icon-btn plain" data-editm title="Modifier">${icon("edit")}</button></div>
       ${m.allergies ? `<div class="im-note">${icon("alert")}Allergies : ${esc(m.allergies)}</div>` : ""}
       ${m.treatments ? `<small class="meta">Traitement : ${esc(m.treatments)}</small>` : ""}${m.doctor ? `<small class="meta">Médecin traitant : ${esc(m.doctor)}</small>` : ""}
-      <div class="sa-vax"><b>Vaccins</b>${m.vaccines.map(v => `<div class="bg-row"><span class="grow bg-lbl"><span>${esc(v.name)}</span><small class="meta">${v.date ? `fait le ${dfr(v.date)}` : ""}${v.next ? ` · rappel le ${dfr(v.next)}` : ""}</small></span>
+      <div class="sa-vax"><b>Vaccins</b>${m.vaccines.map(v => `<div class="bg-row"><span class="grow bg-lbl"><span>${esc(v.name)}</span><small class="meta">${v.date ? `<span>fait le ${dfr(v.date)}</span>` : ""}${v.next ? ` · <span>rappel le ${dfr(v.next)}</span>` : ""}</small></span>
           <button class="icon-btn plain" data-delv="${v.id}" title="Supprimer">${icon("trash")}</button></div>`).join("") || `<small class="meta">Aucun vaccin noté.</small>`}
         ${m.dtp ? `<small class="meta">${icon("clock")} Rappel DTP des ${m.dtp.age} ans prévu vers le ${dfr(m.dtp.date)}</small>` : ""}
         <button class="btn ghost small" data-addv>${icon("plus")}Vaccin</button></div></div>`).join("")}</div>

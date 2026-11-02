@@ -1,8 +1,8 @@
 """Outil « Santé » : la santé de la famille, privée pour chaque compte.
 
 - Fiches : date de naissance, groupe sanguin, allergies, traitements, médecin traitant.
-- Vaccins : date du dernier, date du prochain rappel (rappels diphtérie-tétanos-polio de l'adulte
-  calculés d'après l'âge : 25, 45, 65 ans puis tous les 10 ans), avec rappel.
+- Vaccins : date du dernier, date du prochain rappel (rappels diphtérie-tétanos-polio
+  calculés d'après l'âge : 6, 11, 25, 45, 65 ans puis tous les 10 ans), avec rappel.
 - Rendez-vous médicaux : ceux de l'Agenda (catégorie Santé ou mots comme dentiste, kiné…).
 - Ordonnances : celles déposées dans Paperasse, avec leur date de validité.
 - Remboursements : dépenses de santé et remboursements (Assurance maladie, mutuelle) repérés

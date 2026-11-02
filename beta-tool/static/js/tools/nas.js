@@ -55,8 +55,8 @@ async function load(quiet) {
       const f = k.forecast;
       return `<div class="ns-disk"><div class="row"><b class="grow">${esc(k.roots.join(", "))}</b><span class="cx-st ${level(k.pct, d.settings.disk_pct - 10, d.settings.disk_pct)}">${k.pct} %</span></div>
         <div class="bar"><div style="width:${k.pct}%"></div></div>
-        <small class="meta">${sizeStr(k.used)} utilisés sur ${sizeStr(k.total)} · ${sizeStr(k.free)} libres</small>
-        <small class="meta">${!f ? "Prévision disponible après 3 jours de relevés." : f.per_day <= 0 ? "L'espace utilisé ne grossit pas en ce moment." : `+${sizeStr(f.per_month)} par mois${f.full_on ? ` · plein vers le <b>${dfr(f.full_on)}</b> (dans ${f.full_in} j)` : " · pas plein avant 10 ans"}`}</small></div>`;
+        <small class="meta"><span>${sizeStr(k.used)} utilisés sur ${sizeStr(k.total)}</span> · <span>${sizeStr(k.free)} libres</span></small>
+        <small class="meta">${!f ? "Prévision disponible après 3 jours de relevés." : f.per_day <= 0 ? "L'espace utilisé ne grossit pas en ce moment." : `<span>+${sizeStr(f.per_month)} par mois</span>${f.full_on ? ` · <span>plein vers le</span> <b>${dfr(f.full_on)}</b> <span>(dans ${f.full_in} j)</span>` : " · <span>pas plein avant 10 ans</span>"}`}</small></div>`;
     }).join("") || `<p class="meta">Aucun dossier racine lisible.</p>`}</div></div>
     <div class="grid2 ns-grid">
       <div class="card"><div class="card-title">${icon("chart")}Dernières 24 heures</div>
