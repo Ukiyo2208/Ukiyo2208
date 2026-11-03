@@ -1,0 +1,28 @@
+// Bloc à fusionner dans data/config/openclaw.json (ou à appliquer avec la commande
+// « config set » du README). Modèle servi par l'Ollama de Bêta, sur le NAS.
+{
+  models: {
+    providers: {
+      ollama: {
+        baseUrl: "http://beta-ollama:11434", // API native d'Ollama : surtout pas de /v1
+        apiKey: "ollama-local",
+        api: "ollama",
+        timeoutSeconds: 600, // le NAS n'a pas de carte graphique : réponses lentes
+        models: [
+          {
+            id: "qwen3.5:9b",
+            name: "qwen3.5:9b",
+            input: ["text"],
+            contextTokens: 32768,
+            params: { num_ctx: 32768, thinking: false, keep_alive: "30m" },
+          },
+        ],
+      },
+    },
+  },
+  agents: {
+    defaults: {
+      model: { primary: "ollama/qwen3.5:9b" },
+    },
+  },
+}
