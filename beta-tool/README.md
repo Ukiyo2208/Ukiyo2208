@@ -40,6 +40,7 @@ fichier n'est envoyé à un service externe.
 | **Patrimoine** | Actions et ETF (relevé Revolut en CSV), épargne salariale et actions de l'entreprise (avec date de disponibilité), cours automatiques convertis en euros, crédits (capital restant dû, intérêts restants, date de fin), biens immobiliers avec taxe foncière et cash-flow, simulateur d'achat locatif (mensualité, rendement, cash-flow après impôt, taux d'endettement), **alertes de cours**, **dividendes** estimés et **estimation de l'impôt sur le revenu**. |
 | **Immobilier** | Annonces suivies avec **alerte de baisse de prix**, **prix réels du quartier** (ventes DVF), gestion locative (loyers repérés dans le Budget, **quittances PDF** par mail, **révision IRL**, état des lieux avec photos, dépôt de garantie) et **récapitulatif pour la déclaration** (micro ou réel, cases à remplir). |
 | **Inventaire** | Objets de la maison par pièce avec photo, prix, garantie, n° de série et facture (depuis Paperasse) ; péremptions (congélateur, pharmacie) ; liste avec valeur totale pour l'assurance habitation. |
+| **Suivi des prix** | Historique des prix des produits que tu regardes (avec l'extension), produits suivis relus chaque jour, alerte de baisse et prix cible, **comparaison avec les autres boutiques** (Amazon, Fnac, Darty, Boulanger, Cdiscount, LDLC, Rakuten, Leclerc, Carrefour, Decathlon, et les tiennes) par code EAN ou nom exact. |
 | **Entretien** | Voiture, chaudière, logement, jardin : entretiens réguliers proposés (vidange, contrôle technique, chaudière, ramonage…), au temps et au kilométrage, historique avec prix et factures, rappels avant chaque échéance. |
 | **Santé** | La santé de la famille, privée par compte : fiches (groupe sanguin, allergies, médecin), vaccins et rappels DTP, rendez-vous médicaux dans l'Agenda, ordonnances et remboursements (Paperasse, Budget), reste à charge. |
 | **Colis** | Numéros de suivi repérés tout seuls dans les mails, avancement mis à jour par les mails du transporteur, clé La Poste optionnelle pour le suivi en direct, et synchro avec l'appli **Parcel** (iPhone / Mac, Premium) : colis envoyés à Parcel, suivi et date de livraison prévue rapatriés, commandes Amazon comprises. |
@@ -47,7 +48,7 @@ fichier n'est envoyé à un service externe.
 | **Traduction** | Textes, documents (Word, OpenDocument, PDF) et sous-titres traduits sur le NAS (Argos Translate), sans service en ligne. |
 | **VPN** | Accès à la maison depuis l'extérieur avec WireGuard (wg-easy) : appareils, QR codes, état des connexions. Optionnel. |
 
-Autour des outils : **menu et accueil rangés par thèmes**, **tableau de bord** (espace disque, outils épinglés, activité récente), **recherche partout** (`Ctrl K` : fichiers, notes, mails, tâches, opérations, placements, objets, entretiens, santé, colis, personnes…),
+Autour des outils : **extension de navigateur** (Opera, Chrome, Edge, Brave, Vivaldi), **menu et accueil rangés par thèmes**, **tableau de bord** (espace disque, outils épinglés, activité récente), **recherche partout** (`Ctrl K` : fichiers, notes, mails, tâches, opérations, placements, objets, entretiens, santé, colis, personnes…),
 **notifications push** sur le téléphone et l'ordinateur (même Bêta Tool fermé), **comptes utilisateurs** avec
 **double authentification** et **clés d'accès** (empreinte, visage), **profils enfants** (outils, heures et temps d'écran),
 **commandes vocales** (micro de l'appli, Siri, Google Assistant) et **widget** d'écran d'accueil, **mode hors ligne**, **appli installable** sur le téléphone (avec « Partager vers Bêta Tool »), interface en
@@ -275,6 +276,29 @@ Entre deux langues étrangères, la traduction passe par l'anglais.
 Le conteneur [wg-easy](https://github.com/wg-easy/wg-easy) utilise le module WireGuard du noyau : il est présent sur
 la plupart des Linux, QNAP et Unraid, mais **pas sur Synology DSM** (il faut d'abord installer un paquet communautaire
 WireGuard pour DSM). Alternative la plus simple : [Tailscale](https://tailscale.com) (paquet officiel sur Synology).
+
+## Extension de navigateur (2.9)
+
+Pour Opera, Chrome, Edge, Brave et Vivaldi (ordinateur). Réglages › Extension : télécharge le `.zip`, décompresse-le,
+puis dans `opera://extensions` (ou `chrome://extensions`) active le mode développeur et « Charger l'extension non
+empaquetée ». Relie-la avec le code à 6 chiffres affiché dans Réglages › Extension : elle reçoit un jeton personnel
+(révocable au même endroit) et parle au NAS uniquement avec ce jeton.
+
+- **Envoyer sur le NAS** : clic droit sur un lien, une image ou la page ; après un téléchargement, une notification
+  propose de l'envoyer. Le fichier est rangé tout seul : relevé CSV / OFX / QIF → Budget, relevé Revolut → Patrimoine,
+  PDF → Paperasse, photo → Album photo, le reste → Téléchargements/Navigateur. Le fichier est récupéré avec la session du
+  site ; si le site ne le permet pas (téléchargement généré à la volée), la page « Déposer » accepte le glisser-déposer.
+- **Vidéos** : bouton « Sur le NAS » sur YouTube et clic droit « Télécharger la vidéo » partout (Téléchargeur, yt-dlp).
+- **Prix** : chaque fiche produit ouverte est notée (désactivable), une bulle signale un meilleur prix ailleurs ;
+  « Comparer » cherche le produit chez les autres boutiques en passant par le navigateur.
+- **Bêta Notes, Colis, Agenda, Immobilier** : page ou sélection vers Notes, numéros de suivi repérés sur la page,
+  rendez-vous créé depuis un texte sélectionné (date et heure devinées), annonce immobilière suivie.
+- **Recherche** : tape `bt` puis Espace dans la barre d'adresse.
+- **Mots de passe** : l'extension ne les gère pas elle-même ; elle guide vers **Bitwarden** (open source, audité),
+  relié au Coffre du NAS (Vaultwarden) : chiffrement de bout en bout, générateur, remplissage automatique, clés d'accès.
+
+Le NAS doit être joignable depuis le navigateur (à la maison, ou via Tailscale / le VPN). Pas d'extension sur
+téléphone : Opera, Chrome et Safari mobiles ne les acceptent pas (le partage vers l'appli Bêta Tool reste possible).
 
 ## Immobilier, banque et impôts (2.8)
 

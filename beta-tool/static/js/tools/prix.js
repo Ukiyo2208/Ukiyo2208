@@ -128,6 +128,7 @@ function addForm() {
 
 function settingsView(el) {
   const s = data.settings;
+  if (!el.isConnected) return;
   el.innerHTML = `<div class="card"><div class="card-title">${icon("settings")}Suivi</div><form id="px-set" class="ns-set">
       <label class="check"><input type="checkbox" name="record_all" ${s.record_all ? "checked" : ""}> Noter le prix de toutes les fiches produit que j'ouvre (pour avoir l'historique quand je reviens)</label>
       <label class="check"><input type="checkbox" name="notify_drop" ${s.notify_drop ? "checked" : ""}> Me prévenir quand un produit suivi baisse</label>
@@ -141,6 +142,7 @@ function settingsView(el) {
           <div><label class="field">Lien de recherche ({q} = produit)</label><input name="search" required placeholder="https://www.exemple.fr/recherche?q={q}"></div>
           <div><label class="field">Forme des liens produit (expression régulière)</label><input name="product" required placeholder="exemple\\.fr/produit/"></div>
           <button class="btn small">${icon("plus")}Ajouter</button></form></details></div>`;
+  if (!$("#px-set")) return;  // page quittée entre-temps
   $("#px-set").onchange = async e => {
     const f = e.currentTarget;
     await api("/api/prix/settings", { method: "PUT", json: { record_all: f.record_all.checked, notify_drop: f.notify_drop.checked, min_drop_pct: f.min_drop_pct.value } });

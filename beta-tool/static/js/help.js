@@ -771,6 +771,20 @@ export const HELP = {
     tips: ["Seuls les administrateurs voient cet outil.", "Les capteurs visibles dépendent de ce que le NAS partage avec le conteneur Docker."],
     faq: [["Pourquoi je ne vois pas l'état SMART ?", "Il faut le paquet smartmontools et l'accès aux disques (privileged: true ou devices: dans docker-compose.yml). Le panneau du NAS UGREEN l'affiche aussi."]],
   },
+  prix: {
+    title: "Tuto · Suivi des prix", icon: "tag", tile: "vert",
+    lead: "L'historique des prix des produits que tu regardes, une alerte quand ça baisse, et les prix des autres boutiques.",
+    steps: [
+      ["Installe l'extension", "Réglages › Extension : télécharge-la, charge-la dans Opera (ou Chrome, Edge, Brave), puis relie-la avec le code affiché."],
+      ["Navigue normalement", "Sur une fiche produit, le prix est noté sur le NAS. En revenant plus tard, tu vois si le prix est bas, habituel ou plus cher que d'habitude."],
+      ["Suis un produit", "« Suivre le prix » dans l'extension (ou ici avec « Suivre un lien ») : il est relu chaque jour et tu es prévenu quand il baisse ou passe sous ton prix cible."],
+      ["Compare", "« Comparer les prix » cherche le même produit (code EAN, sinon le nom exact) chez Amazon, Fnac, Darty, Boulanger, Cdiscount, LDLC… Une bulle te prévient quand c'est moins cher ailleurs."],
+    ],
+    tips: ["La recherche passe par ton navigateur : les boutiques la bloquent moins que si le NAS le faisait.", "Pour Amazon, le lien CamelCamelCamel montre l'historique des années passées.",
+           "Tu peux ajouter une boutique (Réglages de l'outil) avec son lien de recherche."],
+    faq: [["Pourquoi l'historique commence aujourd'hui ?", "Il n'existe pas de base gratuite de l'historique de tous les sites : Bêta Tool le construit à partir de tes visites et des relectures quotidiennes."],
+          ["Un produit n'est pas trouvé ailleurs ?", "Seules les fiches qui correspondent vraiment sont gardées (même code EAN, ou même nom et même référence) : mieux vaut rien qu'un mauvais modèle. Les liens Idealo et LeDénicheur complètent."]],
+  },
   suggestions: {
     title: "Tuto · Suggestions", icon: "lightbulb", tile: "ambre",
     lead: "Une idée d'outil, une amélioration, un bug ? Dis-le !",
