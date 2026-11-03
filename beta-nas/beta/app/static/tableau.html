@@ -61,6 +61,18 @@
   </section>
 
   <section id="contenu" hidden>
+    <h2>Tablette</h2>
+    <div class="carte">
+      <form id="form-qr">
+        <input id="piece" placeholder="Pièce de la tablette (ex : salon)" value="salon">
+        <button>Afficher le QR d'appairage</button>
+      </form>
+      <div id="qr" hidden style="margin-top:12px">
+        <small>Dans l'app de la tablette : Réglages → <b>Scanner le QR code du NAS</b>, puis montre-lui cet écran.</small>
+        <div id="qr-image" style="background:#fff;border-radius:12px;padding:12px;width:min(320px,100%);margin-top:10px"></div>
+      </div>
+    </div>
+
     <h2>Services</h2>
     <div class="grille" id="services"></div>
 
@@ -92,6 +104,17 @@
     jeton = $("jeton").value.trim();
     try { sessionStorage.setItem("beta_jeton", jeton); } catch (e) {}
     actualiser();
+  });
+
+  $("form-qr").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const piece = encodeURIComponent($("piece").value.trim().toLowerCase());
+    const r = await fetch(`/v1/appairage?piece=${piece}`, { headers: { Authorization: `Bearer ${jeton}` } });
+    if (!r.ok) return;
+    const svg = new DOMParser().parseFromString(await r.text(), "image/svg+xml").documentElement;
+    svg.setAttribute("width", "100%"); svg.removeAttribute("height");
+    $("qr-image").replaceChildren(svg);
+    $("qr").hidden = false;
   });
 
   function duree(s) {

@@ -1,6 +1,8 @@
 # Bêta IA : toute la partie technique, sur le NAS.
 # La tablette n'envoie que l'audio de la commande + le nom de la personne reconnue.
 
+name: beta-nas # nom fixe : le réseau « beta-nas_default » est toujours le même
+
 services:
   # Domotique, automatisations, musique (via Music Assistant)
   # Si tu as déjà Home Assistant ailleurs, supprime ce bloc et mets son adresse dans HA_URL (.env).

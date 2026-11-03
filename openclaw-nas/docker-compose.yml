@@ -2,6 +2,8 @@
 # Adapté du docker-compose.yml officiel d'OpenClaw, avec l'image pré-construite
 # (pas de compilation sur le NAS) et les données dans ./data.
 
+name: openclaw
+
 x-openclaw-commun: &commun
   image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
   env_file: .env

@@ -64,6 +64,10 @@ class ReglagesActivity : Activity() {
                     titre("Réglages"),
                     texte("Adresse du NAS (service Bêta)", 15f, TEXTE_DOUX), url,
                     texte("Jeton", 15f, TEXTE_DOUX), jeton,
+                    bouton("Scanner le QR code du NAS") {
+                        startActivity(Intent(this, AppairageActivity::class.java))
+                        finish()
+                    },
                     bouton("Tester la connexion") {
                         enregistrer()
                         resultat.text = "Test…"

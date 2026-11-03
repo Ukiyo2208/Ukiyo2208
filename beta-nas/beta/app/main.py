@@ -15,7 +15,7 @@ import httpx
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -75,7 +75,7 @@ app.mount("/static", StaticFiles(directory=STATIQUE), name="static")
 
 
 statistiques = st.Statistiques()
-_PAS_SUIVIS = ("/static", "/favicon.ico", "/v1/stats", "/tableau", "/docs", "/openapi.json")
+_PAS_SUIVIS = ("/static", "/favicon.ico", "/v1/stats", "/v1/appairage", "/tableau", "/docs", "/openapi.json")
 
 
 @app.middleware("http")
@@ -312,6 +312,15 @@ async def stats(format: str = "json"):
     if format == "texte":
         return PlainTextResponse(st.en_texte(instantane, services))
     return {"services": services, **instantane}
+
+
+@app.get("/v1/appairage", dependencies=[Depends(verifier_jeton)])
+async def appairage(request: Request, piece: str = ""):
+    """QR code à scanner avec la tablette : adresse de Bêta telle que vue par ce navigateur + jeton."""
+    from .installation import lien_appairage, qr_svg  # chargé seulement à l'usage
+
+    lien = lien_appairage(str(request.base_url), etat["settings"].beta_token, piece)
+    return Response(qr_svg(lien), media_type="image/svg+xml", headers={"Cache-Control": "no-store"})
 
 
 @app.get("/tableau", include_in_schema=False)

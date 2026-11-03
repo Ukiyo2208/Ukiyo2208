@@ -36,3 +36,19 @@ def test_statistiques_en_temps_reel(monkeypatch, tmp_path):
         texte = client.get("/v1/stats?format=texte", headers=h).text
         assert "POST /v1/texte" in texte and "allume le salon" in texte
         assert "Tableau de bord" in client.get("/tableau").text
+
+
+def test_qr_appairage(monkeypatch, tmp_path):
+    monkeypatch.setenv("BETA_TOKEN", "secret")
+    monkeypatch.setenv("BETA_CONFIG", str(tmp_path / "absent.yaml"))
+    monkeypatch.setenv("OLLAMA_URL", "http://127.0.0.1:9")
+    from app import main
+    from app.installation import lien_appairage
+
+    with TestClient(main.app, base_url="http://192.168.1.20:8800") as client:
+        assert client.get("/v1/appairage").status_code == 401
+        r = client.get("/v1/appairage?piece=salon", headers={"Authorization": "Bearer secret"})
+        assert r.headers["content-type"].startswith("image/svg+xml") and "<svg" in r.text
+    assert lien_appairage("http://192.168.1.20:8800/", "secret", "salon") == (
+        "beta://appairage?url=http%3A%2F%2F192.168.1.20%3A8800&jeton=secret&piece=salon"
+    )

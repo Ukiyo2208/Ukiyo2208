@@ -51,6 +51,11 @@
             android:label="Réglages" />
 
         <activity
+            android:name=".AppairageActivity"
+            android:exported="false"
+            android:label="Connexion au NAS" />
+
+        <activity
             android:name=".VisagesActivity"
             android:exported="false"
             android:label="Visages" />

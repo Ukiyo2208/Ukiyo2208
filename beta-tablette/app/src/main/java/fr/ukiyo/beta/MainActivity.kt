@@ -68,7 +68,8 @@ class MainActivity : Activity() {
         super.onStart()
         suivi = scope.launch { Etat.affichage.collect { afficher(it) } }
         if (!reglages.estConfigure) {
-            startActivity(Intent(this, ReglagesActivity::class.java))
+            // Premier lancement : on scanne le QR code du NAS, rien à taper
+            startActivity(Intent(this, AppairageActivity::class.java))
         } else if (demanderPermissions()) {
             BetaService.demarrer(this)
         }
