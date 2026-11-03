@@ -81,6 +81,7 @@ mimetypes.add_type("text/javascript", ".mjs")  # modules pdf.js
 mimetypes.add_type("application/manifest+json", ".webmanifest")
 
 app = Flask(__name__, static_folder="static", static_url_path="")
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # le cookie de session n'accompagne pas les requêtes venues d'autres sites
 # Icône et bannière : dossier de l'image (monté par docker-compose), même quand une mise à jour tourne
 BRAND_DIR = os.path.join(os.environ.get("BETA_BASE_DIR", os.path.dirname(os.path.abspath(__file__))), "static", "brand")
 BLUEPRINTS = []  # outils déclarés dans leur propre module (fichiers, partages, notes…)
@@ -154,6 +155,9 @@ def gatekeeper():
                 return jsonify(error="Jeton invalide, expiré ou révoqué"), 401
             g.user, g.api_scopes = found
         elif g.user:
+            origin = request.headers.get("Origin")
+            if origin and urlparse(origin).netloc != request.host:  # autre site qui tenterait d'utiliser ta session
+                return jsonify(error="Requête refusée : utilise un jeton (Authorization: Bearer)"), 403
             g.api_scopes = "*"
     tool = settings.blocked(path)
     if tool:

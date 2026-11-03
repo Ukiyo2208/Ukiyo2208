@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Nouveau rendez-vous · Bêta Tool</title><link rel="stylesheet" href="ext.css">
+<style>body{padding:16px}</style></head>
+<body>
+  <div class="row" style="margin-bottom:10px"><img class="logo" src="icons/icon48.png" alt=""><h1>Nouveau rendez-vous</h1></div>
+  <form id="f">
+    <label class="f">Titre</label><input name="title" required>
+    <label class="c"><input type="checkbox" name="allday"> Toute la journée</label>
+    <div class="grid"><div><label class="f">Date</label><input type="date" name="date" required></div><div id="t"><label class="f">Heure</label><input type="time" name="time" value="09:00"></div></div>
+    <label class="f">Durée (min)</label><input type="number" name="minutes" value="60">
+    <label class="f">Lieu</label><input name="location">
+    <label class="f">Notes</label><textarea name="notes" rows="4"></textarea>
+    <p><button class="btn p wide">Ajouter à l'Agenda</button></p>
+  </form>
+  <div id="msg"></div>
+<script type="module" src="event.js"></script>
+</body></html>

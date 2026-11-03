@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Bêta Tool · Options</title><link rel="stylesheet" href="ext.css">
+<style>body{max-width:720px;margin:0 auto;padding:24px 16px}</style></head>
+<body>
+  <div class="row" style="margin-bottom:16px"><img class="logo" src="icons/icon48.png" alt="" style="width:40px;height:40px"><div><h1>Extension Bêta Tool</h1><div class="meta">Le pont entre ce navigateur et ton NAS</div></div></div>
+
+  <div class="card" id="conn">
+    <h2 style="margin-top:0">Connexion au NAS</h2>
+    <div id="linked" hidden><p>Reliée à <b id="l-site"></b> (<span id="l-base"></span>) avec le compte <b id="l-user"></b>.</p>
+      <div class="row"><button class="btn" id="test">Tester la connexion</button><button class="btn" id="unlink">Délier ce navigateur</button></div></div>
+    <form id="pair">
+      <ol><li>Dans Bêta Tool : <b>Réglages › Extension</b>, clique sur « Relier un navigateur » : un code à 6 chiffres s'affiche (valable 5 minutes).</li>
+        <li>Saisis ici l'adresse de ton Bêta Tool et ce code.</li></ol>
+      <label class="f">Adresse de Bêta Tool</label><input name="base" required placeholder="http://192.168.1.20:8099 ou https://nas.mon-tailnet.ts.net">
+      <label class="f">Code</label><input name="code" required inputmode="numeric" maxlength="7" placeholder="123456" style="max-width:160px;letter-spacing:.2em">
+      <p><button class="btn p">Relier</button></p>
+    </form>
+    <div id="msg"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Réglages</h2>
+    <label class="f">Après un téléchargement (PDF, relevé, photo…)</label>
+    <select id="o-downloads"><option value="ask">Me proposer de l'envoyer sur le NAS</option><option value="auto">Envoyer tout seul les PDF et relevés bancaires</option><option value="off">Ne rien faire</option></select>
+    <label class="c"><input type="checkbox" id="o-prices"> Noter les prix des fiches produit que j'ouvre (historique, comparaison)</label>
+    <label class="c"><input type="checkbox" id="o-pill"> Afficher une bulle quand c'est moins cher ailleurs ou que le prix est intéressant</label>
+    <label class="c"><input type="checkbox" id="o-video"> Bouton « Sur le NAS » sur les vidéos YouTube</label>
+    <p class="meta">Astuce : dans la barre d'adresse, tape <code>bt</code> puis Espace pour chercher dans Bêta Tool. Clic droit sur un lien, une image, une sélection ou la page pour l'envoyer au bon outil.</p>
+  </div>
+
+  <div class="card" id="mots-de-passe">
+    <h2 style="margin-top:0">Mots de passe : Bitwarden + ton Coffre</h2>
+    <p>Pour créer, enregistrer et remplir tes mots de passe, le plus sûr est d'utiliser <b>Bitwarden</b>, une extension <b>open source</b> auditée par des experts indépendants,
+      reliée au <b>Coffre de ton NAS</b> (Vaultwarden). Tes mots de passe sont chiffrés <b>dans ton navigateur</b> avec ton mot de passe principal avant d'être envoyés au NAS :
+      même le NAS ne peut pas les lire. Bêta Tool ne touche jamais à tes mots de passe.</p>
+    <ol>
+      <li>Dans Bêta Tool, active l'outil <b>Coffre</b> (Réglages › Outils) ; il demande le conteneur Vaultwarden (voir le README). <span id="v-url"></span></li>
+      <li>Installe Bitwarden : <a href="https://addons.opera.com/fr/extensions/details/bitwarden-free-password-manager/" target="_blank">pour Opera</a> ·
+        <a href="https://chromewebstore.google.com/detail/bitwarden-password-manager/nngceckbapebfimnlniiiahkandclblb" target="_blank">pour Chrome, Brave, Vivaldi</a> ·
+        <a href="https://microsoftedge.microsoft.com/addons/detail/bitwarden-password-manage/jbkfoedolllekgbhcbcoahefnbanhhlh" target="_blank">pour Edge</a>.</li>
+      <li>Dans Bitwarden, avant de te connecter : choisis <b>« Auto-hébergé »</b> (Self-hosted) et colle l'adresse de ton Coffre.</li>
+      <li>Crée ton compte avec un <b>mot de passe principal</b> long (une phrase) : il n'est pas récupérable, note-le sur papier en lieu sûr.</li>
+      <li>Active la <b>double authentification</b> dans le Coffre, et importe tes mots de passe d'Opera ou de Chrome (Paramètres › Mots de passe › Exporter, puis Bitwarden › Importer). Supprime ensuite le fichier exporté.</li>
+    </ol>
+    <p class="meta">Bitwarden propose un générateur de mots de passe à chaque inscription, le remplissage automatique, les clés d'accès (passkeys) et existe aussi sur iPhone et Android, avec le même coffre.</p>
+  </div>
+<script type="module" src="options.js"></script>
+</body></html>

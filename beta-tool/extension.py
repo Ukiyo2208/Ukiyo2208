@@ -134,7 +134,7 @@ def status():
     return jsonify(user=g.user["name"], site=settings.get()["site_name"], version=open(os.path.join(ROOT, "VERSION")).read().strip(),
                    tools={d: tools.get(t, True) for d, t in TOOL_OF.items() if t}, dests=DESTS,
                    vault={"on": tools.get("coffre", False), "url": vault.PUBLIC},
-                   parcel_patterns=[[c, p] for c, p in colis.PATTERNS], prix=_prix_settings())
+                   parcel_patterns=[[c, p] for c, p in colis.PATTERNS], parcel_context=colis.CONTEXT_NUM, prix=_prix_settings())
 
 
 def _prix_settings():
@@ -347,7 +347,7 @@ def prix_follow():
         if "target" in f:
             p["target"] = prix.to_price(f["target"]) if f["target"] not in (None, "") else None
     store.update(prix.key(g.user["name"]), prix.EMPTY, go)
-    return jsonify(product=prix.summary(g.user["name"], f.get("pid")))
+    return jsonify(product=prix.summary(g.user["name"], f.get("pid"), prix.clean_url(f["url"]) if f.get("url") else None))
 
 
 @ext_route("/prix/plan", methods=["POST"])
@@ -372,9 +372,10 @@ def prix_page():
 @ext_route("/prix/done", methods=["POST"])
 def prix_done():
     import prix
-    pid = (request.get_json(force=True) or {}).get("pid")
+    f = request.get_json(force=True) or {}
+    pid = f.get("pid")
     store.update(prix.key(g.user["name"]), prix.EMPTY, lambda d: [p.__setitem__("compared", time.time()) for p in d["products"] if p["id"] == pid])
-    return jsonify(product=prix.summary(g.user["name"], pid))
+    return jsonify(product=prix.summary(g.user["name"], pid, prix.clean_url(f["url"]) if f.get("url") else None))
 
 
 @ext_route("/prix/due")

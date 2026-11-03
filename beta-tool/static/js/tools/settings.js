@@ -8,6 +8,7 @@ import { canvas as qrCanvas } from "../qrcode.js";
 import * as i18n from "../i18n.js";
 import { settingsTab as enligne } from "../accounts.js";
 import { settingsTab as apiTab } from "../apitokens.js";
+import { settingsTab as extTab } from "../extension.js";
 import { settingsTab as famille } from "../famille.js";
 import { card as passkeysCard } from "../passkeys.js";
 import { settingsTab as acces } from "../acces.js";
@@ -20,6 +21,7 @@ const TABS = [
   ["apparence", "Apparence", "sun", false],
   ["notifications", "Notifications", "bell", false],
   ["enligne", "Mails et agendas", "globe", false],
+  ["extension", "Extension", "globe", false],
   ["api", "API", "code", false],
   ["comptes", "Comptes de la maison", "users", true],
   ["famille", "Famille", "heart", true],
@@ -36,7 +38,7 @@ export async function render(root, parts) {
   root.innerHTML = pageHead({ name: "Réglages", icon: "settings", tile: "", desc: "Personnalise Bêta Tool : outils, comptes, mises à jour…" })
     + `<nav class="tabs">${tabs.map(([id, label, ic]) => `<a href="#/reglages/${id}" class="${id === tab ? "on" : ""}">${icon(ic)}${label}</a>`).join("")}</nav>
        <div id="set-body"></div>`;
-  await ({ connexions, profil, apparence: apparenceTab, general, outils, comptes, famille, acces, enligne, api: apiTab, notifications, maj, apropos })[tab]($("#set-body"));
+  await ({ connexions, profil, apparence: apparenceTab, general, outils, comptes, famille, acces, enligne, api: apiTab, extension: extTab, notifications, maj, apropos })[tab]($("#set-body"));
 }
 
 // --- Général ----------------------------------------------------------------

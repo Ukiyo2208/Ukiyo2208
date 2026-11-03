@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Bêta Tool</title><link rel="stylesheet" href="ext.css">
+<style>body{width:370px;padding:12px}</style></head>
+<body>
+  <div class="row" style="margin-bottom:10px"><img class="logo" src="icons/icon48.png" alt=""><div class="grow"><h1 id="site">Bêta Tool</h1><div class="meta" id="who"></div></div>
+    <button class="btn" id="open" title="Ouvrir Bêta Tool">Ouvrir</button><button class="btn" id="opts" title="Options">⚙</button></div>
+  <div id="setup" hidden class="card"><b>Relie l'extension à ton NAS</b><p class="meta">Dans Bêta Tool : Réglages › Extension › « Relier un navigateur », puis saisis le code ici.</p>
+    <button class="btn p wide" id="go-setup">Relier à mon NAS</button></div>
+  <div id="main" hidden>
+    <div id="product"></div>
+    <div class="card">
+      <div class="row"><input id="q" type="search" placeholder="Rechercher dans Bêta Tool…" autocomplete="off"></div>
+      <div class="list" id="results"></div>
+    </div>
+    <h2>Cette page</h2>
+    <div class="grid" id="actions">
+      <button class="btn" data-a="video">⬇ Vidéo sur le NAS</button>
+      <button class="btn" data-a="note">📝 Page dans Notes</button>
+      <button class="btn" data-a="parcels">📦 Colis de la page</button>
+      <button class="btn" data-a="price">€ Suivre le prix</button>
+      <button class="btn" data-a="immo" hidden>🏠 Suivre l'annonce</button>
+      <button class="btn" data-a="drop">📁 Déposer un fichier</button>
+    </div>
+    <div id="out"></div>
+    <h2>Mots de passe</h2>
+    <div class="card small" id="vault"></div>
+  </div>
+<script type="module" src="popup.js"></script>
+</body></html>

@@ -14,7 +14,7 @@ import time
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-INCLUDE_DIRS = ["static", "templates", "models"]
+INCLUDE_DIRS = ["static", "templates", "models", "extension"]
 EXCLUDE = {"static/brand", "__pycache__"}
 
 

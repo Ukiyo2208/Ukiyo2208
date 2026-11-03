@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Bêta Tool",
+  "short_name": "Bêta Tool",
+  "version": "2.9.0",
+  "description": "Le pont entre ton navigateur et ton NAS Bêta Tool : envoi de fichiers et de vidéos, suivi et comparaison des prix, notes, colis, agenda, recherche.",
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": { "default_popup": "popup.html", "default_title": "Bêta Tool", "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png" } },
+  "background": { "service_worker": "background.js", "type": "module" },
+  "options_page": "options.html",
+  "omnibox": { "keyword": "bt" },
+  "permissions": ["storage", "contextMenus", "downloads", "notifications", "alarms", "scripting", "activeTab", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [{ "matches": ["http://*/*", "https://*/*"], "js": ["content.js"], "run_at": "document_idle" }],
+  "web_accessible_resources": [{ "resources": ["icons/icon32.png"], "matches": ["http://*/*", "https://*/*"] }]
+}

@@ -178,6 +178,11 @@ function parseRoute() {
 }
 
 async function route() {
+  if (location.hash.startsWith("#/recherche")) {  // lien de recherche (extension, mot-clé « bt ») : ouvre la recherche
+    const q = new URLSearchParams(location.hash.split("?")[1] || "").get("q") || "";
+    history.replaceState(null, "", "#/");
+    setTimeout(() => { openPalette(); $("#palette-q").value = q; $("#palette-q").dispatchEvent(new Event("input")); }, 50);
+  }
   const prev = current;
   current = parseRoute();
   if (dynModule && (prev.top !== current.top || current.view !== "dyn")) { dynModule.leave?.(); dynModule = null; }

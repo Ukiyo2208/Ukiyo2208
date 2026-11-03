@@ -53,6 +53,7 @@ function paint() {
     : `<div class="card empty">${icon("tag")}<b>${tab === "suivis" ? "Aucun produit suivi" : "Aucun produit vu pour l'instant"}</b>
       Avec l'extension de navigateur (Réglages › Extension), le prix de chaque fiche produit que tu ouvres est noté : clique sur « Suivre » pour être prévenu des baisses et comparer avec les autres boutiques.
       Sans l'extension, colle le lien d'un produit avec « Suivre un lien ».</div>`;
+  el.querySelectorAll(".px-img img").forEach(i => i.addEventListener("error", () => i.remove()));
   el.onclick = e => { const b = e.target.closest("[data-p]"); if (b) detail(b.dataset.p); };
 }
 
@@ -95,6 +96,7 @@ async function detail(pid) {
     </form>
     <div class="modal-foot"><button type="button" class="btn ghost danger" id="px-del">${icon("trash")}Supprimer</button><span class="grow"></span>
       <button type="button" class="btn" data-close>${icon("check")}Fermer</button></div></div>`, { ic: "tag", large: true });
+  m.querySelectorAll("img").forEach(i => i.addEventListener("error", () => i.remove()));
   const f = m.querySelector("#px-form");
   f.onchange = async () => {
     try { await api(`/api/prix/${pid}`, { method: "PUT", json: { followed: f.followed.checked, target: f.target.value } }); toast("Enregistré"); load(); }
