@@ -382,3 +382,94 @@ def prix_done():
 def prix_due():
     import prix
     return jsonify(items=prix.due(g.user["name"], browser=True))
+
+
+# --- Avant d'enregistrer un téléchargement : convertir ou extraire ------------------------------------
+
+TOOL_OF.update(convert="convertir", archive="decompresser")
+
+
+@ext_route("/convert/targets")
+def convert_targets():
+    """Formats possibles pour un nom de fichier, et si c'est une archive que le Décompresseur sait ouvrir."""
+    import archives
+    import converter
+    name = str(request.args.get("name") or "")
+    ext = converter.normalize_ext(os.path.splitext(name)[1])
+    targets = []
+    if allowed("convert"):
+        for e in converter.ENGINES:
+            if ext in e["inputs"]:
+                targets += [t for t in e["outputs"] if t != ext and t not in targets]
+    low = name.lower()
+    is_archive = allowed("archive") and (bool(archives.TAR_RE.search(low)) or ext in archives.EXTENSIONS)
+    return jsonify(ext=ext, targets=targets, archive=is_archive)
+
+
+@ext_route("/convert", methods=["POST"])
+def convert_start():
+    need_tool("convert")
+    import converter
+    f = request.files.get("file")
+    if not f or not f.filename:
+        raise ValueError("Aucun fichier reçu")
+    job = converter.submit(f, request.form.get("target", ""), request.form.get("nas") == "1", "Navigateur", g.user["name"])
+    return jsonify(id=job)
+
+
+@ext_route("/convert/<job_id>")
+def convert_status(job_id):
+    import converter
+    j = next((x for x in converter.list_jobs() if x["id"] == job_id), None)
+    if not j:
+        raise ValueError("Conversion introuvable")
+    return jsonify({k: j.get(k) for k in ("id", "status", "progress", "error", "output", "size", "saved", "name", "target")})
+
+
+@ext_route("/convert/<job_id>/file")
+def convert_result(job_id):
+    import converter
+    from flask import send_file
+    path = converter.result_path(job_id)
+    if not path or not os.path.exists(path):
+        raise ValueError("Fichier converti introuvable")
+    return send_file(path, as_attachment=True, download_name=os.path.basename(path))
+
+
+@ext_route("/archive", methods=["POST"])
+def archive_open():
+    need_tool("archive")
+    import archives
+    f = request.files.get("file")
+    if not f or not f.filename:
+        raise ValueError("Aucun fichier reçu")
+    return jsonify(archives.inspect(f))
+
+
+@ext_route("/archive/<aid>/extract", methods=["POST"])
+def archive_extract(aid):
+    need_tool("archive")
+    import archives
+    d = request.get_json(silent=True) or {}
+    dest = "server" if d.get("dest") == "server" else "download"
+    r = archives.extract(aid, d.get("paths"), dest, d.get("subfolder") or None, d.get("password"))
+    if r.get("download"):
+        r["download"] = f"/api/v1/ext/archive/{aid}/file"
+    return jsonify(r)
+
+
+@ext_route("/archive/<aid>/password", methods=["POST"])
+def archive_password(aid):
+    need_tool("archive")
+    import archives
+    return jsonify(archives.describe(aid, (request.get_json(silent=True) or {}).get("password", "")))
+
+
+@ext_route("/archive/<aid>/file")
+def archive_result(aid):
+    import archives
+    from flask import send_file
+    path = archives.result_path(aid)
+    if not path or not os.path.exists(path):
+        raise ValueError("Fichier extrait introuvable")
+    return send_file(path, as_attachment=True, download_name=os.path.basename(path))

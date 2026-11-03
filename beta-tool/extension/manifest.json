@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Bêta Tool",
   "short_name": "Bêta Tool",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "description": "Le pont entre ton navigateur et ton NAS Bêta Tool : envoi de fichiers et de vidéos, suivi et comparaison des prix, notes, colis, agenda, recherche.",
   "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
   "action": { "default_popup": "popup.html", "default_title": "Bêta Tool", "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png" } },

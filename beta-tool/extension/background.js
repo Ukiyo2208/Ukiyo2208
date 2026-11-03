@@ -159,7 +159,7 @@ chrome.downloads.onChanged.addListener(async delta => {
   if (delta.state?.current !== "complete") return;
   const [item] = await chrome.downloads.search({ id: delta.id });
   const c = await config();
-  if (!item || !c.token || c.opts.downloads === "off") return;
+  if (!item || !c.token || c.opts.downloads === "off" || item.byExtensionId || chosen.delete(delta.id)) return;
   const url = item.finalUrl || item.url;
   if (!/^https?:/.test(url) || (c.base && url.startsWith(c.base))) return;
   let name = (item.filename || "").split(/[\\/]/).pop();
@@ -282,4 +282,61 @@ chrome.omnibox.onInputChanged.addListener((text, suggest) => {
 chrome.omnibox.onInputEntered.addListener(async text => {
   if (text.startsWith("#/")) return openNas(text);
   openNas("#/recherche?q=" + encodeURIComponent(text));
+});
+
+// --- Avant d'enregistrer : renommer, convertir, extraire, envoyer sur le NAS ------------------------
+// Le téléchargement attend la réponse de la fenêtre « save.html » (fermer la fenêtre = enregistrer tel quel).
+const pending = new Map();  // id → { item, suggest, done, win }
+const ARCHIVE = /\.(zip|rar|7z|tar|gz|tgz|bz2|xz|zst|iso|cab|cbz|cbr)$/i;
+const CONVERTIBLE = /\.(pdf|docx?|odt|rtf|txt|xlsx?|ods|csv|pptx?|odp|epub|mobi|azw3?|md|html?|jpe?g|png|webp|gif|bmp|tiff?|heic|heif|avif|mp4|mkv|mov|avi|webm|flv|wmv|m4v|mp3|wav|flac|aac|m4a|ogg|opus|wma)$/i;
+
+const chosen = new Set();  // téléchargements déjà passés par la fenêtre : pas de 2e question à la fin
+function finish(id, opts) {
+  const p = pending.get(id);
+  if (!p || p.done) return;
+  p.done = true;
+  chosen.add(id);
+  pending.delete(id);
+  try { opts ? p.suggest(opts) : p.suggest(); } catch {}
+}
+
+chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
+  (async () => {
+    const c = await config();
+    const url = item.finalUrl || item.url;
+    const name = item.filename || "";
+    const mode = c.opts.beforeSave || "smart";
+    if (item.byExtensionId === chrome.runtime.id) {  // fichier enregistré par l'extension : Chrome oublie le nom demandé, on le redonne
+      const key = "name:" + item.url, want = (await chrome.storage.session.get(key))[key];
+      chrome.storage.session.remove(key);
+      return want ? suggest({ filename: want, conflictAction: "uniquify" }) : suggest();
+    }
+    if (!c.token || mode === "off" || item.byExtensionId || !/^https?:/.test(url) || (c.base && url.startsWith(c.base))
+        || (mode === "smart" && !ARCHIVE.test(name) && !CONVERTIBLE.test(name))) return suggest();
+    pending.set(item.id, { item, suggest, done: false });
+    const win = await chrome.windows.create({ url: chrome.runtime.getURL(`save.html?id=${item.id}`), type: "popup", width: 480, height: 680, focused: true });
+    if (pending.has(item.id)) pending.get(item.id).win = win.id;
+    setTimeout(() => finish(item.id), 10 * 60 * 1000);  // sans réponse : enregistré tel quel
+  })().catch(() => suggest());
+  return true;  // réponse asynchrone
+});
+
+chrome.windows.onRemoved.addListener(winId => {
+  for (const [id, p] of pending) if (p.win === winId) finish(id);
+});
+
+// La fenêtre garde une connexion ouverte (le service de fond reste éveillé pendant le choix)
+chrome.runtime.onConnect.addListener(port => {
+  if (port.name !== "save") return;
+  port.onMessage.addListener(async msg => {
+    const p = pending.get(msg.id);
+    if (msg.type === "info") return port.postMessage({ type: "info", item: p ? { id: p.item.id, url: p.item.finalUrl || p.item.url, filename: p.item.filename, mime: p.item.mime, size: p.item.totalBytes || p.item.fileSize, referrer: p.item.referrer } : null });
+    if (msg.type === "keep") finish(msg.id);
+    if (msg.type === "rename") finish(msg.id, { filename: msg.filename.replace(/[\\/:*?"<>|]+/g, "_"), conflictAction: "uniquify" });
+    if (msg.type === "handled") {  // la fenêtre a récupéré le fichier : le téléchargement d'origine est annulé
+      try { await chrome.downloads.cancel(msg.id); } catch {}
+      finish(msg.id);
+      try { await chrome.downloads.erase({ id: msg.id }); } catch {}
+    }
+  });
 });

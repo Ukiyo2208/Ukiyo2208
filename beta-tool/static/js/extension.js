@@ -8,7 +8,7 @@ export async function settingsTab(el) {
   const d = await api("/api/ext/browsers");
   el.innerHTML = `
     <div class="intro" style="margin-top:0"><span class="tile bleu">${icon("globe")}</span><p>L'extension <b>Bêta Tool</b> pour <b>Opera</b>, Chrome, Edge, Brave et Vivaldi :
-      envoie un fichier, un relevé ou une vidéo sur le NAS en un clic, garde l'historique des prix des produits que tu regardes et compare avec les autres boutiques,
+      envoie un fichier, un relevé ou une vidéo sur le NAS en un clic, propose avant chaque téléchargement de le renommer, le convertir ou l'extraire, garde l'historique des prix des produits que tu regardes et compare avec les autres boutiques,
       et envoie une page dans Notes, un colis dans Colis ou un rendez-vous dans l'Agenda.</p></div>
     <div class="card"><div class="card-title">${icon("download")}1. Installer</div>
       <ol class="ex-steps">

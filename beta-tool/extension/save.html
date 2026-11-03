@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Enregistrer · Bêta Tool</title><link rel="stylesheet" href="ext.css">
+<style>body{padding:14px}.chips{display:flex;flex-wrap:wrap;gap:6px}.chips .btn{padding:5px 10px;text-transform:uppercase;font-size:.8rem}
+.chips .btn.on{background:var(--accent);border-color:var(--accent);color:#fff}.seg{display:flex;gap:6px;margin:8px 0}.seg label{flex:1}
+.seg input{display:none}.seg span{display:block;text-align:center;border:1px solid var(--border);border-radius:10px;padding:6px;cursor:pointer}.seg input:checked+span{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+progress{width:100%;height:8px}</style></head>
+<body>
+  <div class="row" style="margin-bottom:8px"><img class="logo" src="icons/icon48.png" alt=""><div class="grow"><h1>Avant d'enregistrer</h1><div class="meta" id="from"></div></div></div>
+  <div class="card">
+    <label class="f" for="name">Nom du fichier</label>
+    <div class="row"><input id="name" class="grow"><button class="btn p" id="save">Enregistrer</button></div>
+    <div class="meta" id="size" style="margin-top:4px"></div>
+    <div class="msg" id="ext-warn" hidden></div>
+  </div>
+  <div class="card" id="conv" hidden>
+    <b>Convertir en</b> <span class="meta">(vraie conversion par le NAS)</span>
+    <div class="chips" id="targets" style="margin-top:8px"></div>
+    <div class="seg"><label><input type="radio" name="cw" value="pc" checked><span>Sur l'ordinateur</span></label><label><input type="radio" name="cw" value="nas"><span>Sur le NAS</span></label></div>
+    <button class="btn p wide" id="convert" disabled>Convertir</button>
+  </div>
+  <div class="card" id="arc" hidden>
+    <b>Extraire l'archive</b>
+    <div class="seg"><label><input type="radio" name="aw" value="pc" checked><span>Sur l'ordinateur</span></label><label><input type="radio" name="aw" value="nas"><span>Sur le NAS</span></label></div>
+    <input id="pwd" type="password" placeholder="Mot de passe (si l'archive en a un)" hidden>
+    <label class="c small"><input type="checkbox" id="keep-arc"> Garder aussi l'archive</label>
+    <button class="btn p wide" id="extract">Extraire</button>
+  </div>
+  <div class="grid">
+    <button class="btn" id="nas">Envoyer sur le NAS (rangé tout seul)</button>
+    <button class="btn" id="keep">Enregistrer tel quel</button>
+  </div>
+  <div id="work" hidden style="margin-top:10px"><div class="meta" id="step"></div><progress id="bar"></progress></div>
+  <div id="msg"></div>
+  <p class="meta small">Ce choix s'affiche pour les archives et les fichiers convertibles (réglable dans les options de l'extension).</p>
+<script src="vendor/jszip.min.js"></script>
+<script type="module" src="save.js"></script>
+</body></html>

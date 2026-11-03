@@ -118,6 +118,7 @@ async function peopleView(body) {
       }).join("")}</div><datalist id="pp-names">${d.people.map(p => `<option value="${esc(p.name)}">`).join("")}</datalist>`
       : d.scanned ? `<div class="card empty">${icon("check")}<b>Tous les visages ont un nom</b></div>` : `<div class="card empty">${icon("users")}<b>Pas encore de visages</b>Lance l'analyse : la première fois, elle peut prendre un moment (environ 1 seconde par photo).</div>`}`;
   if (st.running) { clearTimeout(poll); poll = setTimeout(() => { if (view === "people" && $("#ph-body")) peopleView(body); }, 3000); }
+  if (!body.isConnected) return;  // page quittée pendant le chargement
   $("#pp-on").onchange = async e => { await api("/api/photos/people/settings", { method: "PUT", json: { on: e.target.checked } }); peopleView(body); };
   $("#pp-scan").onclick = async () => { await api("/api/photos/people/scan", { json: {} }); setTimeout(() => peopleView(body), 800); };
   const act = async (fid, json) => { await api(`/api/photos/faces/${fid}`, { json }); body.querySelector(`[data-f="${fid}"]`)?.remove(); };

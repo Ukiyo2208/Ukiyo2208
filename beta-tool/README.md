@@ -288,6 +288,11 @@ empaquetée ». Relie-la avec le code à 6 chiffres affiché dans Réglages › 
   propose de l'envoyer. Le fichier est rangé tout seul : relevé CSV / OFX / QIF → Budget, relevé Revolut → Patrimoine,
   PDF → Paperasse, photo → Album photo, le reste → Téléchargements/Navigateur. Le fichier est récupéré avec la session du
   site ; si le site ne le permet pas (téléchargement généré à la volée), la page « Déposer » accepte le glisser-déposer.
+- **Avant d'enregistrer un téléchargement** (2.9.1) : une petite fenêtre propose de **renommer** le fichier, de le
+  **convertir** pour de vrai dans un autre format (PDF, Word, JPG, MP4, MP3… par le Convertisseur du NAS), d'**extraire**
+  une archive (ZIP extrait directement dans le navigateur ; RAR, 7Z, TAR… par le Décompresseur du NAS), sur l'ordinateur
+  ou sur le NAS, ou de l'**envoyer sur le NAS** à la place. Fermer la fenêtre enregistre le fichier tel quel. Réglable
+  dans les options de l'extension (archives et fichiers convertibles, tous les fichiers, ou jamais).
 - **Vidéos** : bouton « Sur le NAS » sur YouTube et clic droit « Télécharger la vidéo » partout (Téléchargeur, yt-dlp).
 - **Prix** : chaque fiche produit ouverte est notée (désactivable), une bulle signale un meilleur prix ailleurs ;
   « Comparer » cherche le produit chez les autres boutiques en passant par le navigateur.

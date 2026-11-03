@@ -1,7 +1,7 @@
 // Connexion au NAS : adresse, jeton (stocké dans ce navigateur uniquement) et appels à l'API.
 export async function config() {
   const c = await chrome.storage.local.get(["base", "token", "user", "site", "opts"]);
-  c.opts = { downloads: "ask", prices: true, pill: true, video: true, ...(c.opts || {}) };
+  c.opts = { downloads: "ask", beforeSave: "smart", prices: true, pill: true, video: true, ...(c.opts || {}) };
   return c;
 }
 
