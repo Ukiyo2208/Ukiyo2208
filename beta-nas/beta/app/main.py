@@ -13,14 +13,15 @@ from pathlib import Path
 
 import httpx
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import settings as cfg
+from . import stats as st
 from .homeassistant import HomeAssistant
 from .ia_web import IAWeb
 from .llm_local import LLMLocal
@@ -71,6 +72,35 @@ app = FastAPI(
     docs_url=None,  # remplacée ci-dessous pour afficher le logo dans l'onglet
 )
 app.mount("/static", StaticFiles(directory=STATIQUE), name="static")
+
+
+statistiques = st.Statistiques()
+_PAS_SUIVIS = ("/static", "/favicon.ico", "/v1/stats", "/tableau", "/docs", "/openapi.json")
+
+
+@app.middleware("http")
+async def suivre_utilisation(request: Request, appel_suivant):
+    """Compte chaque appel de l'API : temps de réponse, statut, client, et ce que Bêta a fait."""
+    if request.url.path.startswith(_PAS_SUIVIS):
+        return await appel_suivant(request)
+    infos: dict = {}
+    st.demande_en_cours.set(infos)
+    debut = time.monotonic()
+    statut = 500
+    try:
+        reponse = await appel_suivant(request)
+        statut = reponse.status_code
+        return reponse
+    finally:
+        route = request.scope.get("route")
+        statistiques.requete(
+            request.method,
+            getattr(route, "path", request.url.path),
+            statut,
+            (time.monotonic() - debut) * 1000,
+            request.client.host if request.client else "?",
+            infos,
+        )
 
 
 @app.get("/docs", include_in_schema=False)
@@ -152,6 +182,9 @@ async def _repondre(texte: str, voix: bool, debut: float, piece: str | None, **i
         demande_id = secrets.token_urlsafe(12)
         _demandes[demande_id] = _Demande(texte, piece, maintenant + DUREE_DEMANDE)
     log.info("[%s %s] « %s » -> %s : %s", piece, identite, texte, resultat.route, resultat.texte)
+    infos = st.demande_en_cours.get()
+    if infos is not None:
+        infos.update(route=resultat.route, texte=texte)
 
     return Reponse(
         texte_reconnu=texte,
@@ -259,6 +292,32 @@ async def texte(demande: DemandeTexte):
         demande.texte, demande.voix, time.monotonic(), demande.piece,
         personne=demande.personne, confiance=demande.confiance,
     )
+
+
+_services_cache: dict = {"instant": 0.0, "valeur": {}}
+
+
+async def _services() -> dict:
+    # Au plus un tour de vérification toutes les 5 secondes, même avec plusieurs écrans ouverts
+    if time.monotonic() - _services_cache["instant"] > 5:
+        _services_cache["valeur"] = await st.etat_services(etat["settings"])
+        _services_cache["instant"] = time.monotonic()
+    return _services_cache["valeur"]
+
+
+@app.get("/v1/stats", dependencies=[Depends(verifier_jeton)])
+async def stats(format: str = "json"):
+    """Utilisation de l'API en temps réel. `?format=texte` pour un affichage dans le terminal."""
+    instantane, services = statistiques.instantane(), await _services()
+    if format == "texte":
+        return PlainTextResponse(st.en_texte(instantane, services))
+    return {"services": services, **instantane}
+
+
+@app.get("/tableau", include_in_schema=False)
+async def tableau():
+    """Tableau de bord : la page demande le jeton, puis interroge /v1/stats toutes les 2 secondes."""
+    return HTMLResponse((STATIQUE / "tableau.html").read_text(encoding="utf-8"))
 
 
 @app.get("/sante")

@@ -179,6 +179,44 @@ enregistrées : seules les empreintes des visages enregistrés sont gardées (`d
 
 ---
 
+## Fiche de connexion et suivi en temps réel
+
+### Le script `outils/fiche-api.sh` (sur le NAS, en SSH)
+
+```bash
+cd /volume1/docker/beta-nas
+chmod +x outils/fiche-api.sh
+sudo ./outils/fiche-api.sh            # la fiche : IP du NAS, ports, état de chaque service, codes masqués, commandes
+```
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `sudo ./outils/fiche-api.sh` | Détecte l'IP et les ports, teste chaque API et affiche la fiche avec les commandes prêtes à copier |
+| `sudo ./outils/fiche-api.sh --secrets` | Même chose, avec les codes en clair |
+| `sudo ./outils/fiche-api.sh fichier` | Écrit `FICHE-API.md`, lisible par toi seul (codes en clair, jamais envoyé sur GitHub) |
+| `eval "$(sudo ./outils/fiche-api.sh env)"` | Met `$BETA_TOKEN`, `$HA_TOKEN`… dans ton terminal pour utiliser les commandes `curl` de la fiche |
+| `sudo ./outils/fiche-api.sh suivre` | **Utilisation en temps réel** dans le terminal : appels, temps de réponse, erreurs, dernières phrases (Ctrl+C pour quitter) |
+| `sudo ./outils/fiche-api.sh tester` | Appels de test sur chaque API |
+| `sudo ./outils/fiche-api.sh regler OLLAMA_MODEL qwen2.5:1.5b` | Change un réglage du `.env` (sauvegarde de l'ancien) et redémarre le bon conteneur |
+| `sudo ./outils/fiche-api.sh jeton` | Crée un nouveau `BETA_TOKEN` (à recopier ensuite dans la tablette) |
+| `sudo ./outils/fiche-api.sh logs` | Journaux en direct de Bêta et de la présence |
+
+Si l'IP détectée n'est pas la bonne (NAS avec plusieurs cartes réseau) : `sudo NAS_IP=192.168.1.20 ./outils/fiche-api.sh`.
+Pour régler une clé d'OpenClaw (`OPENCLAW_…`), le script modifie `../openclaw-nas/.env`.
+
+### Le tableau de bord
+
+Ouvre **`http://IP_DU_NAS:8800/tableau`** sur un PC ou un téléphone et colle ton `BETA_TOKEN`.
+La page s'actualise toutes les 2 secondes :
+- l'état de chaque service, et le modèle chargé dans Ollama ;
+- le nombre d'appels, d'erreurs et le temps moyen d'une commande vocale ;
+- qui a traité les demandes (Home Assistant, LLM local, IA web…) ;
+- les 50 dernières requêtes, avec la phrase comprise.
+
+Les mêmes données sont disponibles en JSON pour tes propres outils :
+`GET /v1/stats`, avec l'en-tête `Authorization: Bearer <BETA_TOKEN>`. Ajoute `?format=texte` pour une version lisible
+dans un terminal. Les compteurs repartent de zéro quand le conteneur redémarre.
+
 ## Réglages utiles
 
 | Où | Quoi |

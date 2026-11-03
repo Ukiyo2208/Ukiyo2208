@@ -2,3 +2,5 @@
 config/config.yaml
 data/
 __pycache__/
+FICHE-API.md
+*.sauvegarde

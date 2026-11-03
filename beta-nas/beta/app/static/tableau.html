@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bêta · Tableau de bord</title>
+<link rel="icon" href="/static/favicon.png">
+<style>
+  :root {
+    --fond: #0d1141; --carte: #161b52; --bord: #262c6b; --texte: #eceeff;
+    --doux: #a0a8d7; --accent: #56c8ff; --ok: #4ade80; --ko: #f87171; --violet: #b38cff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.45 system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  header img { width: 52px; height: 52px; border-radius: 50%; }
+  h1 { margin: 0; font-size: 22px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--doux); margin: 26px 0 10px; }
+  .etat { color: var(--doux); font-size: 13px; }
+  .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 12px; padding: 12px 14px; }
+  .carte b { display: block; }
+  .carte small { color: var(--doux); }
+  .point { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; }
+  .vert { background: var(--ok); } .rouge { background: var(--ko); }
+  .chiffres { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .chiffre { font-size: 26px; font-weight: 700; color: var(--accent); }
+  .defile { overflow-x: auto; border-radius: 12px; border: 1px solid var(--bord); }
+  table { width: 100%; border-collapse: collapse; background: var(--carte); font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--bord); white-space: nowrap; }
+  th { color: var(--doux); font-weight: 600; font-size: 12px; }
+  th.n { text-align: right; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .err { color: var(--ko); }
+  .route { color: var(--violet); }
+  .badge { display: inline-block; background: var(--bord); border-radius: 999px; padding: 3px 10px; margin: 0 6px 6px 0; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  input { flex: 1; min-width: 220px; background: var(--carte); color: var(--texte); border: 1px solid var(--bord);
+          border-radius: 8px; padding: 10px; font: inherit; }
+  button { background: var(--accent); color: var(--fond); border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="/static/logo.png" alt="">
+    <div>
+      <h1>Bêta · Tableau de bord</h1>
+      <div class="etat" id="etat">Connexion…</div>
+    </div>
+  </header>
+
+  <section id="connexion" hidden>
+    <h2>Jeton</h2>
+    <form id="formulaire">
+      <input id="jeton" type="password" placeholder="BETA_TOKEN du fichier .env" autocomplete="off">
+      <button>Se connecter</button>
+    </form>
+  </section>
+
+  <section id="contenu" hidden>
+    <h2>Services</h2>
+    <div class="grille" id="services"></div>
+
+    <h2>Utilisation</h2>
+    <div class="chiffres" id="chiffres"></div>
+    <div id="routes" style="margin-top:10px"></div>
+
+    <h2>Appels par point d'API</h2>
+    <div class="defile"><table>
+      <thead><tr><th>Point d'API</th><th class="n">Appels</th><th class="n">Erreurs</th><th class="n">Moyenne</th><th class="n">Maximum</th></tr></thead>
+      <tbody id="points"></tbody>
+    </table></div>
+
+    <h2>Dernières requêtes</h2>
+    <div class="defile"><table>
+      <thead><tr><th>Heure</th><th>Client</th><th>Requête</th><th class="n">Statut</th><th class="n">Durée</th><th>Traité par</th><th>Phrase</th></tr></thead>
+      <tbody id="dernieres"></tbody>
+    </table></div>
+  </section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const echapper = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  let jeton = "";
+  try { jeton = sessionStorage.getItem("beta_jeton") || ""; } catch (e) {}
+
+  $("formulaire").addEventListener("submit", (e) => {
+    e.preventDefault();
+    jeton = $("jeton").value.trim();
+    try { sessionStorage.setItem("beta_jeton", jeton); } catch (e) {}
+    actualiser();
+  });
+
+  function duree(s) {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return h ? `${h} h ${m} min` : `${m} min`;
+  }
+
+  function afficher(d) {
+    $("services").innerHTML = Object.entries(d.services).map(([nom, s]) => `
+      <div class="carte"><b><span class="point ${s.ok ? "vert" : "rouge"}"></span>${echapper(nom.replace("_", " "))}</b>
+      <small>${echapper(s.detail || (s.ok ? "en ligne" : "injoignable"))}</small></div>`).join("");
+
+    const points = Object.values(d.points);
+    const appels = points.reduce((a, p) => a + p.appels, 0);
+    const erreurs = points.reduce((a, p) => a + p.erreurs, 0);
+    const commandes = d.points["POST /v1/commande"];
+    $("chiffres").innerHTML = [
+      ["Appels", appels], ["Erreurs", erreurs],
+      ["Commandes vocales", commandes ? commandes.appels : 0],
+      ["Temps moyen d'une commande", commandes ? `${(commandes.moyenne_ms / 1000).toFixed(1)} s` : "–"],
+      ["En ligne depuis", duree(d.en_ligne_depuis_s)],
+    ].map(([t, v]) => `<div class="carte"><small>${t}</small><div class="chiffre">${echapper(v)}</div></div>`).join("");
+
+    $("routes").innerHTML = Object.entries(d.routes).map(([r, n]) => `<span class="badge"><span class="route">${echapper(r)}</span> · ${n}</span>`).join("");
+
+    $("points").innerHTML = Object.entries(d.points).map(([nom, p]) => `
+      <tr><td>${echapper(nom)}</td><td class="n">${p.appels}</td><td class="n ${p.erreurs ? "err" : ""}">${p.erreurs}</td>
+      <td class="n">${p.moyenne_ms} ms</td><td class="n">${p.max_ms} ms</td></tr>`).join("")
+      || `<tr><td colspan="5">Aucun appel pour l'instant</td></tr>`;
+
+    $("dernieres").innerHTML = d.dernieres.map((r) => `
+      <tr><td>${r.heure}</td><td>${echapper(r.client)}</td><td>${echapper(r.methode)} ${echapper(r.chemin)}</td>
+      <td class="n ${r.statut >= 400 ? "err" : ""}">${r.statut}</td><td class="n">${r.ms} ms</td>
+      <td class="route">${echapper(r.route)}</td><td>${echapper(r.texte)}</td></tr>`).join("")
+      || `<tr><td colspan="7">Aucune requête pour l'instant</td></tr>`;
+  }
+
+  async function actualiser() {
+    if (!jeton) { $("connexion").hidden = false; $("etat").textContent = "Jeton requis"; return; }
+    try {
+      const r = await fetch("/v1/stats", { headers: { Authorization: `Bearer ${jeton}` } });
+      if (r.status === 401) {
+        jeton = ""; $("connexion").hidden = false; $("contenu").hidden = true;
+        $("etat").textContent = "Jeton refusé"; return;
+      }
+      afficher(await r.json());
+      $("connexion").hidden = true; $("contenu").hidden = false;
+      $("etat").textContent = `Mis à jour à ${new Date().toLocaleTimeString("fr-FR")} · actualisation toutes les 2 s`;
+    } catch (e) {
+      $("etat").textContent = "Bêta injoignable, nouvel essai…";
+    }
+  }
+
+  actualiser();
+  setInterval(() => { if (jeton && !document.hidden) actualiser(); }, 2000);
+</script>
+</body>
+</html>
