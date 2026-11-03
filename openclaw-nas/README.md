@@ -97,10 +97,87 @@ sudo docker compose run --rm openclaw-cli models list    # le modèle Ollama doi
 sudo docker exec beta-ollama ollama ps                   # le modèle est-il chargé ?
 ```
 
+## 6. Trier les documents du NAS
+
+OpenClaw lit les documents que tu déposes dans un dossier **`_A_TRIER`**. Pour chacun, il propose
+un **titre**, un **dossier** et des **tags**. Rien ne bouge tant que tu n'as pas validé.
+
+```
+Tu déposes un fichier          ┌─ trieur : extrait le texte (PDF, scan, Word)
+dans Documents/_A_TRIER  ──────┤
+                               └─ OpenClaw : lit le texte et écrit une proposition (titre, dossier, tags)
+Tu dis « valide » dans le chat ──→ trieur : range le fichier, sans jamais écraser un autre
+```
+
+Être dans `_A_TRIER`, c'est le « tag à trier » : OpenClaw sait ainsi quels documents traiter.
+Une fois rangé, le document quitte ce dossier, et sa trace (chemin, tags, résumé) va dans
+`_A_TRIER/_journal.md` et `Documents/_index_documents.csv`.
+
+**Pourquoi c'est sûr :** OpenClaw voit tes documents en **lecture seule**. Il n'écrit que dans le
+dossier des propositions. Le déplacement est fait par un petit programme simple (`trieur/`), qui
+refuse tout chemin hors de tes Documents et n'écrase jamais un fichier.
+
+### Installation
+
+1. Dans `.env`, indique ton dossier partagé et ton utilisateur :
+   ```bash
+   id TON_UTILISATEUR       # affiche uid=… gid=… : à mettre dans PUID et PGID
+   nano .env                # DOCUMENTS=/volume1/Documents, PUID=…, PGID=…
+   ```
+2. Crée la boîte d'entrée :
+   ```bash
+   sudo mkdir -p /volume1/Documents/_A_TRIER/_traitement/propositions
+   sudo chown -R PUID:PGID /volume1/Documents/_A_TRIER        # remplace par tes valeurs
+   sudo chmod 777 /volume1/Documents/_A_TRIER/_traitement/propositions   # OpenClaw (utilisateur 1000) y écrit
+   ```
+3. Donne la consigne de tri à OpenClaw (le « prompt ») :
+   ```bash
+   cat AGENTS-tri-documents.md | sudo tee -a data/workspace/AGENTS.md > /dev/null
+   ```
+4. Retire à OpenClaw ce dont il n'a pas besoin : commandes système, navigateur, scripts automatiques.
+   ```bash
+   sudo docker compose run --rm --no-deps --entrypoint node openclaw-gateway \
+     dist/index.js config set --batch-json '[
+       {"path":"tools.deny","value":["group:runtime","browser"]},
+       {"path":"cron.triggers.enabled","value":false}
+     ]'
+   ```
+5. Démarre le tout :
+   ```bash
+   sudo docker compose up -d --build
+   sudo docker logs -f openclaw-trieur     # « Surveillance de /documents/_A_TRIER »
+   ```
+6. Optionnel : un tri automatique chaque nuit, une fois par heure de 1 h à 6 h (3 documents à chaque passage) :
+   ```bash
+   sudo docker compose run --rm openclaw-cli automations add \
+     --name "Tri des documents" --cron "0 1-6 * * *" --tz Europe/Paris --session isolated \
+     --message "Fais un passage de tri des documents (section « Tri des documents » de AGENTS.md)."
+   ```
+
+### Au quotidien
+
+1. Dépose tes fichiers dans `Documents/_A_TRIER` : depuis ton PC, l'application UGREEN du
+   téléphone, ou directement depuis ton scanner s'il sait « numériser vers un dossier réseau ».
+2. Dans OpenClaw, écris **« Trie les documents »** (ou attends le passage de la nuit).
+3. Il répond avec une liste numérotée de propositions. Réponds par exemple :
+   - « valide tout » ;
+   - « valide 1 et 3, pour le 2 mets plutôt dans Banque » ;
+   - « refuse le 4 ».
+4. Les documents validés sont rangés dans la minute.
+5. Ensuite, tu peux demander : « qu'est-ce qui reste à trier ? », ou « retrouve ma dernière facture
+   EDF » (il cherche dans l'index).
+
+**Formats pris en charge :** PDF (avec du texte ou scanné), images (JPG, PNG, TIFF), Word (`.docx`)
+et texte. Pour un scan, la reconnaissance de texte (OCR) lit les 3 premières pages.
+
+**Vitesse :** sur le N100, compte **1 à 3 minutes par document** avec un modèle 9B. C'est pour ça
+que le tri se fait par paquets de 3, et que le passage de nuit est pratique.
+
 ## Sécurité
 
 - OpenClaw peut exécuter des actions (outils, fichiers de son espace de travail). Il ne voit que
-  `./data/workspace` : **ne monte pas tes dossiers du NAS** dedans sans en avoir besoin.
+  `./data/workspace`, plus tes Documents **en lecture seule** si tu as fait l'étape 6. Ne lui donne
+  pas d'autre dossier en écriture.
 - **N'ouvre pas le port 18789 sur ta box Internet.** Pour y accéder de l'extérieur, utilise un
   VPN (Tailscale par exemple).
 - L'interface est en `http://` sur ton réseau local : c'est prévu par OpenClaw, mais tout passe

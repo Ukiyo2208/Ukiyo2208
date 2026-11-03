@@ -21,6 +21,10 @@ x-openclaw-commun: &commun
     - ./data/config:/home/node/.openclaw
     - ./data/workspace:/home/node/.openclaw/workspace
     - ./data/secrets:/home/node/.config/openclaw
+    # Tes documents, en LECTURE SEULE : OpenClaw ne peut ni modifier ni supprimer un fichier
+    - ${DOCUMENTS:-/volume1/Documents}:/home/node/.openclaw/workspace/documents:ro
+    # Le seul endroit où OpenClaw écrit : ses propositions de tri
+    - ${DOCUMENTS:-/volume1/Documents}/_A_TRIER/_traitement/propositions:/home/node/.openclaw/workspace/propositions
   cap_drop:
     - NET_RAW
     - NET_ADMIN
@@ -60,6 +64,20 @@ services:
     depends_on:
       - openclaw-gateway
     profiles: ["cli"]
+
+  # Extrait le texte des documents à trier et range ceux que tu as validés (seul à déplacer des fichiers)
+  trieur:
+    build: ./trieur
+    container_name: openclaw-trieur
+    user: "${PUID:-1000}:${PGID:-1000}" # même propriétaire que tes fichiers du NAS
+    environment:
+      DOCUMENTS: /documents
+      TZ: ${OPENCLAW_TZ:-Europe/Paris}
+    volumes:
+      - ${DOCUMENTS:-/volume1/Documents}:/documents
+    networks:
+      - defaut
+    restart: unless-stopped
 
 networks:
   defaut: {}
