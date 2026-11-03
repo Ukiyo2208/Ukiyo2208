@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon NAS · Bêta</title>
+<style>
+  /* Exemple à intégrer dans ton site : copie le bloc <section id="nas">, ce style et le script. */
+  :root { --fond: #0d1141; --carte: #161b52; --bord: #262c6b; --texte: #eceeff; --doux: #a0a8d7;
+          --accent: #56c8ff; --ok: #4ade80; --ko: #f87171; --barre: #2d347a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.45 system-ui, sans-serif; }
+  #nas { max-width: 1000px; margin: 0 auto; padding: 20px 16px 40px; }
+  #nas h1 { font-size: 22px; margin: 0 0 4px; }
+  #nas h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--doux); margin: 24px 0 10px; }
+  .etat { color: var(--doux); font-size: 13px; }
+  .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 12px; padding: 12px 14px; }
+  .carte small { color: var(--doux); display: block; }
+  .valeur { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .barre { height: 6px; background: var(--barre); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+  .barre i { display: block; height: 100%; background: var(--accent); }
+  .point { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; }
+  .vert { background: var(--ok); } .rouge { background: var(--ko); }
+  .modele b { display: block; }
+  .badge { display: inline-block; background: var(--bord); border-radius: 999px; padding: 2px 9px; font-size: 12px; margin: 4px 4px 0 0; }
+</style>
+</head>
+<body>
+<section id="nas">
+  <h1 id="nas-titre">Mon NAS</h1>
+  <div class="etat" id="nas-etat">Chargement…</div>
+
+  <h2>Système</h2>
+  <div class="grille" id="nas-systeme"></div>
+
+  <h2>Intelligences artificielles</h2>
+  <div class="grille" id="nas-ia"></div>
+
+  <h2>Services</h2>
+  <div class="grille" id="nas-services"></div>
+
+  <h2>Utilisation de l'API</h2>
+  <div class="grille" id="nas-api"></div>
+</section>
+
+<script>
+  // ---- À régler ----------------------------------------------------------------------
+  // Soit ton site lit directement le NAS (même réseau, ou tunnel) :
+  const SOURCE = "http://192.168.1.20:8800/v1/nas";
+  const JETON = "COLLE_ICI_BETA_LECTURE_TOKEN"; // jeton de LECTURE SEULE, jamais le BETA_TOKEN
+  // Soit le NAS envoie ses infos à ton site (PUBLICATION_URL) et tu les relis côté site :
+  //   const SOURCE = "/api/nas"; const JETON = "";
+  const ACTUALISATION_S = 10;
+  // -------------------------------------------------------------------------------------
+
+  const $ = (id) => document.getElementById(id);
+  const e = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const NOMS_TACHES = { comprendre: "Comprendre", conversation: "Discussion", automatisations: "Automatisations" };
+
+  const carte = (titre, valeur, detail = "", pct = null) => `
+    <div class="carte"><small>${e(titre)}</small><div class="valeur">${e(valeur)}</div>
+    ${detail ? `<small>${e(detail)}</small>` : ""}
+    ${pct === null ? "" : `<div class="barre"><i style="width:${Math.min(100, pct)}%"></i></div>`}</div>`;
+
+  function duree(s) {
+    const j = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600);
+    return j ? `${j} j ${h} h` : `${h} h ${Math.floor((s % 3600) / 60)} min`;
+  }
+
+  function afficher(d) {
+    const n = d.nas;
+    $("nas-titre").textContent = n.nom;
+    $("nas-systeme").innerHTML = [
+      carte("Processeur", `${n.processeur.utilisation_pct} %`, `${n.processeur.coeurs} cœurs · charge ${n.processeur.charge_1_5_15[0]}`, n.processeur.utilisation_pct),
+      carte("Mémoire", `${n.memoire.utilisation_pct} %`, `${n.memoire.utilisee_go} / ${n.memoire.total_go} Go`, n.memoire.utilisation_pct),
+      ...n.disques.map((x) => carte(x.nom, `${x.utilisation_pct} %`, `${x.libre_go} Go libres sur ${x.total_go} Go`, x.utilisation_pct)),
+      n.temperature_c === null ? "" : carte("Température", `${n.temperature_c} °C`),
+      carte("En ligne depuis", duree(n.en_ligne_depuis_s), n.systeme),
+    ].join("");
+
+    const charges = new Set(d.ia.ollama.charges.map((m) => m.nom));
+    $("nas-ia").innerHTML = [
+      ...Object.entries(d.ia.taches).map(([t, ias]) => `
+        <div class="carte modele"><small>${e(NOMS_TACHES[t] || t)}</small>
+        <b>${ias.length ? e(ias.map((nom) => d.ia.modeles[nom]?.modele || nom)[0]) : "aucune IA"}</b>
+        ${ias.slice(1).map((nom) => `<span class="badge">secours : ${e(nom)}</span>`).join("")}</div>`),
+      ...d.ia.ollama.installes.map((m) => `
+        <div class="carte modele"><small>Modèle local</small><b>${e(m.nom)}</b>
+        <span class="badge">${e(m.parametres)}</span><span class="badge">${m.taille_go} Go</span>
+        ${charges.has(m.nom) ? `<span class="badge">chargé</span>` : ""}</div>`),
+    ].join("");
+
+    $("nas-services").innerHTML = Object.entries(d.services).filter(([nom]) => !nom.startsWith("ia ·")).map(([nom, s]) => `
+      <div class="carte"><span class="point ${s.ok ? "vert" : "rouge"}"></span>${e(nom.replace("_", " "))}</div>`).join("");
+
+    const a = d.api;
+    $("nas-api").innerHTML = [
+      carte("Appels", a.appels, `depuis ${new Date(a.depuis).toLocaleString("fr-FR")}`),
+      carte("Commandes vocales", a.commandes_vocales, a.duree_moyenne_commande_ms ? `${(a.duree_moyenne_commande_ms / 1000).toFixed(1)} s en moyenne` : ""),
+      carte("Erreurs", a.erreurs),
+      `<div class="carte"><small>Traité par</small>${Object.entries(a.traite_par).map(([r, n]) => `<span class="badge">${e(r)} · ${n}</span>`).join("") || "–"}</div>`,
+    ].join("");
+
+    $("nas-etat").textContent = `Mis à jour à ${new Date(d.mis_a_jour).toLocaleTimeString("fr-FR")}`;
+  }
+
+  async function actualiser() {
+    try {
+      const r = await fetch(SOURCE, { headers: JETON ? { Authorization: `Bearer ${JETON}` } : {} });
+      if (!r.ok) throw new Error(r.status === 401 ? "jeton refusé" : `erreur ${r.status}`);
+      afficher(await r.json());
+    } catch (err) {
+      $("nas-etat").textContent = `NAS injoignable (${err.message}), nouvel essai…`;
+    }
+  }
+  actualiser();
+  setInterval(() => { if (!document.hidden) actualiser(); }, ACTUALISATION_S * 1000);
+</script>
+</body>
+</html>

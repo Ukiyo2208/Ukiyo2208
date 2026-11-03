@@ -237,6 +237,34 @@ Les mêmes données sont disponibles en JSON pour tes propres outils :
 `GET /v1/stats`, avec l'en-tête `Authorization: Bearer <BETA_TOKEN>`. Ajoute `?format=texte` pour une version lisible
 dans un terminal. Les compteurs repartent de zéro quand le conteneur redémarre.
 
+## Afficher les infos du NAS sur ton site
+
+`GET /v1/nas` renvoie en JSON :
+- **le NAS** : processeur, mémoire, disques, température, durée depuis le démarrage ;
+- **les IA** : quelle IA fait quoi, modèles installés et modèles chargés en mémoire ;
+- **les services** : en ligne ou non ;
+- **l'utilisation de l'API** : appels, commandes vocales, erreurs, temps moyen, quelle IA a répondu.
+
+Il n'y a **aucune donnée personnelle** : ni phrases, ni prénoms, ni jetons, ni adresses internes.
+
+**Le jeton de lecture seule** `BETA_LECTURE_TOKEN` (créé par l'installateur) ouvre `/v1/nas`
+**et rien d'autre** : il ne peut ni piloter la maison ni parler aux IA. C'est lui qu'on met dans un site,
+jamais le `BETA_TOKEN`.
+
+**Deux façons de brancher ton site :**
+
+| Ton site est… | Méthode |
+|---|---|
+| Sur ton réseau (PC, NAS, Bêta home…) | Il lit directement `http://IP_DU_NAS:8800/v1/nas`. Ajoute son adresse dans `BETA_CORS` pour qu'un navigateur ait le droit de la lire. |
+| Sur Internet | **Le NAS envoie ses infos au site** toutes les minutes (`PUBLICATION_URL` + `PUBLICATION_JETON` dans `.env`). Rien n'est ouvert sur le NAS. |
+
+Exemples prêts à l'emploi dans `exemples/site/` :
+- `infos-nas.html` : une page complète (système, IA, services, utilisation), qui fonctionne aussi sur mobile.
+  Règle `SOURCE` et `JETON` en haut du script ;
+- `recevoir-nas.mjs` : le petit serveur côté site qui reçoit les infos envoyées par le NAS.
+
+Après avoir modifié `.env` : `sudo docker compose up -d beta`.
+
 ## Réglages utiles
 
 | Où | Quoi |

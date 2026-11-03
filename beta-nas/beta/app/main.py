@@ -16,11 +16,13 @@ import httpx
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import settings as cfg
+from . import nas
 from . import stats as st
 from .homeassistant import HomeAssistant
 from .llm_local import LLMLocal
@@ -47,10 +49,13 @@ async def lifespan(app: FastAPI):
     localisation = Localisation(s, ha)
     etat.update(settings=s, routeur=Routeur(s, ha, llm, s.ia, localisation))
     prechauffage = asyncio.create_task(llm.prechauffer())
+    publication = asyncio.create_task(_publier_en_boucle()) if s.publication_url else None
     for tache, modeles in s.ia.resume().items():
         log.info("IA pour « %s » : %s", tache, " → ".join(modeles) or "aucune")
     yield
     prechauffage.cancel()
+    if publication:
+        publication.cancel()
     await ha.fermer()
     await llm.fermer()
     await localisation.fermer()
@@ -72,8 +77,18 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory=STATIQUE), name="static")
 
 
+# Un site peut lire /v1/nas depuis le navigateur s'il figure dans BETA_CORS
+_reglages_demarrage = cfg.charger()
+if _reglages_demarrage.cors_origines:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_reglages_demarrage.cors_origines,
+        allow_methods=["GET"],
+        allow_headers=["Authorization"],
+    )
+
 statistiques = st.Statistiques()
-_PAS_SUIVIS = ("/static", "/favicon.ico", "/v1/stats", "/v1/appairage", "/tableau", "/docs", "/openapi.json")
+_PAS_SUIVIS = ("/static", "/favicon.ico", "/v1/stats", "/v1/nas", "/v1/appairage", "/tableau", "/docs", "/openapi.json")
 
 
 @app.middleware("http")
@@ -319,6 +334,47 @@ async def appairage(request: Request, piece: str = ""):
 
     lien = lien_appairage(str(request.base_url), etat["settings"].beta_token, piece)
     return Response(qr_svg(lien), media_type="image/svg+xml", headers={"Cache-Control": "no-store"})
+
+
+def verifier_lecture(identifiants: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> None:
+    """Accepte le jeton principal ou le jeton de lecture seule (BETA_LECTURE_TOKEN)."""
+    recu = (identifiants.credentials if identifiants else "").encode()
+    s: cfg.Settings = etat["settings"]
+    autorises = [t for t in (s.beta_token, s.lecture_token) if t]
+    if not any(secrets.compare_digest(recu, t.encode()) for t in autorises):
+        raise HTTPException(status_code=401, detail="Jeton invalide")
+
+
+_nas_cache: dict = {"instant": 0.0, "valeur": None}
+
+
+async def _etat_nas() -> dict:
+    if _nas_cache["valeur"] is None or time.monotonic() - _nas_cache["instant"] > 5:
+        _nas_cache["valeur"] = await nas.etat_complet(etat["settings"], statistiques, await _services())
+        _nas_cache["instant"] = time.monotonic()
+    return _nas_cache["valeur"]
+
+
+@app.get("/v1/nas", dependencies=[Depends(verifier_lecture)])
+async def infos_nas():
+    """Tout l'état du NAS pour un site : système, IA, services, utilisation de l'API.
+    Aucune donnée personnelle. Accessible avec le jeton de lecture seule."""
+    return await _etat_nas()
+
+
+async def _publier_en_boucle() -> None:
+    """Envoie l'état du NAS au site (PUBLICATION_URL) : le NAS n'a rien à ouvrir sur Internet."""
+    s: cfg.Settings = etat["settings"]
+    entetes = {"Authorization": f"Bearer {s.publication_jeton}"} if s.publication_jeton else {}
+    async with httpx.AsyncClient(timeout=15) as client:
+        while True:
+            try:
+                r = await client.post(s.publication_url, json=await _etat_nas(), headers=entetes)
+                if r.status_code >= 400:
+                    log.warning("Le site refuse les infos du NAS (%s)", r.status_code)
+            except httpx.HTTPError as e:
+                log.warning("Envoi des infos du NAS impossible : %s", e)
+            await asyncio.sleep(s.publication_intervalle)
 
 
 @app.get("/tableau", include_in_schema=False)

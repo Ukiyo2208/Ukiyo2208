@@ -93,6 +93,10 @@ async def etat_services(settings) -> dict:
             _port_ouvert(settings.whisper_host, settings.whisper_port),
             _port_ouvert(settings.piper_host, settings.piper_port),
         )
+    openclaw = None
+    if settings.openclaw_url:
+        async with httpx.AsyncClient() as client:
+            openclaw = await _http(client, f"{settings.openclaw_url}/")
     modeles = []
     if ollama_ps is not None and ollama_ps.status_code == 200:
         modeles = [m.get("name", "?") for m in ollama_ps.json().get("models", [])]
@@ -107,6 +111,8 @@ async def etat_services(settings) -> dict:
                      "detail": (f"{presence.json().get('cameras', 0)} caméras, "
                                 f"{presence.json().get('personnes', 0)} personnes")
                      if presence is not None and presence.status_code == 200 else ""},
+        **({"openclaw": {"ok": openclaw is not None and openclaw.status_code < 500, "detail": ""}}
+           if settings.openclaw_url else {}),
         **{
             f"ia · {tache}": {"ok": bool(modeles), "detail": " → ".join(modeles) or "aucune IA configurée"}
             for tache, modeles in (settings.ia.resume().items() if settings.ia else [])

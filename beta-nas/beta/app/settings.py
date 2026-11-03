@@ -92,6 +92,16 @@ class Settings:
     # Quelle IA fait quoi (section `ia` de config.yaml), construit par charger()
     ia: IA | None = None
 
+    # Infos du NAS pour un site externe (/v1/nas) : jeton de lecture seule, sites autorisés, envoi
+    lecture_token: str = ""
+    cors_origines: list[str] = field(default_factory=list)
+    nas_nom: str = "NAS"
+    nas_disques: list[str] = field(default_factory=lambda: ["Stockage=/config"])
+    publication_url: str = ""
+    publication_jeton: str = ""
+    publication_intervalle: int = 60
+    openclaw_url: str = ""
+
     # Présence (service beta-presence + caméras)
     presence_url: str = "http://presence:8801"
     zones: dict[str, str] = field(default_factory=dict)  # pièce -> zone (étage)
@@ -134,6 +144,14 @@ def charger(chemin_config: str | None = None) -> Settings:
         anthropic_api_key=_env("ANTHROPIC_API_KEY"),
         claude_model=_env("CLAUDE_MODEL", Settings.claude_model),
         presence_url=_env("PRESENCE_URL", Settings.presence_url).rstrip("/"),
+        lecture_token=_env("BETA_LECTURE_TOKEN"),
+        cors_origines=[o.strip().rstrip("/") for o in _env("BETA_CORS").split(",") if o.strip()],
+        nas_nom=_env("NAS_NOM", "NAS"),
+        nas_disques=[d.strip() for d in _env("NAS_DISQUES", "Stockage=/config").split(",") if d.strip()],
+        publication_url=_env("PUBLICATION_URL"),
+        publication_jeton=_env("PUBLICATION_JETON"),
+        publication_intervalle=max(15, int(_env("PUBLICATION_INTERVALLE", "60") or 60)),
+        openclaw_url=_env("OPENCLAW_URL").rstrip("/"),
     )
 
     chemin = Path(chemin_config or _env("BETA_CONFIG", "/config/config.yaml"))

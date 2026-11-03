@@ -75,6 +75,7 @@ charger() {
   PORT_OPENCLAW=$(port_publie openclaw 18789 18789)
   PORT_HA=8123 # Home Assistant est en réseau « host » : pas de port publié par Docker
   BETA_TOKEN=$(lire "$ENV_BETA" BETA_TOKEN)
+  BETA_LECTURE_TOKEN=$(lire "$ENV_BETA" BETA_LECTURE_TOKEN)
   HA_TOKEN=$(lire "$ENV_BETA" HA_TOKEN)
   ANTHROPIC_API_KEY=$(lire "$ENV_BETA" ANTHROPIC_API_KEY)
   OPENCLAW_GATEWAY_TOKEN=$(lire "$ENV_OPENCLAW" OPENCLAW_GATEWAY_TOKEN)
@@ -111,6 +112,7 @@ ${G}SERVICES${N}
 
 ${G}CODES${N} ${D}(./fiche-api.sh --secrets pour les voir en entier)${N}
   BETA_TOKEN              $(masquer "$BETA_TOKEN")   ${D}Bêta, présence, tablette${N}
+  BETA_LECTURE_TOKEN      $(masquer "$BETA_LECTURE_TOKEN")   ${D}lecture seule, pour ton site (/v1/nas)${N}
   HA_TOKEN                $(masquer "$HA_TOKEN")   ${D}Home Assistant${N}
   OPENCLAW_GATEWAY_TOKEN  $(masquer "$OPENCLAW_GATEWAY_TOKEN")   ${D}interface OpenClaw${N}
   ANTHROPIC_API_KEY       $(masquer "$ANTHROPIC_API_KEY")   ${D}IA web (automatisations)${N}
@@ -121,6 +123,9 @@ ${G}COMMANDES${N} ${D}(d'abord : eval "\$(./fiche-api.sh env)")${N}
   curl -X POST $BETA/v1/texte -H "Authorization: Bearer \$BETA_TOKEN" \\
        -H "Content-Type: application/json" -d '{"texte": "allume la lumière du salon", "piece": "salon"}'
   curl "$BETA/v1/stats?format=texte" -H "Authorization: Bearer \$BETA_TOKEN"
+
+  # Pour ton site : NAS, IA, services, utilisation (jeton de lecture seule)
+  curl $BETA/v1/nas -H "Authorization: Bearer \$BETA_LECTURE_TOKEN"
 
   # Présence : qui est où, visages enregistrés
   curl http://$IP:$PORT_PRESENCE/positions -H "Authorization: Bearer \$BETA_TOKEN"
@@ -145,8 +150,8 @@ EOF
 
 cmd_env() {
   charger
-  printf 'export BETA_TOKEN=%q HA_TOKEN=%q OPENCLAW_GATEWAY_TOKEN=%q BETA_URL=%q\n' \
-    "$BETA_TOKEN" "$HA_TOKEN" "$OPENCLAW_GATEWAY_TOKEN" "$BETA"
+  printf 'export BETA_TOKEN=%q BETA_LECTURE_TOKEN=%q HA_TOKEN=%q OPENCLAW_GATEWAY_TOKEN=%q BETA_URL=%q\n' \
+    "$BETA_TOKEN" "$BETA_LECTURE_TOKEN" "$HA_TOKEN" "$OPENCLAW_GATEWAY_TOKEN" "$BETA"
 }
 
 cmd_fichier() {

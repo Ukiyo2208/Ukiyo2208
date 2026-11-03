@@ -151,6 +151,8 @@ ok "Code copié (réglages et données existants conservés)"
 [ -f "$ENV_BETA" ] || cp "$DEST/beta-nas/.env.example" "$ENV_BETA"
 chmod 600 "$ENV_BETA"
 env_si_vide "$ENV_BETA" BETA_TOKEN "$(aleatoire 32)"
+env_si_vide "$ENV_BETA" BETA_LECTURE_TOKEN "$(aleatoire 32)"
+env_si_vide "$ENV_BETA" NAS_NOM "$(hostname 2>/dev/null || echo NAS)"
 [ -n "$CLE_ANTHROPIC" ] && env_ecrire "$ENV_BETA" ANTHROPIC_API_KEY "$CLE_ANTHROPIC"
 [ -n "$PUISSANT_URL" ] && env_ecrire "$ENV_BETA" PUISSANT_URL "$PUISSANT_URL" && env_ecrire "$ENV_BETA" PUISSANT_MODELE "$PUISSANT_MODELE"
 BETA_TOKEN=$(env_lire "$ENV_BETA" BETA_TOKEN)
@@ -234,6 +236,7 @@ if [ "$OPENCLAW" = o ]; then
   env_ecrire "$ENV_OC" PUID "$(stat -c '%u' "$DOCUMENTS")"
   env_ecrire "$ENV_OC" PGID "$(stat -c '%g' "$DOCUMENTS")"
   env_ecrire "$ENV_OC" BETA_RESEAU beta-nas_default
+  env_ecrire "$ENV_BETA" OPENCLAW_URL "http://host.docker.internal:18789"
   chown -R "$(stat -c '%u:%g' "$DOCUMENTS")" "$DOCUMENTS/_A_TRIER"
   chmod 777 "$DOCUMENTS/_A_TRIER/_traitement/propositions"
   chown -R 1000:1000 data
