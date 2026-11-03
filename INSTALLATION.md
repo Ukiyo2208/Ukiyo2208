@@ -22,7 +22,7 @@ cd /volume1/docker/Ukiyo2208-claude-beta-ia-local-voice-kd7s5z    # le dossier c
 sudo bash installer.sh
 ```
 
-Le script pose 6 questions, chacune avec une réponse proposée : appuie sur Entrée pour la garder.
+Le script pose quelques questions, chacune avec une réponse proposée : appuie sur Entrée pour la garder.
 
 | Question | Réponse proposée |
 |---|---|
@@ -32,7 +32,8 @@ Le script pose 6 questions, chacune avec une réponse proposée : appuie sur Ent
 | Installer OpenClaw et le tri des documents ? | `o` |
 | Dossier des documents | `/volume1/Documents` |
 | Compte Home Assistant (identifiant, mot de passe) | ton prénom, mot de passe généré |
-| Clé de l'IA web Claude | vide = 100 % local |
+| Clé de l'IA cloud Claude | vide = aucune |
+| Adresse d'un PC puissant (Ollama + carte graphique) | vide = aucun |
 
 Ensuite, tout se fait seul. Compte **15 à 30 minutes** la première fois, surtout pour télécharger
 les modèles d'IA (environ 8 Go).

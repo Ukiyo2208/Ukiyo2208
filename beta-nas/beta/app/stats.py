@@ -107,7 +107,10 @@ async def etat_services(settings) -> dict:
                      "detail": (f"{presence.json().get('cameras', 0)} caméras, "
                                 f"{presence.json().get('personnes', 0)} personnes")
                      if presence is not None and presence.status_code == 200 else ""},
-        "ia_web": {"ok": bool(settings.anthropic_api_key), "detail": settings.claude_model if settings.anthropic_api_key else "désactivée"},
+        **{
+            f"ia · {tache}": {"ok": bool(modeles), "detail": " → ".join(modeles) or "aucune IA configurée"}
+            for tache, modeles in (settings.ia.resume().items() if settings.ia else [])
+        },
     }
 
 

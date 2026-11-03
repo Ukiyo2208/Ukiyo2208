@@ -53,6 +53,23 @@ cameras:
   - { camera: camera.cour_clair, detection: binary_sensor.cour_personne, piece: cour }
   - { camera: camera.sonnette_clair, detection: binary_sensor.sonnette_personne, piece: sonnette }
 
+# ------------------------------------------------------------------ Quelle IA fait quoi
+# Chaque type d'action est confié à une IA, ou à une liste essayée dans l'ordre (la première
+# disponible répond). Sans cette section, ce sont les valeurs ci-dessous.
+#   rapide   : petit modèle Ollama du NAS (OLLAMA_MODEL)
+#   puissant : Ollama d'un PC avec carte graphique (PUISSANT_URL + PUISSANT_MODELE dans .env)
+#   cloud    : Claude (ANTHROPIC_API_KEY dans .env)
+# Une IA sans réglage (pas de clé, pas d'adresse) est simplement sautée.
+ia:
+  taches:
+    comprendre: rapide # trier les demandes : doit rester rapide
+    conversation: [cloud, puissant, rapide] # discussion et questions
+    automatisations: [cloud, puissant] # écrire une automatisation Home Assistant
+  # Pour ajouter ou changer une IA :
+  # modeles:
+  #   puissant: { url: "http://192.168.1.50:11434", modele: "qwen3.5:27b" }
+  #   cloud: { modele: "claude-opus-5-5" }
+
 # Types d'appareils que Bêta peut lister et utiliser dans les automatisations
 domaines_exposes:
   - light

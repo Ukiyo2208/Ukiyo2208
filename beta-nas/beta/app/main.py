@@ -23,7 +23,6 @@ from pydantic import BaseModel
 from . import settings as cfg
 from . import stats as st
 from .homeassistant import HomeAssistant
-from .ia_web import IAWeb
 from .llm_local import LLMLocal
 from .localisation import Localisation, prenom_dans
 from .routeur import APRES_CAMERA, IDENTIFICATION_REQUISE, INITIALE, QUI_REQUIS, Routeur
@@ -44,19 +43,18 @@ async def lifespan(app: FastAPI):
         log.warning("HA_TOKEN est vide : Home Assistant refusera les commandes")
 
     ha = HomeAssistant(s.ha_url, s.ha_token, s.ha_agent_id, s.langue)
-    llm = LLMLocal(s.ollama_url, s.ollama_model, s.ollama_timeout)
-    ia_web = IAWeb(s.anthropic_api_key, s.claude_model) if s.anthropic_api_key else None
+    llm = LLMLocal(s.ia, s.ollama_url, s.ollama_model)
     localisation = Localisation(s, ha)
-    etat.update(settings=s, routeur=Routeur(s, ha, llm, ia_web, localisation))
+    etat.update(settings=s, routeur=Routeur(s, ha, llm, s.ia, localisation))
     prechauffage = asyncio.create_task(llm.prechauffer())
-    log.info("Bêta démarré (IA web %s)", "activée" if ia_web else "désactivée")
+    for tache, modeles in s.ia.resume().items():
+        log.info("IA pour « %s » : %s", tache, " → ".join(modeles) or "aucune")
     yield
     prechauffage.cancel()
     await ha.fermer()
     await llm.fermer()
     await localisation.fermer()
-    if ia_web:
-        await ia_web.fermer()
+    await s.ia.fermer()
 
 
 STATIQUE = Path(__file__).parent / "static"
@@ -332,4 +330,9 @@ async def tableau():
 @app.get("/sante")
 async def sante():
     routeur: Routeur = etat["routeur"]
-    return {"beta": "ok", "home_assistant": await routeur.ha.en_ligne(), "ia_web": routeur.ia_web is not None}
+    return {
+        "beta": "ok",
+        "home_assistant": await routeur.ha.en_ligne(),
+        "ia_web": routeur.ia is not None and routeur.ia.disponible("automatisations"),
+        "ia": routeur.ia.resume() if routeur.ia else {},
+    }

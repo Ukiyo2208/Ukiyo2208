@@ -31,7 +31,7 @@ def test_statistiques_en_temps_reel(monkeypatch, tmp_path):
         assert d["routes"] == {"home_assistant": 1}
         derniere_ok = d["dernieres"][1]
         assert derniere_ok["route"] == "home_assistant" and derniere_ok["texte"] == "allume le salon"
-        assert d["services"]["ollama"]["ok"] is False and "ia_web" in d["services"]
+        assert d["services"]["ollama"]["ok"] is False and "ia · conversation" in d["services"]
 
         texte = client.get("/v1/stats?format=texte", headers=h).text
         assert "POST /v1/texte" in texte and "allume le salon" in texte

@@ -132,7 +132,10 @@ if [ -z "$(env_lire "$ENV_BETA" HA_TOKEN)" ]; then
   HA_MDP_GENERE=0
   if [ -z "$HA_MDP" ]; then HA_MDP=$(aleatoire 9); HA_MDP_GENERE=1; fi
 fi
-demander CLE_ANTHROPIC "Clé de l'IA web Claude, pour créer des automatisations (vide = 100 % local)" "" secret
+echo "  Discussion et automatisations : IA cloud, ou modèle puissant sur un PC avec carte graphique."
+demander CLE_ANTHROPIC "Clé de l'IA cloud Claude (vide = aucune)" "" secret
+demander PUISSANT_URL "Adresse d'Ollama sur un PC puissant, ex http://192.168.1.50:11434 (vide = aucun)" ""
+[ -n "$PUISSANT_URL" ] && demander PUISSANT_MODELE "Modèle de ce PC" "qwen3.5:27b"
 
 # ====================================================================== 3. Fichiers
 
@@ -149,6 +152,7 @@ ok "Code copié (réglages et données existants conservés)"
 chmod 600 "$ENV_BETA"
 env_si_vide "$ENV_BETA" BETA_TOKEN "$(aleatoire 32)"
 [ -n "$CLE_ANTHROPIC" ] && env_ecrire "$ENV_BETA" ANTHROPIC_API_KEY "$CLE_ANTHROPIC"
+[ -n "$PUISSANT_URL" ] && env_ecrire "$ENV_BETA" PUISSANT_URL "$PUISSANT_URL" && env_ecrire "$ENV_BETA" PUISSANT_MODELE "$PUISSANT_MODELE"
 BETA_TOKEN=$(env_lire "$ENV_BETA" BETA_TOKEN)
 ok "Réglages : $ENV_BETA (jeton généré)"
 

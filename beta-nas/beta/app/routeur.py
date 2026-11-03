@@ -3,8 +3,9 @@
 1. Confirmation en attente (« oui » / « non » après une proposition d'automatisation)
 2. Mails
 3. Intentions locales de Home Assistant (sans LLM, < 1 s)
-4. Petit LLM local pour trier ce que HA n'a pas compris
-5. IA web pour les automatisations, avec confirmation avant création
+4. Petit modèle local (tâche « comprendre ») pour trier ce que HA n'a pas compris
+5. Discussion et questions : IA de la tâche « conversation » (cloud ou modèle puissant)
+6. Automatisations : IA de la tâche « automatisations », avec confirmation avant création
 
 Savoir qui parle n'est utile que pour les demandes personnelles. Dans ce cas, et seulement
 dans ce cas, Bêta cherche dans l'ordre :
@@ -25,9 +26,10 @@ from typing import Any
 
 import httpx
 
-from . import llm_local, settings as cfg
+from . import ia as ia_taches, llm_local, settings as cfg
 from .homeassistant import HomeAssistant, ReponseHA
-from .ia_web import ErreurAutomatisation, IAWeb
+from .ia import CONVERSATION, IA, IndisponibleError
+from .ia_web import ErreurAutomatisation, proposer_automatisation
 from .localisation import Localisation
 from .mails import DEMANDE_MAILS, resume_mails
 
@@ -47,6 +49,16 @@ _REGARDE_MOI = "Regarde la tablette une seconde."
 _POUR_QUI = "C'est pour qui ?"
 _MAISON = "maison"
 DUREE_CONFIRMATION = 120  # secondes pour dire « oui »
+MEMOIRE_DISCUSSION = 10 * 60  # une discussion est oubliée après 10 minutes de silence
+MESSAGES_MEMORISES = 12
+
+_SYSTEME_DISCUSSION = (
+    "Tu es Bêta, l'assistant vocal d'une maison. Tu réponds en français, de façon chaleureuse et "
+    "directe, en 1 à 3 phrases courtes : ta réponse est lue à voix haute, donc pas de listes, de "
+    "titres, d'emojis ni de mise en forme. Si on te demande d'agir sur un appareil de la maison, dis "
+    "que tu ne peux pas le faire depuis la discussion et propose de redemander sous forme de "
+    "commande (par exemple « allume la lumière du salon »). Si tu ne sais pas, dis-le."
+)
 _OUI = re.compile(r"^\W*(oui|ouais|vas-?y|confirme|je confirme|d'accord|ok|c'est bon|valide)\b", re.IGNORECASE)
 _NON = re.compile(r"^\W*(non|annule|laisse tomber|stop|pas maintenant)\b", re.IGNORECASE)
 
@@ -68,9 +80,10 @@ class Routeur:
     settings: cfg.Settings
     ha: HomeAssistant
     llm: llm_local.LLMLocal
-    ia_web: IAWeb | None = None
+    ia: IA | None = None
     localisation: Localisation | None = None
     _attentes: dict[str, _Attente] = field(default_factory=dict)
+    _discussions: dict[str, tuple[list[dict], float]] = field(default_factory=dict)
 
     async def traiter(
         self,
@@ -134,12 +147,10 @@ class Routeur:
                 return await manque(cfg.AUTOMATISATIONS, "Désolé, tu n'as pas le droit de créer des automatisations.")
             return await self._proposer_automatisation(texte)
 
-        if tri.categorie == llm_local.QUESTION and tri.reponse:
-            if cfg.QUESTIONS not in capacites:
-                return await manque(cfg.QUESTIONS, "Désolé, je ne peux pas répondre à ça pour toi.")
-            return Resultat(tri.reponse, "llm_local")
-
-        return Resultat("Je n'ai pas compris, tu peux reformuler ?", "incompris")
+        # Tout le reste est une discussion : questions, conseils, et ce que le tri n'a pas su classer
+        if cfg.QUESTIONS not in capacites:
+            return await manque(cfg.QUESTIONS, "Désolé, je ne peux pas répondre à ça pour toi.")
+        return await self._discuter(texte, personne)
 
     async def _identifier(
         self,
@@ -174,6 +185,23 @@ class Routeur:
             return Resultat(_POUR_QUI, QUI_REQUIS)
         return Resultat(_VISAGE_OBLIGATOIRE if visage_obligatoire else _PAS_RECONNU, "refus")
 
+    async def _discuter(self, texte: str, personne: str | None) -> Resultat:
+        if not self.ia:
+            return Resultat("Je n'ai pas compris, tu peux reformuler ?", "incompris")
+        cle = personne or "maison"
+        historique, derniere = self._discussions.get(cle, ([], 0.0))
+        if time.monotonic() - derniere > MEMOIRE_DISCUSSION:
+            historique = []
+        messages = [*historique, {"role": "user", "content": texte}]
+        try:
+            reponse = await self.ia.demander(CONVERSATION, _SYSTEME_DISCUSSION, messages, max_tokens=400)
+        except IndisponibleError:
+            log.exception("Aucune IA de discussion disponible")
+            return Resultat("Je ne peux pas discuter pour l'instant, mais je peux toujours piloter la maison.", "incompris")
+        messages.append({"role": "assistant", "content": reponse.texte})
+        self._discussions[cle] = (messages[-MESSAGES_MEMORISES:], time.monotonic())
+        return Resultat(reponse.texte, f"conversation:{reponse.modele}")
+
     async def _ha(self, texte: str) -> ReponseHA | None:
         try:
             return await self.ha.commande(texte)
@@ -192,26 +220,28 @@ class Routeur:
             return Resultat("Je n'arrive pas à accéder à ta boîte mail.", "mails")
 
     async def _proposer_automatisation(self, texte: str) -> Resultat:
-        if not self.ia_web:
+        if not self.ia or not self.ia.disponible(ia_taches.AUTOMATISATIONS):
             return Resultat(
-                "Créer une automatisation demande l'IA web, qui n'est pas configurée.", "automatisation"
+                "Pour créer une automatisation, il me faut l'IA cloud ou le modèle puissant, et aucun n'est configuré.",
+                "automatisation",
             )
         try:
             appareils = await self.ha.appareils(self.settings.domaines_exposes)
-            proposition = await self.ia_web.proposer_automatisation(
-                texte, appareils, self.settings.domaines_exposes, self.settings.envoyer_noms_appareils
+            proposition = await proposer_automatisation(
+                self.ia, texte, appareils, self.settings.domaines_exposes, self.settings.envoyer_noms_appareils
             )
         except ErreurAutomatisation as e:
             log.warning("Automatisation refusée : %s", e)
-            return Resultat("La proposition de l'IA n'était pas valide, je n'ai rien créé.", "ia_web")
+            return Resultat("Je n'ai pas réussi à préparer cette automatisation, je n'ai rien créé.", "automatisation")
         except Exception:
-            log.exception("Erreur IA web")
-            return Resultat("Je n'arrive pas à joindre l'IA web.", "ia_web")
+            log.exception("Erreur pendant la préparation de l'automatisation")
+            return Resultat("Je n'arrive pas à joindre l'IA des automatisations.", "automatisation")
 
+        route = f"automatisation:{proposition.modele}"
         if not proposition.possible:
-            return Resultat(proposition.resume, "ia_web")
+            return Resultat(proposition.resume, route)
         self._attentes[_MAISON] = _Attente(proposition.config, time.monotonic() + DUREE_CONFIRMATION)
-        return Resultat(f"{proposition.resume} Tu confirmes ?", "ia_web")
+        return Resultat(f"{proposition.resume} Tu confirmes ?", route)
 
     async def _appliquer(self, config: dict[str, Any]) -> Resultat:
         identifiant = f"beta_{uuid.uuid4().hex[:12]}"

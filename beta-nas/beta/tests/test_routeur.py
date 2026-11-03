@@ -4,7 +4,7 @@ import pytest
 
 from app import llm_local
 from app.homeassistant import ReponseHA
-from app.ia_web import Proposition
+from app import ia
 from app.routeur import APRES_CAMERA, IDENTIFICATION_REQUISE, INITIALE, QUI_REQUIS, Routeur
 from app.settings import Personne, Settings
 
@@ -36,8 +36,22 @@ class FauxLLM:
 
 
 class FausseIA:
-    async def proposer_automatisation(self, *args):
-        return Proposition(True, "Tous les jours à 6h, j'ouvre les volets.", {"alias": "x"})
+    """Remplace les vraies IA : répond comme le ferait l'IA attitrée de chaque tâche."""
+
+    def __init__(self):
+        self.appels = []
+
+    def disponible(self, tache):
+        return True
+
+    async def demander(self, tache, systeme, messages, **kwargs):
+        self.appels.append((tache, messages))
+        return ia.Resultat(f"Réponse {len(messages)}", "cloud")
+
+    async def demander_json(self, tache, systeme, message, schema, max_tokens=4096):
+        self.appels.append((tache, message))
+        yaml = "triggers: [{trigger: time, at: '06:00:00'}]\nactions: [{action: notify.notify, data: {message: volets}}]"
+        return {"possible": True, "resume": "Tous les jours à 6h, j'ouvre les volets.", "yaml": yaml}, "cloud"
 
 
 class FausseLocalisation:
@@ -92,7 +106,7 @@ async def test_automatisation_pas_executee_tout_de_suite_puis_confirmee():
     assert ha.commandes == []  # rien n'a été exécuté immédiatement
     r = await rt.traiter("oui", "bastien", 0.9)
     assert r.texte == "C'est enregistré."
-    assert ha.creees[0]["alias"] == "x"
+    assert ha.creees[0]["alias"] == "Tous les jours à 6h, j'ouvre les volets."
 
 
 @pytest.mark.asyncio
@@ -115,10 +129,29 @@ async def test_enfant_ne_cree_pas_d_automatisation():
 
 
 @pytest.mark.asyncio
-async def test_question_generale_sans_camera():
-    tri = llm_local.Tri(llm_local.QUESTION, reponse="Paris.")
-    r = await routeur(FauxHA(), tri).traiter("capitale de la France ?", etape=INITIALE)
-    assert r.route == "llm_local"
+async def test_question_generale_sans_camera_et_par_l_ia_de_discussion():
+    fausse = FausseIA()
+    tri = llm_local.Tri(llm_local.CONVERSATION)
+    r = await routeur(FauxHA(), tri, fausse).traiter("capitale de la France ?", etape=INITIALE)
+    assert r.route == "conversation:cloud"
+    assert fausse.appels[0][0] == ia.CONVERSATION
+
+
+@pytest.mark.asyncio
+async def test_la_discussion_garde_le_fil():
+    fausse = FausseIA()
+    rt = routeur(FauxHA(), llm_local.Tri(llm_local.CONVERSATION), fausse)
+    await rt.traiter("qui a peint la Joconde ?", "bastien", 0.9)
+    r = await rt.traiter("et en quelle année ?", "bastien", 0.9)
+    messages = fausse.appels[-1][1]
+    assert [m["content"] for m in messages[:2]] == ["qui a peint la Joconde ?", "Réponse 1"]
+    assert r.texte == "Réponse 3"
+
+
+@pytest.mark.asyncio
+async def test_sans_ia_de_discussion():
+    r = await routeur(FauxHA(), llm_local.Tri(llm_local.CONVERSATION)).traiter("raconte une blague", "bastien", 0.9)
+    assert r.route == "incompris"
 
 
 @pytest.mark.asyncio

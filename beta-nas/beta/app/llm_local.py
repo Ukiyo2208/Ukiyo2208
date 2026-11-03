@@ -1,22 +1,24 @@
-"""Petit LLM local (Ollama) : il ne sert qu'à trier les demandes que Home Assistant n'a pas comprises.
+"""Comprendre la demande : le petit modèle local (tâche « comprendre ») trie seulement ce que
+Home Assistant n'a pas compris. Il ne répond pas lui-même : la discussion a sa propre IA.
 
 Le prompt est volontairement court : sur un Intel N100, chaque token de consigne coûte du temps.
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 from dataclasses import dataclass
 
 import httpx
 
+from .ia import COMPRENDRE, IA, IndisponibleError
+
 log = logging.getLogger("beta.llm_local")
 
 DOMOTIQUE = "domotique"
 AUTOMATISATION = "automatisation"
-QUESTION = "question"
+CONVERSATION = "conversation"
 AUTRE = "autre"
 
 _CONSIGNE = (
@@ -25,7 +27,7 @@ _CONSIGNE = (
     "Mets dans 'commande' une phrase courte et simple, ex : 'allume la lumière du salon'.\n"
     "- automatisation : quelque chose à faire plus tard, de façon répétée ou sous condition "
     "(tous les jours à 6h, quand je pars, si la température...).\n"
-    "- question : question de culture générale ou conversation. Mets une réponse de 1 à 2 phrases dans 'reponse'.\n"
+    "- conversation : question, discussion, demande d'information ou de conseil.\n"
     "- autre : incompréhensible.\n"
     "Réponds uniquement en JSON."
 )
@@ -33,11 +35,10 @@ _CONSIGNE = (
 _SCHEMA = {
     "type": "object",
     "properties": {
-        "categorie": {"type": "string", "enum": [DOMOTIQUE, AUTOMATISATION, QUESTION, AUTRE]},
+        "categorie": {"type": "string", "enum": [DOMOTIQUE, AUTOMATISATION, CONVERSATION, AUTRE]},
         "commande": {"type": "string"},
-        "reponse": {"type": "string"},
     },
-    "required": ["categorie", "commande", "reponse"],
+    "required": ["categorie", "commande"],
 }
 
 # Si Ollama est indisponible, on se rabat sur ces mots-clés
@@ -51,7 +52,6 @@ _MOTS_AUTOMATISATION = re.compile(
 class Tri:
     categorie: str
     commande: str = ""
-    reponse: str = ""
 
 
 def tri_par_mots_cles(texte: str) -> Tri:
@@ -61,39 +61,24 @@ def tri_par_mots_cles(texte: str) -> Tri:
 
 
 class LLMLocal:
-    def __init__(self, url: str, modele: str, timeout: float = 30.0):
-        self.modele = modele
-        self._client = httpx.AsyncClient(base_url=url, timeout=timeout)
+    def __init__(self, ia: IA, url: str, modele: str):
+        self.ia = ia
+        self.modele = modele  # modèle Ollama du NAS, téléchargé au démarrage
+        self._client = httpx.AsyncClient(base_url=url, timeout=30)
 
     async def fermer(self) -> None:
         await self._client.aclose()
 
     async def trier(self, texte: str) -> Tri:
         try:
-            r = await self._client.post(
-                "/api/chat",
-                json={
-                    "model": self.modele,
-                    "stream": False,
-                    "format": _SCHEMA,
-                    # Garde le modèle en mémoire pour éviter de le recharger à chaque phrase
-                    "keep_alive": "24h",
-                    "options": {"temperature": 0, "num_ctx": 2048},
-                    "messages": [
-                        {"role": "system", "content": _CONSIGNE},
-                        {"role": "user", "content": texte},
-                    ],
-                },
-            )
-            r.raise_for_status()
-            donnees = json.loads(r.json()["message"]["content"])
-            categorie = donnees.get("categorie", AUTRE)
-            if categorie not in (DOMOTIQUE, AUTOMATISATION, QUESTION, AUTRE):
-                categorie = AUTRE
-            return Tri(categorie, donnees.get("commande", "").strip(), donnees.get("reponse", "").strip())
-        except (httpx.HTTPError, KeyError, ValueError) as e:
-            log.warning("LLM local indisponible (%s), tri par mots-clés", e)
+            donnees, _ = await self.ia.demander_json(COMPRENDRE, _CONSIGNE, texte, _SCHEMA, max_tokens=100)
+        except IndisponibleError as e:
+            log.warning("Tri par IA impossible (%s), tri par mots-clés", e)
             return tri_par_mots_cles(texte)
+        categorie = donnees.get("categorie", AUTRE)
+        if categorie not in (DOMOTIQUE, AUTOMATISATION, CONVERSATION, AUTRE):
+            categorie = AUTRE
+        return Tri(categorie, str(donnees.get("commande", "")).strip())
 
     async def prechauffer(self) -> None:
         """Télécharge le modèle s'il manque, puis le charge en mémoire."""

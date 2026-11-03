@@ -34,6 +34,26 @@ Tablette ←── texte + audio WAV ────┘
 
 ---
 
+## Quelle IA fait quoi
+
+Chaque type d'action a **son IA attitrée**. Si elle n'est pas disponible, la suivante de sa liste
+prend le relais.
+
+| Action | IA (dans l'ordre) | Pourquoi |
+|---|---|---|
+| Commandes de la maison | Home Assistant, sans IA | Instantané |
+| Comprendre la demande | `rapide` : petit modèle du NAS | Rapide, local, ne fait que trier |
+| **Discussion et questions** | `cloud`, puis `puissant`, puis `rapide` | Réponses de qualité, avec mémoire de la conversation (10 min) |
+| Créer une automatisation | `cloud`, puis `puissant` | Tâche difficile, toujours confirmée avant création |
+| Tri des documents | OpenClaw (son propre modèle) | Voir `openclaw-nas/` |
+
+- `cloud` = Claude : il faut `ANTHROPIC_API_KEY` dans `.env`. Pour la discussion, seule la phrase
+  dite (et les échanges des 10 dernières minutes) part sur Internet, sans ton prénom ni rien de la maison.
+- `puissant` = Ollama sur un PC avec carte graphique : `PUISSANT_URL` et `PUISSANT_MODELE` dans `.env`.
+- Pour changer qui fait quoi, par exemple **une seule IA pour la discussion** : section `ia` de
+  `config/config.yaml` (voir l'exemple), puis `sudo docker compose up -d beta`.
+- Le tableau de bord (`/tableau`) affiche quelle IA s'occupe de chaque tâche, et qui a répondu à chaque phrase.
+
 ## Installation
 
 ### 1. Préparer le NAS

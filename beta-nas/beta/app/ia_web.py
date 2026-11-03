@@ -1,4 +1,4 @@
-"""IA web (Claude) pour les demandes trop complexes pour le NAS, comme créer une automatisation.
+"""Automatisations : écrites par l'IA de la tâche « automatisations » (le cloud par défaut).
 
 Ce qui part sur Internet : la phrase + la liste des appareils (type, pièce, et le nom si
 `envoyer_noms_appareils` est activé). Les vrais identifiants sont remplacés par des alias,
@@ -13,10 +13,10 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-import anthropic
 import yaml
 
 from .homeassistant import Appareil
+from .ia import AUTOMATISATIONS, IA, IndisponibleError
 
 _CONSIGNE = (
     "Tu écris des automatisations Home Assistant (format YAML moderne : triggers / conditions / actions). "
@@ -52,6 +52,7 @@ class Proposition:
     possible: bool
     resume: str
     config: dict[str, Any] = field(default_factory=dict)
+    modele: str = ""  # l'IA qui a écrit la proposition
 
 
 def anonymiser(appareils: list[Appareil], envoyer_noms: bool) -> tuple[list[dict], dict[str, str]]:
@@ -132,44 +133,21 @@ def verifier(
     return config
 
 
-class IAWeb:
-    def __init__(self, api_key: str, modele: str):
-        self.modele = modele
-        self._client = anthropic.AsyncAnthropic(api_key=api_key, timeout=120.0)
-
-    async def fermer(self) -> None:
-        await self._client.close()
-
-    async def proposer_automatisation(
-        self,
-        demande: str,
-        appareils: list[Appareil],
-        domaines_exposes: list[str],
-        envoyer_noms: bool,
-    ) -> Proposition:
-        liste, table = anonymiser(appareils, envoyer_noms)
-        message = (
-            f"Demande : {demande}\n\n"
-            f"Appareils disponibles :\n{json.dumps(liste, ensure_ascii=False, indent=1)}"
-        )
-
-        reponse = await self._client.beta.messages.create(
-            model=self.modele,
-            max_tokens=16000,
-            betas=["server-side-fallback-2026-07-01"],
-            fallbacks="default",
-            output_config={"effort": "medium", "format": {"type": "json_schema", "schema": _SCHEMA}},
-            system=_CONSIGNE,
-            messages=[{"role": "user", "content": message}],
-        )
-        if reponse.stop_reason == "refusal":
-            return Proposition(False, "L'IA web a refusé cette demande.")
-        if reponse.stop_reason == "max_tokens":
-            raise ErreurAutomatisation("Réponse de l'IA web tronquée")
-
-        texte = next(b.text for b in reponse.content if b.type == "text")
-        donnees = json.loads(texte)
-        if not donnees["possible"]:
-            return Proposition(False, donnees["resume"])
-        config = verifier(donnees["yaml"], table, domaines_exposes, alias=donnees["resume"][:100])
-        return Proposition(True, donnees["resume"], config)
+async def proposer_automatisation(
+    ia: IA,
+    demande: str,
+    appareils: list[Appareil],
+    domaines_exposes: list[str],
+    envoyer_noms: bool,
+) -> Proposition:
+    """Confiée à l'IA de la tâche « automatisations » (le cloud par défaut, sinon le modèle puissant)."""
+    liste, table = anonymiser(appareils, envoyer_noms)
+    message = f"Demande : {demande}\n\nAppareils disponibles :\n{json.dumps(liste, ensure_ascii=False, indent=1)}"
+    try:
+        donnees, modele = await ia.demander_json(AUTOMATISATIONS, _CONSIGNE, message, _SCHEMA, max_tokens=16000)
+    except IndisponibleError as e:
+        raise ErreurAutomatisation(f"Aucune IA disponible pour les automatisations : {e}") from e
+    if not donnees.get("possible"):
+        return Proposition(False, str(donnees.get("resume", "Ce n'est pas possible avec tes appareils.")))
+    config = verifier(str(donnees.get("yaml", "")), table, domaines_exposes, alias=str(donnees.get("resume", ""))[:100])
+    return Proposition(True, str(donnees["resume"]), config, modele)

@@ -8,6 +8,8 @@ from pathlib import Path
 
 import yaml
 
+from .ia import IA, TACHES_PAR_DEFAUT, Modele
+
 # Capacités possibles d'un rôle
 DOMOTIQUE = "domotique"
 MAILS = "mails"
@@ -87,6 +89,9 @@ class Settings:
     )
     envoyer_noms_appareils: bool = True
 
+    # Quelle IA fait quoi (section `ia` de config.yaml), construit par charger()
+    ia: IA | None = None
+
     # Présence (service beta-presence + caméras)
     presence_url: str = "http://presence:8801"
     zones: dict[str, str] = field(default_factory=dict)  # pièce -> zone (étage)
@@ -133,6 +138,7 @@ def charger(chemin_config: str | None = None) -> Settings:
 
     chemin = Path(chemin_config or _env("BETA_CONFIG", "/config/config.yaml"))
     if not chemin.exists():
+        s.ia = _charger_ia(s, {})
         return s
 
     brut = yaml.safe_load(chemin.read_text(encoding="utf-8")) or {}
@@ -142,6 +148,8 @@ def charger(chemin_config: str | None = None) -> Settings:
         s.domaines_exposes = list(brut["domaines_exposes"])
     for role, capacites in (brut.get("roles") or {}).items():
         s.roles[role] = list(capacites or [])
+
+    s.ia = _charger_ia(s, brut.get("ia") or {})
 
     maison = brut.get("maison") or {}
     s.validite_minutes = float(maison.get("validite_minutes", s.validite_minutes))
@@ -169,3 +177,33 @@ def charger(chemin_config: str | None = None) -> Settings:
             surnoms=[str(x) for x in infos.get("surnoms") or []],
         )
     return s
+
+
+def _charger_ia(s: Settings, section: dict) -> IA:
+    """Les IA disponibles et leurs tâches. Sans section `ia`, valeurs par défaut :
+    rapide = Ollama du NAS, cloud = Claude si une clé existe, puissant = PUISSANT_URL du .env."""
+    modeles = {
+        "rapide": Modele("rapide", "ollama", s.ollama_model, url=s.ollama_url, contexte=2048, timeout=s.ollama_timeout),
+        "cloud": Modele("cloud", "anthropic", s.claude_model, cle=s.anthropic_api_key),
+        "puissant": Modele(
+            "puissant", "ollama", _env("PUISSANT_MODELE"), url=_env("PUISSANT_URL"), contexte=8192, timeout=180
+        ),
+    }
+    for nom, infos in (section.get("modeles") or {}).items():
+        infos = infos or {}
+        base = modeles.get(nom)
+        type_ = infos.get("type", base.type if base else "ollama")
+        modeles[nom] = Modele(
+            nom=nom,
+            type=type_,
+            modele=str(infos.get("modele", base.modele if base else "")),
+            url=str(infos.get("url", base.url if base and base.type == type_ else (s.ollama_url if type_ == "ollama" else ""))),
+            # La clé reste dans .env : on indique seulement le nom de la variable
+            cle=_env(infos["cle_env"]) if infos.get("cle_env") else (base.cle if base else s.anthropic_api_key),
+            contexte=int(infos.get("contexte", base.contexte if base else 8192)),
+            timeout=float(infos.get("timeout", base.timeout if base else 120)),
+        )
+    taches = {t: list(v) for t, v in TACHES_PAR_DEFAUT.items()}
+    for tache, noms in (section.get("taches") or {}).items():
+        taches[tache] = [noms] if isinstance(noms, str) else list(noms or [])
+    return IA(modeles, taches)
