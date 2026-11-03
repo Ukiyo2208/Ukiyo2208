@@ -66,6 +66,8 @@ import roots
 import sante
 import nas
 import recherche
+import prix
+import extension
 import scanner
 import settings
 import storage
@@ -127,7 +129,7 @@ def share_target():
 # Accessibles sans être connecté : page de connexion, ressources de la page, pages publiques
 # (partages /d/, questionnaires /f/, liens courts /s/) et leurs API publiques.
 PUBLIC = ("/login", "/login/code", "/style.css", "/js/i18n.js", "/i18n/", "/vendor/fonts/", "/brand/", "/manifest.webmanifest", "/sw.js", "/api/auth/mode", "/api/auth/passkey", "/ca.crt",
-          "/d/", "/f/", "/s/", "/public/", "/api/public/", "/statut", "/.well-known/", "/api/v1/openapi.json")
+          "/d/", "/f/", "/s/", "/public/", "/api/public/", "/statut", "/.well-known/", "/api/v1/openapi.json", "/api/ext-pair")
 
 
 def admin_only(fn):
@@ -675,13 +677,13 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones, profil, patrimoine, immo, banque, visages, entretien, sante, nas):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones, profil, patrimoine, immo, banque, visages, entretien, sante, nas, prix, extension):
     app.register_blueprint(module.bp)
-SEARCHERS.update(recherche.SOURCES)
+SEARCHERS.update(recherche.SOURCES, prix=prix.search)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
                  liens=links.search, abonnements=subscriptions.search,
                  paperasse=paperasse.search, recettes=recipes.search, agenda=agenda.search, contacts=contacts.search, **{"presse-papier": clipboard.search})
-COUNTERS.update(entretien=entretien.count, taches=taches.count, inventaire=inventaire.count, colis=colis.count, mails=mail.count, contacts=contacts.count, recettes=recipes.count, paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
+COUNTERS.update(prix=prix.count, entretien=entretien.count, taches=taches.count, inventaire=inventaire.count, colis=colis.count, mails=mail.count, contacts=contacts.count, recettes=recipes.count, paperasse=paperasse.count, abonnements=subscriptions.count, partages=drop.count, questionnaires=forms.count, notes=notes.count, liens=links.count)
 
 
 if __name__ == "__main__":
@@ -720,6 +722,7 @@ if __name__ == "__main__":
     entretien.start()
     sante.start()
     nas.start()
+    prix.start()
     mounts = {}
     dav = agenda.radicale_app()
     if dav:  # serveur CalDAV des agendas (synchronisation des téléphones)

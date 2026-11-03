@@ -28,8 +28,9 @@ SCOPES = {
     "contacts:read": "Lire les contacts",
     "contacts:write": "Ajouter et modifier des contacts",
     "assistant:use": "Commandes vocales et widget (courses, tâches, rendez-vous, résumé du jour)",
+    "extension:use": "Extension de navigateur (envoi sur le NAS, prix, notes, colis, agenda, recherche)",
 }
-TOOL_OF = {"mails": "mails", "agenda": "agenda", "contacts": "contacts", "assistant": None}
+TOOL_OF = {"mails": "mails", "agenda": "agenda", "contacts": "contacts", "assistant": None, "extension": None}
 
 
 # --- Jetons ------------------------------------------------------------------------------------

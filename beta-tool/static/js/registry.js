@@ -13,7 +13,7 @@ export const CATS = [
 export const THEMES = [
   ["quotidien", "Au quotidien", "sun", "ambre", ["journee", "agenda", "taches", "recettes", "inventaire", "entretien", "sante"]],
   ["communication", "Mails, contacts et colis", "mail", "bleu-vert", ["mails", "contacts", "colis"]],
-  ["argent", "Argent et papiers", "receipt", "vert", ["budget", "patrimoine", "immo", "paperasse", "scanner"]],
+  ["argent", "Argent et papiers", "receipt", "vert", ["budget", "patrimoine", "immo", "prix", "paperasse", "scanner"]],
   ["medias", "Vidéos, musique et photos", "play", "rose", ["telecharger", "abonnements", "medias", "photos"]],
   ["creation", "Retouche et transcription", "wand", "violet", ["video", "image", "transcription", "traduction"]],
   ["bureau", "Documents et bureautique", "briefcase", "bleu", ["convertir", "pdf", "work", "notes", "questionnaires"]],
@@ -81,6 +81,8 @@ export const TOOLS = [
     desc: "Tes actions (Revolut, actions de l'entreprise), tes crédits et ce qu'il reste à rembourser, ton immobilier et un simulateur d'achat pour louer.", chips: ["Actions", "Crédits", "Projet locatif"] },
   { id: "immo", name: "Immobilier", icon: "home", tile: "ambre", cat: "maison", load: () => import("./tools/immo.js"),
     desc: "Annonces suivies avec alerte de baisse, prix réels du quartier, gestion de ta location (loyers, quittances, IRL, état des lieux) et aide à la déclaration.", chips: ["Annonces", "Prix DVF", "Quittances"] },
+  { id: "prix", name: "Suivi des prix", icon: "tag", tile: "vert", cat: "maison", load: () => import("./tools/prix.js"),
+    desc: "L'historique des prix des produits que tu regardes, une alerte quand ça baisse et les prix des autres boutiques.", chips: ["Historique", "Alertes", "Comparaison"] },
   { id: "entretien", name: "Entretien", icon: "settings", tile: "bleu-vert", cat: "maison", load: () => import("./tools/entretien.js"),
     desc: "Voiture, chaudière, logement, jardin : vidange, contrôle technique, ramonage… avec rappels et factures.", chips: ["Voiture", "Chaudière", "Rappels"] },
   { id: "sante", name: "Santé", icon: "heart", tile: "rose", cat: "maison", load: () => import("./tools/sante.js"),

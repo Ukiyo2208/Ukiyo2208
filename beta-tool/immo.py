@@ -607,6 +607,15 @@ def add_listing():
             info = fetch_listing(url)
         except (ValueError, requests.RequestException) as e:
             warn = str(e) if isinstance(e, ValueError) else "Impossible d'ouvrir l'annonce : complète les infos à la main"
+    l = new_listing(user, url, info, f)
+    return jsonify(listing=l, warning=warn if not l.get("price") else None)
+
+
+def new_listing(user, url, info, f=None):
+    """Ajoute une annonce suivie (infos lues sur la page, complétées par f) ; utilisé aussi par l'extension."""
+    f = f or {}
+    if url and any(x.get("url") == url for x in load(user)["listings"]):
+        raise ValueError("Cette annonce est déjà suivie")
     l = {"id": uuid.uuid4().hex[:8], "url": url, "status": "active", "added": time.time(), "checked": time.time(), "note": "",
          **{k: info.get(k) for k in ("title", "price", "surface", "rooms", "city", "postcode", "image", "site")}}
     for k in ("price", "surface", "rooms", "rent", "charges", "tf"):
@@ -617,7 +626,7 @@ def add_listing():
             l[k] = str(f[k])[:120]
     l["history"] = [{"at": time.time(), "price": l["price"]}] if l.get("price") else []
     store.update(key(user), EMPTY, lambda d: d["listings"].insert(0, l))
-    return jsonify(listing=l, warning=warn if not l.get("price") else None)
+    return l
 
 
 @bp.put("/api/immo/listings/<lid>")

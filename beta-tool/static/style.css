@@ -2288,3 +2288,32 @@ select.inline { display: inline-block; width: auto; padding: 4px 8px; margin: 0 
 .home-cat { display: flex; align-items: center; gap: 8px; }
 .home-cat .home-cat-ic { width: 24px; height: 24px; border-radius: 7px; flex: none; box-shadow: none; }
 .home-cat .home-cat-ic svg.i { width: 14px; height: 14px; margin: 0; vertical-align: 0; }
+
+/* Suivi des prix */
+.px-list { display: grid; gap: 10px; }
+.px-card { display: flex; align-items: center; gap: 14px; padding: 12px 14px; text-align: left; font: inherit; color: inherit; cursor: pointer; width: 100%; }
+.px-img { width: 56px; height: 56px; border-radius: 10px; background: #fff; display: grid; place-items: center; overflow: hidden; flex: none; border: 1px solid var(--border); }
+.px-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.px-info { display: grid; gap: 3px; min-width: 0; }
+.px-info b { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.px-info .cx-st { justify-self: start; }
+.px-price { display: grid; justify-items: end; gap: 2px; flex: none; }
+.px-price b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.px-spark { width: 120px; height: 32px; }
+.px-spark polyline { fill: none; stroke: var(--accent); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.px-detail { display: grid; gap: 12px; }
+.px-head { display: flex; gap: 14px; align-items: center; }
+.px-head img { width: 84px; height: 84px; object-fit: contain; background: #fff; border-radius: 12px; border: 1px solid var(--border); }
+.px-head .grow { display: grid; gap: 4px; }
+.px-head .cx-st { justify-self: start; }
+.px-best { font-size: 1.05rem; }
+.px-chart { width: 100%; height: auto; }
+.px-chart polyline { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.px-chart line { stroke: var(--border); stroke-dasharray: 3 4; }
+.px-chart text { font-size: 11px; fill: var(--muted); }
+.px-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: .85rem; color: var(--muted); }
+.px-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.px-offers { display: grid; gap: 2px; }
+.px-shops { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; margin-bottom: 10px; }
+.px-custom summary { cursor: pointer; font-weight: 600; margin: 6px 0; }
+.px-custom form { align-items: end; }
