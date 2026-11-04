@@ -71,7 +71,9 @@ class _Ollama:
         if schema:
             corps["format"] = schema
         r = await self._client.post("/api/chat", json=corps)
-        r.raise_for_status()
+        if r.status_code >= 400:
+            # Le message d'Ollama dit pourquoi (ex : « model "x" not found, try pulling it first »)
+            raise IndisponibleError(f"Ollama {r.status_code} pour le modèle « {self.m.modele} » : {r.text[:200]}")
         return r.json()["message"]["content"].strip()
 
     async def fermer(self) -> None:
