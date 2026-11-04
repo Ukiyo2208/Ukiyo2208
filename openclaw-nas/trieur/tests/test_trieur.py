@@ -30,7 +30,7 @@ def test_preparation(c):
     (c.entree / "_journal.md").write_text("ignoré")
     trieur.tour(c)
     assert "Facture EDF" in (c.texte / "note.txt.txt").read_text()
-    assert (c.traitement / "a_traiter.txt").read_text() == "note.txt\n"
+    assert (c.traitement / "a_traiter.txt").read_text() == "note.txt | _A_TRIER/note.txt\n"
     dossiers = (c.traitement / "dossiers.txt").read_text().split()
     assert "Factures/Énergie" in dossiers and "Banque" in dossiers
     assert not any(d.startswith(("_", "@")) for d in dossiers)
@@ -117,3 +117,70 @@ def test_pdf_avec_texte(c):
     pdf.save()
     trieur.tour(c)
     assert "Avis d'imposition 2026" in (c.texte / "impots.pdf.txt").read_text()
+
+
+def surveiller(c, *dossiers, exclure=()):
+    c.creer()
+    c.surveiller.write_text("\n".join(dossiers) + "\n")
+    c.exclure.write_text("# commentaire\n" + "\n".join(exclure) + "\n")
+    trieur._scan["signature"] = None  # pas d'attente des 10 minutes dans les tests
+
+
+def a_traiter(c):
+    return [l.split(" | ")[1] for l in (c.traitement / "a_traiter.txt").read_text().splitlines() if " | " in l]
+
+
+def test_par_defaut_seule_la_boite_d_entree(c):
+    (c.racine / "Banque" / "releve.pdf").write_text("x")
+    trieur.tour(c)
+    assert a_traiter(c) == []
+    assert "# ." in c.surveiller.read_text()  # fichier modèle créé, rien d'activé
+
+
+def test_tous_les_documents_sauf_exclusions(c):
+    (c.racine / "Banque" / "releve.txt").write_text("Relevé")
+    (c.racine / "Factures" / "Énergie" / "edf.txt").write_text("EDF")
+    (c.racine / "Photos").mkdir()
+    (c.racine / "Photos" / "notes.txt").write_text("x")
+    (c.racine / "Banque" / "film.mp4").write_text("x")  # pas un document
+    (c.racine / "Banque" / "brouillon.txt").write_text("x")
+    (c.entree / "scan.txt").write_text("x")
+    surveiller(c, ".", exclure=["Photos", "*brouillon*"])
+    trieur.tour(c)
+    assert a_traiter(c) == ["_A_TRIER/scan.txt", "Banque/releve.txt", "Factures/Énergie/edf.txt"]
+
+
+def test_meme_nom_dans_deux_dossiers(c):
+    (c.racine / "Banque" / "doc.txt").write_text("banque")
+    (c.racine / "Factures" / "doc.txt").write_text("facture")
+    surveiller(c, ".")
+    trieur.tour(c)
+    lignes = (c.traitement / "a_traiter.txt").read_text().splitlines()
+    identifiants = [l.split(" | ")[0] for l in lignes]
+    assert len(set(identifiants)) == 2 and all(i.startswith("doc~") for i in identifiants)
+
+
+def test_garder_et_ranger_depuis_un_dossier_surveille(c):
+    (c.racine / "Banque" / "a.txt").write_text("à ranger")
+    (c.racine / "Banque" / "b.txt").write_text("à garder")
+    surveiller(c, "Banque")
+    trieur.tour(c)
+    ids = {rel: i for i, rel in json.loads(c.sources.read_text()).items()}
+    proposer(c, ids["Banque/a.txt"], titre="2026 - Relevé", dossier="Banque/2026")
+    proposer(c, ids["Banque/b.txt"], statut="garder")
+    trieur.tour(c)
+    assert (c.racine / "Banque" / "2026" / "2026 - Relevé.txt").read_text() == "à ranger"
+    assert (c.racine / "Banque" / "b.txt").exists()  # gardé à sa place
+    trieur._scan["signature"] = None
+    trieur.tour(c)
+    # Ni le document gardé, ni celui rangé (pourtant dans un dossier surveillé) ne reviennent
+    assert a_traiter(c) == []
+    assert "Banque/a.txt" in c.journal.read_text()
+
+
+def test_dossier_surveille_hors_documents_ignore(c, tmp_path_factory):
+    dehors = tmp_path_factory.mktemp("dehors")
+    (dehors / "secret.txt").write_text("x")
+    surveiller(c, "../" + dehors.name, str(dehors))
+    trieur.tour(c)
+    assert a_traiter(c) == []

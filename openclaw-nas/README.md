@@ -154,15 +154,45 @@ refuse tout chemin hors de tes Documents et n'écrase jamais un fichier.
      --message "Fais un passage de tri des documents (section « Tri des documents » de AGENTS.md)."
    ```
 
+### Choisir ce qui est trié : tout, sauf ce que tu exclus
+
+Par défaut, seul `_A_TRIER` est trié. Pour faire trier des dossiers entiers sans rien déplacer à la
+main, modifie ces deux fichiers (créés automatiquement dans `Document/_A_TRIER/`, ouvrables depuis
+ton PC) :
+
+- **`_a_surveiller.txt`** : les dossiers à trier, un par ligne. `.` = **tous** tes documents.
+  ```
+  .
+  ```
+- **`_a_exclure.txt`** : ce que tu ne veux **pas** trier, un dossier ou un motif par ligne.
+  ```
+  Photos
+  Travail/Archives
+  *.mp4
+  ```
+
+Dans ces dossiers, le trieur prend les **PDF, Word (`.docx`) et textes**. Les images ne sont triées que
+si tu les déposes dans `_A_TRIER`.
+
+Ne sont jamais reproposés :
+- les documents déjà rangés par Bêta ;
+- ceux pour lesquels tu as répondu « **garde-le** » (liste dans `_A_TRIER/_traitement/gardes.txt`,
+  supprime une ligne pour qu'un document soit à nouveau proposé).
+
+**Rythme :** environ 18 documents par nuit sur le N100, plus ceux que tu fais trier à la demande. Si tu as
+des milliers de documents, commence par les dossiers les plus en désordre (Téléchargements, Scans…) :
+`a_traiter.txt` indique combien attendent leur tour.
+
 ### Au quotidien
 
-1. Dépose tes fichiers dans `Documents/_A_TRIER` : depuis ton PC, l'application UGREEN du
-   téléphone, ou directement depuis ton scanner s'il sait « numériser vers un dossier réseau ».
+1. Dépose tes fichiers dans `Document/_A_TRIER` (depuis ton PC, l'application UGREEN du téléphone,
+   ou ton scanner s'il sait « numériser vers un dossier réseau »), **ou** laisse le trieur trouver les
+   nouveaux documents des dossiers surveillés.
 2. Dans OpenClaw, écris **« Trie les documents »** (ou attends le passage de la nuit).
 3. Il répond avec une liste numérotée de propositions. Réponds par exemple :
    - « valide tout » ;
    - « valide 1 et 3, pour le 2 mets plutôt dans Banque » ;
-   - « refuse le 4 ».
+   - « garde le 4 » : il reste où il est et ne sera plus proposé.
 4. Les documents validés sont rangés dans la minute.
 5. Ensuite, tu peux demander : « qu'est-ce qui reste à trier ? », ou « retrouve ma dernière facture
    EDF » (il cherche dans l'index).

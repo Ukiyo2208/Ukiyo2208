@@ -124,7 +124,8 @@ if [ "$OPENCLAW" = o ]; then
   OPENCLAW=$(echo "$OPENCLAW" | cut -c1 | tr '[:upper:]' '[:lower:]')
 fi
 if [ "$OPENCLAW" = o ]; then
-  docs_defaut=$(ls -d "$VOLUME"/[Dd]ocuments /volume[0-9]*/[Dd]ocuments 2>/dev/null | head -n1 || true)
+  # « Document », « Documents », sur le volume du téléchargement d'abord
+  docs_defaut=$(ls -d "$VOLUME"/[Dd]ocument "$VOLUME"/[Dd]ocuments /volume[0-9]*/[Dd]ocument /volume[0-9]*/[Dd]ocuments 2>/dev/null | head -n1 || true)
   demander DOCUMENTS "Dossier des documents à trier" "${docs_defaut:-$VOLUME/Documents}"
 fi
 ENV_BETA="$DEST/beta-nas/.env"
@@ -273,10 +274,12 @@ if [ "$OPENCLAW" = o ]; then
     {\"path\":\"tools.deny\",\"value\":[\"group:runtime\",\"browser\"]},
     {\"path\":\"cron.triggers.enabled\",\"value\":false}
   ]" >/dev/null && ok "Accès réseau et sécurité réglés" || avertir "Réglages d'OpenClaw à vérifier"
-  if ! grep -q "## Tri des documents du NAS" data/workspace/AGENTS.md 2>/dev/null; then
-    cat AGENTS-tri-documents.md >> data/workspace/AGENTS.md && chown 1000:1000 data/workspace/AGENTS.md
-    ok "Consigne de tri des documents ajoutée"
-  fi
+  # Remplace l'ancienne consigne de tri par la nouvelle (le reste de AGENTS.md est conservé)
+  agents=data/workspace/AGENTS.md
+  touch "$agents"
+  awk '/^## Tri des documents du NAS/ {saute = 1; next} saute && /^## / {saute = 0} !saute {print}' "$agents" > "$agents.tmp"
+  cat AGENTS-tri-documents.md >> "$agents.tmp" && mv "$agents.tmp" "$agents" && chown 1000:1000 "$agents"
+  ok "Consigne de tri des documents à jour"
   if "${DC[@]}" up -d --build > "$DEST/installation-openclaw.log" 2>&1; then
     ok "OpenClaw démarré"
   else
