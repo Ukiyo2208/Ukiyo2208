@@ -61,6 +61,8 @@
   </section>
 
   <section id="contenu" hidden>
+    <p><a id="lien-tri" style="color:var(--accent)">Tri des documents : choisir les dossiers →</a></p>
+
     <h2>Tablette</h2>
     <div class="carte">
       <form id="form-qr">
@@ -105,6 +107,8 @@
     try { sessionStorage.setItem("beta_jeton", jeton); } catch (e) {}
     actualiser();
   });
+
+  $("lien-tri").href = `${location.protocol}//${location.hostname}:8802/`;
 
   $("form-qr").addEventListener("submit", async (e) => {
     e.preventDefault();

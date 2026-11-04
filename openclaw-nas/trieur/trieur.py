@@ -48,14 +48,12 @@ MAX_EN_ATTENTE = 50  # documents préparés à l'avance pour OpenClaw (le reste 
 INTERVALLE_SCAN = 600  # secondes entre deux parcours des dossiers surveillés
 
 SURVEILLER_PAR_DEFAUT = """# Dossiers à surveiller, un par ligne, à partir de la racine des documents.
-# « . » = tous les documents. Les nouveaux documents de ces dossiers seront proposés au tri.
-# Exemples :
-# .
-# Téléchargements
-# Scans
+# « . » = tous les documents. Plus simple : la page http://IP_DU_NAS:8802
+.
 """
 
 EXCLURE_PAR_DEFAUT = """# Ce que tu ne veux PAS trier, un par ligne : un dossier, ou un motif avec * .
+# Plus simple : décoche les dossiers sur la page http://IP_DU_NAS:8802
 # Exemples :
 # Photos
 # Travail/Archives
@@ -373,6 +371,10 @@ def tour(c: Chemins) -> None:
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     c = Chemins(RACINE)
+    c.creer()
+    import web  # page de réglage (http://IP_DU_NAS:8802)
+
+    web.demarrer(c)
     log.info("Surveillance de %s et des dossiers de %s", c.entree, c.surveiller)
     while True:
         try:

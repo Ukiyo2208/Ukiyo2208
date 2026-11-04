@@ -1,0 +1,158 @@
+"""Page web du trieur : choisir les dossiers à trier ou à laisser de côté, revoir les documents gardés.
+
+Serveur minimal (bibliothèque standard), protégé par le jeton TRI_TOKEN. Il ne déplace rien : il ne fait
+qu'écrire _a_surveiller.txt, _a_exclure.txt et gardes.txt, que la boucle du trieur relit d'elle-même.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import secrets
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import parse_qs, urlparse
+
+import trieur
+
+PAGE = Path(__file__).with_name("page.html")
+_verrou = threading.Lock()
+
+
+def _ecrire(fichier: Path, entete: str, lignes: list[str]) -> None:
+    """Écriture atomique : la boucle du trieur ne lit jamais un fichier à moitié écrit."""
+    tmp = fichier.with_suffix(".tmp")
+    tmp.write_text(entete + "".join(f"{l}\n" for l in lignes), encoding="utf-8")
+    os.replace(tmp, fichier)
+
+
+def _entete(fichier: Path) -> str:
+    """Les commentaires en tête du fichier sont conservés."""
+    if not fichier.exists():
+        return ""
+    return "".join(l + "\n" for l in fichier.read_text(encoding="utf-8").splitlines() if l.startswith("#"))
+
+
+def _rel_sur(c: trieur.Chemins, rel: str) -> str:
+    """Un chemin relatif propre, forcément à l'intérieur des documents."""
+    parties = [p for p in str(rel).replace("\\", "/").split("/") if p and p != "."]
+    if any(p == ".." for p in parties):
+        raise ValueError("chemin interdit")
+    chemin = c.racine.joinpath(*parties).resolve()
+    if not chemin.is_relative_to(c.racine.resolve()):
+        raise ValueError("chemin hors des documents")
+    return "/".join(parties)
+
+
+def etat(c: trieur.Chemins) -> dict:
+    tous = trieur.candidats(c)
+    en_attente = [i for i in tous if not (c.propositions / f"{i}.json").exists()]
+    return {
+        "racine": c.racine.name,
+        "surveilles": trieur.lire_liste(c.surveiller),
+        "exclusions": trieur.lire_liste(c.exclure),
+        "en_attente": len(en_attente),
+        "propositions": len(list(c.propositions.glob("*.json"))),
+        "gardes": trieur.lire_liste(c.gardes),
+        "ranges": max(0, sum(1 for _ in c.index.open(encoding="utf-8")) - 1) if c.index.exists() else 0,
+    }
+
+
+def sous_dossiers(c: trieur.Chemins, rel: str) -> list[dict]:
+    rel = _rel_sur(c, rel)
+    base = c.racine / rel if rel else c.racine
+    exclusions = trieur.lire_liste(c.exclure)
+    resultat = []
+    for d in sorted(base.iterdir(), key=lambda p: p.name.lower()) if base.is_dir() else []:
+        if not d.is_dir() or d.name.startswith(("_", ".", "@", "#")):
+            continue
+        chemin = f"{rel}/{d.name}" if rel else d.name
+        a_des_sous_dossiers = any(e.is_dir() and not e.name.startswith(("_", ".", "@", "#")) for e in d.iterdir())
+        resultat.append({
+            "nom": d.name, "chemin": chemin, "exclu": trieur.exclu(chemin, exclusions),
+            "exclu_directement": chemin in exclusions, "a_des_sous_dossiers": a_des_sous_dossiers,
+        })
+    return resultat
+
+
+def enregistrer(c: trieur.Chemins, donnees: dict) -> None:
+    with _verrou:
+        if "tout_trier" in donnees:
+            dossiers = ["."] if donnees["tout_trier"] else []
+            _ecrire(c.surveiller, _entete(c.surveiller) or trieur.SURVEILLER_PAR_DEFAUT, dossiers)
+        if "exclusions" in donnees:
+            propres = []
+            for e in donnees["exclusions"]:
+                e = str(e).strip()
+                if e and "*" not in e:
+                    e = _rel_sur(c, e)
+                if e and e not in propres:
+                    propres.append(e)
+            _ecrire(c.exclure, _entete(c.exclure) or trieur.EXCLURE_PAR_DEFAUT, propres)
+        if "reproposer" in donnees:
+            a_retirer = {str(x) for x in donnees["reproposer"]}
+            _ecrire(c.gardes, "", [g for g in trieur.lire_liste(c.gardes) if g not in a_retirer])
+    trieur._scan["signature"] = None  # prise en compte immédiate
+
+
+def serveur(c: trieur.Chemins, jeton: str, port: int) -> ThreadingHTTPServer:
+    class Gestionnaire(BaseHTTPRequestHandler):
+        def log_message(self, *args):  # pas de bruit dans les journaux
+            pass
+
+        def _repondre(self, code: int, corps: bytes, type_: str = "application/json") -> None:
+            self.send_response(code)
+            self.send_header("Content-Type", f"{type_}; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(corps)
+
+        def _json(self, code: int, donnees) -> None:
+            self._repondre(code, json.dumps(donnees, ensure_ascii=False).encode())
+
+        def _autorise(self) -> bool:
+            recu = self.headers.get("Authorization", "").removeprefix("Bearer ").encode()
+            if jeton and secrets.compare_digest(recu, jeton.encode()):
+                return True
+            self._json(401, {"erreur": "jeton invalide"})
+            return False
+
+        def do_GET(self):
+            url = urlparse(self.path)
+            if url.path in ("/", "/index.html"):
+                return self._repondre(200, PAGE.read_bytes(), "text/html")
+            if not self._autorise():
+                return
+            try:
+                if url.path == "/api/etat":
+                    return self._json(200, etat(c))
+                if url.path == "/api/dossiers":
+                    return self._json(200, sous_dossiers(c, parse_qs(url.query).get("chemin", [""])[0]))
+            except (ValueError, OSError) as e:
+                return self._json(400, {"erreur": str(e)})
+            self._json(404, {"erreur": "inconnu"})
+
+        def do_POST(self):
+            if urlparse(self.path).path != "/api/reglages":
+                return self._json(404, {"erreur": "inconnu"})
+            if not self._autorise():
+                return
+            try:
+                taille = min(int(self.headers.get("Content-Length", 0)), 1_000_000)
+                enregistrer(c, json.loads(self.rfile.read(taille) or b"{}"))
+            except (ValueError, OSError) as e:
+                return self._json(400, {"erreur": str(e)})
+            self._json(200, etat(c))
+
+    return ThreadingHTTPServer(("0.0.0.0", port), Gestionnaire)
+
+
+def demarrer(c: trieur.Chemins) -> None:
+    jeton = os.environ.get("TRI_TOKEN", "")
+    if not jeton:
+        trieur.log.warning("TRI_TOKEN vide : la page de réglage du tri est désactivée")
+        return
+    port = int(os.environ.get("TRI_PORT", "8802"))
+    threading.Thread(target=serveur(c, jeton, port).serve_forever, daemon=True).start()
+    trieur.log.info("Page de réglage du tri sur le port %d", port)

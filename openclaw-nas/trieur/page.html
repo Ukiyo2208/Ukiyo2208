@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bêta · Tri des documents</title>
+<style>
+  :root { --fond: #0d1141; --carte: #161b52; --bord: #262c6b; --texte: #eceeff; --doux: #a0a8d7;
+          --accent: #56c8ff; --ko: #f87171; --ok: #4ade80; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.45 system-ui, sans-serif; }
+  main { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--doux); margin: 26px 0 10px; }
+  .doux { color: var(--doux); font-size: 13px; }
+  .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 12px; padding: 14px; }
+  .chiffres { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .chiffre { font-size: 24px; font-weight: 700; color: var(--accent); }
+  ul.arbre { list-style: none; margin: 0; padding-left: 22px; }
+  ul.arbre.racine { padding-left: 0; }
+  .ligne { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+  .ligne button.ouvrir { width: 22px; background: none; border: 0; color: var(--doux); cursor: pointer; padding: 0; font-size: 14px; }
+  .ligne label { display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; min-width: 0; }
+  .ligne label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .exclu span { color: var(--doux); text-decoration: line-through; }
+  input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+  textarea, input[type=password] { width: 100%; background: var(--fond); color: var(--texte); border: 1px solid var(--bord);
+           border-radius: 8px; padding: 10px; font: 14px ui-monospace, monospace; }
+  button.principal { background: var(--accent); color: var(--fond); border: 0; border-radius: 8px; padding: 11px 18px;
+                     font-weight: 700; cursor: pointer; font-size: 15px; }
+  button.discret { background: var(--bord); color: var(--texte); border: 0; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+  .barre { position: sticky; bottom: 0; background: var(--fond); padding: 12px 0; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .interrupteur { display: flex; gap: 10px; align-items: center; font-weight: 600; }
+  .garde { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--bord); }
+  .garde span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Tri des documents</h1>
+  <div class="doux" id="etat">Connexion…</div>
+
+  <section id="connexion" hidden>
+    <h2>Jeton</h2>
+    <form id="formulaire" class="carte">
+      <input id="jeton" type="password" placeholder="BETA_TOKEN (fiche-api.sh --secrets)" autocomplete="off">
+      <p><button class="principal">Se connecter</button></p>
+    </form>
+  </section>
+
+  <section id="contenu" hidden>
+    <div class="chiffres" id="chiffres"></div>
+
+    <h2>Ce qui est trié</h2>
+    <div class="carte">
+      <label class="interrupteur"><input type="checkbox" id="tout"> Trier tous les documents du dossier <span id="racine"></span></label>
+      <p class="doux">Décoche un dossier pour le laisser de côté : ni lui, ni ce qu'il contient ne sera proposé.
+        Les documents de <b>_A_TRIER</b> sont toujours triés.</p>
+      <ul class="arbre racine" id="arbre"></ul>
+    </div>
+
+    <h2>Motifs à ignorer (avancé)</h2>
+    <div class="carte">
+      <p class="doux">Un motif par ligne, avec <code>*</code>. Exemples : <code>*.mp4</code>, <code>*brouillon*</code>, <code>Banque/*/Anciens</code>.</p>
+      <textarea id="motifs" rows="4"></textarea>
+    </div>
+
+    <h2>Documents gardés à leur place</h2>
+    <div class="carte" id="gardes"></div>
+
+    <div class="barre">
+      <button class="principal" id="enregistrer">Enregistrer</button>
+      <span class="doux" id="message"></span>
+    </div>
+  </section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const e = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  let jeton = "";
+  try { jeton = sessionStorage.getItem("beta_jeton") || ""; } catch (err) {}
+  let exclusions = new Set();   // dossiers laissés de côté
+  let reproposer = new Set();
+
+  async function api(chemin, options = {}) {
+    const r = await fetch(chemin, { ...options, headers: { Authorization: `Bearer ${jeton}`, "Content-Type": "application/json" } });
+    if (r.status === 401) { jeton = ""; afficherConnexion("Jeton refusé"); throw new Error("401"); }
+    if (!r.ok) throw new Error((await r.json()).erreur || r.status);
+    return r.json();
+  }
+
+  function afficherConnexion(message) {
+    $("connexion").hidden = false; $("contenu").hidden = true; $("etat").textContent = message;
+  }
+
+  const parentExclu = (chemin) => [...exclusions].some((x) => chemin.startsWith(x + "/"));
+
+  function ligne(d) {
+    const li = document.createElement("li");
+    li.dataset.chemin = d.chemin;
+    const coche = !exclusions.has(d.chemin) && !parentExclu(d.chemin);
+    li.innerHTML = `<div class="ligne ${coche ? "" : "exclu"}">
+        <button class="ouvrir" type="button" ${d.a_des_sous_dossiers ? "" : "disabled style='visibility:hidden'"}>▸</button>
+        <label><input type="checkbox" ${coche ? "checked" : ""} ${parentExclu(d.chemin) ? "disabled" : ""}><span>${e(d.nom)}</span></label>
+      </div><ul class="arbre" hidden></ul>`;
+    li.querySelector("input").addEventListener("change", (ev) => {
+      if (ev.target.checked) exclusions.delete(d.chemin); else exclusions.add(d.chemin);
+      li.querySelector(".ligne").classList.toggle("exclu", !ev.target.checked);
+      // Les sous-dossiers suivent leur parent
+      li.querySelectorAll("ul input").forEach((sous) => {
+        sous.disabled = !ev.target.checked;
+        if (!ev.target.checked) sous.checked = false;
+        else sous.checked = !exclusions.has(sous.closest("li").dataset.chemin);
+        sous.closest(".ligne").classList.toggle("exclu", !sous.checked);
+      });
+    });
+    const bouton = li.querySelector(".ouvrir");
+    bouton.addEventListener("click", async () => {
+      const ul = li.querySelector("ul");
+      if (ul.hidden && !ul.childElementCount) {
+        (await api(`/api/dossiers?chemin=${encodeURIComponent(d.chemin)}`)).forEach((s) => ul.append(ligne(s)));
+      }
+      ul.hidden = !ul.hidden;
+      bouton.textContent = ul.hidden ? "▸" : "▾";
+    });
+    return li;
+  }
+
+  function afficherGardes(gardes) {
+    $("gardes").innerHTML = gardes.length ? gardes.map((g) => `
+      <div class="garde"><span>${e(g)}</span><button class="discret" type="button" data-g="${e(g)}">Re-proposer</button></div>`).join("")
+      : `<span class="doux">Aucun pour l'instant. Quand tu réponds « garde-le » à OpenClaw, le document apparaît ici.</span>`;
+    $("gardes").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+      reproposer.add(b.dataset.g); b.closest(".garde").remove();
+      $("message").textContent = "Pense à enregistrer.";
+    }));
+  }
+
+  async function charger() {
+    if (!jeton) return afficherConnexion("Jeton requis");
+    const d = await api("/api/etat");
+    exclusions = new Set(d.exclusions.filter((x) => !x.includes("*")));
+    $("motifs").value = d.exclusions.filter((x) => x.includes("*")).join("\n");
+    $("tout").checked = d.surveilles.includes(".");
+    $("racine").textContent = d.racine;
+    $("chiffres").innerHTML = [["À trier", d.en_attente], ["Propositions en attente", d.propositions],
+      ["Rangés par Bêta", d.ranges], ["Gardés à leur place", d.gardes.length]]
+      .map(([t, v]) => `<div class="carte"><span class="doux">${t}</span><div class="chiffre">${v}</div></div>`).join("");
+    afficherGardes(d.gardes);
+    $("arbre").replaceChildren(...(await api("/api/dossiers")).map(ligne));
+    $("connexion").hidden = true; $("contenu").hidden = false;
+    $("etat").textContent = "Coche ce qui doit être trié, puis enregistre.";
+  }
+
+  $("formulaire").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    jeton = $("jeton").value.trim();
+    try { sessionStorage.setItem("beta_jeton", jeton); } catch (err) {}
+    charger().catch(() => {});
+  });
+
+  $("enregistrer").addEventListener("click", async () => {
+    const motifs = $("motifs").value.split("\n").map((m) => m.trim()).filter(Boolean);
+    try {
+      await api("/api/reglages", { method: "POST", body: JSON.stringify({
+        tout_trier: $("tout").checked, exclusions: [...exclusions, ...motifs], reproposer: [...reproposer] }) });
+      reproposer.clear();
+      $("message").textContent = `Enregistré à ${new Date().toLocaleTimeString("fr-FR")} : pris en compte tout de suite.`;
+      await charger();
+    } catch (err) {
+      if (err.message !== "401") $("message").textContent = `Erreur : ${err.message}`;
+    }
+  });
+
+  charger().catch(() => {});
+</script>
+</body>
+</html>

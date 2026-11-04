@@ -75,6 +75,9 @@ services:
     environment:
       DOCUMENTS: /documents
       TZ: ${OPENCLAW_TZ:-Europe/Paris}
+      TRI_TOKEN: ${TRI_TOKEN:-} # jeton de la page de réglage (le même que BETA_TOKEN)
+    ports:
+      - "8802:8802" # page de réglage du tri : http://IP_DU_NAS:8802
     volumes:
       - ${DOCUMENTS:-/volume1/Documents}:/documents
     networks:

@@ -154,11 +154,19 @@ refuse tout chemin hors de tes Documents et n'écrase jamais un fichier.
      --message "Fais un passage de tri des documents (section « Tri des documents » de AGENTS.md)."
    ```
 
-### Choisir ce qui est trié : tout, sauf ce que tu exclus
+### Choisir ce qui est trié : tout, sauf ce que tu décoches
 
-Par défaut, seul `_A_TRIER` est trié. Pour faire trier des dossiers entiers sans rien déplacer à la
-main, modifie ces deux fichiers (créés automatiquement dans `Document/_A_TRIER/`, ouvrables depuis
-ton PC) :
+Par défaut, **tous tes documents** sont proposés au tri (PDF, Word, textes), en plus de ce que tu
+déposes dans `_A_TRIER`.
+
+**La page de réglage : `http://IP_DU_NAS:8802`** (lien aussi sur le tableau de bord de Bêta, jeton = BETA_TOKEN) :
+- ton arbre de dossiers avec une case par dossier : **décoche** ce que tu ne veux pas trier (Photos,
+  Archives…), puis **Enregistrer**. C'est pris en compte tout de suite ;
+- des motifs avancés (`*.mp4`, `*brouillon*`) ;
+- la liste des documents que tu as choisi de garder à leur place, avec un bouton **Re-proposer** ;
+- le nombre de documents à trier, en attente de validation et déjà rangés.
+
+La page ne fait qu'écrire deux fichiers, que tu peux aussi modifier à la main (dans `Document/_A_TRIER/`) :
 
 - **`_a_surveiller.txt`** : les dossiers à trier, un par ligne. `.` = **tous** tes documents.
   ```

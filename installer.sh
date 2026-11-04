@@ -248,6 +248,7 @@ if [ "$OPENCLAW" = o ]; then
   env_ecrire "$ENV_OC" PUID "$(stat -c '%u' "$DOCUMENTS")"
   env_ecrire "$ENV_OC" PGID "$(stat -c '%g' "$DOCUMENTS")"
   env_ecrire "$ENV_OC" BETA_RESEAU beta-nas_default
+  env_ecrire "$ENV_OC" TRI_TOKEN "$BETA_TOKEN"
   env_ecrire "$ENV_BETA" OPENCLAW_URL "http://host.docker.internal:18789"
   chown -R "$(stat -c '%u:%g' "$DOCUMENTS")" "$DOCUMENTS/_A_TRIER"
   chmod 777 "$DOCUMENTS/_A_TRIER/_traitement/propositions"
@@ -305,6 +306,7 @@ cat <<EOF
   ${G}Home Assistant${N}    http://$IP:8123
 EOF
 [ "$OPENCLAW" = o ] && echo "  ${G}OpenClaw${N}          http://$IP:18789   (jeton : sudo $DEST/beta-nas/outils/fiche-api.sh --secrets)"
+[ "$OPENCLAW" = o ] && echo "  ${G}Tri des documents${N} http://$IP:8802    (choisir les dossiers à trier)"
 if [ "${HA_MDP_GENERE:-0}" = 1 ] && [ -z "${HA_ECHEC:-}" ]; then
   echo
   echo "  ${J}Compte Home Assistant${N} : identifiant ${G}$HA_UTILISATEUR${N}, mot de passe ${G}$HA_MDP${N}  ← note-le"

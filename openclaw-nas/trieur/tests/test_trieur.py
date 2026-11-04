@@ -130,11 +130,11 @@ def a_traiter(c):
     return [l.split(" | ")[1] for l in (c.traitement / "a_traiter.txt").read_text().splitlines() if " | " in l]
 
 
-def test_par_defaut_seule_la_boite_d_entree(c):
+def test_par_defaut_tous_les_documents(c):
     (c.racine / "Banque" / "releve.pdf").write_text("x")
+    trieur._scan["signature"] = None
     trieur.tour(c)
-    assert a_traiter(c) == []
-    assert "# ." in c.surveiller.read_text()  # fichier modèle créé, rien d'activé
+    assert a_traiter(c) == ["Banque/releve.pdf"]
 
 
 def test_tous_les_documents_sauf_exclusions(c):

@@ -6,5 +6,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /srv
-COPY trieur.py .
+COPY trieur.py web.py page.html ./
+EXPOSE 8802
 CMD ["python", "-u", "trieur.py"]

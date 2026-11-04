@@ -168,9 +168,8 @@ Un test rapide en ligne de commande : `sudo /volume1/docker/beta/beta-nas/outils
    sudo docker compose run --rm openclaw-cli devices approve <requestId affiché>
    ```
 3. Dépose 2 ou 3 documents dans **`Document/_A_TRIER`** (depuis ton PC ou ton scanner).
-   Pour faire trier des dossiers entiers à la place : écris leurs noms dans `_A_TRIER/_a_surveiller.txt`
-   (`.` = tous tes documents), et ce que tu ne veux pas dans `_A_TRIER/_a_exclure.txt` (voir
-   `openclaw-nas/README.md`).
+   Par défaut, **tous tes documents** sont aussi proposés au tri. Pour choisir ce qui ne doit pas l'être,
+   ouvre **`http://192.168.1.20:8802`** (jeton BETA_TOKEN) et décoche les dossiers à laisser de côté.
 4. Dans OpenClaw, écris **« Trie les documents »**. Il propose un titre, un dossier et des tags pour
    chaque document. Réponds par exemple « valide tout » ou « valide 1, mets le 2 dans Banque ».
 5. Ensuite, le tri tourne aussi tout seul **chaque nuit**. Compte 1 à 3 minutes par document sur ce NAS.
