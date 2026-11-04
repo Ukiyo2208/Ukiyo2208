@@ -43,13 +43,16 @@ def ollama(monkeypatch):
 
 @pytest.fixture
 def c(tmp_path):
-    chemins = trieur.Chemins(tmp_path)
-    (tmp_path / "Factures").mkdir()
-    chemins.entree.mkdir()
-    (chemins.entree / "scan.txt").write_text("EDF facture octobre 2026 montant 84,20")
+    chemins = trieur.Chemins(tmp_path / "nas", tmp_path / "etat", "volume1/Document")
+    (chemins.rangement / "Factures").mkdir(parents=True)
+    (chemins.rangement / "scan.txt").write_text("EDF facture octobre 2026 montant 84,20")
     trieur._scan["signature"] = None
     trieur.tour(chemins)
     return chemins
+
+
+def ident(c):
+    return next(iter(json.loads(c.sources.read_text())))
 
 
 def test_proposition_puis_validation(c, ollama):
@@ -57,16 +60,16 @@ def test_proposition_puis_validation(c, ollama):
     p = proposeur.Proposeur(c)
     assert p.un_document() is True
     message = recus[0]["messages"][1]["content"]
-    assert "Emplacement actuel : _A_TRIER/scan.txt" in message and "EDF facture" in message and "Factures" in message
+    assert "Emplacement actuel : volume1/Document/scan.txt" in message and "EDF facture" in message and "Factures" in message
     assert recus[0]["format"]["required"] and recus[0]["think"] is False
 
     props = web.lister_propositions(c)
     assert props[0]["titre"] == REPONSE["titre"] and props[0]["tags"] == ["facture", "energie"]
     assert p.un_document() is False  # plus rien à faire
 
-    web.modifier_proposition(c, {"fichier": "scan.txt", "statut": "valide", "dossier": "Factures/EDF"})
+    web.modifier_proposition(c, {"fichier": ident(c), "statut": "valide", "dossier": "Factures/EDF"})
     trieur.tour(c)
-    assert (c.racine / "Factures" / "EDF" / f"{REPONSE['titre']}.txt").exists()
+    assert (c.rangement / "Factures" / "EDF" / f"{REPONSE['titre']}.txt").exists()
     assert web.lister_propositions(c) == []
 
 
@@ -79,15 +82,15 @@ def test_modele_sans_mode_reflexion(c, ollama):
 
 def test_garder_depuis_la_page(c, ollama):
     proposeur.Proposeur(c).un_document()
-    web.modifier_proposition(c, {"fichier": "scan.txt", "statut": "garder"})
+    web.modifier_proposition(c, {"fichier": ident(c), "statut": "garder"})
     trieur.tour(c)
-    assert (c.entree / "scan.txt").exists() and "_A_TRIER/scan.txt" in c.gardes.read_text()
+    assert (c.rangement / "scan.txt").exists() and "volume1/Document/scan.txt" in c.gardes.read_text()
 
 
 def test_dossier_invalide_refuse_a_la_validation(c, ollama):
     proposeur.Proposeur(c).un_document()
     with pytest.raises(trieur.PropositionInvalide):
-        web.modifier_proposition(c, {"fichier": "scan.txt", "statut": "valide", "dossier": "../dehors"})
+        web.modifier_proposition(c, {"fichier": ident(c), "statut": "valide", "dossier": "../dehors"})
     with pytest.raises(ValueError):
         web.modifier_proposition(c, {"fichier": "../x", "statut": "valide"})
 

@@ -45,7 +45,7 @@ prend le relais.
 | Comprendre la demande | `rapide` : petit modèle du NAS | Rapide, local, ne fait que trier |
 | **Discussion et questions** | `cloud`, puis `puissant`, puis `rapide` | Réponses de qualité, avec mémoire de la conversation (10 min) |
 | Créer une automatisation | `cloud`, puis `puissant` | Tâche difficile, toujours confirmée avant création |
-| Tri des documents | OpenClaw (son propre modèle) | Voir `openclaw-nas/` |
+| Tri des documents | `TRI_MODELE` (qwen3.5:9b), la nuit | Page `http://IP_DU_NAS:8800/tri/`, dossier `trieur/` |
 
 - `cloud` = Claude : il faut `ANTHROPIC_API_KEY` dans `.env`. Pour la discussion, seule la phrase
   dite (et les échanges des 10 dernières minutes) part sur Internet, sans ton prénom ni rien de la maison.
@@ -201,9 +201,11 @@ enregistrées : seules les empreintes des visages enregistrés sont gardées (`d
 
 ## La page d'accueil : `http://IP_DU_NAS:8800`
 
-Une seule page pour tout, sur PC comme sur téléphone (jeton BETA_TOKEN, avec l'option « Se souvenir de moi ») :
+Une seule page pour tout, sur PC comme sur téléphone. **À la maison, aucun jeton n'est demandé** (appareils
+du réseau local : 192.168.x.x, 10.x.x.x…). Hors de chez toi, ou derrière un proxy, la page demande le
+`BETA_TOKEN` (option « Se souvenir de moi »). Pour l'exiger partout : `BETA_LOCAL_LIBRE=non` dans `.env`.
 - **Accueil** : état des services et du tri des documents (à analyser, à valider, rangés, document en cours),
-  avec les boutons « Préparer 5 documents » et « Valider les propositions » ;
+  avec les boutons « Préparer 5 documents » et « Valider les propositions » (page `/tri/`) ;
 - **Discussion** : parler à l'IA de discussion (cloud, modèle puissant ou IA locale), avec la mémoire de la conversation ;
 - **Maison** : une barre de commandes (« allume le salon ») et tes appareils rangés par pièce. Un clic sur un
   appareil l'allume ou l'éteint (lumières, prises, volets, ventilateurs, scènes ; jamais les serrures) ;
@@ -232,12 +234,11 @@ sudo ./outils/fiche-api.sh            # la fiche : IP du NAS, ports, état de ch
 | `sudo ./outils/fiche-api.sh logs` | Journaux en direct de Bêta et de la présence |
 
 Si l'IP détectée n'est pas la bonne (NAS avec plusieurs cartes réseau) : `sudo NAS_IP=192.168.1.20 ./outils/fiche-api.sh`.
-Pour régler une clé d'OpenClaw (`OPENCLAW_…`), le script modifie `../openclaw-nas/.env`.
 
 ### Le tableau de bord
 
-Ouvre **`http://IP_DU_NAS:8800/tableau`** sur un PC ou un téléphone et colle ton `BETA_TOKEN`.
-La page s'actualise toutes les 2 secondes :
+Ouvre **`http://IP_DU_NAS:8800/tableau`** sur un PC ou un téléphone (le `BETA_TOKEN` n'est demandé
+qu'en dehors du réseau de la maison). La page s'actualise toutes les 2 secondes :
 - l'état de chaque service, et le modèle chargé dans Ollama ;
 - le nombre d'appels, d'erreurs et le temps moyen d'une commande vocale ;
 - qui a traité les demandes (Home Assistant, LLM local, IA web…) ;

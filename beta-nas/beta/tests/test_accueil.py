@@ -79,3 +79,78 @@ def test_page_et_appareils(monkeypatch, tmp_path):
         assert client.get("/v1/tri/etat", headers=h).status_code == 503
         r = client.post("/v1/texte", headers=h, json={"texte": "salut", "mode": "discussion"}).json()
         assert r["reponse"] == "Une blague !"
+
+
+def _client(monkeypatch, tmp_path, ip, tri_url="http://127.0.0.1:9"):
+    monkeypatch.setenv("BETA_TOKEN", "secret")
+    monkeypatch.setenv("BETA_CONFIG", str(tmp_path / "absent.yaml"))
+    monkeypatch.setenv("OLLAMA_URL", "http://127.0.0.1:9")
+    monkeypatch.setenv("TRI_URL", tri_url)
+    from app import main
+
+    return main, TestClient(main.app, client=(ip, 50000))
+
+
+@pytest.mark.parametrize("ip", ["192.168.68.20", "10.0.0.5", "172.18.0.1", "127.0.0.1", "::ffff:192.168.1.4"])
+def test_pas_de_jeton_a_la_maison(monkeypatch, tmp_path, ip):
+    main, client = _client(monkeypatch, tmp_path, ip)
+    with client:
+        main.etat["routeur"] = routeur()
+        assert client.get("/v1/maison/appareils").status_code == 200
+        # Un mauvais jeton reste refusé, même à la maison
+        assert client.get("/v1/maison/appareils", headers={"Authorization": "Bearer faux"}).status_code == 401
+
+
+@pytest.mark.parametrize("ip", ["8.8.8.8", "100.101.1.2", "2a01:e0a::1"])
+def test_jeton_obligatoire_hors_de_la_maison(monkeypatch, tmp_path, ip):
+    main, client = _client(monkeypatch, tmp_path, ip)
+    with client:
+        main.etat["routeur"] = routeur()
+        assert client.get("/v1/maison/appareils").status_code == 401
+        assert client.get("/v1/stats").status_code == 401
+        assert client.get("/tri/api/etat").status_code == 401
+        assert client.get("/v1/maison/appareils", headers={"Authorization": "Bearer secret"}).status_code == 200
+
+
+def test_relaye_par_un_proxy_demande_le_jeton(monkeypatch, tmp_path):
+    main, client = _client(monkeypatch, tmp_path, "172.18.0.1")
+    with client:
+        main.etat["routeur"] = routeur()
+        assert client.get("/v1/maison/appareils", headers={"X-Forwarded-For": "8.8.8.8"}).status_code == 401
+
+
+def test_acces_local_desactivable(monkeypatch, tmp_path):
+    monkeypatch.setenv("BETA_LOCAL_LIBRE", "non")
+    main, client = _client(monkeypatch, tmp_path, "192.168.1.4")
+    with client:
+        main.etat["routeur"] = routeur()
+        assert client.get("/v1/maison/appareils").status_code == 401
+
+
+def test_page_du_tri_servie_par_beta(monkeypatch, tmp_path):
+    import sys
+    import threading
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "trieur"))
+    import trieur
+    import web
+
+    c = trieur.Chemins(tmp_path / "nas", tmp_path / "etat", "volume1")
+    (c.rangement / "Banque").mkdir(parents=True)
+    c.creer()
+    srv = web.serveur(c, 0, hote="127.0.0.1")
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        main, client = _client(monkeypatch, tmp_path, "192.168.68.20", f"http://127.0.0.1:{srv.server_address[1]}")
+        with client:
+            main.etat["routeur"] = routeur()
+            assert client.get("/tri", follow_redirects=False).headers["location"] == "/tri/"
+            assert "Tri des documents" in client.get("/tri/").text
+            assert client.get("/tri/api/dossiers?chemin=volume1").json()[0]["nom"] == "Banque"
+            r = client.post("/tri/api/reglages", json={"exclusions": ["volume1/Banque"]})
+            assert r.status_code == 200 and r.json()["exclusions"] == ["volume1/Banque"]
+            assert client.get("/v1/tri/etat").json()["rangement"] == "volume1"
+            assert client.get("/v1/stats").json()["services"]["trieur"]["ok"] is True
+    finally:
+        srv.shutdown()

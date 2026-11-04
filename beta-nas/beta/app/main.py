@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import ipaddress
 import logging
 import secrets
 import time
@@ -15,7 +16,7 @@ import httpx
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
@@ -68,8 +69,9 @@ app = FastAPI(
     title="Bêta",
     description=(
         '<img src="/static/logo.png" width="120" alt="Logo de Bêta">\n\n'
-        "L'assistant vocal de la maison. Clique sur **Authorize** et colle ton `BETA_TOKEN`, "
-        "puis essaie `/v1/texte` avec par exemple `allume la lumière du salon`."
+        "L'assistant vocal de la maison. Depuis le réseau de la maison, pas besoin de jeton ; ailleurs, "
+        "clique sur **Authorize** et colle ton `BETA_TOKEN`. Essaie `/v1/texte` avec par exemple "
+        "`allume la lumière du salon`."
     ),
     lifespan=lifespan,
     docs_url=None,  # remplacée ci-dessous pour afficher le logo dans l'onglet
@@ -90,7 +92,7 @@ if _reglages_demarrage.cors_origines:
 statistiques = st.Statistiques()
 _PAS_SUIVIS = (
     "/static", "/favicon.ico", "/v1/stats", "/v1/nas", "/v1/appairage", "/v1/tri/etat", "/v1/maison/appareils",
-    "/tableau", "/docs", "/openapi.json",
+    "/tableau", "/tri", "/docs", "/openapi.json",
 )
 
 
@@ -134,10 +136,33 @@ async def favicon():
 _bearer = HTTPBearer(auto_error=False)
 
 
-def verifier_jeton(identifiants: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> None:
+_ENTETES_PROXY = ("x-forwarded-for", "forwarded", "x-real-ip")
+
+
+def depuis_la_maison(request: Request) -> bool:
+    """Vrai pour un appareil du réseau local (192.168.x.x, 10.x.x.x…) qui se connecte directement.
+    Une requête relayée par un proxy (accès à distance) n'en fait jamais partie."""
+    s: cfg.Settings = etat["settings"]
+    if not s.acces_local_libre or not request.client or any(h in request.headers for h in _ENTETES_PROXY):
+        return False
+    try:
+        ip = ipaddress.ip_address(request.client.host)
+    except ValueError:
+        return False
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
+        ip = ip.ipv4_mapped
+    return ip.is_private or ip.is_loopback
+
+
+def verifier_jeton(request: Request, identifiants: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> None:
+    """Pas de jeton à la maison ; hors du réseau local, le BETA_TOKEN est obligatoire."""
     recu = identifiants.credentials if identifiants else ""
-    if not secrets.compare_digest(recu.encode(), etat["settings"].beta_token.encode()):
-        raise HTTPException(status_code=401, detail="Jeton invalide")
+    if recu:
+        if not secrets.compare_digest(recu.encode(), etat["settings"].beta_token.encode()):
+            raise HTTPException(status_code=401, detail="Jeton invalide")
+        return
+    if not depuis_la_maison(request):
+        raise HTTPException(status_code=401, detail="Jeton requis hors du réseau de la maison")
 
 
 class Reponse(BaseModel):
@@ -340,10 +365,12 @@ async def appairage(request: Request, piece: str = ""):
     return Response(qr_svg(lien), media_type="image/svg+xml", headers={"Cache-Control": "no-store"})
 
 
-def verifier_lecture(identifiants: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> None:
-    """Accepte le jeton principal ou le jeton de lecture seule (BETA_LECTURE_TOKEN)."""
+def verifier_lecture(request: Request, identifiants: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> None:
+    """Accepte le jeton principal ou le jeton de lecture seule (BETA_LECTURE_TOKEN), ou la maison."""
     recu = (identifiants.credentials if identifiants else "").encode()
     s: cfg.Settings = etat["settings"]
+    if not recu and depuis_la_maison(request):
+        return
     autorises = [t for t in (s.beta_token, s.lecture_token) if t]
     if not any(secrets.compare_digest(recu, t.encode()) for t in autorises):
         raise HTTPException(status_code=401, detail="Jeton invalide")
@@ -383,7 +410,7 @@ async def _publier_en_boucle() -> None:
 
 @app.get("/tableau", include_in_schema=False)
 async def tableau():
-    """Tableau de bord : la page demande le jeton, puis interroge /v1/stats toutes les 2 secondes."""
+    """Tableau de bord détaillé : interroge /v1/stats toutes les 2 secondes."""
     return HTMLResponse((STATIQUE / "tableau.html").read_text(encoding="utf-8"))
 
 
@@ -421,26 +448,53 @@ async def basculer(demande: Bascule):
     return {"ok": True}
 
 
-async def _tri(methode: str, chemin: str, **kwargs) -> dict:
+async def _tri(methode: str, chemin: str, **kwargs) -> httpx.Response:
+    """Le trieur n'est joignable que par Bêta (réseau Docker interne) : c'est Bêta qui contrôle l'accès."""
     s: cfg.Settings = etat["settings"]
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.request(methode, f"{s.tri_url}{chemin}", headers={"Authorization": f"Bearer {s.beta_token}"}, **kwargs)
-            r.raise_for_status()
-            return r.json()
+        async with httpx.AsyncClient(timeout=30) as client:
+            return await client.request(methode, f"{s.tri_url}{chemin}", **kwargs)
     except httpx.HTTPError as e:
         raise HTTPException(status_code=503, detail="Tri des documents injoignable") from e
 
 
+async def _tri_json(methode: str, chemin: str, **kwargs) -> dict:
+    r = await _tri(methode, chemin, **kwargs)
+    if r.status_code >= 400:
+        raise HTTPException(status_code=503, detail="Tri des documents injoignable")
+    return r.json()
+
+
 @app.get("/v1/tri/etat", dependencies=[Depends(verifier_jeton)])
 async def etat_tri():
-    """État du tri des documents (servi par le trieur, port 8802)."""
-    return await _tri("GET", "/api/etat")
+    """État du tri des documents."""
+    return await _tri_json("GET", "/api/etat")
 
 
 @app.post("/v1/tri/lancer", dependencies=[Depends(verifier_jeton)])
 async def lancer_tri():
-    return await _tri("POST", "/api/lancer", json={"nombre": 5})
+    return await _tri_json("POST", "/api/lancer", json={"nombre": 5})
+
+
+@app.get("/tri", include_in_schema=False)
+async def page_tri_sans_barre():
+    return RedirectResponse("/tri/")
+
+
+@app.get("/tri/", include_in_schema=False)
+async def page_tri():
+    """Page du tri (validation des propositions, dossiers à trier). Elle appelle /tri/api/…"""
+    r = await _tri("GET", "/")
+    return HTMLResponse(r.text, status_code=r.status_code)
+
+
+@app.api_route("/tri/api/{chemin:path}", methods=["GET", "POST"], include_in_schema=False,
+               dependencies=[Depends(verifier_jeton)])
+async def api_tri(chemin: str, request: Request):
+    r = await _tri(request.method, f"/api/{chemin}", params=request.query_params, content=await request.body(),
+                   headers={"Content-Type": "application/json"})
+    return Response(r.content, status_code=r.status_code, media_type="application/json",
+                    headers={"Cache-Control": "no-store"})
 
 
 @app.get("/sante")

@@ -86,17 +86,15 @@ async def _http(client: httpx.AsyncClient, url: str, **kwargs) -> httpx.Response
 async def etat_services(settings) -> dict:
     """Chaque service joint par Bêta : en ligne ou non, et le modèle chargé dans Ollama."""
     async with httpx.AsyncClient() as client:
-        ha, ollama_ps, presence, whisper, piper = await asyncio.gather(
+        ha, ollama_ps, presence, whisper, piper, trieur = await asyncio.gather(
             _http(client, f"{settings.ha_url}/api/", headers={"Authorization": f"Bearer {settings.ha_token}"}),
             _http(client, f"{settings.ollama_url}/api/ps"),
             _http(client, f"{settings.presence_url}/sante"),
             _port_ouvert(settings.whisper_host, settings.whisper_port),
             _port_ouvert(settings.piper_host, settings.piper_port),
+            _http(client, f"{settings.tri_url}/api/etat"),
         )
-    openclaw = None
-    if settings.openclaw_url:
-        async with httpx.AsyncClient() as client:
-            openclaw = await _http(client, f"{settings.openclaw_url}/")
+    tri = trieur.json() if trieur is not None and trieur.status_code == 200 else None
     modeles = []
     if ollama_ps is not None and ollama_ps.status_code == 200:
         modeles = [m.get("name", "?") for m in ollama_ps.json().get("models", [])]
@@ -111,8 +109,8 @@ async def etat_services(settings) -> dict:
                      "detail": (f"{presence.json().get('cameras', 0)} caméras, "
                                 f"{presence.json().get('personnes', 0)} personnes")
                      if presence is not None and presence.status_code == 200 else ""},
-        **({"openclaw": {"ok": openclaw is not None and openclaw.status_code < 500, "detail": ""}}
-           if settings.openclaw_url else {}),
+        "trieur": {"ok": tri is not None,
+                   "detail": f"{tri.get('propositions', 0)} propositions à valider" if tri else ""},
         **{
             f"ia · {tache}": {"ok": bool(modeles), "detail": " → ".join(modeles) or "aucune IA configurée"}
             for tache, modeles in (settings.ia.resume().items() if settings.ia else [])

@@ -49,13 +49,15 @@
 </head>
 <body>
 <main>
+  <p><a href="../" class="doux" style="color:var(--accent);text-decoration:none">← Bêta</a></p>
   <h1>Tri des documents</h1>
   <div class="doux" id="etat">Connexion…</div>
 
   <section id="connexion" hidden>
     <h2>Jeton</h2>
     <form id="formulaire" class="carte">
-      <input id="jeton" type="password" placeholder="BETA_TOKEN (fiche-api.sh --secrets)" autocomplete="off">
+      <p class="doux">Tu n'es pas sur le réseau de la maison : colle ton jeton (BETA_TOKEN).</p>
+      <input id="jeton" type="password" placeholder="BETA_TOKEN" autocomplete="off">
       <p><button class="principal">Se connecter</button></p>
     </form>
   </section>
@@ -75,9 +77,9 @@
 
     <h2>Ce qui est trié</h2>
     <div class="carte">
-      <label class="interrupteur"><input type="checkbox" id="tout"> Trier tous les documents du dossier <span id="racine"></span></label>
+      <label class="interrupteur"><input type="checkbox" id="tout"> Trier les documents de tous les volumes du NAS</label>
       <p class="doux">Décoche un dossier pour le laisser de côté : ni lui, ni ce qu'il contient ne sera proposé.
-        Les documents de <b>_A_TRIER</b> sont toujours triés.</p>
+        Les documents validés sont rangés dans <b id="rangement"></b>.</p>
       <ul class="arbre racine" id="arbre"></ul>
     </div>
 
@@ -99,15 +101,17 @@
 <script>
   const $ = (id) => document.getElementById(id);
   const e = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  // Même jeton que la page d'accueil de Bêta (seulement hors du réseau de la maison)
   let jeton = "";
-  try { jeton = sessionStorage.getItem("beta_jeton") || ""; } catch (err) {}
+  try { jeton = localStorage.getItem("beta_jeton") || sessionStorage.getItem("beta_jeton") || ""; } catch (err) {}
   let exclusions = new Set();   // dossiers laissés de côté
   let reproposer = new Set();
 
   async function api(chemin, options = {}) {
-    const r = await fetch(chemin, { ...options, headers: { Authorization: `Bearer ${jeton}`, "Content-Type": "application/json" } });
-    if (r.status === 401) { jeton = ""; afficherConnexion("Jeton refusé"); throw new Error("401"); }
-    if (!r.ok) throw new Error((await r.json()).erreur || r.status);
+    const entetes = { "Content-Type": "application/json", ...(jeton ? { Authorization: `Bearer ${jeton}` } : {}) };
+    const r = await fetch(chemin, { ...options, headers: entetes });
+    if (r.status === 401) { const avait = !!jeton; jeton = ""; afficherConnexion(avait ? "Jeton refusé" : "Jeton requis"); throw new Error("401"); }
+    if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.erreur || d.detail || r.status); }
     return r.json();
   }
 
@@ -140,7 +144,7 @@
     bouton.addEventListener("click", async () => {
       const ul = li.querySelector("ul");
       if (ul.hidden && !ul.childElementCount) {
-        (await api(`/api/dossiers?chemin=${encodeURIComponent(d.chemin)}`)).forEach((s) => ul.append(ligne(s)));
+        (await api(`api/dossiers?chemin=${encodeURIComponent(d.chemin)}`)).forEach((s) => ul.append(ligne(s)));
       }
       ul.hidden = !ul.hidden;
       bouton.textContent = ul.hidden ? "▸" : "▾";
@@ -151,7 +155,7 @@
   function afficherGardes(gardes) {
     $("gardes").innerHTML = gardes.length ? gardes.map((g) => `
       <div class="garde"><span>${e(g)}</span><button class="discret" type="button" data-g="${e(g)}">Re-proposer</button></div>`).join("")
-      : `<span class="doux">Aucun pour l'instant. Quand tu réponds « garde-le » à OpenClaw, le document apparaît ici.</span>`;
+      : `<span class="doux">Aucun pour l'instant. Quand tu cliques sur « Garder où il est », le document apparaît ici.</span>`;
     $("gardes").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
       reproposer.add(b.dataset.g); b.closest(".garde").remove();
       $("message").textContent = "Pense à enregistrer.";
@@ -159,17 +163,16 @@
   }
 
   async function charger() {
-    if (!jeton) return afficherConnexion("Jeton requis");
-    const d = await api("/api/etat");
+    const d = await api("api/etat");
     exclusions = new Set(d.exclusions.filter((x) => !x.includes("*")));
     $("motifs").value = d.exclusions.filter((x) => x.includes("*")).join("\n");
     $("tout").checked = d.surveilles.includes(".");
-    $("racine").textContent = d.racine;
+    $("rangement").textContent = d.rangement;
     $("chiffres").innerHTML = [["À trier", d.en_attente], ["Propositions en attente", d.propositions],
       ["Rangés par Bêta", d.ranges], ["Gardés à leur place", d.gardes.length]]
       .map(([t, v]) => `<div class="carte"><span class="doux">${t}</span><div class="chiffre">${v}</div></div>`).join("");
     afficherGardes(d.gardes);
-    $("arbre").replaceChildren(...(await api("/api/dossiers")).map(ligne));
+    $("arbre").replaceChildren(...(await api("api/dossiers")).map(ligne));
     $("connexion").hidden = true; $("contenu").hidden = false;
     $("etat").textContent = "Coche ce qui doit être trié, puis enregistre.";
   }
@@ -184,7 +187,7 @@
   $("enregistrer").addEventListener("click", async () => {
     const motifs = $("motifs").value.split("\n").map((m) => m.trim()).filter(Boolean);
     try {
-      await api("/api/reglages", { method: "POST", body: JSON.stringify({
+      await api("api/reglages", { method: "POST", body: JSON.stringify({
         tout_trier: $("tout").checked, exclusions: [...exclusions, ...motifs], reproposer: [...reproposer] }) });
       reproposer.clear();
       $("message").textContent = `Enregistré à ${new Date().toLocaleTimeString("fr-FR")} : pris en compte tout de suite.`;
@@ -220,7 +223,7 @@
     div.querySelectorAll("button").forEach((b) => b.addEventListener("click", async () => {
       b.disabled = true;
       try {
-        await api("/api/propositions", { method: "POST", body: JSON.stringify({
+        await api("api/propositions", { method: "POST", body: JSON.stringify({
           fichier: p.fichier, statut: b.dataset.statut,
           titre: div.querySelector("[name=titre]").value, dossier: div.querySelector("[name=dossier]").value }) });
         div.remove(); modifie = false;
@@ -234,8 +237,8 @@
   }
 
   async function chargerPropositions(forcer = false) {
-    if (!jeton || (modifie && !forcer)) return;
-    const [liste, etat] = await Promise.all([api("/api/propositions"), api("/api/etat")]);
+    if (modifie && !forcer) return;
+    const [liste, etat] = await Promise.all([api("api/propositions"), api("api/etat")]);
     propositions = liste;
     $("propositions").replaceChildren(...liste.map(carteProposition));
     if (!liste.length) $("propositions").innerHTML = `<p class="doux">Aucune proposition pour l'instant.</p>`;
@@ -247,7 +250,7 @@
   }
 
   $("lancer").addEventListener("click", async () => {
-    await api("/api/lancer", { method: "POST", body: JSON.stringify({ nombre: 5 }) });
+    await api("api/lancer", { method: "POST", body: JSON.stringify({ nombre: 5 }) });
     $("message").textContent = "C'est parti : environ 1 à 2 minutes par document.";
     chargerPropositions(true);
   });
@@ -255,7 +258,7 @@
   $("tout-valider").addEventListener("click", async () => {
     const sures = propositions.filter((p) => p.confiance === "haute" && !p.deja_bien_range);
     for (const p of sures) {
-      await api("/api/propositions", { method: "POST", body: JSON.stringify({ fichier: p.fichier, statut: "valide" }) });
+      await api("api/propositions", { method: "POST", body: JSON.stringify({ fichier: p.fichier, statut: "valide" }) });
     }
     $("message").textContent = `${sures.length} document(s) validé(s).`;
     chargerPropositions(true);

@@ -1,20 +1,17 @@
-"""Trieur de documents : prépare le travail d'OpenClaw et applique ce que tu as validé.
+"""Trieur de documents de Bêta : propose titre, dossier et tags, et range ce que tu as validé.
 
-Ce qui est « à trier » :
-- tout fichier déposé dans <Documents>/_A_TRIER (la boîte d'entrée) ;
-- les documents (PDF, Word, texte) des dossiers listés dans _A_TRIER/_a_surveiller.txt, sauf ceux qui
-  correspondent à _A_TRIER/_a_exclure.txt, ceux déjà rangés par Bêta et ceux que tu as décidé de garder.
+Il voit tous les volumes du NAS (montés dans /nas : /nas/volume1, /nas/volume3…) et cherche les
+documents (PDF, Word, texte) partout, sauf dans ce que tu as décoché sur la page (http://IP_DU_NAS:8800/tri/),
+ce qu'il a déjà rangé et ce que tu as décidé de garder à sa place.
+
+Ses fichiers de travail (texte extrait, propositions, journal, index) sont dans l'installation de Bêta
+(data/tri, monté dans /etat) : rien n'est écrit dans tes dossiers, à part les documents rangés.
 
 Toutes les 30 secondes :
-1. extrait le texte de chaque document (PDF, scan avec reconnaissance de texte, Word, texte)
-   dans _A_TRIER/_traitement/texte/<fichier>.txt ;
-2. écrit _A_TRIER/_traitement/a_traiter.txt : les documents sans proposition, la liste de travail d'OpenClaw ;
-3. écrit _A_TRIER/_traitement/dossiers.txt : les dossiers existants, où ranger ;
-4. déplace les documents dont la proposition (_traitement/propositions/<fichier>.json) a le
-   statut « valide », note l'opération dans _A_TRIER/_journal.md et dans _index_documents.csv.
-
-OpenClaw n'a qu'un accès en lecture aux documents : seul ce service déplace des fichiers, et
-uniquement après validation, jamais en écrasant un fichier existant.
+1. extrait le texte des documents à traiter (PDF, scan avec reconnaissance de texte, Word, texte) ;
+2. écrit a_traiter.txt (les documents sans proposition) et dossiers.txt (où ranger) ;
+3. déplace les documents dont la proposition a le statut « valide », note l'opération dans journal.md
+   et index_documents.csv. Jamais sans validation, jamais en écrasant un fichier existant.
 """
 
 from __future__ import annotations
@@ -36,7 +33,11 @@ from pathlib import Path
 
 log = logging.getLogger("trieur")
 
-RACINE = Path(os.environ.get("DOCUMENTS", "/documents"))
+RACINE = Path(os.environ.get("TRI_RACINE", "/nas"))
+ETAT = Path(os.environ.get("TRI_ETAT", "/etat"))
+# Dossier où ranger (relatif à la racine), par exemple « volume1/Document »
+RANGEMENT = os.environ.get("TRI_RANGEMENT", "").strip().strip("/")
+IGNORES = [i.strip().strip("/") for i in os.environ.get("TRI_IGNORER", "").split(";")]
 INTERVALLE = int(os.environ.get("INTERVALLE_S", "30"))
 MAX_CARACTERES = 6000  # suffisant pour un titre et un classement, et rapide pour le modèle local
 PAGES_OCR = 3
@@ -44,38 +45,52 @@ PROFONDEUR_DOSSIERS = 3
 
 STATUTS = {"propose", "valide", "garder"}  # « refuse » est accepté comme « garder »
 EXTENSIONS_DOCUMENTS = {".pdf", ".docx", ".txt", ".md"}  # cherchées dans les dossiers surveillés
-MAX_EN_ATTENTE = 50  # documents préparés à l'avance pour OpenClaw (le reste attend son tour)
+MAX_EN_ATTENTE = 50  # documents préparés à l'avance (le reste attend son tour)
 INTERVALLE_SCAN = 600  # secondes entre deux parcours des dossiers surveillés
 
-SURVEILLER_PAR_DEFAUT = """# Dossiers à surveiller, un par ligne, à partir de la racine des documents.
-# « . » = tous les documents. Plus simple : la page http://IP_DU_NAS:8802
+SURVEILLER_PAR_DEFAUT = """# Dossiers à surveiller, un par ligne, à partir de la racine (volume1, volume3…).
+# « . » = tous les volumes. Plus simple : la page http://IP_DU_NAS:8800/tri/
 .
 """
 
 EXCLURE_PAR_DEFAUT = """# Ce que tu ne veux PAS trier, un par ligne : un dossier, ou un motif avec * .
-# Plus simple : décoche les dossiers sur la page http://IP_DU_NAS:8802
-# Exemples :
-# Photos
-# Travail/Archives
-# *.mp4
-# Banque/*/Relevés anciens
+# Plus simple : décoche les dossiers sur la page http://IP_DU_NAS:8800/tri/
+# Exemples : volume1/Photos   *.mp4   */Banque/Anciens
+*/Docker
+*/Application
 """
+
+# Dossiers système ou cachés jamais parcourus, sauf les dossiers personnels (@home)
+_CACHES = ("_", ".", "@", "#")
+_AUTORISES = {"@home"}
+
+
+def visible(nom: str) -> bool:
+    return nom in _AUTORISES or not nom.startswith(_CACHES)
+
 _INTERDITS_TITRE = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 
 
 class Chemins:
-    def __init__(self, racine: Path):
+    def __init__(self, racine: Path, etat: Path, rangement: str = "", ignores: list[str] | None = None):
         self.racine = racine
-        self.entree = racine / "_A_TRIER"
-        self.traitement = self.entree / "_traitement"
-        self.texte = self.traitement / "texte"
-        self.propositions = self.traitement / "propositions"
-        self.journal = self.entree / "_journal.md"
-        self.index = racine / "_index_documents.csv"
-        self.surveiller = self.entree / "_a_surveiller.txt"
-        self.exclure = self.entree / "_a_exclure.txt"
-        self.gardes = self.traitement / "gardes.txt"
-        self.sources = self.traitement / "sources.json"
+        # Jamais triés, quoi qu'il arrive (l'installation de Bêta elle-même, par exemple)
+        self.ignores = [i for i in (ignores or []) if i]
+        self.rangement = racine.joinpath(*rangement.split("/")) if rangement else racine
+        self.etat = etat
+        self.texte = etat / "texte"
+        self.propositions = etat / "propositions"
+        self.journal = etat / "journal.md"
+        self.index = etat / "index_documents.csv"
+        self.surveiller = etat / "a_surveiller.txt"
+        self.exclure = etat / "a_exclure.txt"
+        self.gardes = etat / "gardes.txt"
+        self.sources = etat / "sources.json"
+        self.a_traiter = etat / "a_traiter.txt"
+        self.dossiers = etat / "dossiers.txt"
+
+    def exclusions(self) -> list[str]:
+        return lire_liste(self.exclure) + self.ignores
 
     def creer(self) -> None:
         for d in (self.texte, self.propositions):
@@ -83,6 +98,11 @@ class Chemins:
         for fichier, contenu in ((self.surveiller, SURVEILLER_PAR_DEFAUT), (self.exclure, EXCLURE_PAR_DEFAUT)):
             if not fichier.exists():
                 fichier.write_text(contenu, encoding="utf-8")
+
+    def rel_rangement(self) -> str:
+        """Le dossier de rangement vu depuis la racine (« volume1/Document »), ou « » pour la racine."""
+        rel = self.rangement.relative_to(self.racine).as_posix()
+        return "" if rel == "." else rel
 
 
 # ---------------------------------------------------------------- Extraction du texte
@@ -139,7 +159,7 @@ def extraire(fichier: Path) -> str:
     return texte[:MAX_CARACTERES] or "(aucun texte lisible : propose un titre d'après le nom du fichier)"
 
 
-# ---------------------------------------------------------------- Préparation pour OpenClaw
+# ---------------------------------------------------------------- Préparation
 
 
 def lire_liste(fichier: Path) -> list[str]:
@@ -150,11 +170,8 @@ def lire_liste(fichier: Path) -> list[str]:
 
 
 def identifiant(rel: str) -> str:
-    """Nom unique d'un document : son nom de fichier s'il est dans _A_TRIER, sinon nom + empreinte du chemin
-    (deux « facture.pdf » dans deux dossiers ne se confondent pas)."""
+    """Nom unique d'un document : nom + empreinte du chemin (deux « facture.pdf » ne se confondent pas)."""
     chemin = Path(rel)
-    if chemin.parent.as_posix() == "_A_TRIER":
-        return chemin.name
     empreinte = hashlib.sha1(rel.encode()).hexdigest()[:6]
     return f"{chemin.stem[:50]}~{empreinte}{chemin.suffix}"
 
@@ -182,7 +199,7 @@ _scan = {"instant": 0.0, "signature": None, "resultat": {}}
 
 def _scanner_dossiers(c: Chemins) -> dict[str, str]:
     """Parcourt les dossiers surveillés (au plus toutes les 10 minutes, ou dès que les listes changent)."""
-    surveilles, motifs = lire_liste(c.surveiller), lire_liste(c.exclure)
+    surveilles, motifs = lire_liste(c.surveiller), c.exclusions()
     signature = (str(c.racine), tuple(surveilles), tuple(motifs), c.gardes.stat().st_mtime if c.gardes.exists() else 0,
                  c.index.stat().st_mtime if c.index.exists() else 0)
     if signature == _scan["signature"] and time.monotonic() - _scan["instant"] < INTERVALLE_SCAN:
@@ -199,10 +216,7 @@ def _scanner_dossiers(c: Chemins) -> dict[str, str]:
         for chemin, sous, fichiers in os.walk(base):
             rel_dossier = Path(chemin).relative_to(racine).as_posix()
             rel_dossier = "" if rel_dossier == "." else rel_dossier + "/"
-            sous[:] = sorted(
-                d for d in sous
-                if not d.startswith(("_", ".", "@", "#")) and not exclu(rel_dossier + d, motifs)
-            )
+            sous[:] = sorted(d for d in sous if visible(d) and not exclu(rel_dossier + d, motifs))
             for nom in fichiers:
                 rel = rel_dossier + nom
                 if (Path(nom).suffix.lower() in EXTENSIONS_DOCUMENTS and not nom.startswith((".", "_", "~$"))
@@ -213,17 +227,8 @@ def _scanner_dossiers(c: Chemins) -> dict[str, str]:
 
 
 def candidats(c: Chemins) -> dict[str, str]:
-    """identifiant -> chemin relatif, la boîte d'entrée d'abord."""
-    gardes = set(lire_liste(c.gardes))
-    resultat = {}
-    if c.entree.exists():
-        for f in sorted(c.entree.iterdir()):
-            rel = f"_A_TRIER/{f.name}"
-            if f.is_file() and not f.name.startswith(("_", ".")) and rel not in gardes:
-                resultat[identifiant(rel)] = rel
-    for ident, rel in _scanner_dossiers(c).items():
-        resultat.setdefault(ident, rel)
-    return resultat
+    """identifiant -> chemin relatif à la racine."""
+    return dict(_scanner_dossiers(c))
 
 
 def preparer(c: Chemins) -> None:
@@ -251,20 +256,24 @@ def preparer(c: Chemins) -> None:
     restants = len([i for i in tous if not (c.propositions / f"{i}.json").exists()]) - len(en_attente)
     if restants > 0:
         lignes.append(f"# … et {restants} autres documents, qui seront préparés au fur et à mesure")
-    (c.traitement / "a_traiter.txt").write_text("\n".join(lignes) + ("\n" if lignes else ""), encoding="utf-8")
+    c.a_traiter.write_text("\n".join(lignes) + ("\n" if lignes else ""), encoding="utf-8")
 
 
 def lister_dossiers(c: Chemins) -> None:
+    """Les dossiers existants du dossier de rangement (3 niveaux), proposés au modèle."""
     dossiers = []
-    for chemin, sous, _ in os.walk(c.racine):
-        rel = Path(chemin).relative_to(c.racine)
-        # Ni la boîte d'entrée, ni les dossiers cachés / corbeilles du NAS (@recycle, #recycle…)
-        sous[:] = sorted(d for d in sous if not d.startswith(("_", ".", "@", "#")))
+    motifs = c.exclusions()
+    for chemin, sous, _ in os.walk(c.rangement):
+        rel = Path(chemin).relative_to(c.rangement)
+        rel_racine = Path(chemin).relative_to(c.racine).as_posix()
+        # Ni les dossiers cachés / corbeilles du NAS (@recycle, #recycle…), ni ceux exclus du tri
+        sous[:] = sorted(d for d in sous if not d.startswith(_CACHES)
+                         and not exclu(f"{rel_racine}/{d}".removeprefix("./"), motifs))
         if len(rel.parts) >= PROFONDEUR_DOSSIERS:
             sous[:] = []
         if rel.parts:
             dossiers.append(rel.as_posix())
-    (c.traitement / "dossiers.txt").write_text("\n".join(dossiers) + "\n", encoding="utf-8")
+    c.dossiers.write_text("\n".join(dossiers) + "\n", encoding="utf-8")
 
 
 # ---------------------------------------------------------------- Application des validations
@@ -275,16 +284,16 @@ class PropositionInvalide(ValueError):
 
 
 def dossier_sur(c: Chemins, dossier: str) -> Path:
-    """Le dossier de destination, garanti à l'intérieur des Documents et hors de _A_TRIER."""
+    """Le dossier de destination (relatif au dossier de rangement), garanti à l'intérieur de celui-ci."""
     parties = [p.strip() for p in str(dossier).replace("\\", "/").split("/") if p.strip()]
     if not parties:
         raise PropositionInvalide("dossier vide")
     for p in parties:
-        if p in {".", ".."} or p.startswith((".", "_", "@", "#")) or _INTERDITS_TITRE.search(p):
+        if p in {".", ".."} or p.startswith(_CACHES) or _INTERDITS_TITRE.search(p):
             raise PropositionInvalide(f"nom de dossier refusé : {p!r}")
-    cible = c.racine.joinpath(*parties)
-    if not cible.resolve().is_relative_to(c.racine.resolve()):
-        raise PropositionInvalide("dossier hors des Documents")
+    cible = c.rangement.joinpath(*parties)
+    if not cible.resolve().is_relative_to(c.rangement.resolve()):
+        raise PropositionInvalide("dossier hors du dossier de rangement")
     return cible
 
 
@@ -315,9 +324,11 @@ def appliquer(c: Chemins) -> None:
         try:
             prop = json.loads(fichier_prop.read_text(encoding="utf-8"))
         except (OSError, ValueError):
-            continue  # en cours d'écriture, ou à corriger par OpenClaw
+            continue  # en cours d'écriture
         ident = fichier_prop.name[:-5]
-        rel_source = sources.get(ident, f"_A_TRIER/{ident}")
+        rel_source = sources.get(ident)
+        if not rel_source:
+            continue
 
         if prop.get("statut") in ("garder", "refuse"):
             # Le document reste où il est et ne sera plus proposé
@@ -368,19 +379,95 @@ def tour(c: Chemins) -> None:
     lister_dossiers(c)
 
 
+def proposition_valide(fichier: Path) -> dict | None:
+    """Le contenu d'une proposition, ou None si le fichier est illisible ou incomplet."""
+    try:
+        prop = json.loads(fichier.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return prop if isinstance(prop, dict) and prop.get("titre") and prop.get("statut") in STATUTS | {"refuse"} else None
+
+
+def nettoyer_propositions(c: Chemins) -> None:
+    """Retire les propositions illisibles : le document sera reproposé."""
+    for f in c.propositions.glob("*.json"):
+        if time.time() - f.stat().st_mtime > 60 and proposition_valide(f) is None:
+            log.warning("Proposition illisible retirée : %s", f.name)
+            f.unlink(missing_ok=True)
+
+
+def migrer(c: Chemins) -> None:
+    """Reprend l'ancienne installation (<Documents>/_A_TRIER) : journal, index, documents gardés, réglages.
+    Les anciennes propositions sont refaites. La boîte d'entrée devient un dossier normal « À trier »."""
+    ancien = c.rangement / "_A_TRIER"
+    if not ancien.is_dir():
+        return
+    prefixe = c.rel_rangement()
+    avec = (lambda rel: f"{prefixe}/{rel}") if prefixe else (lambda rel: rel)
+    log.info("Reprise de l'ancien tri (%s)", ancien)
+    c.creer()
+    try:
+        traitement = ancien / "_traitement"
+        anciens_gardes = lire_liste(traitement / "gardes.txt")
+        if anciens_gardes:
+            with c.gardes.open("a", encoding="utf-8") as f:
+                f.writelines(avec(g.replace("_A_TRIER/", "À trier/", 1)) + "\n" for g in anciens_gardes)
+        exclusions = [m if "*" in m else avec(m) for m in lire_liste(ancien / "_a_exclure.txt")]
+        if exclusions:
+            with c.exclure.open("a", encoding="utf-8") as f:
+                f.writelines(m + "\n" for m in exclusions)
+        if (ancien / "_journal.md").exists():
+            with c.journal.open("a", encoding="utf-8") as j:
+                j.write((ancien / "_journal.md").read_text(encoding="utf-8"))
+        ancien_index = c.rangement / "_index_documents.csv"
+        if ancien_index.exists():
+            with ancien_index.open(encoding="utf-8", newline="") as f:
+                lignes = list(csv.DictReader(f, delimiter=";"))
+            nouveau = not c.index.exists()
+            with c.index.open("a", encoding="utf-8", newline="") as f:
+                w = csv.writer(f, delimiter=";")
+                if nouveau:
+                    w.writerow(["date", "chemin", "titre", "tags", "resume", "fichier_origine"])
+                for l in lignes:
+                    w.writerow([l.get("date", ""), avec(l.get("chemin", "")), l.get("titre", ""), l.get("tags", ""),
+                                l.get("resume", ""), avec(l.get("fichier_origine", ""))])
+            ancien_index.unlink()
+        shutil.rmtree(traitement, ignore_errors=True)
+        for nom in ("_journal.md", "_a_surveiller.txt", "_a_exclure.txt"):
+            (ancien / nom).unlink(missing_ok=True)
+        if any(ancien.iterdir()):
+            cible = destination_libre(c.rangement, "À trier", "")
+            ancien.rename(cible)
+            log.info("Les documents de _A_TRIER sont maintenant dans « %s »", cible.name)
+        else:
+            ancien.rmdir()
+    except OSError:
+        log.exception("Reprise de l'ancien tri incomplète")
+    _scan["signature"] = None
+
+
+def tour(c: Chemins) -> None:
+    c.creer()
+    appliquer(c)
+    nettoyer_propositions(c)
+    preparer(c)
+    lister_dossiers(c)
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    c = Chemins(RACINE)
+    c = Chemins(RACINE, ETAT, RANGEMENT, IGNORES)
+    migrer(c)
     c.creer()
     import proposeur as prop  # propositions par le modèle local
-    import web  # page de réglage et de validation (http://IP_DU_NAS:8802)
+    import web  # page de réglage et de validation (servie par Bêta sur /tri/)
 
     proposeur = None
     if os.environ.get("TRI_PROPOSITIONS", "oui") != "non":
         proposeur = prop.Proposeur(c)
         proposeur.demarrer()
     web.demarrer(c, proposeur)
-    log.info("Surveillance de %s et des dossiers de %s", c.entree, c.surveiller)
+    log.info("Tri de %s, rangement dans %s", c.racine, c.rangement)
     while True:
         try:
             tour(c)

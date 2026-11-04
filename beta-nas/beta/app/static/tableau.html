@@ -98,8 +98,10 @@
 <script>
   const $ = (id) => document.getElementById(id);
   const echapper = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  // Jeton demandé seulement hors du réseau de la maison (le même que la page d'accueil)
   let jeton = "";
-  try { jeton = sessionStorage.getItem("beta_jeton") || ""; } catch (e) {}
+  try { jeton = localStorage.getItem("beta_jeton") || sessionStorage.getItem("beta_jeton") || ""; } catch (e) {}
+  const entetes = () => (jeton ? { Authorization: `Bearer ${jeton}` } : {});
 
   $("formulaire").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -108,12 +110,12 @@
     actualiser();
   });
 
-  $("lien-tri").href = `${location.protocol}//${location.hostname}:8802/`;
+  $("lien-tri").href = "/tri/";
 
   $("form-qr").addEventListener("submit", async (e) => {
     e.preventDefault();
     const piece = encodeURIComponent($("piece").value.trim().toLowerCase());
-    const r = await fetch(`/v1/appairage?piece=${piece}`, { headers: { Authorization: `Bearer ${jeton}` } });
+    const r = await fetch(`/v1/appairage?piece=${piece}`, { headers: entetes() });
     if (!r.ok) return;
     const svg = new DOMParser().parseFromString(await r.text(), "image/svg+xml").documentElement;
     svg.setAttribute("width", "100%"); svg.removeAttribute("height");
@@ -157,9 +159,8 @@
   }
 
   async function actualiser() {
-    if (!jeton) { $("connexion").hidden = false; $("etat").textContent = "Jeton requis"; return; }
     try {
-      const r = await fetch("/v1/stats", { headers: { Authorization: `Bearer ${jeton}` } });
+      const r = await fetch("/v1/stats", { headers: entetes() });
       if (r.status === 401) {
         jeton = ""; $("connexion").hidden = false; $("contenu").hidden = true;
         $("etat").textContent = "Jeton refusé"; return;
@@ -173,7 +174,7 @@
   }
 
   actualiser();
-  setInterval(() => { if (jeton && !document.hidden) actualiser(); }, 2000);
+  setInterval(() => { if ($("connexion").hidden && !document.hidden) actualiser(); }, 2000);
 </script>
 </body>
 </html>

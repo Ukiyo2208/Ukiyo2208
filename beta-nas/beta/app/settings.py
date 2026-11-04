@@ -100,8 +100,9 @@ class Settings:
     publication_url: str = ""
     publication_jeton: str = ""
     publication_intervalle: int = 60
-    openclaw_url: str = ""
-    tri_url: str = "http://host.docker.internal:8802"  # page du trieur de documents
+    tri_url: str = "http://trieur:8802"  # trieur de documents (page servie par Bêta sur /tri/)
+    # À la maison (adresse du réseau local), la page et l'API ne demandent pas de jeton
+    acces_local_libre: bool = True
 
     # Présence (service beta-presence + caméras)
     presence_url: str = "http://presence:8801"
@@ -152,8 +153,8 @@ def charger(chemin_config: str | None = None) -> Settings:
         publication_url=_env("PUBLICATION_URL"),
         publication_jeton=_env("PUBLICATION_JETON"),
         publication_intervalle=max(15, int(_env("PUBLICATION_INTERVALLE", "60") or 60)),
-        openclaw_url=_env("OPENCLAW_URL").rstrip("/"),
-        tri_url=_env("TRI_URL", "http://host.docker.internal:8802").rstrip("/"),
+        tri_url=_env("TRI_URL", Settings.tri_url).rstrip("/"),
+        acces_local_libre=_env("BETA_LOCAL_LIBRE", "oui").lower() not in ("non", "false", "0", "no"),
     )
 
     chemin = Path(chemin_config or _env("BETA_CONFIG", "/config/config.yaml"))

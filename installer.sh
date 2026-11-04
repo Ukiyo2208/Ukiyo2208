@@ -5,17 +5,17 @@
 #   sudo ./installer.sh --auto     aucune question : réponses par défaut
 #
 # Relançable sans risque : ce qui est déjà configuré (.env, config.yaml, comptes, jetons) est conservé.
-# Options : --sans-openclaw · --dossier /volume1/docker/beta · --prenom bastien · --piece salon
-#           --documents /volume1/Documents
+# Options : --sans-tri · --dossier /volume1/docker/beta · --prenom bastien · --piece salon
+#           --documents /volume1/Documents (où ranger les documents triés)
 
 set -euo pipefail
 
 SOURCE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-AUTO=0 OPENCLAW=o DEST="" PRENOM="" PIECE="" DOCUMENTS=""
+AUTO=0 TRI=o DEST="" PRENOM="" PIECE="" DOCUMENTS=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --auto) AUTO=1 ;;
-    --sans-openclaw) OPENCLAW=n ;;
+    --sans-tri|--sans-openclaw) TRI=n ;;
     --dossier) DEST="$2"; shift ;;
     --prenom) PRENOM="$2"; shift ;;
     --piece) PIECE="$2"; shift ;;
@@ -103,7 +103,7 @@ docker info >/dev/null 2>&1 || echec "Docker ne répond pas (est-il démarré ?)
 ok "Docker $(docker version --format '{{.Server.Version}}' 2>/dev/null)"
 [ "$(uname -m)" = x86_64 ] || avertir "Processeur $(uname -m) : prévu pour Intel/AMD (x86_64), certains modèles peuvent manquer."
 ram=$(awk '/MemTotal/ {printf "%d", $2 / 1048576}' /proc/meminfo)
-[ "$ram" -ge 8 ] && ok "Mémoire : ${ram} Go" || avertir "Mémoire : ${ram} Go (8 Go conseillés, 16 Go avec OpenClaw)"
+[ "$ram" -ge 8 ] && ok "Mémoire : ${ram} Go" || avertir "Mémoire : ${ram} Go (8 Go conseillés, 16 Go avec le tri des documents)"
 [ -d "$SOURCE/beta-nas" ] || echec "Lance ce script depuis le dossier du projet (celui qui contient beta-nas/)."
 
 # ====================================================================== 2. Questions
@@ -119,14 +119,15 @@ demander PRENOM "Ton prénom" "bastien"
 PRENOM=$(normaliser "$PRENOM")
 demander PIECE "Pièce où sera la tablette" "salon"
 PIECE=$(normaliser "$PIECE")
-if [ "$OPENCLAW" = o ]; then
-  demander OPENCLAW "Installer OpenClaw et le tri des documents ? (o/n)" "o"
-  OPENCLAW=$(echo "$OPENCLAW" | cut -c1 | tr '[:upper:]' '[:lower:]')
+if [ "$TRI" = o ]; then
+  demander TRI "Activer le tri des documents (tous les volumes du NAS) ? (o/n)" "o"
+  TRI=$(echo "$TRI" | cut -c1 | tr '[:upper:]' '[:lower:]')
 fi
-if [ "$OPENCLAW" = o ]; then
+if [ "$TRI" = o ]; then
   # « Document », « Documents », sur le volume du téléchargement d'abord
   docs_defaut=$(ls -d "$VOLUME"/[Dd]ocument "$VOLUME"/[Dd]ocuments /volume[0-9]*/[Dd]ocument /volume[0-9]*/[Dd]ocuments 2>/dev/null | head -n1 || true)
-  demander DOCUMENTS "Dossier des documents à trier" "${docs_defaut:-$VOLUME/Documents}"
+  demander DOCUMENTS "Dossier où ranger les documents triés" "${docs_defaut:-$VOLUME/Documents}"
+  DOCUMENTS=${DOCUMENTS%/}
 fi
 ENV_BETA="$DEST/beta-nas/.env"
 if [ -z "$(env_lire "$ENV_BETA" HA_TOKEN)" ]; then
@@ -159,7 +160,6 @@ demander PUISSANT_URL "Adresse d'Ollama sur un PC puissant, ex http://192.168.1.
 etape "Installation des fichiers dans $DEST"
 if [ "$SOURCE" != "$DEST" ]; then
   copier_code "$SOURCE/beta-nas" "$DEST/beta-nas"
-  [ "$OPENCLAW" = o ] && copier_code "$SOURCE/openclaw-nas" "$DEST/openclaw-nas"
   cp "$SOURCE/installer.sh" "$DEST/"
 fi
 chmod +x "$DEST/beta-nas/outils/fiche-api.sh"
@@ -183,6 +183,8 @@ elif ! grep -q '^COMPOSE_PROFILES=' "$ENV_BETA"; then
 fi
 [ -n "$PUISSANT_URL" ] && env_ecrire "$ENV_BETA" PUISSANT_URL "$PUISSANT_URL" && env_ecrire "$ENV_BETA" PUISSANT_MODELE "$PUISSANT_MODELE"
 BETA_TOKEN=$(env_lire "$ENV_BETA" BETA_TOKEN)
+# Réglages d'OpenClaw, qui n'existe plus
+sed -i '/^OPENCLAW_URL=/d; /^# Adresse d.OpenClaw/d' "$ENV_BETA"
 ok "Réglages : $ENV_BETA (jeton généré)"
 
 CONFIG="$DEST/beta-nas/config/config.yaml"
@@ -215,7 +217,57 @@ else
   ok "Configuration existante conservée"
 fi
 
-# ====================================================================== 4. Bêta
+# ====================================================================== 4. Tri des documents
+
+# OpenClaw n'est plus utilisé : ses conteneurs, son image et son dossier sont retirés
+if [ -d "$DEST/openclaw-nas" ] || docker inspect openclaw >/dev/null 2>&1 || docker inspect openclaw-trieur >/dev/null 2>&1; then
+  etape "Retrait d'OpenClaw"
+  if [ -f "$DEST/openclaw-nas/docker-compose.yml" ]; then
+    (cd "$DEST/openclaw-nas" && "${DC[@]}" --profile cli down --rmi all --remove-orphans >/dev/null 2>&1) || true
+  fi
+  for c in openclaw openclaw-trieur; do docker rm -f "$c" >/dev/null 2>&1 || true; done
+  docker images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep -E '(^|/)openclaw' | xargs -r docker rmi -f >/dev/null 2>&1 || true
+  docker network rm openclaw_defaut >/dev/null 2>&1 || true
+  rm -rf "$DEST/openclaw-nas" "$DEST/installation-openclaw.log"
+  ok "OpenClaw retiré (le tri des documents fait maintenant partie de Bêta)"
+fi
+
+sous_nas() { # /volume3/Docker/Beta IA/beta -> volume3/Docker/Beta IA/beta (chemin vu par le trieur)
+  case "$1" in /volume[0-9]*) echo "${1#/}" ;; *) echo "documents${1#"$DOCUMENTS"}" ;; esac
+}
+SURCHARGE="$DEST/beta-nas/docker-compose.override.yml"
+mkdir -p "$DEST/beta-nas/data/tri"
+if [ "$TRI" = o ]; then
+  [ -d "$DOCUMENTS" ] || mkdir -p "$DOCUMENTS"
+  PROPRIO="$(stat -c '%u' "$DOCUMENTS"):$(stat -c '%g' "$DOCUMENTS")"
+  env_ecrire "$ENV_BETA" PUID "${PROPRIO%:*}"
+  env_ecrire "$ENV_BETA" PGID "${PROPRIO#*:}"
+  env_si_vide "$ENV_BETA" TRI_MODELE "qwen3.5:9b"
+  env_ecrire "$ENV_BETA" TRI_PROPOSITIONS oui
+  # Le trieur voit tous les volumes du NAS (/volume1 -> /nas/volume1…) ; sur un autre Linux, le dossier des documents
+  {
+    echo "# Écrit par installer.sh : les volumes que le trieur de documents peut parcourir."
+    echo "services:"
+    echo "  trieur:"
+    echo "    volumes:"
+    volumes=$(ls -d /volume[0-9]* 2>/dev/null || true)
+    if [ -n "$volumes" ] && [[ "$DOCUMENTS" == /volume* ]]; then
+      for v in $volumes; do echo "      - \"$v:/nas/${v#/}\""; done
+    else
+      echo "      - \"$DOCUMENTS:/nas/documents\""
+    fi
+  } > "$SURCHARGE"
+  env_ecrire "$ENV_BETA" TRI_RANGEMENT "$(sous_nas "$DOCUMENTS")"
+  # Jamais trié : l'installation de Bêta et le dossier téléchargé
+  env_ecrire "$ENV_BETA" TRI_IGNORER "$(sous_nas "$DEST");$(sous_nas "$SOURCE")"
+  chown -R "$PROPRIO" "$DEST/beta-nas/data/tri"
+  ok "Tri des documents : tous les volumes, rangement dans $DOCUMENTS"
+else
+  env_ecrire "$ENV_BETA" TRI_PROPOSITIONS non
+  printf 'services:\n  trieur:\n    volumes: []\n' > "$SURCHARGE"
+fi
+
+# ====================================================================== 5. Bêta
 
 etape "Démarrage de Bêta (première fois : 5 à 15 minutes)"
 cd "$DEST/beta-nas"
@@ -263,62 +315,10 @@ etape "Modèle d'IA local de Bêta"
 MODELE=$(env_lire "$ENV_BETA" OLLAMA_MODEL); MODELE=${MODELE:-qwen2.5:3b}
 attendre "Ollama" 120 docker exec beta-ollama ollama list || true
 docker exec beta-ollama ollama pull "$MODELE" 2>&1 | tail -n1 && ok "$MODELE prêt" || avertir "Téléchargement de $MODELE à refaire"
-
-# ====================================================================== 5. OpenClaw
-
-if [ "$OPENCLAW" = o ]; then
-  etape "OpenClaw et le tri des documents"
-  cd "$DEST/openclaw-nas"
-  ENV_OC="$DEST/openclaw-nas/.env"
-  [ -f "$ENV_OC" ] || cp .env.example "$ENV_OC"
-  chmod 600 "$ENV_OC"
-  env_si_vide "$ENV_OC" OPENCLAW_GATEWAY_TOKEN "$(aleatoire 32)"
-  mkdir -p "$DOCUMENTS/_A_TRIER/_traitement/propositions" data/config data/workspace data/secrets
-  env_ecrire "$ENV_OC" DOCUMENTS "$DOCUMENTS"
-  env_ecrire "$ENV_OC" PUID "$(stat -c '%u' "$DOCUMENTS")"
-  env_ecrire "$ENV_OC" PGID "$(stat -c '%g' "$DOCUMENTS")"
-  env_ecrire "$ENV_OC" BETA_RESEAU beta-nas_default
-  env_ecrire "$ENV_OC" TRI_TOKEN "$BETA_TOKEN"
-  env_ecrire "$ENV_BETA" OPENCLAW_URL "http://host.docker.internal:18789"
-  chown -R "$(stat -c '%u:%g' "$DOCUMENTS")" "$DOCUMENTS/_A_TRIER"
-  chmod 777 "$DOCUMENTS/_A_TRIER/_traitement/propositions"
-  chown -R 1000:1000 data
-  ok "Boîte d'entrée : $DOCUMENTS/_A_TRIER"
-
-  MODELE_OC=$(env_lire "$ENV_OC" OPENCLAW_MODELE); MODELE_OC=${MODELE_OC:-qwen3.5:9b}
-  echo "  Téléchargement du modèle $MODELE_OC (environ 6 Go, une seule fois)…"
-  docker exec beta-ollama ollama pull "$MODELE_OC" 2>&1 | tail -n1 || avertir "Téléchargement à refaire"
-
-  "${DC[@]}" pull --quiet openclaw-gateway >/dev/null 2>&1 || true
-  lancer_oc() { "${DC[@]}" run --rm --no-deps -T --entrypoint node openclaw-gateway dist/index.js "$@"; }
-  if [ ! -f data/config/openclaw.json ]; then
-    lancer_oc onboard --non-interactive --accept-risk --skip-health --mode local \
-      --auth-choice ollama --custom-base-url http://beta-ollama:11434 --custom-model-id "$MODELE_OC" \
-      --gateway-auth token --gateway-token-ref-env OPENCLAW_GATEWAY_TOKEN --skip-channels --no-install-daemon \
-      >/dev/null && ok "OpenClaw configuré avec $MODELE_OC" || avertir "Configuration d'OpenClaw à terminer (voir openclaw-nas/README.md)"
-  fi
-  IP=$(ip_nas)
-  lancer_oc config set --batch-json "[
-    {\"path\":\"gateway.mode\",\"value\":\"local\"},
-    {\"path\":\"models.providers.ollama.apiKey\",\"value\":\"ollama-local\"},
-    {\"path\":\"gateway.bind\",\"value\":\"lan\"},
-    {\"path\":\"gateway.controlUi.allowedOrigins\",\"value\":[\"http://$IP:18789\",\"http://localhost:18789\",\"http://127.0.0.1:18789\"]},
-    {\"path\":\"tools.deny\",\"value\":[\"group:runtime\",\"browser\"]},
-    {\"path\":\"cron.triggers.enabled\",\"value\":false}
-  ]" >/dev/null && ok "Accès réseau et sécurité réglés" || avertir "Réglages d'OpenClaw à vérifier"
-  # Remplace l'ancienne consigne de tri par la nouvelle (le reste de AGENTS.md est conservé)
-  agents=data/workspace/AGENTS.md
-  touch "$agents"
-  awk '/^## Tri des documents du NAS/ {saute = 1; next} saute && /^## / {saute = 0} !saute {print}' "$agents" > "$agents.tmp"
-  cat AGENTS-tri-documents.md >> "$agents.tmp" && mv "$agents.tmp" "$agents" && chown 1000:1000 "$agents"
-  ok "Consigne de tri des documents à jour"
-  if "${DC[@]}" up -d --build > "$DEST/installation-openclaw.log" 2>&1; then
-    ok "OpenClaw démarré"
-  else
-    tail -n 15 "$DEST/installation-openclaw.log" | sed 's/^/    /'
-    avertir "Démarrage d'OpenClaw à vérifier (journal : $DEST/installation-openclaw.log)"
-  fi
-  # Le tri se fait maintenant par le trieur direct (page http://IP:8802) : pas de tâche de nuit dans OpenClaw
+if [ "$TRI" = o ]; then
+  MODELE_TRI=$(env_lire "$ENV_BETA" TRI_MODELE)
+  echo "  Modèle du tri des documents : $MODELE_TRI (environ 6 Go, une seule fois)…"
+  docker exec beta-ollama ollama pull "$MODELE_TRI" 2>&1 | tail -n1 && ok "$MODELE_TRI prêt" || avertir "Téléchargement de $MODELE_TRI à refaire"
 fi
 
 # ====================================================================== 6. Résumé
@@ -327,11 +327,10 @@ IP=$(ip_nas)
 etape "C'est prêt !"
 cat <<EOF
 
-  ${G}Tableau de bord${N}   http://$IP:8800/tableau
+  ${G}Bêta${N}              http://$IP:8800        (accueil, discussion, maison ; sans jeton à la maison)
   ${G}Home Assistant${N}    $(env_lire "$ENV_BETA" HA_URL | sed "s#host.docker.internal#$IP#")
 EOF
-[ "$OPENCLAW" = o ] && echo "  ${G}OpenClaw${N}          http://$IP:18789   (jeton : sudo $DEST/beta-nas/outils/fiche-api.sh --secrets)"
-[ "$OPENCLAW" = o ] && echo "  ${G}Tri des documents${N} http://$IP:8802    (propositions à valider, dossiers à trier)"
+[ "$TRI" = o ] && echo "  ${G}Tri des documents${N} http://$IP:8800/tri/   (propositions à valider, dossiers à trier)"
 if [ "${HA_MDP_GENERE:-0}" = 1 ] && [ -z "${HA_ECHEC:-}" ]; then
   echo
   echo "  ${J}Compte Home Assistant${N} : identifiant ${G}$HA_UTILISATEUR${N}, mot de passe ${G}$HA_MDP${N}  ← note-le"
@@ -339,7 +338,7 @@ fi
 cat <<EOF
 
   ${G}Tablette${N} : installe l'APK Bêta, ouvre-la et scanne ce QR code
-  (ou depuis un PC : tableau de bord → « Afficher le QR d'appairage »).
+  (ou depuis un PC : http://$IP:8800/tableau → « Afficher le QR d'appairage »).
 
 EOF
 docker exec beta python -m app.installation qr --url "http://$IP:8800" --jeton "$BETA_TOKEN" --piece "$PIECE" 2>/dev/null \

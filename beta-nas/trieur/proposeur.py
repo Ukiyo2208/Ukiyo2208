@@ -1,8 +1,7 @@
 """Le trieur propose lui-même titre, dossier et tags, en demandant directement au modèle local.
 
-Une consigne courte par document (au lieu de passer par OpenClaw) : 1 à 2 minutes par document sur un
-Intel N100. Les propositions arrivent dans _traitement/propositions/, au même format qu'avant ; tu les
-valides sur la page http://IP_DU_NAS:8802. Rien n'est jamais déplacé sans validation.
+Une consigne courte par document : 1 à 2 minutes par document sur un Intel N100. Tu valides les
+propositions sur la page http://IP_DU_NAS:8800/tri/. Rien n'est jamais déplacé sans validation.
 """
 
 from __future__ import annotations
@@ -20,7 +19,7 @@ import trieur
 
 log = logging.getLogger("trieur.proposeur")
 
-OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://beta-ollama:11434").rstrip("/")
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://ollama:11434").rstrip("/")
 MODELE = os.environ.get("TRI_MODELE", "qwen3.5:9b")
 CARACTERES_LUS = 3000  # assez pour un titre et un classement, et lu vite par le modèle
 MAX_DOSSIERS = 150
@@ -131,12 +130,12 @@ class Proposeur:
 
     def _suivant(self) -> tuple[str, str] | None:
         sources = json.loads(self.c.sources.read_text(encoding="utf-8")) if self.c.sources.exists() else {}
-        for ligne in (self.c.traitement / "a_traiter.txt").read_text(encoding="utf-8").splitlines() \
-                if (self.c.traitement / "a_traiter.txt").exists() else []:
+        lignes = self.c.a_traiter.read_text(encoding="utf-8").splitlines() if self.c.a_traiter.exists() else []
+        for ligne in lignes:
             ident = ligne.split(" | ")[0].strip()
-            if ident and not ligne.startswith("#") and (self.c.texte / f"{ident}.txt").exists() \
+            if ident and not ligne.startswith("#") and ident in sources and (self.c.texte / f"{ident}.txt").exists() \
                     and not (self.c.propositions / f"{ident}.json").exists():
-                return ident, sources.get(ident, f"_A_TRIER/{ident}")
+                return ident, sources[ident]
         return None
 
     def un_document(self) -> bool:
@@ -148,7 +147,7 @@ class Proposeur:
         self.en_cours = {"fichier": chemin, "depuis": time.monotonic()}
         try:
             texte = (self.c.texte / f"{ident}.txt").read_text(encoding="utf-8")
-            dossiers = trieur.lire_liste(self.c.traitement / "dossiers.txt")
+            dossiers = trieur.lire_liste(self.c.dossiers)
             prop = demander_proposition(texte, chemin, dossiers)
             prop |= {
                 "fichier": ident, "chemin_actuel": chemin, "statut": "propose", "modele": MODELE,

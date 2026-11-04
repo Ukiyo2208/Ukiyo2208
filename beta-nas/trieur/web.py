@@ -1,14 +1,14 @@
-"""Page web du trieur : choisir les dossiers à trier ou à laisser de côté, revoir les documents gardés.
+"""Page web du trieur : valider les propositions, choisir les dossiers à trier ou à laisser de côté.
 
-Serveur minimal (bibliothèque standard), protégé par le jeton TRI_TOKEN. Il ne déplace rien : il ne fait
-qu'écrire _a_surveiller.txt, _a_exclure.txt et gardes.txt, que la boucle du trieur relit d'elle-même.
+Serveur minimal (bibliothèque standard), joignable seulement depuis Bêta (réseau Docker interne) : c'est
+Bêta qui sert la page sur http://IP_DU_NAS:8800/tri/ et qui vérifie qui y accède. Il ne déplace rien
+lui-même : il écrit les réglages et les validations, que la boucle du trieur relit d'elle-même.
 """
 
 from __future__ import annotations
 
 import json
 import os
-import secrets
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -35,24 +35,21 @@ def _entete(fichier: Path) -> str:
 
 
 def _rel_sur(c: trieur.Chemins, rel: str) -> str:
-    """Un chemin relatif propre, forcément à l'intérieur des documents."""
+    """Un chemin relatif propre, forcément à l'intérieur de la racine (les volumes du NAS)."""
     parties = [p for p in str(rel).replace("\\", "/").split("/") if p and p != "."]
     if any(p == ".." for p in parties):
         raise ValueError("chemin interdit")
     chemin = c.racine.joinpath(*parties).resolve()
     if not chemin.is_relative_to(c.racine.resolve()):
-        raise ValueError("chemin hors des documents")
+        raise ValueError("chemin hors du NAS")
     return "/".join(parties)
 
 
 def lister_propositions(c: trieur.Chemins) -> list[dict]:
     resultat = []
     for f in sorted(c.propositions.glob("*.json"), key=lambda p: p.stat().st_mtime):
-        try:
-            prop = json.loads(f.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if prop.get("statut", "propose") == "propose":
+        prop = trieur.proposition_valide(f)
+        if prop and prop["statut"] == "propose":
             resultat.append({**prop, "fichier": f.name[:-5]})
     return resultat
 
@@ -86,11 +83,11 @@ def etat(c: trieur.Chemins, proposeur=None) -> dict:
     tous = trieur.candidats(c)
     en_attente = [i for i in tous if not (c.propositions / f"{i}.json").exists()]
     return {
-        "racine": c.racine.name,
+        "rangement": c.rel_rangement() or "/",
         "surveilles": trieur.lire_liste(c.surveiller),
         "exclusions": trieur.lire_liste(c.exclure),
         "en_attente": len(en_attente),
-        "propositions": len(list(c.propositions.glob("*.json"))),
+        "propositions": len(lister_propositions(c)),  # le même nombre que la liste affichée
         "gardes": trieur.lire_liste(c.gardes),
         "ranges": max(0, sum(1 for _ in c.index.open(encoding="utf-8")) - 1) if c.index.exists() else 0,
         "proposeur": proposeur.etat() if proposeur else None,
@@ -103,10 +100,13 @@ def sous_dossiers(c: trieur.Chemins, rel: str) -> list[dict]:
     exclusions = trieur.lire_liste(c.exclure)
     resultat = []
     for d in sorted(base.iterdir(), key=lambda p: p.name.lower()) if base.is_dir() else []:
-        if not d.is_dir() or d.name.startswith(("_", ".", "@", "#")):
-            continue
         chemin = f"{rel}/{d.name}" if rel else d.name
-        a_des_sous_dossiers = any(e.is_dir() and not e.name.startswith(("_", ".", "@", "#")) for e in d.iterdir())
+        if not d.is_dir() or not trieur.visible(d.name) or trieur.exclu(chemin, c.ignores):
+            continue
+        try:
+            a_des_sous_dossiers = any(e.is_dir() and trieur.visible(e.name) for e in d.iterdir())
+        except OSError:  # dossier sans droit de lecture
+            continue
         resultat.append({
             "nom": d.name, "chemin": chemin, "exclu": trieur.exclu(chemin, exclusions),
             "exclu_directement": chemin in exclusions, "a_des_sous_dossiers": a_des_sous_dossiers,
@@ -134,7 +134,7 @@ def enregistrer(c: trieur.Chemins, donnees: dict) -> None:
     trieur._scan["signature"] = None  # prise en compte immédiate
 
 
-def serveur(c: trieur.Chemins, jeton: str, port: int, proposeur=None) -> ThreadingHTTPServer:
+def serveur(c: trieur.Chemins, port: int, proposeur=None, hote: str = "0.0.0.0") -> ThreadingHTTPServer:
     class Gestionnaire(BaseHTTPRequestHandler):
         def log_message(self, *args):  # pas de bruit dans les journaux
             pass
@@ -149,19 +149,10 @@ def serveur(c: trieur.Chemins, jeton: str, port: int, proposeur=None) -> Threadi
         def _json(self, code: int, donnees) -> None:
             self._repondre(code, json.dumps(donnees, ensure_ascii=False).encode())
 
-        def _autorise(self) -> bool:
-            recu = self.headers.get("Authorization", "").removeprefix("Bearer ").encode()
-            if jeton and secrets.compare_digest(recu, jeton.encode()):
-                return True
-            self._json(401, {"erreur": "jeton invalide"})
-            return False
-
         def do_GET(self):
             url = urlparse(self.path)
             if url.path in ("/", "/index.html"):
                 return self._repondre(200, PAGE.read_bytes(), "text/html")
-            if not self._autorise():
-                return
             try:
                 if url.path == "/api/etat":
                     return self._json(200, etat(c, proposeur))
@@ -177,8 +168,6 @@ def serveur(c: trieur.Chemins, jeton: str, port: int, proposeur=None) -> Threadi
             chemin = urlparse(self.path).path
             if chemin not in ("/api/reglages", "/api/propositions", "/api/lancer"):
                 return self._json(404, {"erreur": "inconnu"})
-            if not self._autorise():
-                return
             try:
                 taille = min(int(self.headers.get("Content-Length", 0)), 1_000_000)
                 donnees = json.loads(self.rfile.read(taille) or b"{}")
@@ -192,14 +181,10 @@ def serveur(c: trieur.Chemins, jeton: str, port: int, proposeur=None) -> Threadi
                 return self._json(400, {"erreur": str(e)})
             self._json(200, etat(c, proposeur))
 
-    return ThreadingHTTPServer(("0.0.0.0", port), Gestionnaire)
+    return ThreadingHTTPServer((hote, port), Gestionnaire)
 
 
 def demarrer(c: trieur.Chemins, proposeur=None) -> None:
-    jeton = os.environ.get("TRI_TOKEN", "")
-    if not jeton:
-        trieur.log.warning("TRI_TOKEN vide : la page de réglage du tri est désactivée")
-        return
     port = int(os.environ.get("TRI_PORT", "8802"))
-    threading.Thread(target=serveur(c, jeton, port, proposeur).serve_forever, daemon=True).start()
-    trieur.log.info("Page de réglage du tri sur le port %d", port)
+    threading.Thread(target=serveur(c, port, proposeur).serve_forever, daemon=True).start()
+    trieur.log.info("Page du tri sur le port %d (servie par Bêta sur /tri/)", port)

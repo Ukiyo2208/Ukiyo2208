@@ -32,8 +32,9 @@ Compte environ **1 h 30** au total, dont la moitié à attendre des télécharge
 
 1. Connecté à GitHub, télécharge le projet :
    https://github.com/Ukiyo2208/Ukiyo2208/archive/refs/heads/claude/beta-ia-local-voice-kd7s5z.zip
-2. Dézippe-le, puis **renomme le dossier obtenu en `agentv1`** (son nom d'origine est
-   `Ukiyo2208-claude-beta-ia-local-voice-kd7s5z`).
+2. Dézippe-le, puis **renomme le dossier obtenu en `BetaNova`** (son nom d'origine est
+   `Ukiyo2208-claude-beta-ia-local-voice-kd7s5z`). Ce n'est que le dossier téléchargé : l'installation
+   elle-même va dans le dossier `beta`, à côté.
 3. Copie ce dossier dans le dossier partagé **`docker`** du NAS : explorateur Windows →
    `\\192.168.1.20\docker` (ou l'application Fichiers d'UGOS).
 
@@ -45,7 +46,7 @@ Compte environ **1 h 30** au total, dont la moitié à attendre des télécharge
    ```
 2. Lance l'installateur :
    ```bash
-   cd /volume1/docker/agentv1
+   cd /volume1/docker/BetaNova
    sudo bash installer.sh
    ```
 3. Réponds aux questions. **Entrée** garde la réponse proposée :
@@ -55,8 +56,8 @@ Compte environ **1 h 30** au total, dont la moitié à attendre des télécharge
 | Dossier d'installation | Entrée (`/volume1/docker/beta`) |
 | Ton prénom | ton prénom, ex : `bastien` |
 | Pièce de la tablette | `salon` |
-| Installer OpenClaw et le tri des documents ? | `o` (oui) ou `n` |
-| Dossier des documents | Entrée (`/volume1/Documents`) |
+| Activer le tri des documents (tous les volumes du NAS) ? | `o` (oui) ou `n` |
+| Dossier où ranger les documents triés | Entrée (ton dossier `Document` ou `Documents`) |
 | Compte Home Assistant : identifiant | Entrée (ton prénom) |
 | Compte Home Assistant : mot de passe | le tien, ou Entrée pour en générer un |
 | Clé de l'IA cloud Claude | Entrée pour l'instant (voir étape J) |
@@ -64,7 +65,7 @@ Compte environ **1 h 30** au total, dont la moitié à attendre des télécharge
 
 4. **Attends** : l'installateur télécharge et démarre tout (environ 8 Go de modèles d'IA).
 5. À la fin, il affiche :
-   - les adresses (tableau de bord, Home Assistant, OpenClaw) ;
+   - les adresses (Bêta, tri des documents, Home Assistant) ;
    - **le mot de passe Home Assistant** s'il l'a généré : **note-le** ;
    - **un QR code** pour la tablette : laisse le terminal ouvert, ou retrouve-le à l'étape F.
 
@@ -72,14 +73,12 @@ Compte environ **1 h 30** au total, dont la moitié à attendre des télécharge
 
 ## D. Vérifier que tout tourne (navigateur)
 
-1. Ouvre **`http://192.168.1.20:8800/tableau`**.
-2. Il demande un jeton. Pour l'obtenir, dans le terminal SSH :
-   ```bash
-   sudo /volume1/docker/beta/beta-nas/outils/fiche-api.sh --secrets
-   ```
-   Copie le **BETA_TOKEN** et colle-le dans la page.
-3. Dans **Services**, les points doivent être verts : home assistant, ollama, whisper, piper, presence
-   (et openclaw). Juste après l'installation, ollama peut rester rouge une ou deux minutes.
+1. Ouvre **`http://192.168.1.20:8800`** : c'est la page d'accueil de Bêta (accueil, discussion, maison).
+   À la maison, **aucun jeton n'est demandé**. Hors de chez toi, la page demande le **BETA_TOKEN**
+   (`sudo /volume1/docker/beta/beta-nas/outils/fiche-api.sh --secrets`).
+2. Dans **Services**, les points doivent être verts : Home Assistant, IA locale, écoute, voix, présence
+   et tri des documents. Juste après l'installation, l'IA locale peut rester rouge une ou deux minutes.
+3. L'état détaillé (chaque requête, temps de réponse) est sur **`http://192.168.1.20:8800/tableau`**.
 
 Un test rapide en ligne de commande : `sudo /volume1/docker/beta/beta-nas/outils/fiche-api.sh tester`.
 
@@ -160,8 +159,14 @@ Un test rapide en ligne de commande : `sudo /volume1/docker/beta/beta-nas/outils
 
 ## I. Le tri des documents (si tu as répondu « o »)
 
-1. Ouvre **`http://192.168.1.20:8802`** et colle le **BETA_TOKEN**.
-2. Dans **Ce qui est trié**, décoche les dossiers à laisser de côté (Photos, Archives…), puis **Enregistrer**.
+Le trieur voit **tous les volumes du NAS** (`volume1`, `volume3`…, y compris les dossiers personnels) et
+cherche les PDF, Word et fichiers texte partout. Les dossiers `Docker` et `Application` sont laissés de
+côté par défaut. Les documents validés sont rangés dans ton dossier `Document`. Ses fichiers de travail
+(propositions, journal, index) restent dans l'installation de Bêta : rien n'est écrit dans tes dossiers.
+
+1. Ouvre **`http://192.168.1.20:8800/tri/`** (ou le bouton **Valider les propositions** de l'accueil).
+2. Dans **Ce qui est trié**, ouvre `volume1`, `volume3`… et décoche les dossiers à laisser de côté
+   (Photos, Films, Archives…), puis **Enregistrer**.
 3. Clique sur **Préparer 5 documents maintenant**. Compte 1 à 2 minutes par document.
 4. Les propositions apparaissent avec un titre, un dossier et des tags. Corrige-les si besoin, puis
    **Valider** (le fichier est rangé dans la minute) ou **Garder où il est** (il ne sera plus proposé).
@@ -225,3 +230,4 @@ L'app utilise « Hey Jarvis » en attendant ton propre mot d'activation :
 | « Hey Jarvis » ne se déclenche pas | Réglages de l'app → Sensibilité 0,3 ou 0,4. La barre de l'écran principal montre le score |
 | Bêta ne te reconnaît jamais | Le prénom doit être identique dans l'app et dans `config.yaml`. Réenregistre ton visage. Sinon, essaie « Rotation caméra » = 90, 180 ou 270 |
 | Les réponses sont lentes | Normal sur le N100 pour la discussion : ajoute l'IA cloud ou un PC puissant (étape J) |
+| Des invités utilisent ton Wi-Fi | À la maison, Bêta ne demande pas de jeton. Mets tes invités sur le **réseau invité** de ta box, ou exige le jeton partout : `sudo …/fiche-api.sh regler BETA_LOCAL_LIBRE non` |

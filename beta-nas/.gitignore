@@ -4,3 +4,4 @@ data/
 __pycache__/
 FICHE-API.md
 *.sauvegarde
+docker-compose.override.yml

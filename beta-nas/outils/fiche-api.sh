@@ -9,16 +9,14 @@
 #   ./fiche-api.sh tester          appels de test sur chaque API
 #   ./fiche-api.sh regler CLE VAL  change un réglage du .env et redémarre le bon conteneur
 #   ./fiche-api.sh jeton           crée un nouveau BETA_TOKEN (à recopier dans la tablette)
-#   ./fiche-api.sh logs [nom]      journaux en direct (beta, beta-presence, openclaw…)
+#   ./fiche-api.sh logs [nom]      journaux en direct (beta, beta-presence, beta-trieur…)
 #
 # L'adresse IP du NAS est détectée toute seule ; pour la forcer : NAS_IP=192.168.1.20 ./fiche-api.sh
 
 set -uo pipefail
 
 DOSSIER_BETA="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DOSSIER_OPENCLAW="${DOSSIER_OPENCLAW:-$(cd "$DOSSIER_BETA/../openclaw-nas" 2>/dev/null && pwd)}"
 ENV_BETA="$DOSSIER_BETA/.env"
-ENV_OPENCLAW="${DOSSIER_OPENCLAW:+$DOSSIER_OPENCLAW/.env}"
 
 if [ -t 1 ]; then G=$'\e[1m'; V=$'\e[32m'; R=$'\e[31m'; D=$'\e[2m'; N=$'\e[0m'; else G= V= R= D= N=; fi
 
@@ -72,14 +70,12 @@ charger() {
   IP="${NAS_IP:-$(ip_nas)}" # NAS_IP=192.168.1.20 ./fiche-api.sh si la détection se trompe de carte réseau
   PORT_BETA=$(port_publie beta 8800 8800)
   PORT_PRESENCE=$(port_publie beta-presence 8801 8801)
-  PORT_OPENCLAW=$(port_publie openclaw 18789 18789)
   HA=$(lire "$ENV_BETA" HA_URL); HA=${HA:-http://host.docker.internal:8123}
   HA=${HA%/}; HA=${HA/host.docker.internal/$IP} # le Home Assistant du NAS, ou le tien ailleurs
   BETA_TOKEN=$(lire "$ENV_BETA" BETA_TOKEN)
   BETA_LECTURE_TOKEN=$(lire "$ENV_BETA" BETA_LECTURE_TOKEN)
   HA_TOKEN=$(lire "$ENV_BETA" HA_TOKEN)
   ANTHROPIC_API_KEY=$(lire "$ENV_BETA" ANTHROPIC_API_KEY)
-  OPENCLAW_GATEWAY_TOKEN=$(lire "$ENV_OPENCLAW" OPENCLAW_GATEWAY_TOKEN)
   BETA="http://$IP:$PORT_BETA"
 }
 
@@ -88,10 +84,10 @@ charger() {
 fiche() {
   charger
   local auth=(-H "Authorization: Bearer $BETA_TOKEN")
-  local e_beta e_pres e_oc e_ha e_ol e_wh e_pi
+  local e_beta e_pres e_tri e_ha e_ol e_wh e_pi
   e_beta=$(http_code "${auth[@]}" "$BETA/v1/stats")
   e_pres=$(http_code "${auth[@]}" "http://$IP:$PORT_PRESENCE/positions")
-  e_oc=$(http_code "http://$IP:$PORT_OPENCLAW/")
+  e_tri=$(http_code "${auth[@]}" "$BETA/v1/tri/etat")
   e_ha=$(http_code -H "Authorization: Bearer $HA_TOKEN" "$HA/api/")
   e_ol=$(http_code "http://127.0.0.1:11434/api/tags")
   tcp_ok 127.0.0.1 10300 && e_wh=ok || e_wh=ko
@@ -101,21 +97,20 @@ fiche() {
 ${G}FICHE DE CONNEXION · BÊTA${N}   NAS : ${G}$IP${N}   $(date '+%d/%m/%Y %H:%M')
 
 ${G}SERVICES${N}
-  Bêta (API tablette)  $BETA                    $(etat "$e_beta")
+  Bêta (page, API)     $BETA                    $(etat "$e_beta")
      tableau de bord   $BETA/tableau
      documentation     $BETA/docs
+  Tri des documents    $BETA/tri/               $(etat "$e_tri")
   Présence (caméras)   http://$IP:$PORT_PRESENCE                    $(etat "$e_pres")
-  OpenClaw             http://$IP:$PORT_OPENCLAW                   $(etat "$e_oc")
   Home Assistant       $HA                    $(etat "$e_ha")
   Ollama               http://127.0.0.1:11434 ${D}(NAS seulement)${N}  $(etat "$e_ol")
   Whisper              127.0.0.1:10300 ${D}(NAS seulement)${N}         $(etat "$e_wh")
   Piper                127.0.0.1:10200 ${D}(NAS seulement)${N}         $(etat "$e_pi")
 
 ${G}CODES${N} ${D}(./fiche-api.sh --secrets pour les voir en entier)${N}
-  BETA_TOKEN              $(masquer "$BETA_TOKEN")   ${D}Bêta, présence, tablette${N}
+  BETA_TOKEN              $(masquer "$BETA_TOKEN")   ${D}tablette, présence, accès hors de la maison${N}
   BETA_LECTURE_TOKEN      $(masquer "$BETA_LECTURE_TOKEN")   ${D}lecture seule, pour ton site (/v1/nas)${N}
   HA_TOKEN                $(masquer "$HA_TOKEN")   ${D}Home Assistant${N}
-  OPENCLAW_GATEWAY_TOKEN  $(masquer "$OPENCLAW_GATEWAY_TOKEN")   ${D}interface OpenClaw${N}
   ANTHROPIC_API_KEY       $(masquer "$ANTHROPIC_API_KEY")   ${D}IA web (automatisations)${N}
 
 ${G}COMMANDES${N} ${D}(d'abord : eval "\$(./fiche-api.sh env)")${N}
@@ -139,11 +134,12 @@ ${G}COMMANDES${N} ${D}(d'abord : eval "\$(./fiche-api.sh env)")${N}
   sudo docker exec beta-ollama ollama list
   sudo docker exec beta-ollama ollama ps
 
-  # OpenClaw : modèles, appareils à approuver
-  cd "${DOSSIER_OPENCLAW:-/volume1/docker/openclaw-nas}" && sudo docker compose run --rm openclaw-cli models list
-  cd "${DOSSIER_OPENCLAW:-/volume1/docker/openclaw-nas}" && sudo docker compose run --rm openclaw-cli devices list
+  # Tri des documents : état, journal du trieur
+  curl $BETA/v1/tri/etat
+  sudo docker logs --tail 30 beta-trieur
 
-${G}TABLETTE${N}  Réglages → Adresse du NAS : ${G}$BETA${N} · Jeton : BETA_TOKEN
+${G}À LA MAISON${N}  pas de jeton à saisir sur ${G}$BETA${N} (il est demandé seulement hors du réseau local)
+${G}TABLETTE${N}     Réglages → Adresse du NAS : ${G}$BETA${N} · Jeton : BETA_TOKEN
 EOF
 }
 
@@ -151,8 +147,8 @@ EOF
 
 cmd_env() {
   charger
-  printf 'export BETA_TOKEN=%q BETA_LECTURE_TOKEN=%q HA_TOKEN=%q OPENCLAW_GATEWAY_TOKEN=%q BETA_URL=%q\n' \
-    "$BETA_TOKEN" "$BETA_LECTURE_TOKEN" "$HA_TOKEN" "$OPENCLAW_GATEWAY_TOKEN" "$BETA"
+  printf 'export BETA_TOKEN=%q BETA_LECTURE_TOKEN=%q HA_TOKEN=%q BETA_URL=%q\n' \
+    "$BETA_TOKEN" "$BETA_LECTURE_TOKEN" "$HA_TOKEN" "$BETA"
 }
 
 cmd_fichier() {
@@ -189,12 +185,13 @@ cmd_tester() {
   echo "  ➜ « quelle heure est-il » : $r"
   echo "  Home Assistant : $(etat "$(http_code -H "Authorization: Bearer $HA_TOKEN" "$HA/api/")")"
   echo "  Présence       : $(etat "$(http_code -H "Authorization: Bearer $BETA_TOKEN" "http://$IP:$PORT_PRESENCE/positions")")"
+  echo "  Tri            : $(etat "$(http_code -H "Authorization: Bearer $BETA_TOKEN" "$BETA/v1/tri/etat")")"
   echo "  Ollama         : $(curl -s -m 3 http://127.0.0.1:11434/api/ps | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | paste -sd, - | sed 's/^$/aucun modèle chargé/')"
 }
 
 conteneur_de() { # quel conteneur redémarrer pour une clé
   case "$1" in
-    OPENCLAW_*) echo openclaw ;;
+    TRI_*|PUID|PGID) echo beta-trieur ;;
     BETA_TOKEN|HA_TOKEN|HA_URL) echo "beta beta-presence" ;;
     WHISPER_MODEL) echo beta-whisper ;;
     PIPER_VOICE) echo "beta-piper beta" ;;
@@ -207,7 +204,6 @@ cmd_regler() {
   [[ "$cle" =~ ^[A-Z][A-Z0-9_]*$ ]] && [ $# -ge 2 ] || {
     echo "Usage : ./fiche-api.sh regler CLE VALEUR   (ex : regler OLLAMA_MODEL qwen2.5:1.5b)"; exit 1; }
   local fichier="$ENV_BETA"
-  [[ "$cle" == OPENCLAW_* ]] && fichier="$ENV_OPENCLAW"
   [ -f "$fichier" ] || { echo "Fichier introuvable : $fichier"; exit 1; }
   cp "$fichier" "$fichier.sauvegarde"
   if grep -qE "^$cle=" "$fichier"; then
@@ -218,7 +214,7 @@ cmd_regler() {
     printf '%s=%s\n' "$cle" "$valeur" >> "$fichier"
   fi
   echo "✅ $cle mis à jour dans $fichier (ancienne version : $fichier.sauvegarde)"
-  local dossier="$DOSSIER_BETA"; [[ "$cle" == OPENCLAW_* ]] && dossier="$DOSSIER_OPENCLAW"
+  local dossier="$DOSSIER_BETA"
   if docker_ok; then
     for c in $(conteneur_de "$cle"); do
       local service; service=$(docker inspect -f '{{index .Config.Labels "com.docker.compose.service"}}' "$c" 2>/dev/null)
@@ -237,7 +233,7 @@ cmd_jeton() {
 
 cmd_logs() {
   if [ -n "${1:-}" ]; then docker logs -f --tail 50 "$1"; return; fi
-  (cd "$DOSSIER_BETA" && docker compose logs -f --tail 20 beta presence)
+  (cd "$DOSSIER_BETA" && docker compose logs -f --tail 20 beta presence trieur)
 }
 
 case "${1:-}" in
