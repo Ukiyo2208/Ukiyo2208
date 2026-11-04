@@ -139,8 +139,8 @@ ${G}COMMANDES${N} ${D}(d'abord : eval "\$(./fiche-api.sh env)")${N}
   sudo docker exec beta-ollama ollama ps
 
   # OpenClaw : modèles, appareils à approuver
-  cd ${DOSSIER_OPENCLAW:-/volume1/docker/openclaw-nas} && sudo docker compose run --rm openclaw-cli models list
-  cd ${DOSSIER_OPENCLAW:-/volume1/docker/openclaw-nas} && sudo docker compose run --rm openclaw-cli devices list
+  cd "${DOSSIER_OPENCLAW:-/volume1/docker/openclaw-nas}" && sudo docker compose run --rm openclaw-cli models list
+  cd "${DOSSIER_OPENCLAW:-/volume1/docker/openclaw-nas}" && sudo docker compose run --rm openclaw-cli devices list
 
 ${G}TABLETTE${N}  Réglages → Adresse du NAS : ${G}$BETA${N} · Jeton : BETA_TOKEN
 EOF
