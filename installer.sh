@@ -193,8 +193,16 @@ fi
 etape "Démarrage de Bêta (première fois : 5 à 15 minutes)"
 cd "$DEST/beta-nas"
 mkdir -p data
-"${DC[@]}" up -d --build --quiet-pull 2>&1 | grep -vE "^\s*$" | tail -n 5 || true
+JOURNAL="$DEST/installation-beta.log"
+echo "  (journal détaillé : $JOURNAL)"
+if ! "${DC[@]}" up -d --build > "$JOURNAL" 2>&1; then
+  echo; tail -n 25 "$JOURNAL" | sed 's/^/    /'
+  echec "Le démarrage de Bêta a échoué (message ci-dessus). Envoie-le pour qu'on corrige."
+fi
 "${DC[@]}" ps --format '  {{.Name}} : {{.Status}}' 2>/dev/null || "${DC[@]}" ps
+docker inspect -f '{{.State.Running}}' beta 2>/dev/null | grep -q true \
+  || { docker logs --tail 25 beta 2>&1 | sed 's/^/    /'; echec "Bêta ne reste pas démarré (journal ci-dessus)."; }
+ok "Bêta est démarré"
 
 etape "Home Assistant"
 if [ -z "$(env_lire "$ENV_BETA" HA_TOKEN)" ]; then
@@ -266,7 +274,12 @@ if [ "$OPENCLAW" = o ]; then
     cat AGENTS-tri-documents.md >> data/workspace/AGENTS.md && chown 1000:1000 data/workspace/AGENTS.md
     ok "Consigne de tri des documents ajoutée"
   fi
-  "${DC[@]}" up -d --build >/dev/null 2>&1 && ok "OpenClaw démarré" || avertir "Démarrage d'OpenClaw à vérifier : cd $DEST/openclaw-nas && sudo docker compose up -d"
+  if "${DC[@]}" up -d --build > "$DEST/installation-openclaw.log" 2>&1; then
+    ok "OpenClaw démarré"
+  else
+    tail -n 15 "$DEST/installation-openclaw.log" | sed 's/^/    /'
+    avertir "Démarrage d'OpenClaw à vérifier (journal : $DEST/installation-openclaw.log)"
+  fi
   attendre "OpenClaw" 180 curl -sf --noproxy '*' -o /dev/null http://127.0.0.1:18789/ || avertir "OpenClaw démarre lentement"
   if [ ! -f data/.tri-programme ]; then
     "${DC[@]}" run --rm -T openclaw-cli automations add --name "Tri des documents" --cron "0 1-6 * * *" \
