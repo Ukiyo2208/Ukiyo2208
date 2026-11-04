@@ -205,7 +205,8 @@ L'app utilise « Hey Jarvis » en attendant ton propre mot d'activation :
 
 | Pour… | Commande ou adresse |
 |---|---|
-| Voir l'état et l'utilisation | `http://192.168.1.20:8800/tableau` |
+| **La page d'accueil de Bêta** : discuter, piloter la maison, suivre le tri | `http://192.168.1.20:8800` |
+| Voir l'état détaillé et l'utilisation | `http://192.168.1.20:8800/tableau` |
 | Tous les codes et commandes | `sudo /volume1/docker/beta/beta-nas/outils/fiche-api.sh` |
 | Suivre l'API en direct | `sudo …/fiche-api.sh suivre` |
 | Voir les journaux | `sudo …/fiche-api.sh logs` |

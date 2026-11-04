@@ -88,13 +88,16 @@ if _reglages_demarrage.cors_origines:
     )
 
 statistiques = st.Statistiques()
-_PAS_SUIVIS = ("/static", "/favicon.ico", "/v1/stats", "/v1/nas", "/v1/appairage", "/tableau", "/docs", "/openapi.json")
+_PAS_SUIVIS = (
+    "/static", "/favicon.ico", "/v1/stats", "/v1/nas", "/v1/appairage", "/v1/tri/etat", "/v1/maison/appareils",
+    "/tableau", "/docs", "/openapi.json",
+)
 
 
 @app.middleware("http")
 async def suivre_utilisation(request: Request, appel_suivant):
     """Compte chaque appel de l'API : temps de réponse, statut, client, et ce que Bêta a fait."""
-    if request.url.path.startswith(_PAS_SUIVIS):
+    if request.url.path == "/" or request.url.path.startswith(_PAS_SUIVIS):
         return await appel_suivant(request)
     infos: dict = {}
     st.demande_en_cours.set(infos)
@@ -175,6 +178,7 @@ class DemandeTexte(BaseModel):
     confiance: float = 1.0
     piece: str | None = None
     voix: bool = False
+    mode: str | None = None  # page web : « discussion » ou « maison »
 
 
 def _reprendre(demande_id: str) -> _Demande:
@@ -303,7 +307,7 @@ async def texte(demande: DemandeTexte):
     """Même chose sans audio : pratique pour tester depuis un navigateur ou un terminal."""
     return await _repondre(
         demande.texte, demande.voix, time.monotonic(), demande.piece,
-        personne=demande.personne, confiance=demande.confiance,
+        personne=demande.personne, confiance=demande.confiance, mode=demande.mode,
     )
 
 
@@ -381,6 +385,62 @@ async def _publier_en_boucle() -> None:
 async def tableau():
     """Tableau de bord : la page demande le jeton, puis interroge /v1/stats toutes les 2 secondes."""
     return HTMLResponse((STATIQUE / "tableau.html").read_text(encoding="utf-8"))
+
+
+# ---------------------------------------------------------------- Page d'accueil (http://IP_DU_NAS:8800)
+
+APPAREILS_PILOTABLES = ["light", "switch", "cover", "fan", "media_player", "scene", "input_boolean"]
+
+
+class Bascule(BaseModel):
+    entite: str
+
+
+@app.get("/", include_in_schema=False)
+async def accueil():
+    return HTMLResponse((STATIQUE / "accueil.html").read_text(encoding="utf-8"))
+
+
+@app.get("/v1/maison/appareils", dependencies=[Depends(verifier_jeton)])
+async def appareils_maison():
+    """Lumières, prises, volets… avec leur état et leur pièce (les serrures n'y sont jamais)."""
+    try:
+        return await etat["routeur"].ha.etats(APPAREILS_PILOTABLES)
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail="Home Assistant injoignable") from e
+
+
+@app.post("/v1/maison/basculer", dependencies=[Depends(verifier_jeton)])
+async def basculer(demande: Bascule):
+    if demande.entite.split(".", 1)[0] not in APPAREILS_PILOTABLES:
+        raise HTTPException(status_code=400, detail="Appareil non pilotable depuis la page")
+    try:
+        await etat["routeur"].ha.basculer(demande.entite)
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail="Home Assistant a refusé") from e
+    return {"ok": True}
+
+
+async def _tri(methode: str, chemin: str, **kwargs) -> dict:
+    s: cfg.Settings = etat["settings"]
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.request(methode, f"{s.tri_url}{chemin}", headers={"Authorization": f"Bearer {s.beta_token}"}, **kwargs)
+            r.raise_for_status()
+            return r.json()
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail="Tri des documents injoignable") from e
+
+
+@app.get("/v1/tri/etat", dependencies=[Depends(verifier_jeton)])
+async def etat_tri():
+    """État du tri des documents (servi par le trieur, port 8802)."""
+    return await _tri("GET", "/api/etat")
+
+
+@app.post("/v1/tri/lancer", dependencies=[Depends(verifier_jeton)])
+async def lancer_tri():
+    return await _tri("POST", "/api/lancer", json={"nombre": 5})
 
 
 @app.get("/sante")

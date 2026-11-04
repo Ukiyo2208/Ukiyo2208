@@ -101,6 +101,7 @@ class Settings:
     publication_jeton: str = ""
     publication_intervalle: int = 60
     openclaw_url: str = ""
+    tri_url: str = "http://host.docker.internal:8802"  # page du trieur de documents
 
     # Présence (service beta-presence + caméras)
     presence_url: str = "http://presence:8801"
@@ -152,6 +153,7 @@ def charger(chemin_config: str | None = None) -> Settings:
         publication_jeton=_env("PUBLICATION_JETON"),
         publication_intervalle=max(15, int(_env("PUBLICATION_INTERVALLE", "60") or 60)),
         openclaw_url=_env("OPENCLAW_URL").rstrip("/"),
+        tri_url=_env("TRI_URL", "http://host.docker.internal:8802").rstrip("/"),
     )
 
     chemin = Path(chemin_config or _env("BETA_CONFIG", "/config/config.yaml"))

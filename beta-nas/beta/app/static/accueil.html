@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f3a">
+<title>Bêta</title>
+<link rel="icon" href="/static/favicon.png">
+<style>
+  :root {
+    --fond: #0b0f3a; --fond2: #10155a; --carte: rgba(27, 33, 96, .72); --bord: rgba(120, 140, 255, .18);
+    --texte: #eef0ff; --doux: #a3abdb; --cyan: #56c8ff; --violet: #b07cff; --rose: #ff7ad9;
+    --ok: #4ade80; --ko: #f87171; --rayon: 18px;
+    --degrade: linear-gradient(135deg, #b07cff 0%, #6f8bff 50%, #56c8ff 100%);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    color: var(--texte); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: radial-gradient(1200px 600px at 10% -10%, #2a1d7a 0%, transparent 60%),
+                radial-gradient(900px 500px at 110% 10%, #0d4a7a 0%, transparent 55%), var(--fond);
+    background-attachment: fixed;
+  }
+  button, input { font: inherit; color: inherit; }
+  .app { max-width: 1100px; margin: 0 auto; padding: 18px 16px 110px; }
+
+  /* En-tête */
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  header img { width: 46px; height: 46px; border-radius: 50%; box-shadow: 0 0 24px rgba(150, 120, 255, .55); }
+  header h1 { margin: 0; font-size: 22px; letter-spacing: .02em; }
+  header .sous { color: var(--doux); font-size: 13px; }
+  header .etat-global { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--doux); }
+  .point { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px var(--ok); flex: none; }
+  .point.ko { background: var(--ko); box-shadow: 0 0 10px var(--ko); }
+
+  /* Onglets : en haut sur ordinateur, en bas sur téléphone */
+  nav.onglets { display: flex; gap: 6px; background: var(--carte); border: 1px solid var(--bord); border-radius: 999px;
+                padding: 5px; width: fit-content; margin-bottom: 18px; backdrop-filter: blur(12px); }
+  nav.onglets button { border: 0; background: none; padding: 9px 18px; border-radius: 999px; cursor: pointer; color: var(--doux);
+                       display: flex; gap: 8px; align-items: center; font-weight: 600; }
+  nav.onglets button[aria-selected=true] { background: var(--degrade); color: #0b0f3a; }
+  @media (max-width: 700px) {
+    nav.onglets { position: fixed; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); width: auto;
+                  justify-content: space-around; z-index: 10; margin: 0; }
+    nav.onglets button { flex-direction: column; gap: 2px; padding: 6px 12px; font-size: 12px; }
+    header .etat-global span { display: none; }
+  }
+  .icone { width: 18px; height: 18px; flex: none; }
+
+  section.vue { display: none; animation: apparaitre .25s ease; }
+  section.vue.active { display: block; }
+  @keyframes apparaitre { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: var(--rayon); padding: 18px; backdrop-filter: blur(12px); }
+  h2 { font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--doux); margin: 0 0 12px; font-weight: 600; }
+  .grille { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+  /* Accueil */
+  .bonjour { font-size: 30px; font-weight: 700; margin: 6px 0 2px; }
+  .bonjour b { background: var(--degrade); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .services { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pastille { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; background: rgba(255,255,255,.05);
+              border: 1px solid var(--bord); font-size: 13px; }
+  .chiffres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 6px 0 14px; }
+  .chiffre { background: rgba(255,255,255,.04); border-radius: 14px; padding: 12px; }
+  .chiffre b { display: block; font-size: 26px; background: var(--degrade); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .chiffre span { color: var(--doux); font-size: 12px; }
+  .barre-tri { height: 8px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; margin-bottom: 10px; }
+  .barre-tri i { display: block; height: 100%; background: var(--degrade); transition: width .6s; }
+  .ligne-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .bouton { border: 0; border-radius: 12px; padding: 10px 16px; cursor: pointer; font-weight: 600; text-decoration: none;
+            display: inline-flex; gap: 8px; align-items: center; }
+  .bouton.principal { background: var(--degrade); color: #0b0f3a; }
+  .bouton.secondaire { background: rgba(255,255,255,.07); border: 1px solid var(--bord); color: var(--texte); }
+  .doux { color: var(--doux); font-size: 13px; }
+  .analyse { display: flex; gap: 8px; align-items: center; color: var(--cyan); font-size: 13px; }
+  .analyse::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+
+  /* Discussions */
+  .chat { display: flex; flex-direction: column; height: calc(100vh - 210px); min-height: 380px; }
+  @media (max-width: 700px) { .chat { height: calc(100vh - 230px); } }
+  .messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 2px 12px; scroll-behavior: smooth; }
+  .bulle { max-width: min(78%, 640px); padding: 11px 15px; border-radius: 18px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .bulle.moi { align-self: flex-end; background: var(--degrade); color: #0b0f3a; border-bottom-right-radius: 6px; }
+  .bulle.beta { align-self: flex-start; background: rgba(255,255,255,.07); border: 1px solid var(--bord); border-bottom-left-radius: 6px; }
+  .bulle .qui { display: block; font-size: 11px; color: var(--doux); margin-top: 4px; }
+  .points-ecriture { display: inline-flex; gap: 4px; }
+  .points-ecriture i { width: 7px; height: 7px; border-radius: 50%; background: var(--doux); animation: pulse 1s infinite; }
+  .points-ecriture i:nth-child(2) { animation-delay: .15s; } .points-ecriture i:nth-child(3) { animation-delay: .3s; }
+  .saisie { display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,.06); border: 1px solid var(--bord);
+            border-radius: 16px; padding: 6px 6px 6px 14px; }
+  .saisie input { flex: 1; min-width: 0; width: 100%; border: 0; background: none; outline: none; padding: 8px 0; }
+  .saisie button { border: 0; border-radius: 12px; width: 42px; height: 42px; cursor: pointer; display: grid; place-items: center; flex: none; }
+  .saisie .envoyer { background: var(--degrade); color: #0b0f3a; }
+  .saisie .voix { background: none; color: var(--doux); }
+  .saisie .voix[aria-pressed=true] { color: var(--cyan); }
+  .vide { margin: auto; text-align: center; color: var(--doux); max-width: 360px; }
+  .vide img { width: 72px; opacity: .9; margin-bottom: 8px; }
+  .suggestions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .suggestion { border: 1px solid var(--bord); background: rgba(255,255,255,.04); border-radius: 999px; padding: 6px 12px;
+                cursor: pointer; font-size: 13px; color: var(--texte); }
+
+  /* Maison */
+  .maison { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+  .maison > *, .grille > * { min-width: 0; }
+  @media (max-width: 900px) { .maison { grid-template-columns: 1fr; } .maison .chat { height: 420px; } }
+  .piece h3 { margin: 14px 0 8px; font-size: 14px; color: var(--doux); font-weight: 600; }
+  .appareils { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .appareil { text-align: left; border: 1px solid var(--bord); background: rgba(255,255,255,.04); border-radius: 16px; padding: 12px;
+              cursor: pointer; display: flex; flex-direction: column; gap: 6px; min-height: 92px; transition: transform .1s, background .2s; }
+  .appareil:active { transform: scale(.97); }
+  .appareil .nom { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+  .appareil .etat { font-size: 12px; color: var(--doux); }
+  .appareil.allume { background: linear-gradient(135deg, rgba(176,124,255,.35), rgba(86,200,255,.25)); border-color: rgba(150,170,255,.5); }
+  .appareil.allume .etat { color: var(--texte); }
+
+  /* Connexion */
+  .connexion { max-width: 420px; margin: 12vh auto; text-align: center; }
+  .connexion img { width: 96px; border-radius: 50%; box-shadow: 0 0 40px rgba(150,120,255,.6); }
+  .connexion input { width: 100%; margin: 14px 0 10px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--bord);
+                     background: rgba(255,255,255,.06); outline: none; }
+  .connexion label { display: flex; gap: 8px; justify-content: center; color: var(--doux); font-size: 13px; margin-bottom: 14px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="connexion" id="connexion" hidden>
+  <img src="/static/logo.png" alt="Logo de Bêta">
+  <h1>Bêta</h1>
+  <p class="doux">Colle ton jeton (BETA_TOKEN) pour entrer.</p>
+  <form id="formulaire">
+    <input id="jeton" type="password" placeholder="BETA_TOKEN" autocomplete="off">
+    <label><input type="checkbox" id="souvenir"> Se souvenir de moi sur cet appareil</label>
+    <button class="bouton principal" style="width:100%;justify-content:center">Entrer</button>
+  </form>
+  <p class="doux" id="erreur-connexion"></p>
+</div>
+
+<div class="app" id="app" hidden>
+  <header>
+    <img src="/static/logo.png" alt="">
+    <div>
+      <h1>Bêta</h1>
+      <div class="sous">L'assistant de la maison</div>
+    </div>
+    <div class="etat-global" id="etat-global"><i class="point"></i><span>Tout fonctionne</span></div>
+  </header>
+
+  <nav class="onglets" role="tablist">
+    <button role="tab" aria-selected="true" data-vue="accueil">
+      <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Accueil</button>
+    <button role="tab" aria-selected="false" data-vue="discussion">
+      <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Discussion</button>
+    <button role="tab" aria-selected="false" data-vue="maison">
+      <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4.9 1 .9 1.6V16h5.2v-.5c0-.6.3-1.2.9-1.6A6 6 0 0 0 12 3z"/></svg>Maison</button>
+  </nav>
+
+  <!-- Accueil -->
+  <section class="vue active" id="vue-accueil">
+    <div class="bonjour" id="bonjour"></div>
+    <p class="doux" id="date"></p>
+    <div class="grille" style="margin-top:16px">
+      <div class="carte">
+        <h2>Tri des documents</h2>
+        <div id="tri"><p class="doux">Chargement…</p></div>
+      </div>
+      <div class="carte">
+        <h2>Services</h2>
+        <div class="services" id="services"></div>
+        <p class="doux" id="ia-taches" style="margin-top:14px"></p>
+        <div class="ligne-actions" style="margin-top:6px">
+          <a class="bouton secondaire" href="/tableau">Tableau de bord détaillé</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Discussion -->
+  <section class="vue" id="vue-discussion">
+    <div class="carte chat">
+      <div class="messages" id="messages-discussion"></div>
+      <div class="suggestions" id="suggestions-discussion"></div>
+      <form class="saisie" data-mode="discussion">
+        <input placeholder="Écris à Bêta…" autocomplete="off" aria-label="Message à Bêta">
+        <button type="button" class="voix" aria-pressed="false" title="Lire les réponses à voix haute">
+          <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
+        <button class="envoyer" title="Envoyer">
+          <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Maison -->
+  <section class="vue" id="vue-maison">
+    <div class="maison">
+      <div class="carte chat">
+        <div class="messages" id="messages-maison"></div>
+        <div class="suggestions" id="suggestions-maison"></div>
+        <form class="saisie" data-mode="maison">
+          <input placeholder="Une commande : « allume le salon »…" autocomplete="off" aria-label="Commande pour la maison">
+          <button type="button" class="voix" aria-pressed="false" title="Lire les réponses à voix haute">
+            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
+          <button class="envoyer" title="Envoyer">
+            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </form>
+      </div>
+      <div class="carte">
+        <h2>Appareils</h2>
+        <div id="appareils"><p class="doux">Chargement…</p></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const e = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const memoire = { lire(k) { try { return localStorage.getItem(k) ?? sessionStorage.getItem(k); } catch (_) { return null; } },
+                    ecrire(k, v, durable) { try { (durable ? localStorage : sessionStorage).setItem(k, v); } catch (_) {} },
+                    oublier(k) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (_) {} } };
+  let jeton = memoire.lire("beta_jeton") || "";
+
+  async function api(chemin, options = {}) {
+    const r = await fetch(chemin, { ...options, headers: { Authorization: `Bearer ${jeton}`, "Content-Type": "application/json" } });
+    if (r.status === 401) { memoire.oublier("beta_jeton"); jeton = ""; afficherConnexion("Jeton refusé."); throw new Error("401"); }
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || `erreur ${r.status}`);
+    return r.json();
+  }
+
+  function afficherConnexion(message = "") {
+    $("app").hidden = true; $("connexion").hidden = false; $("erreur-connexion").textContent = message;
+  }
+
+  $("formulaire").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    jeton = $("jeton").value.trim();
+    try { await api("/v1/stats"); } catch (_) { return; }
+    memoire.ecrire("beta_jeton", jeton, $("souvenir").checked);
+    demarrer();
+  });
+
+  // ---------------------------------------------------------------- Onglets
+  document.querySelectorAll("nav.onglets button").forEach((b) => b.addEventListener("click", () => ouvrir(b.dataset.vue)));
+  function ouvrir(vue) {
+    if (!["accueil", "discussion", "maison"].includes(vue)) vue = "accueil";
+    document.querySelectorAll("nav.onglets button").forEach((b) => b.setAttribute("aria-selected", b.dataset.vue === vue));
+    document.querySelectorAll("section.vue").forEach((s) => s.classList.toggle("active", s.id === `vue-${vue}`));
+    try { history.replaceState(null, "", `#${vue}`); } catch (_) {}
+    if (vue === "maison") chargerAppareils();
+    document.querySelector(`#vue-${vue} input`)?.focus({ preventScroll: true });
+  }
+
+  // ---------------------------------------------------------------- Accueil
+  function saluer() {
+    const h = new Date().getHours();
+    const mot = h < 5 ? "Bonne nuit" : h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
+    $("bonjour").innerHTML = `${mot}, <b>bienvenue</b>`;
+    $("date").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  }
+
+  const NOMS_SERVICES = { home_assistant: "Home Assistant", ollama: "IA locale", whisper: "Écoute", piper: "Voix", presence: "Présence", openclaw: "OpenClaw" };
+  const NOMS_TACHES = { comprendre: "comprendre", conversation: "discussion", automatisations: "automatisations" };
+
+  async function chargerAccueil() {
+    try {
+      const d = await api("/v1/stats");
+      const services = Object.entries(d.services).filter(([n]) => !n.startsWith("ia ·"));
+      const pannes = services.filter(([, s]) => !s.ok);
+      $("services").innerHTML = services.map(([n, s]) =>
+        `<span class="pastille"><i class="point ${s.ok ? "" : "ko"}"></i>${e(NOMS_SERVICES[n] || n)}</span>`).join("");
+      $("etat-global").innerHTML = `<i class="point ${pannes.length ? "ko" : ""}"></i><span>${pannes.length ? `${pannes.length} service(s) en panne` : "Tout fonctionne"}</span>`;
+      $("ia-taches").textContent = Object.entries(d.services).filter(([n]) => n.startsWith("ia ·"))
+        .map(([n, s]) => `${NOMS_TACHES[n.slice(5)] || n.slice(5)} : ${s.detail}`).join(" · ");
+    } catch (_) {}
+    try {
+      const t = await api("/v1/tri/etat");
+      const total = t.en_attente + t.propositions + t.ranges + t.gardes.length;
+      const fait = t.ranges + t.gardes.length;
+      const p = t.proposeur;
+      $("tri").innerHTML = `
+        <div class="chiffres">
+          <div class="chiffre"><b>${t.en_attente}</b><span>à analyser</span></div>
+          <div class="chiffre"><b>${t.propositions}</b><span>à valider</span></div>
+          <div class="chiffre"><b>${t.ranges}</b><span>rangés</span></div>
+        </div>
+        <div class="barre-tri" title="${fait} sur ${total}"><i style="width:${total ? Math.round(100 * fait / total) : 0}%"></i></div>
+        ${p && p.en_cours ? `<p class="analyse">Analyse de ${e(p.en_cours.fichier.split("/").pop())} (${p.en_cours.depuis_s} s)</p>`
+          : `<p class="doux">${p ? `Automatique de ${p.heures[0]} h à ${p.heures[p.heures.length - 1] + 1} h · modèle ${e(p.modele)}` : ""}</p>`}
+        <div class="ligne-actions">
+          <button class="bouton secondaire" id="preparer">Préparer 5 documents</button>
+          <a class="bouton principal" href="${location.protocol}//${location.hostname}:8802/">Valider les propositions</a>
+        </div>`;
+      $("preparer").addEventListener("click", async () => {
+        await api("/v1/tri/lancer", { method: "POST" }).catch(() => {});
+        chargerAccueil();
+      });
+    } catch (_) {
+      $("tri").innerHTML = `<p class="doux">Le tri des documents n'est pas installé ou ne répond pas.</p>`;
+    }
+  }
+
+  // ---------------------------------------------------------------- Discussions
+  const SUGGESTIONS = {
+    discussion: ["Raconte-moi une blague", "Une idée de recette avec des pâtes", "Explique-moi les marées"],
+    maison: ["Quelle heure est-il ?", "Allume la lumière du salon", "Éteins tout au salon"],
+  };
+  const historique = { discussion: [], maison: [] };
+  try { Object.assign(historique, JSON.parse(sessionStorage.getItem("beta_historique") || "{}")); } catch (_) {}
+
+  function bulle(mode, qui, texte, detail = "") {
+    const div = document.createElement("div");
+    div.className = `bulle ${qui}`;
+    div.innerHTML = `${e(texte)}${detail ? `<span class="qui">${e(detail)}</span>` : ""}`;
+    $(`messages-${mode}`).append(div);
+    div.scrollIntoView({ block: "end" });
+    return div;
+  }
+
+  function afficherHistorique(mode) {
+    const zone = $(`messages-${mode}`);
+    zone.replaceChildren();
+    if (!historique[mode].length) {
+      zone.innerHTML = `<div class="vide"><img src="/static/logo.png" alt=""><p>${mode === "discussion"
+        ? "Pose-moi une question, demande un conseil ou une idée."
+        : "Donne-moi une commande pour la maison, ou touche un appareil."}</p></div>`;
+    }
+    historique[mode].forEach((m) => bulle(mode, m.qui, m.texte, m.detail));
+    $(`suggestions-${mode}`).innerHTML = SUGGESTIONS[mode].map((s) => `<button class="suggestion" type="button">${e(s)}</button>`).join("");
+    $(`suggestions-${mode}`).querySelectorAll("button").forEach((b) => b.addEventListener("click", () => envoyer(mode, b.textContent)));
+  }
+
+  function lireVoix(base64) {
+    try { new Audio(`data:audio/wav;base64,${base64}`).play(); } catch (_) {}
+  }
+
+  const QUI_A_REPONDU = { home_assistant: "Home Assistant", "llm_local+home_assistant": "IA locale + Home Assistant",
+                          "conversation:rapide": "IA locale", "conversation:puissant": "Modèle puissant", "conversation:cloud": "Claude",
+                          incompris: "Bêta", refus: "Bêta", mails: "Mails" };
+
+  async function envoyer(mode, texte) {
+    texte = texte.trim();
+    if (!texte) return;
+    if (!historique[mode].length) $(`messages-${mode}`).replaceChildren();
+    historique[mode].push({ qui: "moi", texte });
+    bulle(mode, "moi", texte);
+    const attente = bulle(mode, "beta", "");
+    attente.innerHTML = `<span class="points-ecriture"><i></i><i></i><i></i></span>`;
+    const voix = document.querySelector(`form[data-mode=${mode}] .voix`).getAttribute("aria-pressed") === "true";
+    const debut = performance.now();
+    try {
+      const r = await api("/v1/texte", { method: "POST", body: JSON.stringify({ texte, mode, voix }) });
+      const detail = `${QUI_A_REPONDU[r.route] || r.route} · ${((performance.now() - debut) / 1000).toFixed(1)} s`;
+      attente.remove();
+      historique[mode].push({ qui: "beta", texte: r.reponse, detail });
+      bulle(mode, "beta", r.reponse, detail);
+      if (voix && r.audio_wav_base64) lireVoix(r.audio_wav_base64);
+      if (mode === "maison") setTimeout(chargerAppareils, 800);
+    } catch (err) {
+      attente.remove();
+      if (err.message !== "401") bulle(mode, "beta", `Je n'ai pas pu répondre (${err.message}).`);
+    }
+    historique[mode] = historique[mode].slice(-40);
+    try { sessionStorage.setItem("beta_historique", JSON.stringify(historique)); } catch (_) {}
+  }
+
+  document.querySelectorAll("form.saisie").forEach((f) => {
+    f.addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const champ = f.querySelector("input");
+      envoyer(f.dataset.mode, champ.value);
+      champ.value = "";
+    });
+    f.querySelector(".voix").addEventListener("click", (ev) => {
+      const b = ev.currentTarget;
+      b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true");
+    });
+  });
+
+  // ---------------------------------------------------------------- Appareils
+  const ALLUME = new Set(["on", "open", "opening", "playing"]);
+  const LIBELLES = { on: "Allumé", off: "Éteint", open: "Ouvert", closed: "Fermé", opening: "Ouverture…", closing: "Fermeture…",
+                     playing: "En lecture", paused: "En pause", idle: "Inactif", unavailable: "Indisponible" };
+
+  async function chargerAppareils() {
+    let liste;
+    try { liste = await api("/v1/maison/appareils"); }
+    catch (err) { if (err.message !== "401") $("appareils").innerHTML = `<p class="doux">${e(err.message)}</p>`; return; }
+    if (!liste.length) { $("appareils").innerHTML = `<p class="doux">Aucun appareil pilotable dans Home Assistant.</p>`; return; }
+    const pieces = {};
+    liste.forEach((a) => (pieces[a.piece || "Sans pièce"] ||= []).push(a));
+    $("appareils").innerHTML = Object.keys(pieces).sort((a, b) => (a === "Sans pièce") - (b === "Sans pièce") || a.localeCompare(b))
+      .map((p) => `<div class="piece"><h3>${e(p)}</h3><div class="appareils">${pieces[p].map((a) => `
+        <button class="appareil ${ALLUME.has(a.etat) ? "allume" : ""}" data-id="${e(a.id)}" ${a.etat === "unavailable" ? "disabled" : ""}>
+          <span class="nom">${e(a.nom)}</span><span class="etat">${e(LIBELLES[a.etat] || a.etat)}</span></button>`).join("")}</div></div>`).join("");
+    $("appareils").querySelectorAll(".appareil").forEach((b) => b.addEventListener("click", async () => {
+      b.classList.toggle("allume");
+      try { await api("/v1/maison/basculer", { method: "POST", body: JSON.stringify({ entite: b.dataset.id }) }); } catch (_) {}
+      setTimeout(chargerAppareils, 700);
+    }));
+  }
+
+  // ---------------------------------------------------------------- Démarrage
+  function demarrer() {
+    $("connexion").hidden = true; $("app").hidden = false;
+    saluer(); afficherHistorique("discussion"); afficherHistorique("maison");
+    chargerAccueil();
+    ouvrir((location.hash || "#accueil").slice(1));
+    setInterval(() => { if (!document.hidden) chargerAccueil(); }, 10000);
+    setInterval(() => { if (!document.hidden && $("vue-maison").classList.contains("active")) chargerAppareils(); }, 15000);
+  }
+
+  if (jeton) api("/v1/stats").then(demarrer).catch(() => {}); else afficherConnexion();
+</script>
+</body>
+</html>

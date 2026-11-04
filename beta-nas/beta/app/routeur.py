@@ -48,6 +48,9 @@ _VISAGE_OBLIGATOIRE = "Pour ça, j'ai besoin de voir ton visage. Mets-toi face �
 _REGARDE_MOI = "Regarde la tablette une seconde."
 _POUR_QUI = "C'est pour qui ?"
 _MAISON = "maison"
+# Modes de la page web
+DISCUSSION = "discussion"
+MAISON = "maison"
 DUREE_CONFIRMATION = 120  # secondes pour dire « oui »
 MEMOIRE_DISCUSSION = 10 * 60  # une discussion est oubliée après 10 minutes de silence
 MESSAGES_MEMORISES = 12
@@ -94,9 +97,11 @@ class Routeur:
         niveau: str | None = None,
         piece: str | None = None,
         etape: str = FINALE,
+        mode: str | None = None,
     ) -> Resultat:
         """`personne` + `confiance` : visage vu par la tablette. `niveau` force la façon dont la
-        personne a été reconnue (présence, déclaration). `etape` : ce qu'il reste à essayer."""
+        personne a été reconnue (présence, déclaration). `etape` : ce qu'il reste à essayer.
+        `mode` (page web) : « discussion » parle directement à l'IA, « maison » ne fait que piloter."""
         texte = texte.strip()
         if not texte:
             return Resultat("Je n'ai rien entendu.", "vide")
@@ -109,6 +114,11 @@ class Routeur:
 
         async def manque(capacite: str, refus: str) -> Resultat:
             return await self._identifier(texte, capacite, refus, personne, niveau, piece, etape)
+
+        if mode == DISCUSSION:
+            if cfg.QUESTIONS not in capacites:
+                return await manque(cfg.QUESTIONS, "Désolé, je ne peux pas répondre à ça pour toi.")
+            return await self._discuter(texte, personne)
 
         # Une seule confirmation en attente pour la maison : le « oui » arrive sans visage
         attente = self._attentes.pop(_MAISON, None)
@@ -146,6 +156,9 @@ class Routeur:
             if cfg.AUTOMATISATIONS not in capacites:
                 return await manque(cfg.AUTOMATISATIONS, "Désolé, tu n'as pas le droit de créer des automatisations.")
             return await self._proposer_automatisation(texte)
+
+        if mode == MAISON:
+            return Resultat("Je n'ai pas compris la commande. Essaie par exemple « allume la lumière du salon ».", "incompris")
 
         # Tout le reste est une discussion : questions, conseils, et ce que le tri n'a pas su classer
         if cfg.QUESTIONS not in capacites:

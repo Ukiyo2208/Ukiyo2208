@@ -67,6 +67,25 @@ class HomeAssistant:
             for a in json.loads(r.text)
         ]
 
+    async def etats(self, domaines: list[str]) -> list[dict]:
+        """Appareils pilotables avec leur état et leur pièce, pour la page web."""
+        template = (
+            "[{%- for s in states if s.domain in DOMAINES -%}"
+            '{"id": {{ s.entity_id | tojson }}, "nom": {{ s.name | tojson }}, "etat": {{ s.state | tojson }}, '
+            '"piece": {{ (area_name(s.entity_id) or "") | tojson }}}'
+            "{%- if not loop.last %},{% endif -%}{%- endfor -%}]"
+        ).replace("DOMAINES", json.dumps(domaines))
+        r = await self._client.post("/api/template", json={"template": template})
+        r.raise_for_status()
+        return json.loads(r.text)
+
+    async def basculer(self, entite: str) -> None:
+        """Allume / éteint (ou ouvre / ferme) un appareil."""
+        domaine = entite.split(".", 1)[0]
+        service = {"cover": "cover/toggle", "scene": "scene/turn_on"}.get(domaine, "homeassistant/toggle")
+        r = await self._client.post(f"/api/services/{service}", json={"entity_id": entite})
+        r.raise_for_status()
+
     async def creer_automatisation(self, identifiant: str, config: dict) -> None:
         """Même appel que l'éditeur d'automatisations de l'interface ; HA recharge tout seul."""
         r = await self._client.post(f"/api/config/automation/config/{identifiant}", json=config)

@@ -199,6 +199,16 @@ enregistrées : seules les empreintes des visages enregistrés sont gardées (`d
 
 ---
 
+## La page d'accueil : `http://IP_DU_NAS:8800`
+
+Une seule page pour tout, sur PC comme sur téléphone (jeton BETA_TOKEN, avec l'option « Se souvenir de moi ») :
+- **Accueil** : état des services et du tri des documents (à analyser, à valider, rangés, document en cours),
+  avec les boutons « Préparer 5 documents » et « Valider les propositions » ;
+- **Discussion** : parler à l'IA de discussion (cloud, modèle puissant ou IA locale), avec la mémoire de la conversation ;
+- **Maison** : une barre de commandes (« allume le salon ») et tes appareils rangés par pièce. Un clic sur un
+  appareil l'allume ou l'éteint (lumières, prises, volets, ventilateurs, scènes ; jamais les serrures) ;
+- un bouton haut-parleur pour **entendre les réponses** avec la voix de Bêta.
+
 ## Fiche de connexion et suivi en temps réel
 
 ### Le script `outils/fiche-api.sh` (sur le NAS, en SSH)
