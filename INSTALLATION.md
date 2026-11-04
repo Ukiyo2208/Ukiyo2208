@@ -32,7 +32,8 @@ Compte environ **1 h 30** au total, dont la moitié à attendre des télécharge
 
 1. Connecté à GitHub, télécharge le projet :
    https://github.com/Ukiyo2208/Ukiyo2208/archive/refs/heads/claude/beta-ia-local-voice-kd7s5z.zip
-2. Dézippe-le. Tu obtiens le dossier `Ukiyo2208-claude-beta-ia-local-voice-kd7s5z`.
+2. Dézippe-le, puis **renomme le dossier obtenu en `agentv1`** (son nom d'origine est
+   `Ukiyo2208-claude-beta-ia-local-voice-kd7s5z`).
 3. Copie ce dossier dans le dossier partagé **`docker`** du NAS : explorateur Windows →
    `\\192.168.1.20\docker` (ou l'application Fichiers d'UGOS).
 
@@ -44,7 +45,7 @@ Compte environ **1 h 30** au total, dont la moitié à attendre des télécharge
    ```
 2. Lance l'installateur :
    ```bash
-   cd /volume1/docker/Ukiyo2208-claude-beta-ia-local-voice-kd7s5z
+   cd /volume1/docker/agentv1
    sudo bash installer.sh
    ```
 3. Réponds aux questions. **Entrée** garde la réponse proposée :
