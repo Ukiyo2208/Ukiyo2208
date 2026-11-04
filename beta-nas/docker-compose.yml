@@ -5,8 +5,10 @@ name: beta-nas # nom fixe : le réseau « beta-nas_default » est toujours le m�
 
 services:
   # Domotique, automatisations, musique (via Music Assistant)
-  # Si tu as déjà Home Assistant ailleurs, supprime ce bloc et mets son adresse dans HA_URL (.env).
+  # Installé seulement si COMPOSE_PROFILES=homeassistant dans .env. Si tu as déjà ton propre
+  # Home Assistant, laisse COMPOSE_PROFILES vide et mets son adresse dans HA_URL.
   homeassistant:
+    profiles: ["homeassistant"]
     image: ghcr.io/home-assistant/home-assistant:stable
     container_name: homeassistant
     network_mode: host # nécessaire pour découvrir les appareils du réseau

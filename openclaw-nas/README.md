@@ -99,23 +99,24 @@ sudo docker exec beta-ollama ollama ps                   # le modèle est-il cha
 
 ## 6. Trier les documents du NAS
 
-OpenClaw lit les documents que tu déposes dans un dossier **`_A_TRIER`**. Pour chacun, il propose
-un **titre**, un **dossier** et des **tags**. Rien ne bouge tant que tu n'as pas validé.
+Le **trieur** lit tes documents et demande directement au modèle local (`qwen3.5:9b`) un **titre**, un
+**dossier** et des **tags** pour chacun, avec une consigne courte : environ 1 à 2 minutes par document sur le
+N100. **Tu valides sur la page `http://IP_DU_NAS:8802`.** Rien ne bouge sans ta validation.
 
 ```
-Tu déposes un fichier          ┌─ trieur : extrait le texte (PDF, scan, Word)
-dans Documents/_A_TRIER  ──────┤
-                               └─ OpenClaw : lit le texte et écrit une proposition (titre, dossier, tags)
-Tu dis « valide » dans le chat ──→ trieur : range le fichier, sans jamais écraser un autre
+Tes documents (tout le dossier, sauf ce que tu décoches)
+   └─ trieur : lit le texte (PDF, scan, Word) → demande titre, dossier, tags au modèle local
+Page http://IP_DU_NAS:8802 : Valider / Modifier / Garder où il est
+   └─ trieur : range le fichier, sans jamais écraser un autre
 ```
 
-Être dans `_A_TRIER`, c'est le « tag à trier » : OpenClaw sait ainsi quels documents traiter.
-Une fois rangé, le document quitte ce dossier, et sa trace (chemin, tags, résumé) va dans
-`_A_TRIER/_journal.md` et `Documents/_index_documents.csv`.
-
-**Pourquoi c'est sûr :** OpenClaw voit tes documents en **lecture seule**. Il n'écrit que dans le
-dossier des propositions. Le déplacement est fait par un petit programme simple (`trieur/`), qui
-refuse tout chemin hors de tes Documents et n'écrase jamais un fichier.
+- **Quand ?** Tout seul de **0 h à 7 h** (`TRI_HEURES` dans `.env`). Le jour, bouton
+  **« Préparer 5 documents maintenant »**. Pendant ce temps, Bêta répond plus lentement, car le
+  processeur est partagé.
+- **OpenClaw** reste disponible pour discuter de tes documents (« retrouve ma facture EDF »), mais le
+  tri ne dépend plus de lui : sur ce NAS sans carte graphique, il est trop lent.
+- La trace de chaque document rangé (chemin, tags, résumé) va dans `_A_TRIER/_journal.md` et
+  `Document/_index_documents.csv`.
 
 ### Installation
 

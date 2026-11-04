@@ -73,7 +73,8 @@ charger() {
   PORT_BETA=$(port_publie beta 8800 8800)
   PORT_PRESENCE=$(port_publie beta-presence 8801 8801)
   PORT_OPENCLAW=$(port_publie openclaw 18789 18789)
-  PORT_HA=8123 # Home Assistant est en réseau « host » : pas de port publié par Docker
+  HA=$(lire "$ENV_BETA" HA_URL); HA=${HA:-http://host.docker.internal:8123}
+  HA=${HA%/}; HA=${HA/host.docker.internal/$IP} # le Home Assistant du NAS, ou le tien ailleurs
   BETA_TOKEN=$(lire "$ENV_BETA" BETA_TOKEN)
   BETA_LECTURE_TOKEN=$(lire "$ENV_BETA" BETA_LECTURE_TOKEN)
   HA_TOKEN=$(lire "$ENV_BETA" HA_TOKEN)
@@ -91,7 +92,7 @@ fiche() {
   e_beta=$(http_code "${auth[@]}" "$BETA/v1/stats")
   e_pres=$(http_code "${auth[@]}" "http://$IP:$PORT_PRESENCE/positions")
   e_oc=$(http_code "http://$IP:$PORT_OPENCLAW/")
-  e_ha=$(http_code -H "Authorization: Bearer $HA_TOKEN" "http://$IP:$PORT_HA/api/")
+  e_ha=$(http_code -H "Authorization: Bearer $HA_TOKEN" "$HA/api/")
   e_ol=$(http_code "http://127.0.0.1:11434/api/tags")
   tcp_ok 127.0.0.1 10300 && e_wh=ok || e_wh=ko
   tcp_ok 127.0.0.1 10200 && e_pi=ok || e_pi=ko
@@ -105,7 +106,7 @@ ${G}SERVICES${N}
      documentation     $BETA/docs
   Présence (caméras)   http://$IP:$PORT_PRESENCE                    $(etat "$e_pres")
   OpenClaw             http://$IP:$PORT_OPENCLAW                   $(etat "$e_oc")
-  Home Assistant       http://$IP:$PORT_HA                    $(etat "$e_ha")
+  Home Assistant       $HA                    $(etat "$e_ha")
   Ollama               http://127.0.0.1:11434 ${D}(NAS seulement)${N}  $(etat "$e_ol")
   Whisper              127.0.0.1:10300 ${D}(NAS seulement)${N}         $(etat "$e_wh")
   Piper                127.0.0.1:10200 ${D}(NAS seulement)${N}         $(etat "$e_pi")
@@ -132,7 +133,7 @@ ${G}COMMANDES${N} ${D}(d'abord : eval "\$(./fiche-api.sh env)")${N}
   curl http://$IP:$PORT_PRESENCE/visages -H "Authorization: Bearer \$BETA_TOKEN"
 
   # Home Assistant : un appareil, une personne
-  curl http://$IP:$PORT_HA/api/states/person.bastien -H "Authorization: Bearer \$HA_TOKEN"
+  curl $HA/api/states/person.bastien -H "Authorization: Bearer \$HA_TOKEN"
 
   # Ollama : modèles installés et chargés
   sudo docker exec beta-ollama ollama list
@@ -186,7 +187,7 @@ cmd_tester() {
   r=$(curl -s -m 60 -X POST "$BETA/v1/texte" -H "Authorization: Bearer $BETA_TOKEN" \
         -H "Content-Type: application/json" -d '{"texte": "quelle heure est-il"}')
   echo "  ➜ « quelle heure est-il » : $r"
-  echo "  Home Assistant : $(etat "$(http_code -H "Authorization: Bearer $HA_TOKEN" "http://$IP:$PORT_HA/api/")")"
+  echo "  Home Assistant : $(etat "$(http_code -H "Authorization: Bearer $HA_TOKEN" "$HA/api/")")"
   echo "  Présence       : $(etat "$(http_code -H "Authorization: Bearer $BETA_TOKEN" "http://$IP:$PORT_PRESENCE/positions")")"
   echo "  Ollama         : $(curl -s -m 3 http://127.0.0.1:11434/api/ps | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | paste -sd, - | sed 's/^$/aucun modèle chargé/')"
 }

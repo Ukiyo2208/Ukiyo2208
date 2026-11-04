@@ -159,20 +159,12 @@ Un test rapide en ligne de commande : `sudo /volume1/docker/beta/beta-nas/outils
 
 ## I. Le tri des documents (si tu as répondu « o »)
 
-1. Ouvre **`http://192.168.1.20:18789`** et colle le jeton **OPENCLAW_GATEWAY_TOKEN**
-   (`fiche-api.sh --secrets`).
-2. La première fois, le navigateur doit être **approuvé**. Laisse la page ouverte, puis en SSH :
-   ```bash
-   cd /volume1/docker/beta/openclaw-nas
-   sudo docker compose run --rm openclaw-cli devices list
-   sudo docker compose run --rm openclaw-cli devices approve <requestId affiché>
-   ```
-3. Dépose 2 ou 3 documents dans **`Document/_A_TRIER`** (depuis ton PC ou ton scanner).
-   Par défaut, **tous tes documents** sont aussi proposés au tri. Pour choisir ce qui ne doit pas l'être,
-   ouvre **`http://192.168.1.20:8802`** (jeton BETA_TOKEN) et décoche les dossiers à laisser de côté.
-4. Dans OpenClaw, écris **« Trie les documents »**. Il propose un titre, un dossier et des tags pour
-   chaque document. Réponds par exemple « valide tout » ou « valide 1, mets le 2 dans Banque ».
-5. Ensuite, le tri tourne aussi tout seul **chaque nuit**. Compte 1 à 3 minutes par document sur ce NAS.
+1. Ouvre **`http://192.168.1.20:8802`** et colle le **BETA_TOKEN**.
+2. Dans **Ce qui est trié**, décoche les dossiers à laisser de côté (Photos, Archives…), puis **Enregistrer**.
+3. Clique sur **Préparer 5 documents maintenant**. Compte 1 à 2 minutes par document.
+4. Les propositions apparaissent avec un titre, un dossier et des tags. Corrige-les si besoin, puis
+   **Valider** (le fichier est rangé dans la minute) ou **Garder où il est** (il ne sera plus proposé).
+5. Ensuite, le trieur avance tout seul **chaque nuit** : tu n'as plus qu'à valider sur la page.
 
 ## J. IA cloud ou PC puissant pour la discussion (optionnel)
 

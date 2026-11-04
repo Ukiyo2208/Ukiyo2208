@@ -76,12 +76,17 @@ services:
       DOCUMENTS: /documents
       TZ: ${OPENCLAW_TZ:-Europe/Paris}
       TRI_TOKEN: ${TRI_TOKEN:-} # jeton de la page de réglage (le même que BETA_TOKEN)
+      # Le trieur demande lui-même titre, dossier et tags au modèle local (sans passer par OpenClaw)
+      OLLAMA_URL: http://beta-ollama:11434
+      TRI_MODELE: ${TRI_MODELE:-qwen3.5:9b}
+      TRI_HEURES: ${TRI_HEURES:-0-6} # automatique la nuit ; le jour, bouton « Préparer maintenant »
     ports:
-      - "8802:8802" # page de réglage du tri : http://IP_DU_NAS:8802
+      - "8802:8802" # page de réglage et de validation du tri : http://IP_DU_NAS:8802
     volumes:
       - ${DOCUMENTS:-/volume1/Documents}:/documents
     networks:
       - defaut
+      - beta # pour joindre l'Ollama de Bêta
     restart: unless-stopped
 
 networks:

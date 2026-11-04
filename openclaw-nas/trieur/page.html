@@ -33,6 +33,17 @@
   .interrupteur { display: flex; gap: 10px; align-items: center; font-weight: 600; }
   .garde { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--bord); }
   .garde span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .prop { display: grid; gap: 8px; padding: 14px 0; border-bottom: 1px solid var(--bord); }
+  .prop:last-child { border-bottom: 0; }
+  .prop .source { color: var(--doux); font-size: 13px; overflow-wrap: anywhere; }
+  .prop input[type=text] { width: 100%; background: var(--fond); color: var(--texte); border: 1px solid var(--bord);
+           border-radius: 8px; padding: 8px 10px; font: inherit; }
+  .prop .champs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (max-width: 600px) { .prop .champs { grid-template-columns: 1fr; } }
+  .prop .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .badge { display: inline-block; background: var(--bord); border-radius: 999px; padding: 2px 9px; font-size: 12px; margin-right: 4px; }
+  .basse { color: var(--ko); } .haute { color: var(--ok); }
+  .en-cours { color: var(--accent); }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -51,6 +62,16 @@
 
   <section id="contenu" hidden>
     <div class="chiffres" id="chiffres"></div>
+
+    <h2>Propositions à valider</h2>
+    <div class="carte">
+      <div class="actions" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="discret" type="button" id="lancer">Préparer 5 documents maintenant</button>
+        <button class="discret" type="button" id="tout-valider">Valider toutes celles en confiance haute</button>
+        <span class="doux" id="proposeur"></span>
+      </div>
+      <div id="propositions"></div>
+    </div>
 
     <h2>Ce qui est trié</h2>
     <div class="carte">
@@ -157,7 +178,7 @@
     ev.preventDefault();
     jeton = $("jeton").value.trim();
     try { sessionStorage.setItem("beta_jeton", jeton); } catch (err) {}
-    charger().catch(() => {});
+    charger().then(() => chargerPropositions(true)).catch(() => {});
   });
 
   $("enregistrer").addEventListener("click", async () => {
@@ -173,7 +194,75 @@
     }
   });
 
-  charger().catch(() => {});
+  // ---------------------------------------------------------------- Propositions
+  let propositions = [];
+  let modifie = false; // ne pas écraser une saisie en cours
+
+  function carteProposition(p) {
+    const div = document.createElement("div");
+    div.className = "prop";
+    div.innerHTML = `
+      <div class="source">${e(p.chemin_actuel || p.fichier)}</div>
+      ${p.deja_bien_range ? `<div class="haute">Déjà bien rangé : tu peux le garder tel quel.</div>` : ""}
+      <div class="champs">
+        <label><span class="doux">Titre</span><input type="text" name="titre" value="${e(p.titre)}"></label>
+        <label><span class="doux">Dossier</span><input type="text" name="dossier" value="${e(p.dossier)}"></label>
+      </div>
+      <div>${(p.tags || []).map((t) => `<span class="badge">${e(t)}</span>`).join("")}
+        <span class="badge ${e(p.confiance)}">confiance ${e(p.confiance || "?")}</span></div>
+      <div class="doux">${e(p.resume)}</div>
+      ${p.erreur ? `<div class="basse">Pas pu être rangé : ${e(p.erreur)}</div>` : ""}
+      <div class="actions">
+        <button class="principal" type="button" data-statut="valide">Valider</button>
+        <button class="discret" type="button" data-statut="garder">Garder où il est</button>
+      </div>`;
+    div.querySelectorAll("input").forEach((i) => i.addEventListener("input", () => { modifie = true; }));
+    div.querySelectorAll("button").forEach((b) => b.addEventListener("click", async () => {
+      b.disabled = true;
+      try {
+        await api("/api/propositions", { method: "POST", body: JSON.stringify({
+          fichier: p.fichier, statut: b.dataset.statut,
+          titre: div.querySelector("[name=titre]").value, dossier: div.querySelector("[name=dossier]").value }) });
+        div.remove(); modifie = false;
+        $("message").textContent = b.dataset.statut === "valide" ? "Validé : rangé dans la minute." : "Gardé à sa place.";
+      } catch (err) {
+        b.disabled = false;
+        if (err.message !== "401") $("message").textContent = `Erreur : ${err.message}`;
+      }
+    }));
+    return div;
+  }
+
+  async function chargerPropositions(forcer = false) {
+    if (!jeton || (modifie && !forcer)) return;
+    const [liste, etat] = await Promise.all([api("/api/propositions"), api("/api/etat")]);
+    propositions = liste;
+    $("propositions").replaceChildren(...liste.map(carteProposition));
+    if (!liste.length) $("propositions").innerHTML = `<p class="doux">Aucune proposition pour l'instant.</p>`;
+    const p = etat.proposeur;
+    $("proposeur").innerHTML = !p ? "Propositions automatiques désactivées."
+      : p.en_cours ? `<span class="en-cours">Le modèle analyse ${e(p.en_cours.fichier)} (depuis ${p.en_cours.depuis_s} s)…</span>`
+      : p.derniere_erreur ? `<span class="basse">${e(p.derniere_erreur)}</span>`
+      : `Modèle ${e(p.modele)} · automatique de ${p.heures[0]} h à ${p.heures[p.heures.length - 1] + 1} h`;
+  }
+
+  $("lancer").addEventListener("click", async () => {
+    await api("/api/lancer", { method: "POST", body: JSON.stringify({ nombre: 5 }) });
+    $("message").textContent = "C'est parti : environ 1 à 2 minutes par document.";
+    chargerPropositions(true);
+  });
+
+  $("tout-valider").addEventListener("click", async () => {
+    const sures = propositions.filter((p) => p.confiance === "haute" && !p.deja_bien_range);
+    for (const p of sures) {
+      await api("/api/propositions", { method: "POST", body: JSON.stringify({ fichier: p.fichier, statut: "valide" }) });
+    }
+    $("message").textContent = `${sures.length} document(s) validé(s).`;
+    chargerPropositions(true);
+  });
+
+  charger().then(() => chargerPropositions(true)).catch(() => {});
+  setInterval(() => { if (!document.hidden) chargerPropositions().catch(() => {}); }, 10000);
 </script>
 </body>
 </html>

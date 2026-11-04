@@ -130,7 +130,12 @@ if [ "$OPENCLAW" = o ]; then
 fi
 ENV_BETA="$DEST/beta-nas/.env"
 if [ -z "$(env_lire "$ENV_BETA" HA_TOKEN)" ]; then
-  echo "  Compte Home Assistant (créé automatiquement s'il n'existe pas encore) :"
+  demander HA_EXISTANT "Adresse de TON Home Assistant s'il existe déjà, ex http://192.168.1.30:8123 (vide = en installer un)" ""
+  if [ -n "$HA_EXISTANT" ]; then
+    echo "  Identifiants de ton Home Assistant (pour créer le jeton de Bêta, le mot de passe n'est pas enregistré) :"
+  else
+    echo "  Compte Home Assistant (créé automatiquement s'il n'existe pas encore) :"
+  fi
   demander HA_UTILISATEUR "Identifiant" "$PRENOM"
   demander HA_MDP "Mot de passe (vide = généré)" "" secret
   HA_MDP_GENERE=0
@@ -158,6 +163,16 @@ env_si_vide "$ENV_BETA" BETA_TOKEN "$(aleatoire 32)"
 env_si_vide "$ENV_BETA" BETA_LECTURE_TOKEN "$(aleatoire 32)"
 env_si_vide "$ENV_BETA" NAS_NOM "$(hostname 2>/dev/null || echo NAS)"
 [ -n "$CLE_ANTHROPIC" ] && env_ecrire "$ENV_BETA" ANTHROPIC_API_KEY "$CLE_ANTHROPIC"
+if [ -n "${HA_EXISTANT:-}" ]; then
+  env_ecrire "$ENV_BETA" HA_URL "${HA_EXISTANT%/}"
+  env_ecrire "$ENV_BETA" COMPOSE_PROFILES ""
+elif ! grep -q '^COMPOSE_PROFILES=' "$ENV_BETA"; then
+  # Installation d'avant cette option : on garde le Home Assistant du NAS s'il était utilisé
+  case "$(env_lire "$ENV_BETA" HA_URL)" in
+    *host.docker.internal*|"") env_ecrire "$ENV_BETA" COMPOSE_PROFILES homeassistant ;;
+    *) env_ecrire "$ENV_BETA" COMPOSE_PROFILES "" ;;
+  esac
+fi
 [ -n "$PUISSANT_URL" ] && env_ecrire "$ENV_BETA" PUISSANT_URL "$PUISSANT_URL" && env_ecrire "$ENV_BETA" PUISSANT_MODELE "$PUISSANT_MODELE"
 BETA_TOKEN=$(env_lire "$ENV_BETA" BETA_TOKEN)
 ok "Réglages : $ENV_BETA (jeton généré)"
@@ -197,6 +212,11 @@ fi
 etape "Démarrage de Bêta (première fois : 5 à 15 minutes)"
 cd "$DEST/beta-nas"
 mkdir -p data
+# Ton propre Home Assistant est utilisé : celui du NAS est arrêté (ses données restent dans data/)
+if [ -z "$(env_lire "$ENV_BETA" COMPOSE_PROFILES)" ] && docker inspect homeassistant >/dev/null 2>&1; then
+  docker stop homeassistant >/dev/null 2>&1; docker rm homeassistant >/dev/null 2>&1
+  ok "Home Assistant du NAS arrêté : Bêta utilise $(env_lire "$ENV_BETA" HA_URL)"
+fi
 JOURNAL="$DEST/installation-beta.log"
 echo "  (journal détaillé : $JOURNAL)"
 if ! "${DC[@]}" up -d --build > "$JOURNAL" 2>&1; then
@@ -210,12 +230,14 @@ ok "Bêta est démarré"
 
 etape "Home Assistant"
 if [ -z "$(env_lire "$ENV_BETA" HA_TOKEN)" ]; then
-  echo "  Attente du démarrage de Home Assistant…"
-  attendre "Home Assistant" 600 curl -sf --noproxy '*' -o /dev/null http://127.0.0.1:8123/manifest.json \
-    || avertir "Home Assistant met du temps à démarrer"
+  HA_INTERNE=$(env_lire "$ENV_BETA" HA_URL)
+  HA_HOTE=${HA_INTERNE/host.docker.internal/127.0.0.1}
+  echo "  Attente de Home Assistant ($HA_HOTE)…"
+  attendre "Home Assistant" 600 curl -sf --noproxy '*' -o /dev/null "$HA_HOTE/manifest.json" \
+    || avertir "Home Assistant ne répond pas encore"
   NOM_AFFICHE="$(echo "${PRENOM:0:1}" | tr '[:lower:]' '[:upper:]')${PRENOM:1}"
   if jeton=$("${DC[@]}" run --rm --no-deps -T beta python -m app.installation ha \
-        --url http://host.docker.internal:8123 --nom "$NOM_AFFICHE" \
+        --url "$HA_INTERNE" --nom "$NOM_AFFICHE" \
         --utilisateur "$HA_UTILISATEUR" --mot-de-passe "$HA_MDP" | tail -n1) && [ -n "$jeton" ]; then
     env_ecrire "$ENV_BETA" HA_TOKEN "$jeton"
     "${DC[@]}" up -d beta presence >/dev/null 2>&1
@@ -288,13 +310,7 @@ if [ "$OPENCLAW" = o ]; then
     tail -n 15 "$DEST/installation-openclaw.log" | sed 's/^/    /'
     avertir "Démarrage d'OpenClaw à vérifier (journal : $DEST/installation-openclaw.log)"
   fi
-  attendre "OpenClaw" 180 curl -sf --noproxy '*' -o /dev/null http://127.0.0.1:18789/ || avertir "OpenClaw démarre lentement"
-  if [ ! -f data/.tri-programme ]; then
-    "${DC[@]}" run --rm -T openclaw-cli automations add --name "Tri des documents" --cron "0 1-6 * * *" \
-      --tz Europe/Paris --session isolated \
-      --message "Fais un passage de tri des documents (section « Tri des documents » de AGENTS.md)." >/dev/null 2>&1 \
-      && touch data/.tri-programme && ok "Tri automatique programmé chaque nuit"
-  fi
+  # Le tri se fait maintenant par le trieur direct (page http://IP:8802) : pas de tâche de nuit dans OpenClaw
 fi
 
 # ====================================================================== 6. Résumé
@@ -304,10 +320,10 @@ etape "C'est prêt !"
 cat <<EOF
 
   ${G}Tableau de bord${N}   http://$IP:8800/tableau
-  ${G}Home Assistant${N}    http://$IP:8123
+  ${G}Home Assistant${N}    $(env_lire "$ENV_BETA" HA_URL | sed "s#host.docker.internal#$IP#")
 EOF
 [ "$OPENCLAW" = o ] && echo "  ${G}OpenClaw${N}          http://$IP:18789   (jeton : sudo $DEST/beta-nas/outils/fiche-api.sh --secrets)"
-[ "$OPENCLAW" = o ] && echo "  ${G}Tri des documents${N} http://$IP:8802    (choisir les dossiers à trier)"
+[ "$OPENCLAW" = o ] && echo "  ${G}Tri des documents${N} http://$IP:8802    (propositions à valider, dossiers à trier)"
 if [ "${HA_MDP_GENERE:-0}" = 1 ] && [ -z "${HA_ECHEC:-}" ]; then
   echo
   echo "  ${J}Compte Home Assistant${N} : identifiant ${G}$HA_UTILISATEUR${N}, mot de passe ${G}$HA_MDP${N}  ← note-le"

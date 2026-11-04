@@ -372,9 +372,14 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     c = Chemins(RACINE)
     c.creer()
-    import web  # page de réglage (http://IP_DU_NAS:8802)
+    import proposeur as prop  # propositions par le modèle local
+    import web  # page de réglage et de validation (http://IP_DU_NAS:8802)
 
-    web.demarrer(c)
+    proposeur = None
+    if os.environ.get("TRI_PROPOSITIONS", "oui") != "non":
+        proposeur = prop.Proposeur(c)
+        proposeur.demarrer()
+    web.demarrer(c, proposeur)
     log.info("Surveillance de %s et des dossiers de %s", c.entree, c.surveiller)
     while True:
         try:

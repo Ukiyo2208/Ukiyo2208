@@ -45,7 +45,44 @@ def _rel_sur(c: trieur.Chemins, rel: str) -> str:
     return "/".join(parties)
 
 
-def etat(c: trieur.Chemins) -> dict:
+def lister_propositions(c: trieur.Chemins) -> list[dict]:
+    resultat = []
+    for f in sorted(c.propositions.glob("*.json"), key=lambda p: p.stat().st_mtime):
+        try:
+            prop = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if prop.get("statut", "propose") == "propose":
+            resultat.append({**prop, "fichier": f.name[:-5]})
+    return resultat
+
+
+def modifier_proposition(c: trieur.Chemins, donnees: dict) -> None:
+    ident = str(donnees.get("fichier", ""))
+    fichier = c.propositions / f"{ident}.json"
+    if "/" in ident or not ident or not fichier.exists():
+        raise ValueError("proposition introuvable")
+    statut = donnees.get("statut", "propose")
+    if statut not in trieur.STATUTS:
+        raise ValueError("statut inconnu")
+    with _verrou:
+        prop = json.loads(fichier.read_text(encoding="utf-8"))
+        for cle in ("titre", "dossier"):
+            if cle in donnees:
+                prop[cle] = str(donnees[cle]).strip()
+        if "tags" in donnees:
+            prop["tags"] = [str(t).strip().lower() for t in donnees["tags"] if str(t).strip()][:6]
+        if statut == "valide":
+            trieur.dossier_sur(c, prop.get("dossier", ""))  # refuse tout de suite un dossier invalide
+            trieur.titre_sur(prop.get("titre", ""))
+        prop["statut"] = statut
+        prop.pop("erreur", None)
+        tmp = fichier.with_suffix(".tmp")
+        tmp.write_text(json.dumps(prop, ensure_ascii=False, indent=2), encoding="utf-8")
+        os.replace(tmp, fichier)
+
+
+def etat(c: trieur.Chemins, proposeur=None) -> dict:
     tous = trieur.candidats(c)
     en_attente = [i for i in tous if not (c.propositions / f"{i}.json").exists()]
     return {
@@ -56,6 +93,7 @@ def etat(c: trieur.Chemins) -> dict:
         "propositions": len(list(c.propositions.glob("*.json"))),
         "gardes": trieur.lire_liste(c.gardes),
         "ranges": max(0, sum(1 for _ in c.index.open(encoding="utf-8")) - 1) if c.index.exists() else 0,
+        "proposeur": proposeur.etat() if proposeur else None,
     }
 
 
@@ -96,7 +134,7 @@ def enregistrer(c: trieur.Chemins, donnees: dict) -> None:
     trieur._scan["signature"] = None  # prise en compte immédiate
 
 
-def serveur(c: trieur.Chemins, jeton: str, port: int) -> ThreadingHTTPServer:
+def serveur(c: trieur.Chemins, jeton: str, port: int, proposeur=None) -> ThreadingHTTPServer:
     class Gestionnaire(BaseHTTPRequestHandler):
         def log_message(self, *args):  # pas de bruit dans les journaux
             pass
@@ -126,7 +164,9 @@ def serveur(c: trieur.Chemins, jeton: str, port: int) -> ThreadingHTTPServer:
                 return
             try:
                 if url.path == "/api/etat":
-                    return self._json(200, etat(c))
+                    return self._json(200, etat(c, proposeur))
+                if url.path == "/api/propositions":
+                    return self._json(200, lister_propositions(c))
                 if url.path == "/api/dossiers":
                     return self._json(200, sous_dossiers(c, parse_qs(url.query).get("chemin", [""])[0]))
             except (ValueError, OSError) as e:
@@ -134,25 +174,32 @@ def serveur(c: trieur.Chemins, jeton: str, port: int) -> ThreadingHTTPServer:
             self._json(404, {"erreur": "inconnu"})
 
         def do_POST(self):
-            if urlparse(self.path).path != "/api/reglages":
+            chemin = urlparse(self.path).path
+            if chemin not in ("/api/reglages", "/api/propositions", "/api/lancer"):
                 return self._json(404, {"erreur": "inconnu"})
             if not self._autorise():
                 return
             try:
                 taille = min(int(self.headers.get("Content-Length", 0)), 1_000_000)
-                enregistrer(c, json.loads(self.rfile.read(taille) or b"{}"))
-            except (ValueError, OSError) as e:
+                donnees = json.loads(self.rfile.read(taille) or b"{}")
+                if chemin == "/api/reglages":
+                    enregistrer(c, donnees)
+                elif chemin == "/api/propositions":
+                    modifier_proposition(c, donnees)
+                elif proposeur:
+                    proposeur.lancer(donnees.get("nombre", 5))
+            except (ValueError, OSError, trieur.PropositionInvalide) as e:
                 return self._json(400, {"erreur": str(e)})
-            self._json(200, etat(c))
+            self._json(200, etat(c, proposeur))
 
     return ThreadingHTTPServer(("0.0.0.0", port), Gestionnaire)
 
 
-def demarrer(c: trieur.Chemins) -> None:
+def demarrer(c: trieur.Chemins, proposeur=None) -> None:
     jeton = os.environ.get("TRI_TOKEN", "")
     if not jeton:
         trieur.log.warning("TRI_TOKEN vide : la page de réglage du tri est désactivée")
         return
     port = int(os.environ.get("TRI_PORT", "8802"))
-    threading.Thread(target=serveur(c, jeton, port).serve_forever, daemon=True).start()
+    threading.Thread(target=serveur(c, jeton, port, proposeur).serve_forever, daemon=True).start()
     trieur.log.info("Page de réglage du tri sur le port %d", port)
