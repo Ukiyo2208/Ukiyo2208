@@ -137,9 +137,17 @@ if [ -z "$(env_lire "$ENV_BETA" HA_TOKEN)" ]; then
     echo "  Compte Home Assistant (créé automatiquement s'il n'existe pas encore) :"
   fi
   demander HA_UTILISATEUR "Identifiant" "$PRENOM"
-  demander HA_MDP "Mot de passe (vide = généré)" "" secret
   HA_MDP_GENERE=0
-  if [ -z "$HA_MDP" ]; then HA_MDP=$(aleatoire 9); HA_MDP_GENERE=1; fi
+  if [ -n "$HA_EXISTANT" ]; then
+    # Ton compte existe déjà : il faut son vrai mot de passe, jamais un mot de passe généré
+    while [ -z "${HA_MDP:-}" ]; do
+      demander HA_MDP "Mot de passe de ton Home Assistant" "" secret
+      [ -n "$HA_MDP" ] || { [ "$AUTO" = 1 ] && break; echo "  Le mot de passe est obligatoire pour ton Home Assistant."; }
+    done
+  else
+    demander HA_MDP "Mot de passe (vide = généré)" "" secret
+    if [ -z "$HA_MDP" ]; then HA_MDP=$(aleatoire 9); HA_MDP_GENERE=1; fi
+  fi
 fi
 echo "  Discussion et automatisations : IA cloud, ou modèle puissant sur un PC avec carte graphique."
 demander CLE_ANTHROPIC "Clé de l'IA cloud Claude (vide = aucune)" "" secret
