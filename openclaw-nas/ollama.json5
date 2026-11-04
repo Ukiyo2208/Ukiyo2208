@@ -5,7 +5,7 @@
     providers: {
       ollama: {
         baseUrl: "http://beta-ollama:11434", // API native d'Ollama : surtout pas de /v1
-        apiKey: "ollama-local",
+        apiKey: "ollama-local", // Ollama local : pas de vraie clé, seulement ce marqueur
         api: "ollama",
         timeoutSeconds: 600, // le NAS n'a pas de carte graphique : réponses lentes
         models: [

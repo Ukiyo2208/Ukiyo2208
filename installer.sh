@@ -270,6 +270,7 @@ if [ "$OPENCLAW" = o ]; then
   IP=$(ip_nas)
   lancer_oc config set --batch-json "[
     {\"path\":\"gateway.mode\",\"value\":\"local\"},
+    {\"path\":\"models.providers.ollama.apiKey\",\"value\":\"ollama-local\"},
     {\"path\":\"gateway.bind\",\"value\":\"lan\"},
     {\"path\":\"gateway.controlUi.allowedOrigins\",\"value\":[\"http://$IP:18789\",\"http://localhost:18789\",\"http://127.0.0.1:18789\"]},
     {\"path\":\"tools.deny\",\"value\":[\"group:runtime\",\"browser\"]},
