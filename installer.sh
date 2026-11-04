@@ -109,9 +109,12 @@ ram=$(awk '/MemTotal/ {printf "%d", $2 / 1048576}' /proc/meminfo)
 # ====================================================================== 2. Questions
 
 etape "Quelques questions (Entrée = valeur proposée)"
-VOLUME=$(ls -d /volume[0-9]* 2>/dev/null | head -n1 || true)
+# Par défaut : à côté du dossier téléchargé, donc sur le volume et dans le dossier Docker que tu as choisis
+VOLUME=$(echo "$SOURCE" | grep -oE '^/volume[0-9]+' || true)
+[ -n "$VOLUME" ] || VOLUME=$(ls -d /volume[0-9]* 2>/dev/null | head -n1 || true)
 VOLUME=${VOLUME:-/opt}
-demander DEST "Dossier d'installation" "$VOLUME/docker/beta"
+if [[ "$SOURCE" == /volume* ]]; then dest_defaut="$(dirname "$SOURCE")/beta"; else dest_defaut="$VOLUME/docker/beta"; fi
+demander DEST "Dossier d'installation" "$dest_defaut"
 demander PRENOM "Ton prénom" "bastien"
 PRENOM=$(normaliser "$PRENOM")
 demander PIECE "Pièce où sera la tablette" "salon"
@@ -121,7 +124,7 @@ if [ "$OPENCLAW" = o ]; then
   OPENCLAW=$(echo "$OPENCLAW" | cut -c1 | tr '[:upper:]' '[:lower:]')
 fi
 if [ "$OPENCLAW" = o ]; then
-  docs_defaut=$(ls -d "$VOLUME"/[Dd]ocuments 2>/dev/null | head -n1 || true)
+  docs_defaut=$(ls -d "$VOLUME"/[Dd]ocuments /volume[0-9]*/[Dd]ocuments 2>/dev/null | head -n1 || true)
   demander DOCUMENTS "Dossier des documents à trier" "${docs_defaut:-$VOLUME/Documents}"
 fi
 ENV_BETA="$DEST/beta-nas/.env"
