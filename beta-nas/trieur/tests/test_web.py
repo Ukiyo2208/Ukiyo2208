@@ -76,3 +76,24 @@ def test_chemins_dangereux_refuses(site, chemin):
     assert e.value.code == 400
     with pytest.raises(urllib.error.HTTPError):
         appel(url, f"/api/dossiers?chemin={chemin}")
+
+
+def test_tout_traiter_et_arreter_depuis_la_page(tmp_path):
+    import proposeur
+
+    c = trieur.Chemins(tmp_path / "nas", tmp_path / "etat", "volume1")
+    c.rangement.mkdir(parents=True)
+    c.creer()
+    p = proposeur.Proposeur(c)
+    srv = web.serveur(c, 0, p, hote="127.0.0.1")
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{srv.server_address[1]}"
+    try:
+        assert appel(url, "/api/lancer", {"tout": True})["proposeur"]["continu"] is True
+        etat = appel(url, "/api/arreter", {})
+        assert etat["proposeur"]["continu"] is False and etat["notifications"] == []
+        with pytest.raises(urllib.error.HTTPError) as e:  # aucune destination configurée
+            appel(url, "/api/notifications/test", {})
+        assert e.value.code == 400
+    finally:
+        srv.shutdown()

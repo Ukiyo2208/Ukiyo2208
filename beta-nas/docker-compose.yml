@@ -108,6 +108,13 @@ services:
       - TRI_PROPOSITIONS=${TRI_PROPOSITIONS:-oui}
       - TRI_RANGEMENT=${TRI_RANGEMENT:-} # où ranger, ex : volume1/Document
       - TRI_IGNORER=${TRI_IGNORER:-} # jamais trié (l'installation de Bêta), séparés par « ; »
+      # Notifications (fin d'un tri, propositions de la nuit, tri bloqué) : voir NOTIFICATIONS dans .env
+      - NOTIFICATIONS=${NOTIFICATIONS:-}
+      - TRI_LIEN=${TRI_LIEN:-}
+      - HA_URL=${HA_URL:-http://host.docker.internal:8123}
+      - HA_TOKEN=${HA_TOKEN:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./data/tri:/etat # propositions, journal, index : rien n'est écrit dans tes dossiers
       # Les volumes du NAS (/volume1 -> /nas/volume1…) : docker-compose.override.yml, écrit par l'installateur

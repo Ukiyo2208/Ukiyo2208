@@ -471,9 +471,21 @@ async def etat_tri():
     return await _tri_json("GET", "/api/etat")
 
 
+class LancementTri(BaseModel):
+    nombre: int = 5
+    tout: bool = False  # tous les documents à la suite, jusqu'à l'arrêt
+
+
 @app.post("/v1/tri/lancer", dependencies=[Depends(verifier_jeton)])
-async def lancer_tri():
-    return await _tri_json("POST", "/api/lancer", json={"nombre": 5})
+async def lancer_tri(demande: LancementTri | None = None):
+    """Prépare `nombre` propositions tout de suite, ou toutes (`tout`) jusqu'à /v1/tri/arreter."""
+    return await _tri_json("POST", "/api/lancer", json=(demande or LancementTri()).model_dump())
+
+
+@app.post("/v1/tri/arreter", dependencies=[Depends(verifier_jeton)])
+async def arreter_tri():
+    """Arrête le traitement en cours après le document en cours d'analyse."""
+    return await _tri_json("POST", "/api/arreter", json={})
 
 
 @app.get("/tri", include_in_schema=False)

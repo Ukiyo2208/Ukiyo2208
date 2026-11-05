@@ -68,7 +68,9 @@
     <h2>Propositions à valider</h2>
     <div class="carte">
       <div class="actions" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <button class="discret" type="button" id="lancer">Préparer 5 documents maintenant</button>
+        <button class="principal" type="button" id="tout-traiter">Tout traiter</button>
+        <button class="discret" type="button" id="arreter" hidden>Arrêter</button>
+        <button class="discret" type="button" id="lancer">Préparer 5 documents</button>
         <button class="discret" type="button" id="tout-valider">Valider toutes celles en confiance haute</button>
         <span class="doux" id="proposeur"></span>
       </div>
@@ -87,6 +89,12 @@
     <div class="carte">
       <p class="doux">Un motif par ligne, avec <code>*</code>. Exemples : <code>*.mp4</code>, <code>*brouillon*</code>, <code>Banque/*/Anciens</code>.</p>
       <textarea id="motifs" rows="4"></textarea>
+    </div>
+
+    <h2>Notifications</h2>
+    <div class="carte">
+      <p class="doux" id="notifs"></p>
+      <button class="discret" type="button" id="tester-notifs">Envoyer une notification de test</button>
     </div>
 
     <h2>Documents gardés à leur place</h2>
@@ -243,16 +251,43 @@
     $("propositions").replaceChildren(...liste.map(carteProposition));
     if (!liste.length) $("propositions").innerHTML = `<p class="doux">Aucune proposition pour l'instant.</p>`;
     const p = etat.proposeur;
+    const enMarche = !!p && (p.continu || p.a_la_demande > 0);
+    $("tout-traiter").hidden = !p || p.continu; $("lancer").hidden = !p || enMarche; $("arreter").hidden = !enMarche;
+    const suivi = p && p.continu ? `Tout traiter : ${p.faits_continu} fait(s), ${etat.en_attente} restant(s). ` : "";
     $("proposeur").innerHTML = !p ? "Propositions automatiques désactivées."
-      : p.en_cours ? `<span class="en-cours">Le modèle analyse ${e(p.en_cours.fichier)} (depuis ${p.en_cours.depuis_s} s)…</span>`
+      : p.en_cours ? `<span class="en-cours">${suivi}Le modèle analyse ${e(p.en_cours.fichier)} (depuis ${p.en_cours.depuis_s} s)…</span>`
       : p.derniere_erreur ? `<span class="basse">${e(p.derniere_erreur)}</span>`
-      : `Modèle ${e(p.modele)} · automatique de ${p.heures[0]} h à ${p.heures[p.heures.length - 1] + 1} h`;
+      : suivi || `Modèle ${e(p.modele)} · automatique de ${p.heures[0]} h à ${p.heures[p.heures.length - 1] + 1} h`;
+    $("notifs").textContent = etat.notifications.length
+      ? `Envoyées vers : ${etat.notifications.join(", ")} (fin d'un tri, propositions de la nuit, tri bloqué).`
+      : "Aucune pour l'instant. Ajoute NOTIFICATIONS dans le fichier .env (Home Assistant, Discord, ntfy ou webhook).";
   }
 
   $("lancer").addEventListener("click", async () => {
     await api("api/lancer", { method: "POST", body: JSON.stringify({ nombre: 5 }) });
     $("message").textContent = "C'est parti : environ 1 à 2 minutes par document.";
     chargerPropositions(true);
+  });
+
+  $("tout-traiter").addEventListener("click", async () => {
+    await api("api/lancer", { method: "POST", body: JSON.stringify({ tout: true }) });
+    $("message").textContent = "Tous les documents vont être analysés à la suite (1 à 2 minutes chacun). Tu peux fermer la page.";
+    chargerPropositions(true);
+  });
+
+  $("arreter").addEventListener("click", async () => {
+    await api("api/arreter", { method: "POST", body: "{}" });
+    $("message").textContent = "Arrêt demandé : le document en cours se termine, puis le tri s'arrête.";
+    chargerPropositions(true);
+  });
+
+  $("tester-notifs").addEventListener("click", async () => {
+    try {
+      await api("api/notifications/test", { method: "POST", body: "{}" });
+      $("message").textContent = "Notification envoyée : regarde ton téléphone.";
+    } catch (err) {
+      if (err.message !== "401") $("message").textContent = `Notification impossible : ${err.message}`;
+    }
   });
 
   $("tout-valider").addEventListener("click", async () => {

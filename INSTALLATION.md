@@ -167,10 +167,23 @@ côté par défaut. Les documents validés sont rangés dans ton dossier `Docume
 1. Ouvre **`http://192.168.1.20:8800/tri/`** (ou le bouton **Valider les propositions** de l'accueil).
 2. Dans **Ce qui est trié**, ouvre `volume1`, `volume3`… et décoche les dossiers à laisser de côté
    (Photos, Films, Archives…), puis **Enregistrer**.
-3. Clique sur **Préparer 5 documents maintenant**. Compte 1 à 2 minutes par document.
+3. Clique sur **Tout traiter** : le modèle analyse tous les documents à la suite, à toute heure, jusqu'au
+   dernier (1 à 2 minutes chacun). Tu peux fermer la page. **Arrêter** le stoppe après le document en
+   cours. Pour un simple essai : **Préparer 5 documents**.
 4. Les propositions apparaissent avec un titre, un dossier et des tags. Corrige-les si besoin, puis
    **Valider** (le fichier est rangé dans la minute) ou **Garder où il est** (il ne sera plus proposé).
 5. Ensuite, le trieur avance tout seul **chaque nuit** : tu n'as plus qu'à valider sur la page.
+6. **Notifications** (conseillé) : Bêta te prévient quand un « Tout traiter » est fini, le matin s'il a
+   préparé des propositions dans la nuit, et si le tri est bloqué. Le plus simple : l'application Home
+   Assistant de ton téléphone. Dans Home Assistant, *Outils de développement → Actions*, tape
+   `notify.mobile_app` pour trouver le nom de ton téléphone (ex : `notify.mobile_app_pixel_8`), puis :
+   ```bash
+   sudo /volume1/docker/beta/beta-nas/outils/fiche-api.sh regler NOTIFICATIONS ha:mobile_app_pixel_8
+   ```
+   Autres possibilités (plusieurs à la fois, séparées par des espaces) : un webhook **Discord**
+   (*Modifier le salon → Intégrations → Webhooks → Copier l'URL*), **ntfy**
+   (`ntfy:https://ntfy.sh/un-nom-long-secret`) ou n'importe quel webhook. Vérifie avec le bouton
+   **Envoyer une notification de test** de la page du tri.
 
 ## J. IA cloud ou PC puissant pour la discussion (optionnel)
 

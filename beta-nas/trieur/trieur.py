@@ -464,7 +464,9 @@ def main() -> None:
 
     proposeur = None
     if os.environ.get("TRI_PROPOSITIONS", "oui") != "non":
-        proposeur = prop.Proposeur(c)
+        import notifications
+
+        proposeur = prop.Proposeur(c, notifications.envoyer)
         proposeur.demarrer()
     web.demarrer(c, proposeur)
     log.info("Tri de %s, rangement dans %s", c.racine, c.rangement)

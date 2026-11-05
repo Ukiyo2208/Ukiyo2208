@@ -205,7 +205,9 @@ Une seule page pour tout, sur PC comme sur téléphone. **À la maison, aucun je
 du réseau local : 192.168.x.x, 10.x.x.x…). Hors de chez toi, ou derrière un proxy, la page demande le
 `BETA_TOKEN` (option « Se souvenir de moi »). Pour l'exiger partout : `BETA_LOCAL_LIBRE=non` dans `.env`.
 - **Accueil** : état des services et du tri des documents (à analyser, à valider, rangés, document en cours),
-  avec les boutons « Préparer 5 documents » et « Valider les propositions » (page `/tri/`) ;
+  avec les boutons « Tout traiter » (tous les documents à la suite, avec « Arrêter ») et « Valider les
+  propositions » (page `/tri/`). Notifications de fin de tri : `NOTIFICATIONS` dans `.env` (Home Assistant,
+  Discord, ntfy ou webhook) ;
 - **Discussion** : parler à l'IA de discussion (cloud, modèle puissant ou IA locale), avec la mémoire de la conversation ;
 - **Maison** : une barre de commandes (« allume le salon ») et tes appareils rangés par pièce. Un clic sur un
   appareil l'allume ou l'éteint (lumières, prises, volets, ventilateurs, scènes ; jamais les serrures) ;

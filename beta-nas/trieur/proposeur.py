@@ -104,15 +104,26 @@ def demander_proposition(texte: str, chemin_actuel: str, dossiers: list[str], ti
     }
 
 
-class Proposeur:
-    """Prépare les propositions une par une, dans un fil à part (les déplacements validés ne l'attendent pas)."""
+ERREURS_AVANT_ARRET = 5  # en traitement continu, on s'arrête (et on prévient) après 5 échecs d'affilée
 
-    def __init__(self, c: trieur.Chemins):
+
+class Proposeur:
+    """Prépare les propositions une par une, dans un fil à part (les déplacements validés ne l'attendent pas).
+
+    Trois façons de travailler : tout seul pendant les heures actives (TRI_HEURES), « N documents
+    maintenant », ou « tout traiter » jusqu'au dernier document, que tu peux arrêter à tout moment."""
+
+    def __init__(self, c: trieur.Chemins, notifier=None):
         self.c = c
         self.en_cours: dict | None = None  # {"fichier", "depuis"} pendant qu'un document est analysé
         self.derniere_erreur = ""
         self.forcer = 0  # documents à préparer tout de suite, même hors des heures actives
+        self.continu = False  # « tout traiter » : jusqu'au dernier document, à toute heure
+        self.faits_continu = 0
+        self.nouvelles = 0  # propositions prêtes depuis la dernière notification
+        self.erreurs_suivies = 0
         self.actif = True
+        self.notifier = notifier or (lambda titre, message: None)
         self._reveil = threading.Event()
 
     def etat(self) -> dict:
@@ -121,11 +132,26 @@ class Proposeur:
             en_cours = {"fichier": self.en_cours["fichier"], "depuis_s": round(time.monotonic() - self.en_cours["depuis"])}
         return {
             "modele": MODELE, "actif": self.actif, "en_cours": en_cours, "a_la_demande": self.forcer,
+            "continu": self.continu, "faits_continu": self.faits_continu,
             "heures": sorted(heures_actives()), "derniere_erreur": self.derniere_erreur,
         }
 
-    def lancer(self, nombre: int) -> None:
-        self.forcer = max(0, min(int(nombre), 500))
+    def lancer(self, nombre: int = 5, tout: bool = False) -> None:
+        if tout:
+            if not self.continu:
+                self.faits_continu = 0
+            self.continu = True
+        else:
+            self.forcer = max(0, min(int(nombre), 500))
+        self.erreurs_suivies = 0
+        self._reveil.set()
+
+    def arreter(self) -> None:
+        """Arrête « tout traiter » et « N documents » (le document en cours se termine d'abord)."""
+        if self.continu and self.nouvelles:
+            self._bilan(f"Tri arrêté après {self.faits_continu} document(s).")
+        self.continu = False
+        self.forcer = 0
         self._reveil.set()
 
     def _suivant(self) -> tuple[str, str] | None:
@@ -137,6 +163,10 @@ class Proposeur:
                     and not (self.c.propositions / f"{ident}.json").exists():
                 return ident, sources[ident]
         return None
+
+    def _reste_a_preparer(self) -> bool:
+        """D'autres documents attendent que le trieur extraie leur texte (il en prépare 50 à la fois)."""
+        return self.c.a_traiter.exists() and "# …" in self.c.a_traiter.read_text(encoding="utf-8")
 
     def un_document(self) -> bool:
         """Prépare la proposition du prochain document. Retourne False s'il n'y a rien à faire."""
@@ -158,23 +188,60 @@ class Proposeur:
             tmp.write_text(json.dumps(prop, ensure_ascii=False, indent=2), encoding="utf-8")
             os.replace(tmp, sortie)
             self.derniere_erreur = ""
+            self.erreurs_suivies = 0
+            self.nouvelles += 1
+            if self.continu:
+                self.faits_continu += 1
             log.info("Proposition prête pour %s (%.0f s)", chemin, time.monotonic() - self.en_cours["depuis"])
         except (OSError, ValueError, KeyError, urllib.error.URLError) as e:
             self.derniere_erreur = f"{chemin} : {e}"
+            self.erreurs_suivies += 1
             log.warning("Proposition impossible pour %s : %s", chemin, e)
+            if self.erreurs_suivies == ERREURS_AVANT_ARRET:
+                self.notifier("Tri des documents bloqué", f"{ERREURS_AVANT_ARRET} échecs d'affilée. Dernier : {self.derniere_erreur}")
+                if self.continu:
+                    self.continu = False
             time.sleep(30)  # Ollama occupé ou absent : on réessaie plus tard
         finally:
             self.en_cours = None
         return True
 
+    def _bilan(self, debut: str) -> None:
+        if self.nouvelles:
+            n = self.nouvelles
+            self.notifier("Tri des documents", f"{debut} {n} nouvelle{'s' if n > 1 else ''} proposition{'s' if n > 1 else ''} à valider.")
+            self.nouvelles = 0
+
+    def etape(self) -> bool:
+        """Un pas de la boucle. Retourne True s'il faut enchaîner tout de suite (sans attendre)."""
+        heure_active = datetime.now().hour in heures_actives()
+        if not self.actif or not (self.continu or self.forcer > 0 or heure_active):
+            self._bilan("Fin des heures de tri.")  # la nuit est finie : on dit ce qui a été préparé
+            return False
+        demandes = self.forcer
+        if self.un_document():
+            self.forcer = max(0, self.forcer - 1)
+            if demandes == 1 and not self.continu:
+                self._bilan("Préparation terminée.")
+            return True
+        if self.continu and self._reste_a_preparer():
+            return False  # le trieur extrait le texte des suivants : on reprend dans un instant
+        if self.continu:
+            self.continu = False
+            self._bilan(f"Tout est traité ({self.faits_continu} document(s)).")
+        else:
+            self._bilan("Plus aucun document en attente.")
+        self.forcer = 0
+        return False
+
     def boucle(self) -> None:
         while True:
-            if self.actif and (self.forcer > 0 or datetime.now().hour in heures_actives()):
-                if self.un_document():
-                    self.forcer = max(0, self.forcer - 1)
+            try:
+                if self.etape():
                     continue
-                self.forcer = 0
-            self._reveil.wait(60)
+            except Exception:
+                log.exception("Erreur du proposeur")
+            self._reveil.wait(30 if self.continu else 60)
             self._reveil.clear()
 
     def demarrer(self) -> None:

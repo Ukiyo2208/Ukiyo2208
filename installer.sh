@@ -244,6 +244,7 @@ if [ "$TRI" = o ]; then
   env_ecrire "$ENV_BETA" PGID "${PROPRIO#*:}"
   env_si_vide "$ENV_BETA" TRI_MODELE "qwen3.5:9b"
   env_ecrire "$ENV_BETA" TRI_PROPOSITIONS oui
+  env_ecrire "$ENV_BETA" TRI_LIEN "http://$(ip_nas):8800/tri/"
   # Le trieur voit tous les volumes du NAS (/volume1 -> /nas/volume1…) ; sur un autre Linux, le dossier des documents
   {
     echo "# Écrit par installer.sh : les volumes que le trieur de documents peut parcourir."
@@ -300,7 +301,7 @@ if [ -z "$(env_lire "$ENV_BETA" HA_TOKEN)" ]; then
         --url "$HA_INTERNE" --nom "$NOM_AFFICHE" \
         --utilisateur "$HA_UTILISATEUR" --mot-de-passe "$HA_MDP" | tail -n1) && [ -n "$jeton" ]; then
     env_ecrire "$ENV_BETA" HA_TOKEN "$jeton"
-    "${DC[@]}" up -d beta presence >/dev/null 2>&1
+    "${DC[@]}" up -d beta presence trieur >/dev/null 2>&1
     ok "Compte et jeton Home Assistant prêts"
   else
     HA_ECHEC=1

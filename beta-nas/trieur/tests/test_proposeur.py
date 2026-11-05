@@ -105,3 +105,56 @@ def test_ollama_absent(c, monkeypatch):
 def test_heures_actives(monkeypatch):
     monkeypatch.setenv("TRI_HEURES", "1-3,22")
     assert proposeur.heures_actives() == {1, 2, 3, 22}
+
+
+@pytest.fixture
+def plusieurs(tmp_path, ollama, monkeypatch):
+    chemins = trieur.Chemins(tmp_path / "nas", tmp_path / "etat", "volume1/Document")
+    chemins.rangement.mkdir(parents=True)
+    for i in range(3):
+        (chemins.rangement / f"doc{i}.txt").write_text(f"document {i}")
+    trieur._scan["signature"] = None
+    trieur.tour(chemins)
+    monkeypatch.setattr(proposeur, "heures_actives", lambda: set())  # hors des heures de tri
+    envois = []
+    return proposeur.Proposeur(chemins, lambda titre, message: envois.append(message)), envois
+
+
+def test_tout_traiter_a_la_suite(plusieurs):
+    p, envois = plusieurs
+    assert p.etape() is False and envois == []  # hors des heures : rien ne se passe
+    p.lancer(tout=True)
+    assert p.etat()["continu"] is True
+    while p.etape():
+        pass
+    assert len(web.lister_propositions(p.c)) == 3 and p.faits_continu == 3
+    assert p.continu is False  # s'arrête tout seul à la fin
+    assert envois == ["Tout est traité (3 document(s)). 3 nouvelles propositions à valider."]
+
+
+def test_arreter(plusieurs):
+    p, envois = plusieurs
+    p.lancer(tout=True)
+    assert p.etape() is True
+    p.arreter()
+    assert p.etape() is False and len(web.lister_propositions(p.c)) == 1
+    assert envois == ["Tri arrêté après 1 document(s). 1 nouvelle proposition à valider."]
+
+
+def test_cinq_documents_puis_notification(plusieurs):
+    p, envois = plusieurs
+    p.lancer(2)
+    while p.etape():
+        pass
+    assert len(web.lister_propositions(p.c)) == 2
+    assert envois == ["Préparation terminée. 2 nouvelles propositions à valider."]
+
+
+def test_tri_bloque_prevenu_une_fois(plusieurs, monkeypatch):
+    p, envois = plusieurs
+    monkeypatch.setattr(proposeur, "OLLAMA_URL", "http://127.0.0.1:9")
+    monkeypatch.setattr(proposeur.time, "sleep", lambda s: None)
+    p.lancer(tout=True)
+    for _ in range(8):
+        p.etape()
+    assert p.continu is False and len(envois) == 1 and "échecs d'affilée" in envois[0]

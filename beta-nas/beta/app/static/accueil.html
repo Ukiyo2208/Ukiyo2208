@@ -291,11 +291,17 @@
         ${p && p.en_cours ? `<p class="analyse">Analyse de ${e(p.en_cours.fichier.split("/").pop())} (${p.en_cours.depuis_s} s)</p>`
           : `<p class="doux">${p ? `Automatique de ${p.heures[0]} h à ${p.heures[p.heures.length - 1] + 1} h · modèle ${e(p.modele)}` : ""}</p>`}
         <div class="ligne-actions">
-          <button class="bouton secondaire" id="preparer">Préparer 5 documents</button>
+          ${p && (p.continu || p.a_la_demande > 0)
+            ? `<button class="bouton secondaire" id="arreter-tri">Arrêter${p.continu ? ` (${p.faits_continu} faits)` : ""}</button>`
+            : `<button class="bouton secondaire" id="preparer">Tout traiter</button>`}
           <a class="bouton principal" href="/tri/">Valider les propositions</a>
         </div>`;
-      $("preparer").addEventListener("click", async () => {
-        await api("/v1/tri/lancer", { method: "POST" }).catch(() => {});
+      $("preparer")?.addEventListener("click", async () => {
+        await api("/v1/tri/lancer", { method: "POST", body: JSON.stringify({ tout: true }) }).catch(() => {});
+        chargerAccueil();
+      });
+      $("arreter-tri")?.addEventListener("click", async () => {
+        await api("/v1/tri/arreter", { method: "POST" }).catch(() => {});
         chargerAccueil();
       });
     } catch (_) {

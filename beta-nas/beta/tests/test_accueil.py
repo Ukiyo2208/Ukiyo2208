@@ -152,5 +152,8 @@ def test_page_du_tri_servie_par_beta(monkeypatch, tmp_path):
             assert r.status_code == 200 and r.json()["exclusions"] == ["volume1/Banque"]
             assert client.get("/v1/tri/etat").json()["rangement"] == "volume1"
             assert client.get("/v1/stats").json()["services"]["trieur"]["ok"] is True
+            assert client.post("/v1/tri/lancer", json={"tout": True}).status_code == 200
+            assert client.post("/v1/tri/lancer").status_code == 200  # sans corps : 5 documents
+            assert client.post("/v1/tri/arreter").status_code == 200
     finally:
         srv.shutdown()

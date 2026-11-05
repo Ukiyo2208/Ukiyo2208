@@ -14,6 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+import notifications
 import trieur
 
 PAGE = Path(__file__).with_name("page.html")
@@ -91,6 +92,7 @@ def etat(c: trieur.Chemins, proposeur=None) -> dict:
         "gardes": trieur.lire_liste(c.gardes),
         "ranges": max(0, sum(1 for _ in c.index.open(encoding="utf-8")) - 1) if c.index.exists() else 0,
         "proposeur": proposeur.etat() if proposeur else None,
+        "notifications": notifications.resume(),
     }
 
 
@@ -166,7 +168,7 @@ def serveur(c: trieur.Chemins, port: int, proposeur=None, hote: str = "0.0.0.0")
 
         def do_POST(self):
             chemin = urlparse(self.path).path
-            if chemin not in ("/api/reglages", "/api/propositions", "/api/lancer"):
+            if chemin not in ("/api/reglages", "/api/propositions", "/api/lancer", "/api/arreter", "/api/notifications/test"):
                 return self._json(404, {"erreur": "inconnu"})
             try:
                 taille = min(int(self.headers.get("Content-Length", 0)), 1_000_000)
@@ -175,8 +177,18 @@ def serveur(c: trieur.Chemins, port: int, proposeur=None, hote: str = "0.0.0.0")
                     enregistrer(c, donnees)
                 elif chemin == "/api/propositions":
                     modifier_proposition(c, donnees)
+                elif chemin == "/api/notifications/test":
+                    resultats = notifications.envoyer_maintenant(
+                        "Bêta · test", "Les notifications du tri des documents fonctionnent.", os.environ.get("TRI_LIEN", ""))
+                    if not resultats:
+                        raise ValueError("aucune destination : renseigne NOTIFICATIONS dans .env")
+                    erreurs = [f"{notifications.type_de(d)} : {r}" for d, r in resultats.items() if r != "ok"]
+                    if erreurs:
+                        raise ValueError(" ; ".join(erreurs))
+                elif proposeur and chemin == "/api/arreter":
+                    proposeur.arreter()
                 elif proposeur:
-                    proposeur.lancer(donnees.get("nombre", 5))
+                    proposeur.lancer(donnees.get("nombre", 5), tout=bool(donnees.get("tout")))
             except (ValueError, OSError, trieur.PropositionInvalide) as e:
                 return self._json(400, {"erreur": str(e)})
             self._json(200, etat(c, proposeur))
