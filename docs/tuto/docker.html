@@ -60,62 +60,54 @@
 ├── index.html, css/, js/, assets/      <span class="c">← l'application</span>
 ├── bridge/                              <span class="c">← pont Alexa / app Maison (facultatif)</span>
 └── server/
-    ├── <span class="h">docker-compose.yml</span>                  <span class="c">← le fichier à modifier</span>
-    ├── Dockerfile
-    ├── mosquitto/mosquitto.conf
-    ├── tailscale/serve.json
+    ├── <span class="h">installer.sh</span>                        <span class="c">← installe et met à jour, en une commande</span>
+    ├── docker-compose.yml               <span class="c">← les services (rien à modifier)</span>
+    ├── .env.example                     <span class="c">← modèle des réglages</span>
+    ├── Dockerfile, mosquitto/, tailscale/
+    ├── .env                             <span class="c">← créé par installer.sh : VOS réglages et la clé</span>
     └── data/                            <span class="c">← créé au premier démarrage : TOUTES vos données</span></pre>
-  <div class="warn"><b>Le dossier server/data</b> contient vos réglages, sauvegardes, codes et appairages. Ne le supprimez jamais, et ne le remplacez pas lors d'une mise à jour.</div>
+  <div class="warn"><b>server/.env et server/data</b> sont à vous : la clé du serveur, vos réglages, sauvegardes, codes et appairages. Ne les supprimez jamais et ne les écrasez pas lors d'une mise à jour.</div>
 </section>
 
 <section>
-  <h2><span class="n">2</span>Personnaliser le fichier docker-compose.yml</h2>
-  <p>Ouvrez <code>server/docker-compose.yml</code> avec l'éditeur de texte d'UGOS (ou sur l'ordinateur). Seules ces lignes du service <b>beta-home</b> sont à changer :</p>
-<pre>services:
-  beta-home:
-    image: ghcr.io/ukiyo2208/beta-home:latest
-    build:
-      context: ..
-      dockerfile: server/Dockerfile
-    container_name: beta-home
-    restart: unless-stopped
-    network_mode: host                      <span class="c"># indispensable (découverte des caméras, Bonjour, HomeKit)</span>
-    environment:
-      - PORT=8090
-      - <span class="h">BETA_KEY=tram-cigogne-bretzel-2026-violet</span>   <span class="c"># VOTRE phrase secrète</span>
-      - BACKUP_KEEP=30
-      - GO2RTC_URL=http://127.0.0.1:1984
-      - <span class="h">TZ=Europe/Paris</span>                       <span class="c"># heures justes pour les règles, le réveil…</span>
-    volumes:
-      - ./data:/data</pre>
-  <table>
-    <tr><th>Réglage</th><th>Rôle</th></tr>
-    <tr><td><code>BETA_KEY</code></td><td>Clé maîtresse du serveur. Elle protège tout l'accès. Gardez-la secrète : les écrans s'associent ensuite par QR code sans la recopier.</td></tr>
-    <tr><td><code>TZ</code></td><td>Fuseau horaire. Sans lui, le NAS est en UTC et les règles se déclenchent 1 à 2 h trop tôt.</td></tr>
-    <tr><td><code>BACKUP_KEEP</code></td><td>Nombre de sauvegardes de la nuit conservées.</td></tr>
-    <tr><td><code>BETA_OFF</code> <i>(facultatif)</i></td><td>Couper des modules serveur, par exemple <code>BETA_OFF=famille,extra</code>. Le reste fonctionne normalement.</td></tr>
-    <tr><td><code>PHOTO_DIR</code> <i>(facultatif)</i></td><td>Dossier des photos pour le cadre photo des tablettes (avec le volume <code>/photos</code>, voir étape 8).</td></tr>
-  </table>
-  <div class="tip"><b>Image prête ou construction locale ?</b> La ligne <code>image:</code> télécharge l'image construite par GitHub. Si le téléchargement est refusé (image pas encore publiée ou privée), <b>supprimez la ligne <code>image:</code></b> : Docker construit alors Bêta home sur le NAS à partir des fichiers copiés (1 à 2 minutes, rien à installer).</div>
-</section>
-
-<section>
-  <h2><span class="n">3</span>Créer le projet dans Docker (UGOS)</h2>
+  <h2><span class="n">2</span>Installer en une commande (SSH)</h2>
   <ol class="steps">
-    <li>Ouvrez l'application <b>Docker</b> › <b>Projet</b> › <b>Créer</b>.</li>
-    <li><b>Nom du projet</b> : <code>beta-home</code>.</li>
-    <li><b>Chemin de stockage</b> : choisissez le dossier <code>docker/beta-home/server</code> (celui qui contient docker-compose.yml). UGOS propose alors d'utiliser le fichier existant.</li>
-    <li>Vérifiez le contenu affiché (vos modifications de l'étape 2), puis <b>Déployer</b> / <b>Créer</b>.</li>
-    <li>Attendez que le conteneur <b>beta-home</b> soit « En cours d'exécution » (et <b>go2rtc</b>, <b>mosquitto</b>).</li>
+    <li>Activez SSH dans UGOS : <span class="path">Panneau de configuration › Terminal</span>.</li>
+    <li>Depuis l'ordinateur (Terminal sur Mac, PowerShell sur Windows) :</li>
   </ol>
-  <h3>Alternative : en SSH (plus rapide si vous avez l'habitude)</h3>
-  <p>Activez SSH dans UGOS (Panneau de configuration › Terminal), puis depuis l'ordinateur :</p>
 <pre>ssh votre-compte@192.168.1.20
 cd /volume1/docker/beta-home/server        <span class="c"># adaptez « volume1 » si vos données sont sur un autre volume</span>
-sudo docker compose up -d                  <span class="c"># télécharge (ou construit) et démarre</span>
-sudo docker compose ps                     <span class="c"># état des services</span>
-sudo docker logs -f beta-home              <span class="c"># journal en direct (Ctrl+C pour quitter)</span></pre>
-  <p>Dans le journal, vous devez voir une ligne du type <code>Serveur Bêta 7.20 sur http://0.0.0.0:8090 — …</code>.</p>
+<span class="h">sudo sh ./installer.sh</span></pre>
+  <p>Le script fait tout : il crée le fichier <code>.env</code> avec une <b>clé au hasard</b>, construit l'image de Bêta home sur le NAS (1 à 3 minutes la première fois), démarre Bêta home, go2rtc et Mosquitto, vérifie que tout répond, puis affiche l'adresse de Bêta home et la <b>clé</b> à noter.</p>
+  <table>
+    <tr><th>Commande (dans le dossier server)</th><th>Rôle</th></tr>
+    <tr><td><code>sudo sh ./installer.sh</code></td><td>Installe, ou met à jour après avoir copié une nouvelle version. Vos données et votre clé sont gardées.</td></tr>
+    <tr><td><code>sudo sh ./installer.sh etat</code></td><td>Les conteneurs, et si Bêta home répond.</td></tr>
+    <tr><td><code>sudo sh ./installer.sh journal</code></td><td>Le journal en direct (Ctrl+C pour quitter).</td></tr>
+    <tr><td><code>sudo sh ./installer.sh redemarrer</code></td><td>Redémarre Bêta home.</td></tr>
+    <tr><td><code>sudo sh ./installer.sh arret</code></td><td>Arrête tout (les données restent).</td></tr>
+    <tr><td><code>sudo sh ./installer.sh cle</code></td><td>Affiche la clé du serveur.</td></tr>
+  </table>
+  <h3>Les réglages : le fichier server/.env</h3>
+  <table>
+    <tr><th>Ligne</th><th>Rôle</th></tr>
+    <tr><td><code>BETA_KEY</code></td><td>Clé maîtresse du serveur (créée au hasard). Gardez-la secrète : les écrans s'associent ensuite par QR code sans la recopier.</td></tr>
+    <tr><td><code>BETA_PORT</code></td><td>Port de Bêta home (8090). À changer seulement s'il est déjà pris sur le NAS.</td></tr>
+    <tr><td><code>TZ</code></td><td>Fuseau horaire (Europe/Paris) : heures des règles, du réveil, de Tempo.</td></tr>
+    <tr><td><code>BETA_IMAGE</code></td><td><code>beta-home:local</code> : image construite sur le NAS (par défaut, rien à télécharger). Ou l'image publiée sur GitHub, voir étape 7.</td></tr>
+  </table>
+  <p>Aussi : <code>BACKUP_KEEP</code> (sauvegardes conservées) et <code>BETA_OFF</code> (modules à couper). Après une modification du fichier <code>.env</code> : <code>sudo sh ./installer.sh</code>.</p>
+</section>
+
+<section>
+  <h2><span class="n">3</span>Sans SSH : le projet Docker d'UGOS</h2>
+  <ol class="steps">
+    <li>Dans <b>Fichiers</b>, ouvrez <code>docker/beta-home/server</code>, dupliquez <code>.env.example</code> et renommez la copie <b><code>.env</code></b> (affichez les fichiers cachés si besoin).</li>
+    <li>Ouvrez <code>.env</code> et remplacez la ligne <code>BETA_KEY=…</code> par votre longue phrase secrète, par exemple <code>BETA_KEY=tram-cigogne-bretzel-2026-violet</code>.</li>
+    <li>Application <b>Docker</b> › <b>Projet</b> › <b>Créer</b> : nom <code>beta-home</code>, chemin <code>docker/beta-home/server</code> (UGOS reprend le docker-compose.yml existant), puis <b>Déployer</b>.</li>
+    <li>Attendez que <b>beta-home</b> soit « En cours d'exécution » puis <b>sain</b> (healthy), avec <b>go2rtc</b> et <b>mosquitto</b>.</li>
+  </ol>
+  <div class="tip"><b>Si le projet refuse de démarrer</b> avec « Clé manquante », UGOS n'a pas lu le fichier <code>.env</code> : vérifiez son nom (<code>.env</code>, sans .txt) et son emplacement (à côté de docker-compose.yml), ou utilisez l'installation par SSH.</div>
 </section>
 
 <section>
@@ -133,7 +125,7 @@ sudo docker logs -f beta-home              <span class="c"># journal en direct (
 
 <section>
   <h2><span class="n">5</span>Activer les services facultatifs</h2>
-  <p>Dans <code>docker-compose.yml</code>, chaque service facultatif est précédé de <code>#</code>. Pour l'activer, retirez le <code>#</code> <b>et un espace</b> au début de chacune de ses lignes (l'indentation doit rester alignée), puis redéployez le projet (UGOS : Projet › beta-home › Recréer ; SSH : <code>sudo docker compose up -d</code>).</p>
+  <p>Dans <code>docker-compose.yml</code>, chaque service facultatif est précédé de <code>#</code>. Pour l'activer, retirez le <code>#</code> <b>et un espace</b> au début de chacune de ses lignes (l'indentation doit rester alignée), puis relancez <code>sudo sh ./installer.sh</code> (ou UGOS : Projet › beta-home › Recréer).</p>
   <table>
     <tr><th>Service</th><th>Quand l'activer</th><th>Ensuite dans Bêta home</th></tr>
     <tr><td><b>go2rtc</b> (actif)</td><td>Caméras en direct, et caméras dans l'app Maison</td><td>Marques › caméras (Reolink, Tapo, ONVIF…)</td></tr>
@@ -146,7 +138,7 @@ sudo docker logs -f beta-home              <span class="c"># journal en direct (
     <tr><td><b>tailscale</b></td><td>Accès hors de la maison, en https</td><td>Étape 6</td></tr>
     <tr><td><b>watchtower</b></td><td>Mises à jour depuis Bêta home</td><td>Étape 7</td></tr>
   </table>
-  <div class="warn"><b>Même clé partout</b> Le service <b>matter-bridge</b> a sa propre ligne <code>BETA_KEY=</code> : mettez exactement la même phrase que pour beta-home.</div>
+  <div class="tip"><b>Même clé partout</b> Le service <b>matter-bridge</b> reprend tout seul la clé du fichier <code>.env</code> (<code>${BETA_KEY}</code>) : rien à recopier.</div>
   <div class="tip"><b>Zigbee2MQTT</b> Pour connaître le nom de la clé USB : en SSH, <code>ls /dev/serial/by-id/</code>, puis adaptez la ligne <code>devices:</code>.</div>
 </section>
 
@@ -168,16 +160,17 @@ sudo docker logs -f beta-home              <span class="c"># journal en direct (
   <h2><span class="n">7</span>Mises à jour automatiques (Watchtower)</h2>
   <ol class="steps">
     <li>Choisissez une deuxième phrase secrète, différente de BETA_KEY.</li>
-    <li>Service <b>beta-home</b> : décommentez <code>WATCHTOWER_TOKEN=</code> et mettez cette phrase.</li>
+    <li>Dans <code>.env</code> : <code>WATCHTOWER_TOKEN=</code> cette phrase.</li>
     <li>Activez le service <b>watchtower</b> et mettez la même phrase dans <code>WATCHTOWER_HTTP_API_TOKEN=</code>. Redéployez.</li>
     <li>Dans <span class="path">Réglages › Système › Mises à jour</span>, le bouton <b>Mettre à jour</b> télécharge la nouvelle image et redémarre Bêta home (environ 1 minute).</li>
   </ol>
   <figure class="half"><img src="../img/majs.jpg" alt=""><figcaption>Mises à jour : version installée, version disponible, et installation en un clic.</figcaption></figure>
-  <h3>Sans Watchtower (manuel)</h3>
-<pre>cd /volume1/docker/beta-home/server
-sudo docker compose pull          <span class="c"># nouvelle image (ou : copiez les nouveaux fichiers puis « docker compose build »)</span>
-sudo docker compose up -d         <span class="c"># redémarre seulement ce qui a changé ; server/data est conservé</span></pre>
-  <div class="warn"><b>Mise à jour en copiant un nouveau zip</b> Remplacez tout <b>sauf</b> le dossier <code>server/data</code> et votre <code>docker-compose.yml</code> personnalisé.</div>
+  <div class="warn"><b>Watchtower et l'image publiée</b> Watchtower ne met à jour qu'une image téléchargée : mettez <code>BETA_IMAGE=ghcr.io/ukiyo2208/beta-home:latest</code> dans <code>.env</code> (si cette image est publiée pour votre version). Avec l'image construite sur le NAS, utilisez la mise à jour ci-dessous.</div>
+  <h3>Mise à jour avec une nouvelle version (zip)</h3>
+  <ol class="steps">
+    <li>Copiez le contenu du nouveau zip dans <code>docker/beta-home</code> en remplaçant les fichiers, <b>sauf</b> <code>server/.env</code> et <code>server/data</code> (le zip ne les contient pas : ils ne sont pas écrasés).</li>
+    <li><code>sudo sh ./installer.sh</code> : nouvelle image, redémarrage en quelques secondes, données et clé conservées.</li>
+  </ol>
 </section>
 
 <section>
@@ -242,10 +235,11 @@ sudo docker compose up -d         <span class="c"># redémarre seulement ce qui 
   <h2><span class="n">12</span>Dépannage</h2>
   <table>
     <tr><th>Problème</th><th>Cause probable et solution</th></tr>
-    <tr><td><code>denied</code> ou <code>not found</code> au téléchargement de <code>ghcr.io/…/beta-home</code></td><td>Image non publiée ou privée : supprimez la ligne <code>image:</code> pour construire sur le NAS (étape 2).</td></tr>
-    <tr><td>La page <code>:8090</code> ne s'ouvre pas</td><td>Conteneur arrêté : Docker › Conteneur › beta-home › Journal. Port déjà pris : changez <code>PORT=8090</code> (ex. 8095) et utilisez la nouvelle adresse.</td></tr>
+    <tr><td><code>denied</code> ou <code>not found</code> au téléchargement de <code>ghcr.io/…/beta-home</code></td><td>Image non publiée ou privée : remettez <code>BETA_IMAGE=beta-home:local</code> dans <code>.env</code> pour construire sur le NAS.</td></tr>
+    <tr><td>« Clé manquante » au démarrage</td><td>Pas de fichier <code>.env</code> à côté de docker-compose.yml : lancez <code>sudo sh ./installer.sh</code> (étape 2).</td></tr>
+    <tr><td>La page <code>:8090</code> ne s'ouvre pas</td><td>Conteneur arrêté : Docker › Conteneur › beta-home › Journal. Port déjà pris : changez <code>BETA_PORT=8090</code> dans <code>.env</code> (ex. 8095) et utilisez la nouvelle adresse.</td></tr>
     <tr><td>« clé refusée » / 401</td><td>La clé saisie diffère de BETA_KEY (attention aux espaces). Trop d'essais : attendez 10 minutes.</td></tr>
-    <tr><td>Les règles se déclenchent à la mauvaise heure</td><td><code>TZ=Europe/Paris</code> manquant ; redéployez.</td></tr>
+    <tr><td>Les règles se déclenchent à la mauvaise heure</td><td>Vérifiez <code>TZ=Europe/Paris</code> dans <code>.env</code>, puis <code>sudo sh ./installer.sh</code>.</td></tr>
     <tr><td>Caméras noires</td><td>go2rtc arrêté ou ancien montage : le volume doit être <code>./data/go2rtc:/config</code> (un dossier). Si un dossier <code>data/go2rtc.yaml</code> vide existe d'une ancienne installation, supprimez-le.</td></tr>
     <tr><td>Appareils Matter introuvables</td><td>IPv6 désactivée sur le NAS ou le réseau Deco ; activez-la.</td></tr>
     <tr><td>Découverte des appareils vide</td><td><code>network_mode: host</code> retiré ? Il est indispensable.</td></tr>
@@ -253,10 +247,10 @@ sudo docker compose up -d         <span class="c"># redémarre seulement ce qui 
     <tr><td>Pas de notification hors de la maison avec ntfy auto-hébergé</td><td>Les iPhone doivent joindre le NAS : Tailscale, et <code>NTFY_BASE_URL</code> à l'adresse Tailscale.</td></tr>
   </table>
 <pre><span class="c"># commandes utiles (SSH, dans docker/beta-home/server)</span>
-sudo docker compose ps                    <span class="c"># qui tourne ?</span>
-sudo docker compose logs --tail 100 beta-home
-sudo docker compose restart beta-home
-sudo docker compose down &amp;&amp; sudo docker compose up -d   <span class="c"># tout relancer (données conservées)</span></pre>
+sudo sh ./installer.sh etat               <span class="c"># qui tourne ? Bêta home répond-il ?</span>
+sudo sh ./installer.sh journal            <span class="c"># journal en direct</span>
+sudo sh ./installer.sh redemarrer
+sudo sh ./installer.sh                    <span class="c"># tout reconstruire et relancer (données conservées)</span></pre>
   <div class="tip"><b>Demander de l'aide</b> Page Installation › <b>Copier le rapport</b> : un texte complet sans aucun mot de passe, à coller dans votre message.</div>
 </section>
 

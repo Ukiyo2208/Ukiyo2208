@@ -1,28 +1,37 @@
-# Bêta home pour NAS (UGREEN, Synology…), Raspberry Pi ou PC — UGOS Pro › Docker › Projet › Créer.
-# Placez ce fichier dans le dossier « server » de Bêta home, puis lancez le projet.
+# Bêta home pour NAS (UGREEN, Synology…), Raspberry Pi ou PC.
+# Le plus simple : en SSH, dans ce dossier « server », lancez  sudo ./installer.sh
+#   (il crée le fichier .env avec une clé au hasard, construit l'image et démarre tout).
+# Sinon : cp .env.example .env, modifiez la clé, puis  docker compose up -d --build
+# (UGOS Pro › Docker › Projet › Créer marche aussi, avec ce dossier et le fichier .env à côté).
 #
 # Réseau « hôte » (network_mode: host) : indispensable pour que la découverte (caméras ONVIF, Bonjour,
 # UPnP) et le pont HomeKit des caméras voient le réseau de la maison. Bêta home : http://IP-du-NAS:8090
 services:
   beta-home:
-    image: ghcr.io/ukiyo2208/beta-home:latest        # image prête (construite par GitHub) ; « docker compose build » la reconstruit en local
+    image: ${BETA_IMAGE:-beta-home:local}           # construite sur le NAS (par défaut) ou image publiée (voir .env)
     build:
       context: ..
       dockerfile: server/Dockerfile
     container_name: beta-home
     restart: unless-stopped
     network_mode: host
+    init: true                                      # transmet proprement l'arrêt au serveur
+    stop_grace_period: 15s
     environment:
-      - PORT=8090
-      - BETA_KEY=changez-moi-par-une-longue-phrase   # même clé dans Bêta home › Connexions
-      - BACKUP_KEEP=30                                # nombre de sauvegardes gardées
+      - PORT=${BETA_PORT:-8090}
+      - "BETA_KEY=${BETA_KEY:?Clé manquante, lancez ./installer.sh ou créez le fichier .env (voir .env.example)}"
+      - BACKUP_KEEP=${BACKUP_KEEP:-30}
       - GO2RTC_URL=http://127.0.0.1:1984             # go2rtc ci-dessous
-      - TZ=Europe/Paris
-      # - WATCHTOWER_TOKEN=une-autre-longue-phrase   # mises à jour depuis Bêta home (service watchtower ci-dessous)
+      - TZ=${TZ:-Europe/Paris}
+      - BETA_OFF=${BETA_OFF:-}
+      - WATCHTOWER_TOKEN=${WATCHTOWER_TOKEN:-}      # mises à jour depuis Bêta home (service watchtower ci-dessous)
     volumes:
       - ./data:/data                                  # sauvegardes, journal, caméras, config go2rtc
       # - /mnt/@usb/sdb1/beta-backup:/backup          # clé USB : sauvegardes de la nuit copiées dans /backup (Paramètres › Sauvegarde)
       # - /volume1/Photos:/photos:ro                 # cadre photo des tablettes (Outils › Cadre photo : dossier /photos)
+    logging:                                        # journal limité : le NAS ne se remplit pas
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
 
   # Caméras : direct vidéo pour Bêta home + pont HomeKit (app Maison) pour les seules caméras.
   # Sa configuration (data/go2rtc/go2rtc.yaml) est écrite par Bêta home ; ne la modifiez pas à la main.
@@ -32,7 +41,7 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      - TZ=Europe/Paris
+      - TZ=${TZ:-Europe/Paris}
     volumes:
       - ./data/go2rtc:/config                        # dossier (et non un fichier) : écrit par Bêta home
 
@@ -121,7 +130,7 @@ services:
   #   network_mode: host
   #   environment:
   #     - BETA_URL=http://127.0.0.1:8090
-  #     - BETA_KEY=changez-moi-par-une-longue-phrase   # la même que pour beta-home
+  #     - BETA_KEY=${BETA_KEY}                        # la même que pour beta-home (fichier .env)
   #     - BRIDGE_PORT=5540
   #     - HOMEKIT_PORT=51826                          # pont Maison (mettez HOMEKIT=off pour le couper)
   #     - TZ=Europe/Paris

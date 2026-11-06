@@ -406,3 +406,23 @@ Pour corriger vite quand une marque change : **Réglages › Système › Veille
 - **Tableau de bord** : état de chaque marque, dernière lecture réussie, nombre d'appareils, champs reçus, dernière version, tickets, journal des 200 derniers évènements.
 - **Corriger** : « Copier le rapport » donne tout ce qu'il faut pour écrire le correctif (fichier du connecteur, erreur, champs reçus, versions, tickets). Facultatif : avec un jeton GitHub (droit « Issues »), un **ticket** est créé dans votre dépôt — à la main, ou tout seul en cas de panne ou de changement (un seul par semaine et par marque). Le jeton reste sur le NAS.
 - La « santé de la maison » laisse désormais les pannes de marques à la veille (plus de double notification).
+
+## Installation Docker en une commande (7.20)
+
+Dans le dossier `server` du NAS, en SSH : **`sudo sh ./installer.sh`**. Le script :
+
+- crée `server/.env` la première fois (clé `BETA_KEY` tirée au hasard, fuseau horaire, port) à partir de `.env.example` ;
+- construit l'image sur le NAS (`beta-home:local`, rien à télécharger depuis GitHub) et démarre Bêta home, go2rtc et Mosquitto ;
+- vérifie que Bêta home répond, puis affiche son adresse et la clé.
+
+Ensuite : `sudo sh ./installer.sh etat | journal | redemarrer | arret | cle`. Pour une mise à jour, copiez la nouvelle version puis relancez `sudo sh ./installer.sh` : `.env` et `data/` ne sont jamais touchés.
+
+Ce qui a changé côté Docker :
+
+- **Réglages dans `.env`** : plus besoin de modifier `docker-compose.yml`. Sans `.env`, Compose refuse de démarrer avec un message clair. Le pont Matter reprend la même clé.
+- **Arrêt propre** : le serveur enregistre ce qui attend encore et s'arrête en moins d'une seconde (avant, Docker le tuait au bout de 10 s).
+- **État de santé** : le conteneur est marqué « sain » (healthy) dans UGOS et `docker ps`.
+- **Journal limité** à 3 × 10 Mo.
+- **Sécurité** : `.env` n'est jamais copié dans l'image, ni envoyé sur GitHub (`server/.gitignore`).
+
+Testé ici de bout en bout : installation, clé acceptée et mauvaise clé refusée, réglage enregistré puis arrêt en 0,06 s sans perte, réinstallation (même clé, données gardées), conteneur « healthy ».

@@ -36,7 +36,8 @@ module.exports = function veille(DATA, send, readBody, { HUB, NOTIFY, ENGINE, VE
   C = Object.assign({ cfg: {}, brands: {}, up: {}, events: [] }, C);
   C.cfg = Object.assign({ on: true, delay: 15, notifyDown: true, notifyChange: true, notifyRelease: true, notifyIssues: true, upstream: true, gh: { token: '', repo: '', auto: false } }, C.cfg);
   let dirty = false; const persist = () => { dirty = true; };
-  setInterval(() => { if (dirty) { dirty = false; try { fs.writeFileSync(FILE, JSON.stringify(C), { mode: 0o600 }); } catch (e) { } } }, 5000);
+  const flush = () => { if (dirty) { dirty = false; try { fs.writeFileSync(FILE, JSON.stringify(C), { mode: 0o600 }); } catch (e) { } } };
+  setInterval(flush, 5000);
   const GH = (process.env.VEILLE_GH || 'https://api.github.com').replace(/\/+$/, '');
   const name = id => { const b = HUB.brand(id); return b ? b.name : id; };
   const ev = (brand, type, text, extra) => { C.events.unshift(Object.assign({ t: Date.now(), brand, type, text }, extra || {})); C.events = C.events.slice(0, 200); persist(); };
@@ -167,5 +168,5 @@ module.exports = function veille(DATA, send, readBody, { HUB, NOTIFY, ENGINE, VE
     if (p === '/api/veille/ticket' && m === 'POST') { const b = await readBody(req) || {}; try { return send(res, 200, await ticket(b.brand, 'manual', (C.brands[b.brand] || {}).err || 'vérification')); } catch (e) { return send(res, 400, { error: e.message }); } }
     return false;
   }
-  return { api, report, _test: { sigOf, tick, upstream, C, ticket } };
+  return { api, report, flush, _test: { sigOf, tick, upstream, C, ticket } };
 };

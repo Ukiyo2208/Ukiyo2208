@@ -185,7 +185,7 @@ function serveStatic(req, res, url) {
   });
 }
 
-http.createServer(async (req, res) => {
+const SERVER = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname.startsWith('/api/')) {
     cors(req, res);
@@ -193,3 +193,14 @@ http.createServer(async (req, res) => {
     try { await api(req, res, url); } catch (e) { if (!res.headersSent) send(res, /JSON invalide|trop gros/.test(e.message) ? 400 : 500, { error: e.message }); }
   } else serveStatic(req, res, url);
 }).listen(PORT, () => console.log('Serveur Bêta ' + VERSION + ' sur http://0.0.0.0:' + PORT + ' — application : ' + ROOT + ' — données : ' + DATA));
+
+// arrêt propre (docker stop, mise à jour, redémarrage du NAS) : on écrit ce qui attend encore, puis on quitte tout de suite
+// au lieu d'être tué par Docker au bout de 10 secondes
+let stopping = false;
+['SIGTERM', 'SIGINT'].forEach(sig => process.on(sig, () => {
+  if (stopping) return; stopping = true;
+  console.log('Arrêt demandé (' + sig + ') : enregistrement des données…');
+  [VEILLE].forEach(m => { try { m && m.flush && m.flush(); } catch (e) { console.warn('arrêt : ' + e.message); } });
+  SERVER.close(() => process.exit(0)); setTimeout(() => process.exit(0), 1500).unref();   // au plus 1,5 s pour les requêtes en cours
+  SERVER.closeIdleConnections && SERVER.closeIdleConnections();
+}));

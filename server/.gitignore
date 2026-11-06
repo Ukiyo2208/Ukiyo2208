@@ -1,0 +1,3 @@
+# fichiers propres à chaque installation : jamais dans Git
+.env
+data/

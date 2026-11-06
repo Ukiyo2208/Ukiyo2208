@@ -5,3 +5,5 @@ node_modules
 server/data
 *.zip
 docs
+server/.env
+.github
