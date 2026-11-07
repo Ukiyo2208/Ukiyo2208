@@ -161,7 +161,9 @@ def commande_voiture(v: dict | None, action: str) -> tuple[str, str, dict]:
 # ---------------------------------------------------------------- Alexa (Matter) et HomeKit
 
 CIBLES = ("alexa", "homekit")
-_PAR_DEFAUT = {"light", "switch", "cover", "fan", "scene"}
+# Partagés par défaut : lumières, volets, ventilateurs, scènes, et les interrupteurs déclarés comme prises.
+# Les autres (beaucoup d'interrupteurs sont des réglages d'appareils) se cochent un par un dans Bêta home.
+_PAR_DEFAUT = {"light", "cover", "fan", "scene"}
 
 
 class Partage:
@@ -212,7 +214,8 @@ class Partage:
     def visible(self, a: dict, cible: str) -> bool:
         if not self.type_pont(a) or cible not in CIBLES:
             return False
-        return self.choix[cible].get(a["id"], a["id"].split(".", 1)[0] in _PAR_DEFAUT)
+        domaine, classe = a["id"].split(".", 1)[0], (a.get("attr") or {}).get("device_class")
+        return self.choix[cible].get(a["id"], domaine in _PAR_DEFAUT or (domaine == "switch" and classe == "outlet"))
 
     def elements(self, liste: list[dict], cible: str) -> list[dict]:
         """Le format attendu par les ponts (repris de Bêta home)."""
@@ -271,7 +274,7 @@ class Partage:
                       "partenaires": self.statut.get("fabrics") or [], "appareils": self.statut.get("devices")},
             "homekit": {"en_ligne": en_ligne and bool(hk), "erreur": self.statut.get("hkErr", ""), "pont_en_ligne": en_ligne,
                         "appaire": bool(hk.get("paired")), "code": hk.get("pin"), "qr": hk.get("uri"),
-                        "appareils": hk.get("devices")},
+                        "appareils": hk.get("devices"), "ignores": hk.get("ignores") or 0, "max": hk.get("max")},
         }
 
 

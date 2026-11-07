@@ -16,7 +16,8 @@ APPAREILS = [
     {"id": "sensor.temp_salon", "nom": "Température", "etat": "21.4", "piece": "Salon", "piece_id": "salon", "etage": "RDC",
      "attr": {"device_class": "temperature"}},
     {"id": "sensor.wifi_signal", "nom": "Signal", "etat": "-60", "piece": "", "piece_id": "", "etage": "", "attr": {"device_class": "signal_strength"}},
-    {"id": "switch.prise", "nom": "Prise", "etat": "off", "piece": "Bureau", "piece_id": "bureau", "etage": "Étage 1", "attr": {}},
+    {"id": "switch.prise", "nom": "Prise", "etat": "off", "piece": "Bureau", "piece_id": "bureau", "etage": "Étage 1", "attr": {"device_class": "outlet"}},
+    {"id": "switch.enfant", "nom": "Verrouillage enfant", "etat": "off", "piece": "Bureau", "piece_id": "bureau", "etage": "Étage 1", "attr": {}},
     {"id": "scene.soiree", "nom": "Soirée", "etat": "unknown", "piece": "", "piece_id": "", "etage": "", "attr": {}},
     {"id": "climate.clim", "nom": "Clim", "etat": "cool", "piece": "Salon", "piece_id": "salon", "etage": "RDC", "attr": {"temperature": 22}},
 ]

@@ -25,7 +25,9 @@ const PORT = +process.env.BRIDGE_PORT || 5540, PASSCODE = +process.env.BRIDGE_PA
 if (!process.env.MATTER_STORAGE_PATH) Environment.default.vars.set('storage.path', './data');
 // une panne de Matter (IPv6 absente sur le réseau…) est notée et affichée dans Bêta home
 Environment.default.vars.set('runtime.unhandlederrors', false);
-process.on('unhandledRejection', e => { matterErr = (e && e.message) || String(e); console.warn('Matter : ' + matterErr); });
+// une erreur imprévue (réseau, HomeKit…) est notée dans le journal sans arrêter les ponts ; les pannes de démarrage
+// de Matter sont gérées plus bas (et affichées dans Bêta home)
+process.on('unhandledRejection', e => { console.warn('Pont : ' + ((e && e.message) || String(e))); });
 
 async function beta(path, body) {
   const r = await fetch(BETA + path, { method: body ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + JETON }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(8000) });

@@ -15,7 +15,7 @@ set "DEPOT=https://github.com/Ukiyo2208/Ukiyo2208/archive/refs/heads/claude/beta
 set "REGLAGES=%APPDATA%\BetaNova\reglages.bat"
 
 rem Valeurs par defaut, puis celles de la derniere fois
-set "IP=192.168.68.91"
+set "IP=192.168.68.90"
 set "UTILISATEUR=bastien.ukiyo"
 set "DOSSIER=/volume3/Docker/Beta IA"
 if exist "%REGLAGES%" call "%REGLAGES%"

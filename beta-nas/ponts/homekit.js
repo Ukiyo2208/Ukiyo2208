@@ -67,22 +67,32 @@ export async function startHomeKit({ beta, send, store, port }) {
     if (t === 'lock') on(C.LockTargetState, v => send(it.key, { locked: v === 1 }));
     if (t === 'thermostat') { on(C.TargetHeatingCoolingState, v => send(it.key, v === 0 ? { on: false } : { on: true, hvac: BACK[v] })); on(C.TargetTemperature, v => send(it.key, { temp: v })); }
     apply(svc, t, it.state);
-    live.set(it.key, rec);
-    return acc;
+    return rec;   // ajouté à « live » seulement une fois accepté par le pont
   }
+  // HomeKit accepte au plus 149 accessoires par pont : au-delà, ils sont ignorés (et signalés dans Bêta home)
+  const MAX = 149;
+  let ignores = 0;
   async function sync() {
     let data; try { data = await beta('/v1/ponts/etat?pour=homekit'); } catch (e) { return; }
-    const items = (data.items || []).filter(i => i.homekit), want = new Map(items.map(i => [i.key, i]));
-    const gone = [...live.keys()].filter(k => !want.has(k));
-    if (gone.length) { bridge.removeBridgedAccessories(gone.map(k => live.get(k).acc)); gone.forEach(k => live.delete(k)); }
-    const fresh = items.filter(i => !live.has(i.key)).map(add);
-    if (fresh.length) bridge.addBridgedAccessories(fresh);
-    items.forEach(i => { const r = live.get(i.key); if (r && JSON.stringify(i.state) !== JSON.stringify(r.last)) { r.last = Object.assign({}, i.state); apply(r.svc, r.t, i.state); } });
+    const tous = (data.items || []).filter(i => i.homekit), items = tous.slice(0, MAX);
+    ignores = tous.length - items.length;
+    const want = new Map(items.map(i => [i.key, i]));
+    for (const k of [...live.keys()].filter(k => !want.has(k))) {
+      const r = live.get(k); live.delete(k);
+      try { bridge.removeBridgedAccessory(r.acc, false); } catch (e) { console.warn('HomeKit : retrait de ' + k + ' : ' + e.message); }
+    }
+    for (const i of items) {
+      const r = live.get(i.key);
+      if (!r) {
+        try { const rec = add(i); bridge.addBridgedAccessory(rec.acc, false); live.set(i.key, rec); }
+        catch (e) { console.warn('HomeKit : ajout de ' + i.key + ' : ' + e.message); }
+      } else if (JSON.stringify(i.state) !== JSON.stringify(r.last)) { r.last = Object.assign({}, i.state); apply(r.svc, r.t, i.state); }
+    }
   }
   await sync();
   await bridge.publish({ username: id.username, pincode: id.pin, port: port || 51826, category: Categories.BRIDGE, setupID: id.setupID, advertiser: process.env.HK_ADVERTISER || 'ciao' });
   setInterval(sync, 2000);
-  const status = () => ({ pin: id.pin, uri: bridge.setupURI(), paired: bridge._accessoryInfo ? bridge._accessoryInfo.paired() : false, devices: live.size });
+  const status = () => ({ pin: id.pin, uri: bridge.setupURI(), paired: bridge._accessoryInfo ? bridge._accessoryInfo.paired() : false, devices: live.size, ignores, max: MAX });
   console.log('Pont HomeKit prêt — code : ' + id.pin + ' — ' + live.size + ' appareil(s)');
   return { status, live };
 }

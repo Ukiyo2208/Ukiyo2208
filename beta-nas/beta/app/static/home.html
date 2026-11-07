@@ -580,7 +580,8 @@
         ${cle === "" && sansPieceOuvert && ordre.length > 1 ? `<button class="bouton secondaire" data-sans-piece>Replier</button>` : ""}
       </article>`;
     }).join("") || `<div class="vide">Aucun appareil. Range tes appareils dans des pièces (et les pièces dans des étages) dans Home Assistant.</div>`;
-    $("info").textContent = modePartage ? "Touche « Alexa » ou « HomeKit » sur un appareil pour le montrer ou le cacher."
+    const nbA = liste.filter((a) => a.alexa).length, nbH = liste.filter((a) => a.homekit).length;
+    $("info").textContent = modePartage ? `Touche « Alexa » ou « HomeKit » pour montrer ou cacher un appareil. Partagés : Alexa ${nbA}, HomeKit ${nbH}${nbH > 149 ? " (149 au maximum !)" : ""}.`
       : maison.avertissement || "";
   }
 
@@ -680,6 +681,8 @@
     let s;
     try { s = (await api("/v1/ponts"))[pour]; } catch (err) { $("pont-contenu").textContent = err.message; return; }
     const nb = maison.appareils.filter((a) => a[pour]).length;
+    const trop = s.ignores ? `<p class="basse">HomeKit accepte ${e(s.max || 149)} appareils au maximum : ${e(s.ignores)} ne sont pas partagés.
+      Décoche ceux dont tu n'as pas besoin dans « Choisir ce que voient Alexa et HomeKit ».</p>` : "";
     if (!s.en_ligne) {
       $("pont-contenu").innerHTML = `<p>Le pont ${P.nom} ne répond pas${s.pont_en_ligne ? " (le conteneur tourne, mais ce pont n'a pas démarré)" : ""}.</p>
         ${s.erreur ? `<p class="doux">Erreur : ${e(s.erreur)}</p>` : ""}
@@ -688,12 +691,12 @@
     }
     if (s.appaire) {
       $("pont-contenu").innerHTML = `<p>✅ <b>Appairé</b>${(s.partenaires || []).length ? ` avec ${e(s.partenaires.join(", "))}` : ""}.
-        ${e(s.appareils ?? nb)} appareil(s) partagé(s).</p>
+        ${e(s.appareils ?? nb)} appareil(s) partagé(s).</p>${trop}
         <p class="doux">Pour choisir ce que voit ${P.nom}, ferme cette fenêtre et touche « Choisir ce que voient Alexa et HomeKit ».
         Les changements arrivent en quelques secondes.</p>`;
       return;
     }
-    $("pont-contenu").innerHTML = `<p>${nb} appareil(s) seront partagés avec ${P.nom}. Tout reste chez toi, sans compte.</p>
+    $("pont-contenu").innerHTML = `<p>${nb} appareil(s) seront partagés avec ${P.nom}. Tout reste chez toi, sans compte.</p>${trop}
       ${P.etapes}<div class="qr" id="qr-pont"><img src="/v1/ponts/qr/${pour}.svg?${Date.now()}" alt="QR code" style="width:100%"></div>
       <div class="code">${e(s.code || "")}</div>`;
     if (jeton) { // hors de la maison, l'image a besoin du jeton
