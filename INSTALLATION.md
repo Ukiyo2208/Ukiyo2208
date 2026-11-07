@@ -28,6 +28,19 @@ Compte environ **1 h 30** au total, dont la moitié à attendre des télécharge
    Sinon, crée-le dans *Panneau de configuration → Dossiers partagés*.
 4. Note l'**adresse IP du NAS** : *Panneau de configuration → Réseau* (ex : `192.168.1.20`).
 
+## Le plus simple : `installer-windows.bat` (installation et mises à jour)
+
+Sur un PC Windows 10 ou 11, double-clique sur **`installer-windows.bat`** (dans le zip, ou sur GitHub). Il
+demande l'adresse du NAS, ton utilisateur SSH et le dossier (il retient tes réponses), puis :
+1. télécharge la dernière version ;
+2. l'envoie sur le NAS dans `<dossier>/BetaNova` ;
+3. lance l'installateur : avec ses questions la première fois, **sans aucune question** pour une mise à jour
+   (tes réglages, comptes et données sont conservés) ;
+4. ouvre Bêta dans le navigateur.
+
+Il propose aussi de créer une **clé SSH** : ensuite, plus de mot de passe SSH à taper (seulement celui de `sudo`).
+Il faut que SSH soit activé sur le NAS (étape A). Les étapes B et C ci-dessous font la même chose à la main.
+
 ## B. Télécharger et copier le projet (sur ton PC)
 
 1. Connecté à GitHub, télécharge le projet :
