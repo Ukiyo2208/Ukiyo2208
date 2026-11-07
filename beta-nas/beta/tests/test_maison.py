@@ -265,9 +265,19 @@ def test_voiture_et_famille_dans_la_page(client):
     assert c.get("/static/home/leaflet/leaflet.js").status_code == 200
 
 
-@pytest.mark.parametrize("code", [401, 400])
-def test_plan_b_sans_modele(code):
-    """Home Assistant refuse /api/template (jeton non administrateur, modèle invalide) : la page s'affiche quand même."""
+ETATS_HA = [
+    {"entity_id": "light.salon", "state": "on", "attributes": {"friendly_name": "Lustre", "brightness": 200}},
+    {"entity_id": "switch.lampe_led_indicateur", "state": "on", "attributes": {"friendly_name": "Indicateur LED"}},
+    {"entity_id": "switch.cachee", "state": "on", "attributes": {}},
+    {"entity_id": "switch.prise_bureau", "state": "off", "attributes": {"friendly_name": "Prise"}},
+    {"entity_id": "person.bastien", "state": "home", "attributes": {"friendly_name": "Bastien", "latitude": 48.5, "longitude": 7.7}},
+    {"entity_id": "sensor.fordpass_fuel", "state": "50", "attributes": {"unit_of_measurement": "%"}},
+    {"entity_id": "zone.home", "state": "1", "attributes": {"latitude": 48.5, "longitude": 7.7}},
+    {"entity_id": "automation.x", "state": "on", "attributes": {}},
+]
+
+
+def _maison(reponse_modele, registre=None):
     import asyncio
 
     import httpx
@@ -276,24 +286,46 @@ def test_plan_b_sans_modele(code):
 
     def reponse(requete):
         if requete.url.path == "/api/template":
-            return httpx.Response(code, text="Error rendering template: floor_name is undefined")
-        return httpx.Response(200, json=[
-            {"entity_id": "light.salon", "state": "on", "attributes": {"friendly_name": "Lustre", "brightness": 200}},
-            {"entity_id": "person.bastien", "state": "home", "attributes": {"friendly_name": "Bastien", "latitude": 48.5, "longitude": 7.7}},
-            {"entity_id": "sensor.fordpass_fuel", "state": "50", "attributes": {"unit_of_measurement": "%"}},
-            {"entity_id": "zone.home", "state": "1", "attributes": {"latitude": 48.5, "longitude": 7.7}},
-            {"entity_id": "automation.x", "state": "on", "attributes": {}},
-        ])
+            return reponse_modele(requete)
+        return httpx.Response(200, json=ETATS_HA)
 
     async def lancer():
         ha = HomeAssistant("http://ha", "jeton", "conversation.home_assistant")
         ha._client = httpx.AsyncClient(base_url="http://ha", transport=httpx.MockTransport(reponse))
+
+        async def faux_registre():
+            if registre is None:
+                raise OSError("pas de WebSocket")
+            return registre
+        ha._lire_registre = faux_registre
         try:
             return await ha.maison()
         finally:
             await ha.fermer()
 
-    d = asyncio.run(lancer())
-    assert [a["id"] for a in d["appareils"]] == ["light.salon"] and d["appareils"][0]["nom"] == "Lustre"
-    assert d["personnes"][0]["lat"] == 48.5 and d["voiture"][0]["id"] == "sensor.fordpass_fuel" and d["domicile"]["lat"] == 48.5
+    return asyncio.run(lancer())
+
+
+def test_pieces_etages_et_entites_techniques():
+    import httpx
+
+    pieces = [["salon", "Salon", "RDC", ["light.salon", "switch.lampe_led_indicateur"]], ["bureau", "Bureau", "", ["switch.prise_bureau"]]]
+    registre = {"switch.lampe_led_indicateur": {"ei": "switch.lampe_led_indicateur", "ec": 0},
+                "switch.cachee": {"ei": "switch.cachee", "hb": True}, "light.salon": {"ei": "light.salon"}}
+    d = _maison(lambda r: httpx.Response(200, text=__import__("json").dumps(pieces)), registre)
+    par_id = {a["id"]: a for a in d["appareils"]}
+    assert set(par_id) == {"light.salon", "switch.prise_bureau"}  # réglage et entité cachée retirés
+    assert par_id["light.salon"]["piece"] == "Salon" and par_id["light.salon"]["etage"] == "RDC"
+    assert par_id["switch.prise_bureau"]["piece_id"] == "bureau" and d["avertissement"] == ""
+    assert d["voiture"][0]["id"] == "sensor.fordpass_fuel" and d["domicile"]["lat"] == 48.5
+
+
+@pytest.mark.parametrize("code", [401, 400])
+def test_plan_b_sans_pieces(code):
+    """Home Assistant refuse le modèle des pièces : la page s'affiche quand même, sans les pièces."""
+    import httpx
+
+    d = _maison(lambda r: httpx.Response(code, text="Error rendering template"))  # pas de WebSocket non plus
+    assert {a["id"] for a in d["appareils"]} == {"light.salon", "switch.lampe_led_indicateur", "switch.cachee", "switch.prise_bureau"}
+    assert all(a["piece"] == "" for a in d["appareils"]) and d["personnes"][0]["lat"] == 48.5
     assert ("administrateur" in d["avertissement"]) == (code == 401)

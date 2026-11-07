@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import re
+import time
 from dataclasses import dataclass
 
 import httpx
+
+log = logging.getLogger("beta.homeassistant")
 
 
 @dataclass
@@ -42,28 +47,18 @@ _ATTRIBUTS = ["brightness", "supported_color_modes", "current_position", "device
               "current_temperature", "min_temp", "max_temp", "target_temp_step", "hvac_action",
               "unit_of_measurement", "media_title", "media_artist", "media_album_name", "entity_picture",
               "volume_level", "is_volume_muted", "app_name", "source", "battery_level"]
-_TEMPLATE_MAISON = (
-    "{%- set ns = namespace(l=[], p=[], v=[]) -%}"
-    "{%- for s in states if s.domain in " + json.dumps(DOMAINES_MAISON) + " and MOTIF_VOITURE not in s.entity_id -%}"
-    "{%- set a = area_id(s.entity_id) -%}"
-    "{%- set ns.l = ns.l + [{'id': s.entity_id, 'nom': s.name, 'etat': s.state, 'piece': area_name(s.entity_id) or '',"
-    " 'piece_id': a or '', 'etage': ((floor_name(a) if a else '') or ''), 'attr': {"
-    + ", ".join(f"'{k}': s.attributes.get('{k}')" for k in _ATTRIBUTS) +
-    "}}] -%}"
+# Seulement les pièces : leur nom, leur étage et leurs entités (petite réponse, même avec des milliers d'entités).
+# area_entities() compte aussi les entités rangées par leur appareil.
+_TEMPLATE_PIECES = (
+    "{%- set ns = namespace(l=[]) -%}"
+    "{%- for a in areas() -%}"
+    "{%- set ns.l = ns.l + [[a, area_name(a), (floor_name(a) or ''), area_entities(a)]] -%}"
     "{%- endfor -%}"
-    "{%- for s in states.person -%}{%- set ns.p = ns.p + [{'id': s.entity_id, 'nom': s.name, 'etat': s.state,"
-    " 'lat': s.attributes.get('latitude'), 'lon': s.attributes.get('longitude'), 'precision': s.attributes.get('gps_accuracy')}] -%}{%- endfor -%}"
-    # La voiture (FordPass…) : ses entités sont mises à part, pour sa propre tuile
-    "{%- for s in states if MOTIF_VOITURE in s.entity_id and s.domain in ['sensor', 'binary_sensor', 'lock', 'switch', 'button', 'device_tracker'] -%}"
-    "{%- set ns.v = ns.v + [{'id': s.entity_id, 'nom': s.name, 'etat': s.state, 'unite': s.attributes.get('unit_of_measurement'),"
-    " 'lat': s.attributes.get('latitude'), 'lon': s.attributes.get('longitude')}] -%}{%- endfor -%}"
-    "{%- set d = states.zone.home -%}"
-    "{%- set w = states.weather | first -%}"
-    "{{ {'appareils': ns.l, 'personnes': ns.p, 'voiture': ns.v,"
-    " 'domicile': ({'lat': d.attributes.get('latitude'), 'lon': d.attributes.get('longitude')} if d else None), 'meteo': ({'nom': w.name, 'etat': w.state,"
-    " 'temperature': w.attributes.get('temperature'), 'unite': w.attributes.get('temperature_unit'),"
-    " 'humidite': w.attributes.get('humidity'), 'vent': w.attributes.get('wind_speed')} if w else None)} | tojson }}"
+    "{{ ns.l | tojson }}"
 )
+_SANS_ETAGE = "(floor_name(a) or '')"
+_DOMAINES_VOITURE = ("sensor", "binary_sensor", "lock", "switch", "button", "device_tracker")
+DUREE_REGISTRE = 300  # secondes : la liste des entités techniques change rarement
 
 
 def _raison(e: httpx.HTTPStatusError) -> str:
@@ -80,6 +75,9 @@ def _raison(e: httpx.HTTPStatusError) -> str:
 class HomeAssistant:
     def __init__(self, url: str, token: str, agent_id: str, langue: str = "fr", timeout: float = 15.0):
         self.url = url
+        self._token = token
+        self._registre: dict | None = None
+        self._registre_instant = 0.0
         self.agent_id = agent_id
         self.langue = langue
         self._client = httpx.AsyncClient(
@@ -127,42 +125,42 @@ class HomeAssistant:
         return json.loads(r.text)
 
     async def maison(self, motif_voiture: str = "fordpass") -> dict:
-        """Tout ce que la page Bêta home affiche, en un seul appel : appareils (avec pièce, étage et
-        attributs utiles), météo, personnes (avec leur position), voiture et position de la maison.
-        Si Home Assistant refuse le modèle (jeton non administrateur, version ancienne…), plan B :
-        la simple liste des états, sans les pièces, avec la raison dans « avertissement »."""
-        motif = re.sub(r"[^a-z0-9_]", "", motif_voiture.lower()) or "fordpass"
-        template = _TEMPLATE_MAISON.replace("MOTIF_VOITURE", json.dumps(motif).replace('"', "'"))
-        try:
-            return await self._rendre(template)
-        except httpx.HTTPStatusError as e:
-            raison = _raison(e)
-        except ValueError as e:  # réponse qui n'est pas du JSON
-            raison = f"Réponse de Home Assistant illisible ({e}). Affichage sans les pièces."
-        try:
-            # Home Assistant d'avant les étages (2024.4) : même chose sans les étages
-            return await self._rendre(template.replace("(floor_name(a) if a else '')", "''"))
-        except (httpx.HTTPStatusError, ValueError):
-            pass
-        donnees = await self._maison_simple(motif)
-        donnees["avertissement"] = raison
-        return donnees
+        """Tout ce que la page Bêta home affiche : appareils (pièce, étage, attributs utiles), météo,
+        personnes (avec leur position), voiture et position de la maison.
 
-    async def _maison_simple(self, motif: str) -> dict:
-        """Plan B : GET /api/states, accessible à tout jeton. Pas de pièces ni d'étages."""
+        - les états viennent de GET /api/states (pas de limite de taille) ;
+        - les pièces et étages d'un petit modèle ; s'il est refusé, tout s'affiche sans les pièces, avec la
+          raison dans « avertissement » ;
+        - les entités techniques (configuration, diagnostic) et cachées sont retirées, d'après la liste
+          d'affichage de Home Assistant."""
+        motif = re.sub(r"[^a-z0-9_]", "", motif_voiture.lower()) or "fordpass"
         r = await self._client.get("/api/states")
         r.raise_for_status()
+        etats = r.json()
+        pieces, avertissement = await self._pieces()
+        registre = await self._registre_affichage()
+
+        piece_de: dict[str, tuple[str, str, str]] = {}
+        for area_id, nom, etage, entites in pieces:
+            for eid in entites or []:
+                piece_de.setdefault(eid, (area_id, nom or "", etage or ""))
+
         appareils, personnes, voiture, meteo, domicile = [], [], [], None, None
-        for e in r.json():
+        for e in etats:
             eid, attr = e.get("entity_id", ""), e.get("attributes") or {}
             domaine = eid.split(".", 1)[0]
             nom = attr.get("friendly_name") or eid.split(".", 1)[-1].replace("_", " ")
-            if motif in eid and domaine in ("sensor", "binary_sensor", "lock", "switch", "button", "device_tracker"):
-                voiture.append({"id": eid, "nom": nom, "etat": e.get("state"), "unite": attr.get("unit_of_measurement"),
-                                "lat": attr.get("latitude"), "lon": attr.get("longitude")})
+            if motif in eid:
+                if domaine in _DOMAINES_VOITURE:
+                    voiture.append({"id": eid, "nom": nom, "etat": e.get("state"), "unite": attr.get("unit_of_measurement"),
+                                    "lat": attr.get("latitude"), "lon": attr.get("longitude")})
             elif domaine in DOMAINES_MAISON:
-                appareils.append({"id": eid, "nom": nom, "etat": e.get("state"), "piece": "", "piece_id": "", "etage": "",
-                                  "attr": {k: attr.get(k) for k in _ATTRIBUTS}})
+                fiche = registre.get(eid) or {}
+                if "ec" in fiche or fiche.get("hb"):  # réglage, diagnostic ou entité cachée
+                    continue
+                area_id, piece, etage = piece_de.get(eid, ("", "", ""))
+                appareils.append({"id": eid, "nom": nom, "etat": e.get("state"), "piece": piece, "piece_id": area_id,
+                                  "etage": etage, "attr": {k: attr.get(k) for k in _ATTRIBUTS}})
             elif domaine == "person":
                 personnes.append({"id": eid, "nom": nom, "etat": e.get("state"), "lat": attr.get("latitude"),
                                   "lon": attr.get("longitude"), "precision": attr.get("gps_accuracy")})
@@ -171,7 +169,52 @@ class HomeAssistant:
                          "unite": attr.get("temperature_unit"), "humidite": attr.get("humidity"), "vent": attr.get("wind_speed")}
             elif eid == "zone.home":
                 domicile = {"lat": attr.get("latitude"), "lon": attr.get("longitude")}
-        return {"appareils": appareils, "personnes": personnes, "voiture": voiture, "domicile": domicile, "meteo": meteo}
+        return {"appareils": appareils, "personnes": personnes, "voiture": voiture, "domicile": domicile,
+                "meteo": meteo, "avertissement": avertissement}
+
+    async def _pieces(self) -> tuple[list, str]:
+        """[[area_id, nom, étage, [entités]], …] et un avertissement si Home Assistant refuse."""
+        try:
+            return await self._rendre(_TEMPLATE_PIECES), ""
+        except httpx.HTTPStatusError as e:
+            raison = _raison(e)
+        except ValueError as e:
+            raison = f"Réponse de Home Assistant illisible ({e}). Affichage sans les pièces."
+        try:  # Home Assistant d'avant les étages (2024.4)
+            return await self._rendre(_TEMPLATE_PIECES.replace(_SANS_ETAGE, "''")), ""
+        except (httpx.HTTPStatusError, ValueError):
+            return [], raison
+
+    async def _registre_affichage(self) -> dict[str, dict]:
+        """Liste d'affichage de Home Assistant (celle de son interface) : catégorie (« ec ») et entités
+        cachées (« hb »). Gardée 5 minutes. Vide si elle n'est pas disponible : rien n'est alors retiré."""
+        if self._registre is not None and time.monotonic() - self._registre_instant < DUREE_REGISTRE:
+            return self._registre
+        try:
+            self._registre = await asyncio.wait_for(self._lire_registre(), timeout=10)
+        except Exception as e:  # WebSocket refusé, ancienne version : on affiche tout
+            log.info("Liste d'affichage de Home Assistant indisponible (%s) : entités techniques gardées", e)
+            self._registre = {}
+        self._registre_instant = time.monotonic()
+        return self._registre
+
+    async def _lire_registre(self) -> dict[str, dict]:
+        from websockets.asyncio.client import connect
+
+        adresse = re.sub(r"^http", "ws", self.url.rstrip("/")) + "/api/websocket"
+        async with connect(adresse, max_size=None, open_timeout=8) as ws:
+            await ws.recv()  # auth_required
+            await ws.send(json.dumps({"type": "auth", "access_token": self._token}))
+            if json.loads(await ws.recv()).get("type") != "auth_ok":
+                raise PermissionError("jeton refusé")
+            await ws.send(json.dumps({"id": 1, "type": "config/entity_registry/list_for_display"}))
+            while True:
+                message = json.loads(await ws.recv())
+                if message.get("id") == 1:
+                    break
+        if not message.get("success"):
+            raise RuntimeError(message.get("error", {}).get("message", "refus"))
+        return {e["ei"]: e for e in message["result"].get("entities", []) if "ei" in e}
 
     async def _rendre(self, template: str) -> dict:
         r = await self._client.post("/api/template", json={"template": template})

@@ -283,6 +283,7 @@
   let maison = { appareils: [], personnes: [], meteo: null };
   let etage = memoire.lire("home_etage") || "";
   let modePartage = false;
+  let sansPieceOuvert = false;
 
   async function api(chemin, options = {}) {
     const entetes = { "Content-Type": "application/json", ...(jeton ? { Authorization: `Bearer ${jeton}` } : {}) };
@@ -543,11 +544,17 @@
     const scenes = liste.filter((a) => dom(a) === "scene");
     $("scenes").innerHTML = scenes.map((a) => `<span class="scene-partage"><button class="scene" data-act="lancer" data-id="${e(a.id)}">${ico("jouer")}${e(a.nom)}</button>${pastilleAlexa(a)}</span>`).join("");
 
+    // Par pièce ; si Home Assistant ne donne aucune pièce, par type d'appareil (même design de cartes)
+    const avecPieces = liste.some((a) => a.piece_id);
+    const TYPES = { light: "Lumières", switch: "Prises et interrupteurs", input_boolean: "Prises et interrupteurs", cover: "Volets",
+      climate: "Climatisation", fan: "Ventilation", media_player: "Télé et enceintes", vacuum: "Aspirateur", lock: "Serrures",
+      sensor: "Capteurs", binary_sensor: "Capteurs" };
     const pieces = new Map();
     for (const a of liste) {
       if (dom(a) === "scene" || (etage && a.etage !== etage)) continue;
-      const cle = a.piece_id || "";
-      if (!pieces.has(cle)) pieces.set(cle, { nom: a.piece || "Sans pièce", appareils: [] });
+      const cle = avecPieces ? a.piece_id || "" : `type:${TYPES[dom(a)] || "Autres"}`;
+      const nom = avecPieces ? a.piece || "Sans pièce" : TYPES[dom(a)] || "Autres";
+      if (!pieces.has(cle)) pieces.set(cle, { nom, appareils: [] });
       pieces.get(cle).appareils.push(a);
     }
     const ordre = [...pieces.entries()].sort(([a, x], [b, y]) => (a === "") - (b === "") || x.nom.localeCompare(y.nom, "fr"));
@@ -560,12 +567,17 @@
         const t = ["motion", "occupancy", "presence"].includes(c) ? "Mouvement" : c === "moisture" ? "Fuite d'eau" : c === "smoke" ? "Fumée" : `${a.nom} ouvert`;
         return `<span class="badge ${["moisture", "smoke"].includes(c) ? "alerte" : ""}">${e(t)}</span>`;
       }).join("");
-      const tuiles = p.appareils.map(tuile).join("");
       const allumes = p.appareils.filter((a) => dom(a) === "light" && a.etat === "on").length;
+      const estPiece = cle && !cle.startsWith("type:");
+      // « Sans pièce » repliée quand il y a des pièces : elle ne noie pas le reste
+      const replie = cle === "" && ordre.length > 1 && !sansPieceOuvert;
+      const tuiles = replie ? "" : p.appareils.map(tuile).join("");
       return `<article class="piece verre">
-        <div class="piece-titre">${ico(cle ? "maison" : "prise")}<h3>${e(p.nom)}</h3><span class="climat">${e(climat || (allumes ? `${allumes} allumée${allumes > 1 ? "s" : ""}` : ""))}</span></div>
-        ${cle ? `<div class="photo"><img src="/static/home/pieces/${photo(p.nom, rang)}.jpg" alt="" loading="lazy"><div class="badges">${badges}</div></div>` : ""}
-        ${tuiles ? `<div class="tuiles">${tuiles}</div>` : `<div class="doux" style="font-size:13px">Capteurs seulement</div>`}
+        <div class="piece-titre">${ico(estPiece ? "maison" : "prise")}<h3>${e(p.nom)}</h3><span class="climat">${e(climat || (allumes ? `${allumes} allumée${allumes > 1 ? "s" : ""}` : ""))}</span></div>
+        ${estPiece ? `<div class="photo"><img src="/static/home/pieces/${photo(p.nom, rang)}.jpg" alt="" loading="lazy"><div class="badges">${badges}</div></div>` : ""}
+        ${replie ? `<button class="bouton secondaire" data-sans-piece>Voir les ${p.appareils.length} appareils sans pièce</button>`
+          : tuiles ? `<div class="tuiles">${tuiles}</div>` : `<div class="doux" style="font-size:13px">Capteurs seulement</div>`}
+        ${cle === "" && sansPieceOuvert && ordre.length > 1 ? `<button class="bouton secondaire" data-sans-piece>Replier</button>` : ""}
       </article>`;
     }).join("") || `<div class="vide">Aucun appareil. Range tes appareils dans des pièces (et les pièces dans des étages) dans Home Assistant.</div>`;
     $("info").textContent = modePartage ? "Touche « Alexa » ou « HomeKit » sur un appareil pour le montrer ou le cacher."
@@ -593,6 +605,7 @@
   }
 
   document.addEventListener("click", async (ev) => {
+    if (ev.target.closest("[data-sans-piece]")) { sansPieceOuvert = !sansPieceOuvert; return afficher(); }
     const onglet = ev.target.closest("[data-etage]");
     if (onglet) { etage = onglet.dataset.etage; memoire.ecrire("home_etage", etage); return afficher(); }
     const pont = ev.target.closest("[data-pont]");
