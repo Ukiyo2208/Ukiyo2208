@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import ipaddress
+import re
 import logging
 import secrets
 import time
@@ -93,7 +94,7 @@ if _reglages_demarrage.cors_origines:
 statistiques = st.Statistiques()
 _PAS_SUIVIS = (
     "/static", "/favicon.ico", "/v1/stats", "/v1/nas", "/v1/appairage", "/v1/tri/etat", "/v1/maison/appareils",
-    "/tableau", "/tri", "/home", "/v1/maison/etat", "/v1/maison/image", "/v1/plex", "/v1/ponts", "/docs", "/openapi.json",
+    "/tableau", "/tri", "/home", "/v1/maison/etat", "/v1/maison/image", "/v1/maison/camera", "/v1/plex", "/v1/ponts", "/docs", "/openapi.json",
 )
 
 
@@ -517,6 +518,7 @@ class ActionMaison(BaseModel):
     entite: str
     action: str
     valeur: float | None = None
+    option: str | None = None  # mode de clim, source de la télé, programme…
 
 
 class ChoixPont(BaseModel):
@@ -557,6 +559,12 @@ def _partage() -> maison.Partage:
     return etat["partage"]
 
 
+def _favoris() -> maison.Favoris:
+    if "favoris" not in etat:
+        etat["favoris"] = maison.Favoris(Path(etat["settings"].donnees) / "ma_position.json")
+    return etat["favoris"]
+
+
 def _plex() -> plex_.Plex:
     if "plex" not in etat:
         s: cfg.Settings = etat["settings"]
@@ -578,10 +586,15 @@ async def page_home():
 async def etat_maison():
     """Appareils (pièce, étage, état, attributs), personnes et météo, pour la page Bêta home."""
     donnees, partage = await _maison_brute(), _partage()
+    toutes = donnees.get("appareils", [])
+    groupes = maison.groupes(toutes, donnees.get("appareils_ha", {}))
+    dans_un_groupe = {eid for g in groupes for eid in g["entites"]}
+    # Entités envoyées : celles des tuiles, plus les capteurs utiles à l'en-tête des pièces et les scènes
     liste = [a | {"alexa": partage.visible(a, "alexa"), "homekit": partage.visible(a, "homekit"),
                   "partage_possible": partage.type_pont(a) is not None}
-             for a in maison.appareils(donnees)]
-    return {"appareils": liste, "personnes": donnees.get("personnes", []), "meteo": donnees.get("meteo"),
+             for a in toutes if a["id"] in dans_un_groupe or maison.utile(a) and a["id"].split(".", 1)[0] in (
+                 "sensor", "binary_sensor", "scene")]
+    return {"appareils": liste, "groupes": groupes, "personnes": donnees.get("personnes", []), "meteo": donnees.get("meteo"),
             "domicile": donnees.get("domicile"), "avertissement": donnees.get("avertissement", ""),
             "voiture": maison.voiture(donnees.get("voiture", []), etat["settings"].voiture_nom)}
 
@@ -610,7 +623,21 @@ async def action_maison(demande: ActionMaison):
     ha = etat["routeur"].ha
     try:
         attributs = await ha.attributs(demande.entite)
-        domaine, service, donnees = maison.commande_page(demande.entite, demande.action, demande.valeur, attributs)
+        if demande.action in ("ma_position", "enregistrer_ma_position"):
+            if not demande.entite.startswith("cover.") or attributs.get("device_class") in maison.INTERDITS:
+                raise maison.ActionRefusee("« Ma position » est pour les volets")
+            favoris = _favoris()
+            if demande.action == "enregistrer_ma_position":
+                position = demande.valeur if demande.valeur is not None else attributs.get("current_position")
+                favoris.enregistrer(demande.entite, position)
+                return {"ok": True, "position": favoris.positions[demande.entite]}
+            brute = await _maison_brute()
+            groupe = next((g for g in maison.groupes(brute.get("appareils", []), brute.get("appareils_ha", {}))
+                           if demande.entite in g["entites"]), None)
+            domaine, service, donnees = maison.commande_ma_position(demande.entite, groupe, favoris)
+        else:
+            domaine, service, donnees = maison.commande_page(demande.entite, demande.action, demande.valeur, attributs,
+                                                             demande.option)
         await ha.service(domaine, service, donnees)
     except maison.ActionRefusee as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -634,6 +661,18 @@ async def image_maison(entite: str):
     except httpx.HTTPError as e:
         raise HTTPException(status_code=404, detail="Pas d'image") from e
     return Response(contenu, media_type=type_, headers={"Cache-Control": "max-age=300"})
+
+
+@app.get("/v1/maison/camera/{entite}", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
+async def image_camera(entite: str):
+    """Image actuelle d'une caméra de Home Assistant (la page la rafraîchit toutes les quelques secondes)."""
+    if not re.fullmatch(r"camera\.[a-z0-9_]+", entite):
+        raise HTTPException(status_code=404, detail="Caméra inconnue")
+    try:
+        contenu, type_ = await etat["routeur"].ha.image(f"/api/camera_proxy/{entite}")
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=404, detail="Image indisponible") from e
+    return Response(contenu, media_type=type_, headers={"Cache-Control": "max-age=5"})
 
 
 @app.get("/v1/musique/radios", dependencies=[Depends(verifier_jeton)])

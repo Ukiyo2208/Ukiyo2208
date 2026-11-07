@@ -42,11 +42,15 @@ _TEMPLATE_APPAREILS = """
 
 # Domaines lus pour la page Bêta home (les serrures y sont affichées, jamais commandées)
 DOMAINES_MAISON = ["light", "switch", "cover", "climate", "fan", "media_player", "scene", "input_boolean",
-                   "sensor", "binary_sensor", "lock", "vacuum"]
-_ATTRIBUTS = ["brightness", "supported_color_modes", "current_position", "device_class", "temperature",
-              "current_temperature", "min_temp", "max_temp", "target_temp_step", "hvac_action",
-              "unit_of_measurement", "media_title", "media_artist", "media_album_name", "entity_picture",
-              "volume_level", "is_volume_muted", "app_name", "source", "battery_level"]
+                   "sensor", "binary_sensor", "lock", "vacuum", "camera", "number", "select", "button",
+                   "input_number", "input_select"]
+_ATTRIBUTS = ["brightness", "supported_color_modes", "color_mode", "color_temp_kelvin", "min_color_temp_kelvin",
+              "max_color_temp_kelvin", "hs_color", "current_position", "current_tilt_position", "device_class",
+              "temperature", "current_temperature", "min_temp", "max_temp", "target_temp_step", "hvac_action",
+              "hvac_modes", "fan_mode", "fan_modes", "preset_mode", "preset_modes", "unit_of_measurement",
+              "media_title", "media_artist", "media_album_name", "entity_picture", "volume_level",
+              "is_volume_muted", "app_name", "source", "source_list", "battery_level", "fan_speed",
+              "fan_speed_list", "percentage", "options", "min", "max", "step", "supported_features"]
 # Seulement les pièces : leur nom, leur étage et leurs entités (petite réponse, même avec des milliers d'entités).
 # area_entities() compte aussi les entités rangées par leur appareil.
 _TEMPLATE_PIECES = (
@@ -59,6 +63,19 @@ _TEMPLATE_PIECES = (
 _SANS_ETAGE = "(floor_name(a) or '')"
 _DOMAINES_VOITURE = ("sensor", "binary_sensor", "lock", "switch", "button", "device_tracker")
 DUREE_REGISTRE = 300  # secondes : la liste des entités techniques change rarement
+
+
+def _template_appareils(ids: list[str]) -> str:
+    """De quel appareil vient chaque entité, et le nom, le fabricant et le modèle de chaque appareil."""
+    return (
+        "{%- set ns = namespace(e=[], d=[], l=[]) -%}"
+        "{%- for eid in " + json.dumps(ids) + " -%}{%- set d = device_id(eid) -%}"
+        "{%- if d -%}{%- set ns.e = ns.e + [[eid, d]] -%}{%- if d not in ns.d -%}{%- set ns.d = ns.d + [d] -%}{%- endif -%}{%- endif -%}"
+        "{%- endfor -%}"
+        "{%- for d in ns.d -%}{%- set ns.l = ns.l + [[d, device_attr(d, 'name_by_user') or device_attr(d, 'name') or '',"
+        " device_attr(d, 'manufacturer') or '', device_attr(d, 'model') or '']] -%}{%- endfor -%}"
+        "{{ {'entites': ns.e, 'appareils': ns.l} | tojson }}"
+    )
 
 
 def _raison(e: httpx.HTTPStatusError) -> str:
@@ -160,7 +177,7 @@ class HomeAssistant:
                     continue
                 area_id, piece, etage = piece_de.get(eid, ("", "", ""))
                 appareils.append({"id": eid, "nom": nom, "etat": e.get("state"), "piece": piece, "piece_id": area_id,
-                                  "etage": etage, "attr": {k: attr.get(k) for k in _ATTRIBUTS}})
+                                  "etage": etage, "attr": {k: attr[k] for k in _ATTRIBUTS if attr.get(k) is not None}})
             elif domaine == "person":
                 personnes.append({"id": eid, "nom": nom, "etat": e.get("state"), "lat": attr.get("latitude"),
                                   "lon": attr.get("longitude"), "precision": attr.get("gps_accuracy")})
@@ -169,8 +186,27 @@ class HomeAssistant:
                          "unite": attr.get("temperature_unit"), "humidite": attr.get("humidity"), "vent": attr.get("wind_speed")}
             elif eid == "zone.home":
                 domicile = {"lat": attr.get("latitude"), "lon": attr.get("longitude")}
-        return {"appareils": appareils, "personnes": personnes, "voiture": voiture, "domicile": domicile,
-                "meteo": meteo, "avertissement": avertissement}
+        appareils_ha = await self._appareils_ha(appareils)
+        return {"appareils": appareils, "appareils_ha": appareils_ha, "personnes": personnes, "voiture": voiture,
+                "domicile": domicile, "meteo": meteo, "avertissement": avertissement}
+
+    async def _appareils_ha(self, appareils: list[dict]) -> dict[str, dict]:
+        """Ajoute « appareil » (identifiant de l'appareil Home Assistant) à chaque entité, et renvoie
+        {identifiant: {nom, fabricant, modele}}. Vide si Home Assistant refuse : chaque entité reste seule."""
+        if not appareils:
+            return {}
+        try:
+            donnees = await self._rendre(_template_appareils([a["id"] for a in appareils]))
+        except (httpx.HTTPStatusError, ValueError) as e:
+            log.info("Appareils de Home Assistant indisponibles (%s) : une tuile par entité", e)
+            return {}
+        if not isinstance(donnees, dict):
+            return {}
+        appareil_de = dict(donnees.get("entites", []))
+        for a in appareils:
+            if appareil_de.get(a["id"]):
+                a["appareil"] = appareil_de[a["id"]]
+        return {d: {"nom": nom, "fabricant": fab, "modele": modele} for d, nom, fab, modele in donnees.get("appareils", [])}
 
     async def _pieces(self) -> tuple[list, str]:
         """[[area_id, nom, étage, [entités]], …] et un avertissement si Home Assistant refuse."""

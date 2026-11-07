@@ -209,8 +209,13 @@ côté par défaut. Les documents validés sont rangés dans ton dossier `Docume
 
 **Bêta home** : **`http://192.168.1.20:8800/home/`** (onglet **Bêta home** de la page de Bêta). Trois vues, avec le
 design de Bêta home, et rien à configurer : tout passe par la connexion Home Assistant de Bêta.
-- **Maison** : pièces avec photo, rangées par étage, tuiles pour les lumières, prises, volets, clim, télé, scènes,
-  aspirateur. Range tes appareils dans des **pièces** et tes pièces dans des **étages** dans Home Assistant.
+- **Maison** : pièces avec photo, rangées par étage, et **une tuile par appareil** de Home Assistant (un lave-linge
+  et ses 8 entités = une tuile) : lumières, prises (avec leur consommation), volets (avec ⭐ « ma position »), clim,
+  télé, enceintes, aspirateur, lave-linge, sèche-linge, lave-vaisselle (état, temps restant, progression),
+  caméras (image en direct). Le bouton **⋯** de chaque tuile ouvre tous ses réglages : couleur et blanc des
+  lumières, modes de la clim, sources de la télé, programme et options des machines, inclinaison des lames…
+  - ⭐ sur un volet : le bouton « My » de l'appareil s'il en a un (Somfy), sinon la position que tu enregistres
+    dans ⋯ (« Enregistrer la position actuelle comme ma position »). Range tes appareils dans des **pièces** et tes pièces dans des **étages** dans Home Assistant.
   Serrures, portes de garage et portails sont affichés mais ne se commandent pas.
 - **Musique** : tes enceintes de Home Assistant (Sonos, Google Cast, Music Assistant…) avec pochette, lecture,
   morceau suivant, volume ; et les radios (France Inter, FIP, NRJ…) à écouter sur la tablette ou sur une enceinte.

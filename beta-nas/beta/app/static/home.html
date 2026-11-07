@@ -147,7 +147,8 @@
   .interrupteur::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #e8ecff; transition: transform .2s; }
   .interrupteur.on { background: linear-gradient(90deg, #2f8bff, #4fd1ff); box-shadow: 0 0 12px rgba(79, 209, 255, .55); }
   .interrupteur.on::after { transform: translateX(20px); }
-  .boutons { display: flex; gap: 6px; }
+  .boutons { display: flex; gap: 5px; min-width: 0; }
+  .boutons button { min-width: 0; padding: 0 4px; }
   .boutons button { flex: 1; height: 34px; border-radius: 9px; border: 1px solid var(--bord); background: rgba(255, 255, 255, .05);
                     display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; }
   .boutons button:hover, .boutons button:active { border-color: var(--cyan); background: rgba(47, 139, 255, .25); }
@@ -160,6 +161,32 @@
   .alexa-pastille { font-size: 10px; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--bord); background: rgba(0, 0, 0, .35); }
   .alexa-pastille.on { border-color: #31c4f3; background: rgba(49, 196, 243, .25); }
   .vide { padding: 30px; text-align: center; color: var(--doux); }
+  .plus-tuile { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 8px; border: 0; background: none;
+                color: var(--doux); font-size: 16px; line-height: 1; display: grid; place-items: center; }
+  .plus-tuile:hover { color: #fff; background: rgba(255, 255, 255, .08); }
+  .tuile .nom { padding-right: 26px; }
+  .tuile .info { font-size: 12px; color: var(--doux); }
+  .progression { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+  .progression i { display: block; height: 100%; background: linear-gradient(90deg, #2f8bff, #4fd1ff); }
+  .tuile.marche-machine { border-color: rgba(79, 209, 255, .5); box-shadow: inset 0 0 22px rgba(79, 209, 255, .1); }
+  .camera-image { position: relative; border-radius: 10px; overflow: hidden; background: #0b1236; aspect-ratio: 16 / 9; }
+  .camera-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .camera-image .badge { position: absolute; left: 6px; bottom: 6px; }
+  .etoile { color: #ffd34d; }
+  .boutons button.etoile-active { border-color: #ffd34d; }
+  /* ---------- fiche d'un appareil (« ⋯ ») ---------- */
+  .fiche { width: min(560px, 100%); }
+  .fiche .modele { font-size: 13px; color: var(--doux); margin: -6px 0 12px; }
+  .lignes-fiche { display: grid; gap: 8px; }
+  .ligne-fiche { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 12px;
+                 border: 1px solid var(--bord); border-radius: 12px; background: rgba(10, 18, 56, .5); }
+  .ligne-fiche .libelle { font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .ligne-fiche .valeur { color: var(--doux); font-size: 14px; text-align: right; }
+  .ligne-fiche.large { grid-template-columns: 1fr; }
+  .ligne-fiche input[type=range] { width: 100%; }
+  .couleurs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .couleurs button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .3); }
+  .teintes { background: linear-gradient(90deg, #ffb46b, #fff4e5, #cfe3ff) !important; }
 
   /* ---------- Bêta IA ---------- */
   .ia { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(16px, env(safe-area-inset-bottom)); width: min(680px, calc(100% - 32px)); z-index: 20; }
@@ -266,6 +293,15 @@
   </form>
 </div>
 
+<div class="voile" id="fenetre-fiche" hidden>
+  <div class="fenetre fiche verre">
+    <h2 id="fiche-titre"></h2>
+    <div class="modele" id="fiche-modele"></div>
+    <div class="lignes-fiche" id="fiche-contenu"></div>
+    <p style="text-align:right;margin:14px 0 0"><button class="bouton secondaire" type="button" id="fermer-fiche">Fermer</button></p>
+  </div>
+</div>
+
 <div class="voile" id="fenetre-pont" hidden>
   <div class="fenetre verre">
     <h2 id="pont-titre">Alexa</h2>
@@ -303,7 +339,12 @@
     flocon: '<path d="M12 2v20M4.9 7l14.2 10M4.9 17L19.1 7"/>', tele: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/>',
     ventilo: '<circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7s2 5-2 7M14 12c4 0 7 1 7 4s-5 2-7-2M12 14c0 4-1 7-4 7s-2-5 2-7M10 12c-4 0-7-1-7-4s5-2 7 2"/>',
     serrure: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
-    robot: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>', maison: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>',
+    robot: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>',
+    linge: '<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="4.5"/><path d="M7 6.5h.01M10 6.5h4"/>',
+    vaisselle: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 8h16M8 12v5M12 12v5M16 12v5"/>',
+    camera: '<path d="M3 7h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13" r="3.5"/>',
+    enceinte: '<rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="15" r="3"/><path d="M12 7h.01"/>',
+    etoile: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>', maison: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>',
     soleil: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
     nuage: '<path d="M7 18h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.5 2A3 3 0 0 0 7 18z"/>',
     pluie: '<path d="M7 15h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.5 2A3 3 0 0 0 7 15zM8 18l-1 3M12 18l-1 3M16 18l-1 3"/>',
@@ -425,8 +466,196 @@
     return "";
   }
 
+  // ---------------------------------------------------------------- tuiles par appareil
+  let parId = new Map();
+  const ent = (id) => parId.get(id);
+  const nb = (v) => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
+  const plus = (g) => `<button class="plus-tuile" data-fiche="${e(g.id)}" aria-label="Tous les réglages de ${e(g.nom)}">⋯</button>`;
+  const avecNom = (html, nom) => html.replace(/<div class="nom" title="[^"]*">[^<]*<\/div>/, `<div class="nom" title="${e(nom)}">${e(nom)}</div>`);
+
+  const ETATS_MACHINE = [
+    [/run|marche|wash|lavage|dry|sechage|rinc|spin|essor|in_progress|cycle|active|actif|working|^on$/i, "En marche", true],
+    [/pause/i, "En pause", false], [/finish|termin|end|complete|fini|done/i, "Terminé", false],
+    [/idle|off|standby|ready|pret|arret|stop|inactive/i, "Arrêtée", false],
+  ];
+  function etatMachine(texte) {
+    for (const [re, libelle, marche] of ETATS_MACHINE) if (re.test(String(texte))) return [libelle, marche];
+    return [texte, false];
+  }
+  function tempsRestant(a) {
+    if (!a || ["unknown", "unavailable", ""].includes(a.etat)) return "";
+    const unite = a.attr?.unit_of_measurement, classe = a.attr?.device_class;
+    if (classe === "timestamp" || /^\d{4}-\d\d-\d\dT/.test(a.etat)) {
+      const min = Math.round((new Date(a.etat) - Date.now()) / 60000);
+      return min > 0 ? `reste ${min} min` : "";
+    }
+    const m = /^(\d+):(\d\d)(:\d\d)?$/.exec(a.etat);
+    if (m) return `reste ${Number(m[1]) * 60 + Number(m[2])} min`;
+    const n = nb(a.etat);
+    if (n == null || n <= 0) return "";
+    if (unite === "h") return `reste ${Math.round(n * 60)} min`;
+    if (unite === "s") return `reste ${Math.round(n / 60)} min`;
+    return `reste ${Math.round(n)} min`;
+  }
+
+  function tuileMachine(g) {
+    const etat = ent(g.etat), restant = ent(g.restant), prog = ent(g.progression), programme = ent(g.programme);
+    const marcheInter = g.principal.startsWith("switch.") ? ent(g.principal) : null;
+    const [libelle, enMarche] = etat ? etatMachine(etat.etat) : [marcheInter ? (marcheInter.etat === "on" ? "Allumée" : "Éteinte") : "—", false];
+    const pct = prog ? nb(prog.etat) : null;
+    const icone = g.type === "lave_vaisselle" ? "vaisselle" : "linge";
+    const infos = [programme && !["unknown", "unavailable"].includes(programme.etat) ? programme.etat : "", tempsRestant(restant)].filter(Boolean).join(" · ");
+    return `<div class="tuile large ${enMarche ? "marche-machine" : ""}">${plus(g)}
+      <div class="nom" title="${e(g.nom)}">${e(g.nom)}</div>
+      <div class="ligne">${ico(icone, enMarche ? "ampoule" : "")}<div style="flex:1;min-width:0"><b>${e(libelle)}</b>
+        ${infos ? `<div class="info">${e(infos)}</div>` : ""}</div>
+        ${marcheInter ? `<button class="interrupteur ${marcheInter.etat === "on" ? "on" : ""}" data-act="basculer" data-id="${e(marcheInter.id)}" aria-label="Marche"></button>` : ""}</div>
+      ${pct != null ? `<div class="progression"><i style="width:${Math.max(0, Math.min(100, pct))}%"></i></div>` : ""}</div>`;
+  }
+
+  function tuileCamera(g) {
+    const c = ent(g.principal);
+    const mouvement = g.entites.map(ent).find((x) => x && dom(x) === "binary_sensor" && ["motion", "occupancy", "person"].includes(x.attr?.device_class) && x.etat === "on");
+    const instant = Math.floor(Date.now() / 10000);
+    return `<div class="tuile large">${plus(g)}<div class="nom" title="${e(g.nom)}">${e(g.nom)}</div>
+      <div class="camera-image" data-fiche="${e(g.id)}"><img src="/v1/maison/camera/${encodeURIComponent(c.id)}?t=${instant}" alt="${e(g.nom)}" loading="lazy" onerror="this.style.visibility='hidden'">
+      ${mouvement ? `<span class="badge alerte">Mouvement</span>` : ""}</div></div>`;
+  }
+
+  function tuileTele(g) {
+    const t = ent(g.principal), at = t.attr || {}, marche = !["off", "standby", "unavailable"].includes(t.etat);
+    const quoi = at.app_name || at.source || at.media_title || (marche ? "Allumée" : "Éteinte");
+    return `<div class="tuile large">${pastilleAlexa(t)}${plus(g)}<div class="nom" title="${e(g.nom)}">${e(g.nom)}</div>
+      <div class="ligne">${ico("tele")}<span class="etat" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e(quoi)}</span>
+        <button class="marche ${marche ? "on" : ""}" data-act="basculer" data-id="${e(t.id)}" aria-label="Marche">${ico("marche")}</button></div>
+      ${marche ? `<div class="boutons"><button data-act="volume_moins" data-id="${e(t.id)}" aria-label="Moins fort">−</button>
+        <button data-act="lecture" data-id="${e(t.id)}" aria-label="Lecture ou pause">${ico("jouer")}</button>
+        <button data-act="volume_plus" data-id="${e(t.id)}" aria-label="Plus fort">+</button></div>` : ""}</div>`;
+  }
+
+  function tuileVolet(g) {
+    const v = ent(g.principal);
+    let html = avecNom(tuile(v), g.nom);
+    if (INTERDITS.includes(v.attr?.device_class)) return html.replace('<div class="tuile">', `<div class="tuile">${plus(g)}`);
+    html = html.replace(`<button data-act="fermer" data-id="${e(v.id)}" aria-label="Fermer">${ico("bas")}</button>`,
+      `<button data-act="ma_position" data-id="${e(v.id)}" aria-label="Ma position" title="Ma position">${ico("etoile", "etoile")}</button>
+       <button data-act="fermer" data-id="${e(v.id)}" aria-label="Fermer">${ico("bas")}</button>`);
+    return html.replace(/<div class="tuile[^"]*">/, (m) => m + plus(g));
+  }
+
+  function tuileGroupe(g) {
+    const p = ent(g.principal);
+    if (!p) return "";
+    if (["lave_linge", "seche_linge", "lave_vaisselle"].includes(g.type)) return tuileMachine(g);
+    if (g.type === "camera") return tuileCamera(g);
+    if (g.type === "tele") return tuileTele(g);
+    if (g.type === "volet") return tuileVolet(g);
+    let html = avecNom(tuile(p), g.nom);
+    if (!html) {  // entité sans tuile dédiée (bouton, liste, nombre…) : un accès à la fiche
+      html = `<div class="tuile"><div class="nom" title="${e(g.nom)}">${e(g.nom)}</div><div class="info">${e(valeurLisible(p))}</div></div>`;
+    }
+    const puissance = g.puissance ? ent(g.puissance) : null;
+    if (puissance && nb(puissance.etat) != null) {
+      html = html.replace(/<\/div>$/, `<div class="info">${e(Math.round(nb(puissance.etat)))} ${e(puissance.attr?.unit_of_measurement || "W")}</div></div>`);
+    }
+    return html.replace(/<div class="tuile[^"]*">/, (m) => m + plus(g));
+  }
+
+  // ---------------------------------------------------------------- fiche d'un appareil (« ⋯ »)
+  let ficheOuverte = null;
+  const ETATS_BINAIRES = { door: ["Ouverte", "Fermée"], window: ["Ouverte", "Fermée"], opening: ["Ouvert", "Fermé"],
+    motion: ["Mouvement", "Rien"], occupancy: ["Occupé", "Libre"], moisture: ["Fuite !", "Sec"], problem: ["Problème", "OK"],
+    running: ["En marche", "Arrêté"], plug: ["Branché", "Débranché"], power: ["Allumé", "Éteint"], connectivity: ["Connecté", "Déconnecté"] };
+  function valeurLisible(a) {
+    if (!a) return "—";
+    const at = a.attr || {};
+    if (["unavailable", "unknown"].includes(a.etat)) return a.etat === "unavailable" ? "Indisponible" : "—";
+    if (dom(a) === "binary_sensor") return (ETATS_BINAIRES[at.device_class] || ["Oui", "Non"])[a.etat === "on" ? 0 : 1];
+    if (at.device_class === "timestamp" || /^\d{4}-\d\d-\d\dT/.test(a.etat)) {
+      const d = new Date(a.etat); return isNaN(d) ? a.etat : d.toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" });
+    }
+    const n = nb(a.etat);
+    return n != null ? `${Math.round(n * 10) / 10} ${at.unit_of_measurement || ""}`.trim() : a.etat;
+  }
+  const libelle = (a, g) => {
+    const nom = String(a.nom || a.id), prefixe = String(g.nom || "");
+    const court = nom.toLowerCase().startsWith(prefixe.toLowerCase()) ? nom.slice(prefixe.length).replace(/^[\s:-]+/, "") : nom;
+    return court || nom;
+  };
+  const liste = (id, act, options, actuel) => `<select data-act="${act}" data-id="${e(id)}">${(options || []).map((o) =>
+    `<option ${String(o) === String(actuel) ? "selected" : ""}>${e(o)}</option>`).join("")}</select>`;
+
+  function ligneFiche(a, g) {
+    const d = dom(a), at = a.attr || {}, on = a.etat === "on", nomL = e(libelle(a, g));
+    const inter = `<button class="interrupteur ${on ? "on" : ""}" data-act="basculer" data-id="${e(a.id)}" aria-label="Basculer"></button>`;
+    if (d === "light") {
+      const modes = at.supported_color_modes || [];
+      const pct = at.brightness != null ? Math.round(at.brightness / 2.55) : 0;
+      const couleur = modes.some((m) => ["hs", "xy", "rgb", "rgbw", "rgbww"].includes(m));
+      const blanc = modes.includes("color_temp") || couleur;
+      return `<div class="ligne-fiche large"><div class="ligne" style="display:flex;justify-content:space-between;align-items:center"><span class="libelle">${nomL}</span>${inter}</div>
+        ${modes.some((m) => m !== "onoff") ? `<label class="doux">Luminosité<input type="range" min="1" max="100" value="${pct}" data-act="luminosite" data-id="${e(a.id)}"></label>` : ""}
+        ${blanc ? `<label class="doux">Blanc chaud ↔ froid<input class="teintes" type="range" min="${at.min_color_temp_kelvin || 2000}" max="${at.max_color_temp_kelvin || 6500}" step="100" value="${at.color_temp_kelvin || 3000}" data-act="temperature_couleur" data-id="${e(a.id)}"></label>` : ""}
+        ${couleur ? `<div class="couleurs">${[0, 30, 55, 120, 180, 220, 275, 320].map((h) => `<button style="background:hsl(${h} 100% 55%)" data-act="couleur" data-id="${e(a.id)}" data-valeur="${h}" aria-label="Couleur"></button>`).join("")}</div>` : ""}</div>`;
+    }
+    if (["switch", "input_boolean"].includes(d)) return `<div class="ligne-fiche"><span class="libelle">${nomL}</span>${inter}</div>`;
+    if (d === "fan") return `<div class="ligne-fiche large"><div style="display:flex;justify-content:space-between;align-items:center"><span class="libelle">${nomL}</span>${inter}</div>
+      ${at.percentage != null ? `<label class="doux">Vitesse<input type="range" min="0" max="100" step="10" value="${at.percentage}" data-act="vitesse" data-id="${e(a.id)}"></label>` : ""}</div>`;
+    if (d === "cover") {
+      if (INTERDITS.includes(at.device_class)) return `<div class="ligne-fiche"><span class="libelle">${nomL}</span><span class="valeur">${e(a.etat)}</span></div>`;
+      return `<div class="ligne-fiche large"><span class="libelle">${nomL} · ${e(at.current_position != null ? at.current_position + " %" : a.etat)}</span>
+        <div class="boutons"><button data-act="ouvrir" data-id="${e(a.id)}">${ico("haut")}</button><button data-act="stop" data-id="${e(a.id)}">${ico("stop")}</button>
+          <button data-act="ma_position" data-id="${e(a.id)}" title="Ma position">${ico("etoile", "etoile")}</button><button data-act="fermer" data-id="${e(a.id)}">${ico("bas")}</button></div>
+        ${at.current_position != null ? `<label class="doux">Position<input type="range" min="0" max="100" value="${at.current_position}" data-act="position" data-id="${e(a.id)}"></label>` : ""}
+        ${at.current_tilt_position != null ? `<label class="doux">Inclinaison des lames<input type="range" min="0" max="100" value="${at.current_tilt_position}" data-act="inclinaison" data-id="${e(a.id)}"></label>` : ""}
+        ${g.ma_position ? `<span class="doux">⭐ utilise le bouton « My » de l'appareil.</span>`
+          : `<button class="bouton secondaire" data-act="enregistrer_ma_position" data-id="${e(a.id)}">⭐ Enregistrer la position actuelle comme « ma position »</button>`}</div>`;
+    }
+    if (d === "climate") {
+      const marche = a.etat !== "off";
+      return `<div class="ligne-fiche large"><div style="display:flex;justify-content:space-between;align-items:center"><span class="libelle">${nomL}${at.current_temperature != null ? ` · il fait ${e(at.current_temperature)} °C` : ""}</span>
+        <button class="marche ${marche ? "on" : ""}" data-act="${marche ? "eteindre" : "allumer"}" data-id="${e(a.id)}">${ico("marche")}</button></div>
+        <div class="thermo"><button data-act="temperature" data-id="${e(a.id)}" data-pas="-${at.target_temp_step || 0.5}">−</button><b>${e(at.temperature ?? "–")} °C</b>
+          <button data-act="temperature" data-id="${e(a.id)}" data-pas="${at.target_temp_step || 0.5}">+</button></div>
+        ${at.hvac_modes ? `<label class="doux">Mode ${liste(a.id, "mode", at.hvac_modes, a.etat)}</label>` : ""}
+        ${at.fan_modes ? `<label class="doux">Ventilation ${liste(a.id, "ventilation", at.fan_modes, at.fan_mode)}</label>` : ""}
+        ${at.preset_modes ? `<label class="doux">Préréglage ${liste(a.id, "preset", at.preset_modes, at.preset_mode)}</label>` : ""}</div>`;
+    }
+    if (d === "media_player") {
+      const marche = !["off", "standby", "unavailable"].includes(a.etat);
+      return `<div class="ligne-fiche large"><div style="display:flex;justify-content:space-between;align-items:center"><span class="libelle">${nomL} · ${e(at.media_title || at.app_name || a.etat)}</span>
+        <button class="marche ${marche ? "on" : ""}" data-act="basculer" data-id="${e(a.id)}">${ico("marche")}</button></div>
+        <div class="boutons"><button data-act="precedent" data-id="${e(a.id)}">⏮</button><button data-act="lecture" data-id="${e(a.id)}">⏯</button><button data-act="suivant" data-id="${e(a.id)}">⏭</button></div>
+        ${at.volume_level != null ? `<label class="doux">Volume<input type="range" min="0" max="100" value="${Math.round(at.volume_level * 100)}" data-act="volume" data-id="${e(a.id)}"></label>` : ""}
+        ${at.source_list ? `<label class="doux">Source ${liste(a.id, "source", at.source_list, at.source)}</label>` : ""}</div>`;
+    }
+    if (d === "vacuum") return `<div class="ligne-fiche large"><span class="libelle">${nomL} · ${e(a.etat)}${at.battery_level != null ? ` · ${e(at.battery_level)} %` : ""}</span>
+        <div class="boutons"><button data-act="lancer" data-id="${e(a.id)}">${ico("jouer")} Nettoyer</button><button data-act="pause" data-id="${e(a.id)}">⏸ Pause</button>
+          <button data-act="base" data-id="${e(a.id)}">${ico("maison")} Base</button><button data-act="localiser" data-id="${e(a.id)}">📍</button></div>
+        ${at.fan_speed_list ? `<label class="doux">Aspiration ${liste(a.id, "vitesse", at.fan_speed_list, at.fan_speed)}</label>` : ""}</div>`;
+    if (d === "camera") return `<div class="ligne-fiche large"><div class="camera-image"><img src="/v1/maison/camera/${encodeURIComponent(a.id)}?t=${Date.now()}" alt=""></div></div>`;
+    if (["number", "input_number"].includes(d)) return `<div class="ligne-fiche large"><span class="libelle">${nomL} · ${e(valeurLisible(a))}</span>
+        <input type="range" min="${at.min ?? 0}" max="${at.max ?? 100}" step="${at.step ?? 1}" value="${nb(a.etat) ?? 0}" data-act="valeur" data-id="${e(a.id)}"></div>`;
+    if (["select", "input_select"].includes(d)) return `<div class="ligne-fiche"><span class="libelle">${nomL}</span>${liste(a.id, "choisir", at.options, a.etat)}</div>`;
+    if (d === "button") return `<div class="ligne-fiche"><span class="libelle">${nomL}</span><button class="bouton secondaire" data-act="appuyer" data-id="${e(a.id)}">Appuyer</button></div>`;
+    if (d === "lock") return `<div class="ligne-fiche"><span class="libelle">${nomL}</span><span class="valeur">${e({ locked: "Verrouillée", unlocked: "Déverrouillée" }[a.etat] || a.etat)}</span></div>`;
+    return `<div class="ligne-fiche"><span class="libelle">${nomL}</span><span class="valeur">${e(valeurLisible(a))}</span></div>`;
+  }
+
+  const ORDRE_FICHE = ["camera", "light", "cover", "climate", "media_player", "vacuum", "fan", "switch", "input_boolean", "select",
+    "input_select", "number", "input_number", "button", "lock", "sensor", "binary_sensor"];
+  function afficherFiche() {
+    const g = (maison.groupes || []).find((x) => x.id === ficheOuverte);
+    if (!g) { $("fenetre-fiche").hidden = true; ficheOuverte = null; return; }
+    $("fiche-titre").textContent = g.nom;
+    $("fiche-modele").textContent = [g.fabricant, g.modele, g.piece].filter(Boolean).join(" · ");
+    const membres = g.entites.map(ent).filter(Boolean)
+      .sort((a, b) => ORDRE_FICHE.indexOf(dom(a)) - ORDRE_FICHE.indexOf(dom(b)));
+    $("fiche-contenu").innerHTML = membres.map((a) => ligneFiche(a, g)).join("") || `<div class="doux">Rien à régler.</div>`;
+  }
+
   // ---------------------------------------------------------------- voiture (FordPass dans Home Assistant)
-  const nombre = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
+  const nombre = (v) => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
   const valeur = (c) => c ? (nombre(c.etat) != null ? `${Math.round(nombre(c.etat)).toLocaleString("fr-FR")}${c.unite ? " " + c.unite : ""}` : c.etat) : "—";
 
   function afficherVoiture() {
@@ -541,21 +770,26 @@
     $("etages").innerHTML = (etages.length ? ["", ...etages] : []).map((n) =>
       `<button class="${n === etage ? "actif" : ""}" data-etage="${e(n)}">${e(n || "Toute la maison")}</button>`).join("");
 
+    parId = new Map(liste.map((a) => [a.id, a]));
+    const groupesListe = maison.groupes || liste.filter((a) => dom(a) !== "scene").map((a) => (
+      { id: a.id, nom: a.nom, type: "autre", principal: a.id, entites: [a.id], piece: a.piece, piece_id: a.piece_id, etage: a.etage }));
     const scenes = liste.filter((a) => dom(a) === "scene");
     $("scenes").innerHTML = scenes.map((a) => `<span class="scene-partage"><button class="scene" data-act="lancer" data-id="${e(a.id)}">${ico("jouer")}${e(a.nom)}</button>${pastilleAlexa(a)}</span>`).join("");
 
     // Par pièce ; si Home Assistant ne donne aucune pièce, par type d'appareil (même design de cartes)
-    const avecPieces = liste.some((a) => a.piece_id);
-    const TYPES = { light: "Lumières", switch: "Prises et interrupteurs", input_boolean: "Prises et interrupteurs", cover: "Volets",
-      climate: "Climatisation", fan: "Ventilation", media_player: "Télé et enceintes", vacuum: "Aspirateur", lock: "Serrures",
-      sensor: "Capteurs", binary_sensor: "Capteurs" };
+    const avecPieces = groupesListe.some((g) => g.piece_id);
+    const TYPES = { lumiere: "Lumières", prise: "Prises et interrupteurs", volet: "Volets", clim: "Climatisation",
+      ventilateur: "Ventilation", tele: "Télés", enceinte: "Enceintes", aspirateur: "Aspirateur", camera: "Caméras",
+      lave_linge: "Électroménager", seche_linge: "Électroménager", lave_vaisselle: "Électroménager", serrure: "Serrures" };
     const pieces = new Map();
-    for (const a of liste) {
-      if (dom(a) === "scene" || (etage && a.etage !== etage)) continue;
-      const cle = avecPieces ? a.piece_id || "" : `type:${TYPES[dom(a)] || "Autres"}`;
-      const nom = avecPieces ? a.piece || "Sans pièce" : TYPES[dom(a)] || "Autres";
-      if (!pieces.has(cle)) pieces.set(cle, { nom, appareils: [] });
-      pieces.get(cle).appareils.push(a);
+    const piece = (cle, nom) => { if (!pieces.has(cle)) pieces.set(cle, { nom, groupes: [], appareils: [] }); return pieces.get(cle); };
+    for (const g of groupesListe) {
+      if (etage && g.etage !== etage) continue;
+      const cle = avecPieces ? g.piece_id || "" : `type:${TYPES[g.type] || "Autres"}`;
+      piece(cle, avecPieces ? g.piece || "Sans pièce" : TYPES[g.type] || "Autres").groupes.push(g);
+    }
+    for (const a of liste) {  // capteurs de la pièce (température, humidité, détecteurs) pour son en-tête
+      if (avecPieces && a.piece_id && pieces.has(a.piece_id)) pieces.get(a.piece_id).appareils.push(a);
     }
     const ordre = [...pieces.entries()].sort(([a, x], [b, y]) => (a === "") - (b === "") || x.nom.localeCompare(y.nom, "fr"));
     $("pieces").innerHTML = ordre.map(([cle, p], rang) => {
@@ -567,19 +801,20 @@
         const t = ["motion", "occupancy", "presence"].includes(c) ? "Mouvement" : c === "moisture" ? "Fuite d'eau" : c === "smoke" ? "Fumée" : `${a.nom} ouvert`;
         return `<span class="badge ${["moisture", "smoke"].includes(c) ? "alerte" : ""}">${e(t)}</span>`;
       }).join("");
-      const allumes = p.appareils.filter((a) => dom(a) === "light" && a.etat === "on").length;
+      const allumes = p.groupes.map((g) => ent(g.principal)).filter((a) => a && dom(a) === "light" && a.etat === "on").length;
       const estPiece = cle && !cle.startsWith("type:");
       // « Sans pièce » repliée quand il y a des pièces : elle ne noie pas le reste
       const replie = cle === "" && ordre.length > 1 && !sansPieceOuvert;
-      const tuiles = replie ? "" : p.appareils.map(tuile).join("");
+      const tuiles = replie ? "" : p.groupes.map(tuileGroupe).join("");
       return `<article class="piece verre">
         <div class="piece-titre">${ico(estPiece ? "maison" : "prise")}<h3>${e(p.nom)}</h3><span class="climat">${e(climat || (allumes ? `${allumes} allumée${allumes > 1 ? "s" : ""}` : ""))}</span></div>
         ${estPiece ? `<div class="photo"><img src="/static/home/pieces/${photo(p.nom, rang)}.jpg" alt="" loading="lazy"><div class="badges">${badges}</div></div>` : ""}
-        ${replie ? `<button class="bouton secondaire" data-sans-piece>Voir les ${p.appareils.length} appareils sans pièce</button>`
+        ${replie ? `<button class="bouton secondaire" data-sans-piece>Voir les ${p.groupes.length} appareils sans pièce</button>`
           : tuiles ? `<div class="tuiles">${tuiles}</div>` : `<div class="doux" style="font-size:13px">Capteurs seulement</div>`}
         ${cle === "" && sansPieceOuvert && ordre.length > 1 ? `<button class="bouton secondaire" data-sans-piece>Replier</button>` : ""}
       </article>`;
     }).join("") || `<div class="vide">Aucun appareil. Range tes appareils dans des pièces (et les pièces dans des étages) dans Home Assistant.</div>`;
+    if (ficheOuverte && !["range", "select-one"].includes(document.activeElement?.type)) afficherFiche();
     const nbA = liste.filter((a) => a.alexa).length, nbH = liste.filter((a) => a.homekit).length;
     $("info").textContent = modePartage ? `Touche « Alexa » ou « HomeKit » pour montrer ou cacher un appareil. Partagés : Alexa ${nbA}, HomeKit ${nbH}${nbH > 149 ? " (149 au maximum !)" : ""}.`
       : maison.avertissement || "";
@@ -598,15 +833,18 @@
   }
 
   // ---------------------------------------------------------------- actions
-  async function agir(id, action, valeur) {
+  async function agir(id, action, valeur, option) {
     try {
-      await api("/v1/maison/action", { method: "POST", body: JSON.stringify({ entite: id, action, valeur }) });
+      const r = await api("/v1/maison/action", { method: "POST", body: JSON.stringify({ entite: id, action, valeur, option }) });
+      if (action === "enregistrer_ma_position") parler(`⭐ « Ma position » enregistrée : ${r.position} %.`);
     } catch (err) { if (err.message !== "401") parler(err.message); }
     setTimeout(charger, 400); setTimeout(charger, 2000);
   }
 
   document.addEventListener("click", async (ev) => {
     if (ev.target.closest("[data-sans-piece]")) { sansPieceOuvert = !sansPieceOuvert; return afficher(); }
+    const fiche = ev.target.closest("[data-fiche]");
+    if (fiche) { ficheOuverte = fiche.dataset.fiche; $("fenetre-fiche").hidden = false; return afficherFiche(); }
     const onglet = ev.target.closest("[data-etage]");
     if (onglet) { etage = onglet.dataset.etage; memoire.ecrire("home_etage", etage); return afficher(); }
     const pont = ev.target.closest("[data-pont]");
@@ -624,6 +862,7 @@
     if (b.dataset.act === "basculer" && a) { // réponse immédiate à l'écran
       a.etat = a.etat === "on" ? "off" : "on"; afficher();
     }
+    if (b.dataset.valeur !== undefined) return agir(b.dataset.id, b.dataset.act, Number(b.dataset.valeur));
     if (b.dataset.act === "temperature" && a) {
       const valeur = Math.round(((Number(a.attr.temperature) || 20) + Number(b.dataset.pas)) * 10) / 10;
       a.attr.temperature = valeur; afficher();
@@ -631,9 +870,14 @@
     }
     agir(b.dataset.id, b.dataset.act);
   });
+  // Curseurs et listes (tuiles et fiches) : la valeur part à Home Assistant quand on lâche
   document.addEventListener("change", (ev) => {
-    if (ev.target.dataset.act === "luminosite") agir(ev.target.dataset.id, "luminosite", Number(ev.target.value));
+    const t = ev.target;
+    if (!t.dataset.act || !t.dataset.id) return;
+    if (t.tagName === "SELECT") agir(t.dataset.id, t.dataset.act, null, t.value);
+    else if (t.type === "range") agir(t.dataset.id, t.dataset.act, Number(t.value));
   });
+  $("fermer-fiche").addEventListener("click", () => { $("fenetre-fiche").hidden = true; ficheOuverte = null; });
 
   $("mode-partage").addEventListener("click", () => {
     modePartage = !modePartage;
@@ -775,9 +1019,6 @@
       return afficherMusique();
     }
     if (ev.target.closest("[data-radio-stop]")) { $("audio").pause(); radioIci = null; afficherMusique(); }
-  });
-  document.addEventListener("change", (ev) => {
-    if (ev.target.dataset.act === "volume") agir(ev.target.dataset.id, "volume", Number(ev.target.value));
   });
 
   // ---------------------------------------------------------------- Plex

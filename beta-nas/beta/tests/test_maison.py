@@ -330,3 +330,100 @@ def test_plan_b_sans_pieces(code):
     assert {a["id"] for a in d["appareils"]} == {"light.salon", "switch.lampe_led_indicateur", "switch.cachee", "switch.prise_bureau"}
     assert all(a["piece"] == "" for a in d["appareils"]) and d["personnes"][0]["lat"] == 48.5
     assert ("administrateur" in d["avertissement"]) == (code == 401)
+
+
+# ---------------------------------------------------------------- tuiles par appareil
+
+ENTITES_APPAREILS = [
+    {"id": "switch.lave_linge", "nom": "Lave-linge", "etat": "on", "appareil": "d_ll", "piece_id": "buanderie", "piece": "Buanderie", "etage": "RDC", "attr": {}},
+    {"id": "sensor.lave_linge_etat", "nom": "Lave-linge État", "etat": "run", "appareil": "d_ll", "attr": {}},
+    {"id": "sensor.lave_linge_temps_restant", "nom": "Lave-linge Temps restant", "etat": "42", "appareil": "d_ll", "attr": {"unit_of_measurement": "min"}},
+    {"id": "sensor.lave_linge_progression", "nom": "Lave-linge Progression", "etat": "60", "appareil": "d_ll", "attr": {"unit_of_measurement": "%"}},
+    {"id": "media_player.tv_salon", "nom": "TV", "etat": "on", "appareil": "d_tv", "piece_id": "salon", "attr": {"source_list": ["HDMI 1", "Netflix"]}},
+    {"id": "camera.jardin", "nom": "Jardin", "etat": "idle", "appareil": "d_cam", "attr": {}},
+    {"id": "binary_sensor.jardin_mouvement", "nom": "Jardin Mouvement", "etat": "off", "appareil": "d_cam", "attr": {"device_class": "motion"}},
+    {"id": "cover.volet_salon", "nom": "Volet salon", "etat": "open", "appareil": "d_volet", "attr": {"current_position": 100}},
+    {"id": "button.volet_salon_my_position", "nom": "Volet salon My position", "etat": "unknown", "appareil": "d_volet", "attr": {}},
+    {"id": "cover.volet_chambre", "nom": "Volet chambre", "etat": "open", "attr": {"current_position": 30}},
+    {"id": "sensor.telephone_batterie", "nom": "Téléphone Batterie", "etat": "80", "appareil": "d_tel", "attr": {"device_class": "battery"}},
+    {"id": "light.lampe", "nom": "Lampe", "etat": "off", "attr": {}},
+]
+APPAREILS_HA = {"d_ll": {"nom": "Lave-linge", "fabricant": "Bosch", "modele": "Serie 8"},
+                "d_tv": {"nom": "Télé du salon", "fabricant": "LG", "modele": "OLED55 webOS"},
+                "d_cam": {"nom": "Caméra jardin", "fabricant": "Reolink", "modele": "RLC-810A"},
+                "d_volet": {"nom": "Volet salon", "fabricant": "Somfy", "modele": "Oximo io"},
+                "d_tel": {"nom": "iPhone", "fabricant": "Apple", "modele": "iPhone 15"}}
+
+
+def test_une_tuile_par_appareil():
+    g = {x["id"]: x for x in maison.groupes(ENTITES_APPAREILS, APPAREILS_HA)}
+    assert "d_tel" not in g  # un téléphone (que des capteurs) ne fait pas de tuile
+    ll = g["d_ll"]
+    assert ll["type"] == "lave_linge" and ll["principal"] == "switch.lave_linge" and ll["piece"] == "Buanderie"
+    assert ll["etat"] == "sensor.lave_linge_etat" and ll["restant"] == "sensor.lave_linge_temps_restant"
+    assert ll["progression"] == "sensor.lave_linge_progression" and len(ll["entites"]) == 4
+    assert g["d_tv"]["type"] == "tele" and g["d_cam"]["type"] == "camera" and g["d_cam"]["principal"] == "camera.jardin"
+    assert g["d_volet"]["type"] == "volet" and g["d_volet"]["ma_position"] == "button.volet_salon_my_position"
+    assert g["cover.volet_chambre"]["type"] == "volet" and "ma_position" not in g["cover.volet_chambre"]
+    assert g["light.lampe"]["type"] == "lumiere" and g["light.lampe"]["nom"] == "Lampe"
+
+
+def test_ma_position(tmp_path):
+    favoris = maison.Favoris(tmp_path / "ma_position.json")
+    groupes = {x["id"]: x for x in maison.groupes(ENTITES_APPAREILS, APPAREILS_HA)}
+    assert maison.commande_ma_position("cover.volet_salon", groupes["d_volet"], favoris) == (
+        "button", "press", {"entity_id": "button.volet_salon_my_position"})  # le bouton « My » de Somfy
+    assert maison.commande_ma_position("cover.volet_chambre", groupes["cover.volet_chambre"], favoris)[2]["position"] == 50
+    favoris.enregistrer("cover.volet_chambre", 35)
+    assert maison.Favoris(tmp_path / "ma_position.json").positions == {"cover.volet_chambre": 35}
+
+
+def test_actions_des_sous_menus():
+    clim = {"hvac_modes": ["off", "cool", "heat"], "fan_modes": ["auto", "low"]}
+    assert maison.commande_page("climate.clim", "mode", None, clim, "heat") == ("climate", "set_hvac_mode", {"entity_id": "climate.clim", "hvac_mode": "heat"})
+    assert maison.commande_page("media_player.tv", "source", None, {"source_list": ["HDMI 1"]}, "HDMI 1")[2]["source"] == "HDMI 1"
+    assert maison.commande_page("light.l", "temperature_couleur", 9000, {"max_color_temp_kelvin": 6500})[2]["color_temp_kelvin"] == 6500
+    assert maison.commande_page("light.l", "couleur", 220, {})[2]["hs_color"] == [220.0, 100]
+    assert maison.commande_page("number.temp_eau", "valeur", 99, {"min": 30, "max": 60})[2]["value"] == 60.0
+    assert maison.commande_page("select.programme", "choisir", None, {"options": ["Coton", "Rapide"]}, "Rapide")[1] == "select_option"
+    assert maison.commande_page("button.depart", "appuyer", None, {}) == ("button", "press", {"entity_id": "button.depart"})
+    for entite, action, attr, option in (("climate.clim", "mode", clim, "turbo"), ("select.p", "choisir", {"options": ["A"]}, "Z"),
+                                         ("lock.porte", "basculer", {}, None)):
+        with pytest.raises(maison.ActionRefusee):
+            maison.commande_page(entite, action, None, attr, option)
+
+
+class FauxHAAppareils(FauxHA):
+    async def maison(self, motif_voiture="fordpass"):
+        return {"appareils": [dict(a) for a in ENTITES_APPAREILS], "appareils_ha": APPAREILS_HA, "personnes": [], "voiture": [],
+                "domicile": None, "meteo": None}
+
+    async def attributs(self, entite):
+        return next(a["attr"] for a in ENTITES_APPAREILS if a["id"] == entite)
+
+    async def image(self, chemin):
+        self.image_demandee = chemin
+        return b"JPEG", "image/jpeg"
+
+
+def test_page_par_appareil(client):
+    c, _ = client
+    from app import main
+
+    ha = FauxHAAppareils()
+    main.etat["routeur"] = Routeur(Settings(), ha, None, None)
+    d = c.get("/v1/maison/etat").json()
+    assert {g["type"] for g in d["groupes"]} >= {"lave_linge", "tele", "camera", "volet", "lumiere"}
+    assert "sensor.lave_linge_temps_restant" in {a["id"] for a in d["appareils"]}
+    assert "sensor.telephone_batterie" not in {a["id"] for a in d["appareils"]}
+    assert c.post("/v1/maison/action", json={"entite": "cover.volet_salon", "action": "ma_position"}).status_code == 200
+    assert c.post("/v1/maison/action", json={"entite": "cover.volet_chambre", "action": "enregistrer_ma_position"}).json()["position"] == 30
+    assert c.post("/v1/maison/action", json={"entite": "cover.volet_chambre", "action": "ma_position"}).status_code == 200
+    assert c.post("/v1/maison/action", json={"entite": "media_player.tv_salon", "action": "source", "option": "Netflix"}).status_code == 200
+    assert c.post("/v1/maison/action", json={"entite": "light.lampe", "action": "ma_position"}).status_code == 400
+    assert ha.services == [("button", "press", {"entity_id": "button.volet_salon_my_position"}),
+                           ("cover", "set_cover_position", {"entity_id": "cover.volet_chambre", "position": 30}),
+                           ("media_player", "select_source", {"entity_id": "media_player.tv_salon", "source": "Netflix"})]
+    r = c.get("/v1/maison/camera/camera.jardin")
+    assert r.content == b"JPEG" and ha.image_demandee == "/api/camera_proxy/camera.jardin"
+    assert c.get("/v1/maison/camera/light.lampe").status_code == 404
