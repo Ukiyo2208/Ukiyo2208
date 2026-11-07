@@ -263,3 +263,37 @@ def test_voiture_et_famille_dans_la_page(client):
     assert c.post("/v1/maison/voiture", json={"action": "deverrouiller"}).status_code == 400
     assert ha.services == [("lock", "lock", {"entity_id": "lock.fordpass_doorlock"})]
     assert c.get("/static/home/leaflet/leaflet.js").status_code == 200
+
+
+@pytest.mark.parametrize("code", [401, 400])
+def test_plan_b_sans_modele(code):
+    """Home Assistant refuse /api/template (jeton non administrateur, modèle invalide) : la page s'affiche quand même."""
+    import asyncio
+
+    import httpx
+
+    from app.homeassistant import HomeAssistant
+
+    def reponse(requete):
+        if requete.url.path == "/api/template":
+            return httpx.Response(code, text="Error rendering template: floor_name is undefined")
+        return httpx.Response(200, json=[
+            {"entity_id": "light.salon", "state": "on", "attributes": {"friendly_name": "Lustre", "brightness": 200}},
+            {"entity_id": "person.bastien", "state": "home", "attributes": {"friendly_name": "Bastien", "latitude": 48.5, "longitude": 7.7}},
+            {"entity_id": "sensor.fordpass_fuel", "state": "50", "attributes": {"unit_of_measurement": "%"}},
+            {"entity_id": "zone.home", "state": "1", "attributes": {"latitude": 48.5, "longitude": 7.7}},
+            {"entity_id": "automation.x", "state": "on", "attributes": {}},
+        ])
+
+    async def lancer():
+        ha = HomeAssistant("http://ha", "jeton", "conversation.home_assistant")
+        ha._client = httpx.AsyncClient(base_url="http://ha", transport=httpx.MockTransport(reponse))
+        try:
+            return await ha.maison()
+        finally:
+            await ha.fermer()
+
+    d = asyncio.run(lancer())
+    assert [a["id"] for a in d["appareils"]] == ["light.salon"] and d["appareils"][0]["nom"] == "Lustre"
+    assert d["personnes"][0]["lat"] == 48.5 and d["voiture"][0]["id"] == "sensor.fordpass_fuel" and d["domicile"]["lat"] == 48.5
+    assert ("administrateur" in d["avertissement"]) == (code == 401)

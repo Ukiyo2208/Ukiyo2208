@@ -568,7 +568,8 @@
         ${tuiles ? `<div class="tuiles">${tuiles}</div>` : `<div class="doux" style="font-size:13px">Capteurs seulement</div>`}
       </article>`;
     }).join("") || `<div class="vide">Aucun appareil. Range tes appareils dans des pièces (et les pièces dans des étages) dans Home Assistant.</div>`;
-    $("info").textContent = modePartage ? "Touche « Alexa » ou « HomeKit » sur un appareil pour le montrer ou le cacher." : "";
+    $("info").textContent = modePartage ? "Touche « Alexa » ou « HomeKit » sur un appareil pour le montrer ou le cacher."
+      : maison.avertissement || "";
   }
 
   async function charger() {

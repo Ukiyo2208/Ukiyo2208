@@ -32,6 +32,7 @@ from .ia import CONVERSATION, IA, IndisponibleError
 from .ia_web import ErreurAutomatisation, proposer_automatisation
 from .localisation import Localisation
 from .mails import DEMANDE_MAILS, resume_mails
+from .phrases import naturelle
 
 log = logging.getLogger("beta.routeur")
 
@@ -139,7 +140,7 @@ class Routeur:
         if cfg.DOMOTIQUE in capacites and not semble_automatisation:
             reponse = await self._ha(texte)
             if reponse and reponse.comprise:
-                return Resultat(reponse.texte or "C'est fait.", "home_assistant")
+                return Resultat(naturelle(texte, reponse), "home_assistant")
 
         tri = await self.llm.trier(texte)
         log.info("Tri local : %s", tri)
@@ -149,7 +150,7 @@ class Routeur:
                 return await manque(cfg.DOMOTIQUE, "Désolé, je ne peux pas piloter la maison pour toi.")
             reponse = await self._ha(tri.commande)
             if reponse and reponse.comprise:
-                return Resultat(reponse.texte or "C'est fait.", "llm_local+home_assistant")
+                return Resultat(naturelle(tri.commande, reponse), "llm_local+home_assistant")
             return Resultat("Je n'ai pas trouvé l'appareil dont tu parles.", "llm_local")
 
         if tri.categorie == llm_local.AUTOMATISATION:

@@ -13,6 +13,9 @@ import httpx
 class ReponseHA:
     comprise: bool
     texte: str
+    type: str = ""  # action_done, query_answer, error
+    reussis: list | None = None  # cibles touchées (pièces, appareils)
+    echecs: list | None = None
 
 
 @dataclass
@@ -63,6 +66,17 @@ _TEMPLATE_MAISON = (
 )
 
 
+def _raison(e: httpx.HTTPStatusError) -> str:
+    """Pourquoi Home Assistant a refusé, en clair."""
+    code = e.response.status_code
+    if code in (401, 403):
+        return ("Home Assistant refuse de donner les pièces à Bêta : le compte du jeton (HA_TOKEN) doit être "
+                "administrateur (Home Assistant › Paramètres › Personnes › ton compte › Administrateur), puis "
+                "crée un nouveau jeton.")
+    detail = e.response.text.strip().replace("\n", " ")[:200]
+    return f"Home Assistant n'a pas pu lire les pièces ({code} : {detail}). Affichage sans les pièces."
+
+
 class HomeAssistant:
     def __init__(self, url: str, token: str, agent_id: str, langue: str = "fr", timeout: float = 15.0):
         self.url = url
@@ -86,9 +100,10 @@ class HomeAssistant:
         r.raise_for_status()
         reponse = r.json().get("response", {})
         parole = reponse.get("speech", {}).get("plain", {}).get("speech", "")
-        if reponse.get("response_type") == "error":
-            return ReponseHA(comprise=False, texte=parole)
-        return ReponseHA(comprise=True, texte=parole)
+        type_ = reponse.get("response_type", "")
+        donnees = reponse.get("data") or {}
+        return ReponseHA(comprise=type_ != "error", texte=parole, type=type_,
+                         reussis=donnees.get("success") or [], echecs=donnees.get("failed") or [])
 
     async def appareils(self, domaines: list[str]) -> list[Appareil]:
         template = _TEMPLATE_APPAREILS.replace("DOMAINES", json.dumps(domaines))
@@ -113,14 +128,50 @@ class HomeAssistant:
 
     async def maison(self, motif_voiture: str = "fordpass") -> dict:
         """Tout ce que la page Bêta home affiche, en un seul appel : appareils (avec pièce, étage et
-        attributs utiles), météo, personnes (avec leur position), voiture et position de la maison."""
+        attributs utiles), météo, personnes (avec leur position), voiture et position de la maison.
+        Si Home Assistant refuse le modèle (jeton non administrateur, version ancienne…), plan B :
+        la simple liste des états, sans les pièces, avec la raison dans « avertissement »."""
         motif = re.sub(r"[^a-z0-9_]", "", motif_voiture.lower()) or "fordpass"
         template = _TEMPLATE_MAISON.replace("MOTIF_VOITURE", json.dumps(motif).replace('"', "'"))
         try:
             return await self._rendre(template)
-        except httpx.HTTPStatusError:
+        except httpx.HTTPStatusError as e:
+            raison = _raison(e)
+        except ValueError as e:  # réponse qui n'est pas du JSON
+            raison = f"Réponse de Home Assistant illisible ({e}). Affichage sans les pièces."
+        try:
             # Home Assistant d'avant les étages (2024.4) : même chose sans les étages
             return await self._rendre(template.replace("(floor_name(a) if a else '')", "''"))
+        except (httpx.HTTPStatusError, ValueError):
+            pass
+        donnees = await self._maison_simple(motif)
+        donnees["avertissement"] = raison
+        return donnees
+
+    async def _maison_simple(self, motif: str) -> dict:
+        """Plan B : GET /api/states, accessible à tout jeton. Pas de pièces ni d'étages."""
+        r = await self._client.get("/api/states")
+        r.raise_for_status()
+        appareils, personnes, voiture, meteo, domicile = [], [], [], None, None
+        for e in r.json():
+            eid, attr = e.get("entity_id", ""), e.get("attributes") or {}
+            domaine = eid.split(".", 1)[0]
+            nom = attr.get("friendly_name") or eid.split(".", 1)[-1].replace("_", " ")
+            if motif in eid and domaine in ("sensor", "binary_sensor", "lock", "switch", "button", "device_tracker"):
+                voiture.append({"id": eid, "nom": nom, "etat": e.get("state"), "unite": attr.get("unit_of_measurement"),
+                                "lat": attr.get("latitude"), "lon": attr.get("longitude")})
+            elif domaine in DOMAINES_MAISON:
+                appareils.append({"id": eid, "nom": nom, "etat": e.get("state"), "piece": "", "piece_id": "", "etage": "",
+                                  "attr": {k: attr.get(k) for k in _ATTRIBUTS}})
+            elif domaine == "person":
+                personnes.append({"id": eid, "nom": nom, "etat": e.get("state"), "lat": attr.get("latitude"),
+                                  "lon": attr.get("longitude"), "precision": attr.get("gps_accuracy")})
+            elif domaine == "weather" and meteo is None:
+                meteo = {"nom": nom, "etat": e.get("state"), "temperature": attr.get("temperature"),
+                         "unite": attr.get("temperature_unit"), "humidite": attr.get("humidity"), "vent": attr.get("wind_speed")}
+            elif eid == "zone.home":
+                domicile = {"lat": attr.get("latitude"), "lon": attr.get("longitude")}
+        return {"appareils": appareils, "personnes": personnes, "voiture": voiture, "domicile": domicile, "meteo": meteo}
 
     async def _rendre(self, template: str) -> dict:
         r = await self._client.post("/api/template", json={"template": template})

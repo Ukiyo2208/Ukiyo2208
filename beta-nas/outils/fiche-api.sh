@@ -10,6 +10,7 @@
 #   ./fiche-api.sh regler CLE VAL  change un réglage du .env et redémarre le bon conteneur
 #   ./fiche-api.sh jeton           crée un nouveau BETA_TOKEN (à recopier dans la tablette)
 #   ./fiche-api.sh logs [nom]      journaux en direct (beta, beta-presence, beta-trieur…)
+#   ./fiche-api.sh maison          ce que la page Domotique lit dans Home Assistant (diagnostic)
 #
 # L'adresse IP du NAS est détectée toute seule ; pour la forcer : NAS_IP=192.168.1.20 ./fiche-api.sh
 
@@ -190,6 +191,25 @@ cmd_tester() {
   echo "  Ollama         : $(curl -s -m 3 http://127.0.0.1:11434/api/ps | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | paste -sd, - | sed 's/^$/aucun modèle chargé/')"
 }
 
+cmd_maison() {
+  charger
+  echo "${G}Domotique : ce que Bêta lit dans Home Assistant ($HA)${N}"
+  local reponse
+  reponse=$(curl -s -m 30 -w '\n%{http_code}' "$BETA/v1/maison/etat" -H "Authorization: Bearer $BETA_TOKEN")
+  local code="${reponse##*$'\n'}" corps="${reponse%$'\n'*}"
+  if [ "$code" != 200 ]; then echo "  ❌ HTTP $code : $corps"; return 1; fi
+  printf '%s' "$corps" | docker exec -i beta python -c '
+import collections, json, sys
+d = json.load(sys.stdin)
+a = d["appareils"]
+print("  ✅", len(a), "appareil(s), dont", sum(1 for x in a if x["piece"]), "rangé(s) dans une pièce")
+print("  Par type :", dict(collections.Counter(x["id"].split(".")[0] for x in a)))
+print("  Étages :", sorted({x["etage"] for x in a if x["etage"]}) or "aucun")
+print("  Personnes :", [p["nom"] for p in d["personnes"]] or "aucune", "· Voiture :", "oui" if d.get("voiture") else "non")
+if d.get("avertissement"): print("  ⚠️ ", d["avertissement"])
+' 2>/dev/null || echo "  $corps" | head -c 800
+}
+
 conteneur_de() { # quel conteneur redémarrer pour une clé
   case "$1" in
     TRI_*|PUID|PGID|NOTIFICATIONS) echo beta-trieur ;;
@@ -249,6 +269,7 @@ case "${1:-}" in
   regler) shift; cmd_regler "$@" ;;
   jeton) cmd_jeton ;;
   logs) shift; cmd_logs "$@" ;;
+  maison) cmd_maison ;;
   aide|-h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) echo "Commande inconnue : $1 (./fiche-api.sh aide)"; exit 1 ;;
 esac

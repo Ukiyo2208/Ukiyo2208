@@ -303,4 +303,5 @@ L'app utilise « Hey Jarvis » en attendant ton propre mot d'activation :
 | « Hey Jarvis » ne se déclenche pas | Réglages de l'app → Sensibilité 0,3 ou 0,4. La barre de l'écran principal montre le score |
 | Bêta ne te reconnaît jamais | Le prénom doit être identique dans l'app et dans `config.yaml`. Réenregistre ton visage. Sinon, essaie « Rotation caméra » = 90, 180 ou 270 |
 | Les réponses sont lentes | Normal sur le N100 pour la discussion : ajoute l'IA cloud ou un PC puissant (étape J) |
+| Aucune tuile dans Domotique | `sudo …/fiche-api.sh maison` : il dit combien d'appareils Bêta lit et pourquoi les pièces manquent. Le plus souvent : le compte du jeton `HA_TOKEN` n'est pas administrateur dans Home Assistant (Paramètres › Personnes › ton compte › Administrateur), puis crée un nouveau jeton et `regler HA_TOKEN` |
 | Des invités utilisent ton Wi-Fi | À la maison, Bêta ne demande pas de jeton. Mets tes invités sur le **réseau invité** de ta box, ou exige le jeton partout : `sudo …/fiche-api.sh regler BETA_LOCAL_LIBRE non` |

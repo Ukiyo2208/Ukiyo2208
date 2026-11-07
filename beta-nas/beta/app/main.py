@@ -539,8 +539,14 @@ async def _maison_brute(fraiche: bool = False) -> dict:
     if fraiche or _maison_cache["valeur"] is None or time.monotonic() - _maison_cache["instant"] > 1:
         try:
             _maison_cache["valeur"] = await etat["routeur"].ha.maison(etat["settings"].voiture_motif)
+        except httpx.HTTPStatusError as e:
+            log.warning("Home Assistant refuse la lecture de la maison : %s %s", e.response.status_code, e.response.text[:300])
+            detail = ("Home Assistant refuse le jeton de Bêta (HA_TOKEN) : crée un nouveau jeton longue durée"
+                      if e.response.status_code in (401, 403) else f"Home Assistant a répondu {e.response.status_code}")
+            raise HTTPException(status_code=503, detail=detail) from e
         except httpx.HTTPError as e:
-            raise HTTPException(status_code=503, detail="Home Assistant injoignable") from e
+            log.warning("Home Assistant injoignable pour la page Domotique : %s", e)
+            raise HTTPException(status_code=503, detail=f"Home Assistant injoignable ({etat['settings'].ha_url})") from e
         _maison_cache["instant"] = time.monotonic()
     return _maison_cache["valeur"]
 
@@ -576,7 +582,7 @@ async def etat_maison():
                   "partage_possible": partage.type_pont(a) is not None}
              for a in maison.appareils(donnees)]
     return {"appareils": liste, "personnes": donnees.get("personnes", []), "meteo": donnees.get("meteo"),
-            "domicile": donnees.get("domicile"),
+            "domicile": donnees.get("domicile"), "avertissement": donnees.get("avertissement", ""),
             "voiture": maison.voiture(donnees.get("voiture", []), etat["settings"].voiture_nom)}
 
 
