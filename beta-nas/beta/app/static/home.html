@@ -117,6 +117,26 @@
   .pastille.plex { background: linear-gradient(135deg, #e5a00d, #cc7b19); }
   .pastille.musique { background: linear-gradient(135deg, #ff5fa2, #b25bff); }
   .onglets-pont { display: flex; gap: 6px; margin-bottom: 12px; }
+  /* ---------- voiture et famille ---------- */
+  .extras { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px; margin-bottom: 14px; }
+  .extras:empty { display: none; }
+  .chiffres-voiture { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .chiffre-voiture { border: 1px solid var(--bord); border-radius: 12px; background: rgba(10, 18, 56, .55); padding: 10px; }
+  .chiffre-voiture b { display: block; font-size: 20px; font-weight: 700; }
+  .chiffre-voiture span { font-size: 12px; color: var(--doux); }
+  .jauge { height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .12); margin-top: 6px; overflow: hidden; }
+  .jauge i { display: block; height: 100%; background: linear-gradient(90deg, #42e2a0, #4fd1ff); }
+  .jauge.bas i { background: linear-gradient(90deg, #ff6b7a, #ffb347); }
+  .etats-voiture { display: flex; flex-wrap: wrap; gap: 6px; }
+  .carte-famille { height: 230px; border-radius: 12px; overflow: hidden; background: #0b1236; }
+  .famille-liste { display: grid; gap: 6px; }
+  .famille-liste div { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .famille-liste .avatar { width: 30px; height: 30px; font-size: 13px; }
+  .marqueur { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: #fff;
+              background: linear-gradient(135deg, #3b5bff, #9a5cff); border: 2px solid #fff; box-shadow: 0 0 12px rgba(79, 140, 255, .8); }
+  .marqueur.maison { background: linear-gradient(135deg, #ff9f43, #ff6b6b); }
+  .marqueur.voiture { background: linear-gradient(135deg, #22c1c3, #2f8bff); }
+  .leaflet-container { background: #0b1236; font: inherit; }
   .tuile .nom { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tuile .ligne { display: flex; align-items: center; gap: 10px; }
   .tuile .etat { font-size: 12px; color: var(--doux); }
@@ -208,6 +228,7 @@
       <span class="doux" id="info"></span>
       <button class="bouton secondaire" id="mode-partage" style="margin-left:auto">Choisir ce que voient Alexa et HomeKit</button>
     </div>
+    <div class="extras" id="extras"><div id="carte-voiture" hidden></div><div id="carte-famille" hidden></div></div>
     <div class="onglets" id="etages"></div>
     <div class="scenes" id="scenes"></div>
     <div class="grille" id="pieces"><div class="vide">Chargement de la maison…</div></div>
@@ -405,8 +426,116 @@
     return "";
   }
 
+  // ---------------------------------------------------------------- voiture (FordPass dans Home Assistant)
+  const nombre = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
+  const valeur = (c) => c ? (nombre(c.etat) != null ? `${Math.round(nombre(c.etat)).toLocaleString("fr-FR")}${c.unite ? " " + c.unite : ""}` : c.etat) : "—";
+
+  function afficherVoiture() {
+    const v = maison.voiture, boite = $("carte-voiture");
+    boite.hidden = !v;
+    if (!v) return;
+    const c = v.champs, niveau = c.batterie || c.carburant, pct = niveau ? nombre(niveau.etat) : null;
+    const verrou = c.verrou ? ["locked", "verrouillé", "locked_on"].includes(String(c.verrou.etat).toLowerCase()) || /^lock/i.test(c.verrou.etat) : null;
+    const ici = c.position ? c.position.etat === "home" : null;
+    const badges = [
+      verrou === false ? `<span class="badge alerte">Non verrouillée</span>` : verrou ? `<span class="badge">Verrouillée</span>` : "",
+      ici === true ? `<span class="badge">À la maison</span>` : ici === false ? `<span class="badge">${e(c.position.etat === "not_home" ? "Pas à la maison" : c.position.etat)}</span>` : "",
+      c.charge && /on|charg|true/i.test(c.charge.etat) ? `<span class="badge">En charge</span>` : "",
+    ].join("");
+    const etats = ["portes", "fenetres", "pneus", "huile", "batterie12v"].filter((k) => c[k])
+      .map((k) => `<span class="badge" title="${e(c[k].libelle)}">${e(c[k].libelle)} : ${e(valeur(c[k]))}</span>`).join("");
+    boite.className = "piece verre";
+    boite.innerHTML = `
+      <div class="piece-titre"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14M6 17l1.5-6h9L18 17M7 17v2M17 17v2M8 13h.01M16 13h.01"/></svg>
+        <h3>${e(v.nom)}</h3></div>
+      <div class="photo"><img src="/static/home/voiture.jpg" alt=""><div class="badges">${badges}</div></div>
+      <div class="chiffres-voiture">
+        <div class="chiffre-voiture"><span>${e(niveau ? niveau.libelle : "Niveau")}</span><b>${pct != null ? Math.round(pct) + " %" : "—"}</b>
+          ${pct != null ? `<div class="jauge ${pct < 20 ? "bas" : ""}"><i style="width:${Math.max(0, Math.min(100, pct))}%"></i></div>` : ""}</div>
+        <div class="chiffre-voiture"><span>Autonomie</span><b>${e(valeur(c.autonomie))}</b></div>
+        <div class="chiffre-voiture"><span>Kilométrage</span><b>${e(valeur(c.kilometrage))}</b></div>
+      </div>
+      ${etats ? `<div class="etats-voiture">${etats}</div>` : ""}
+      <div class="boutons">
+        ${c.verrou && c.verrou.id.startsWith("lock.") ? `<button data-voiture="verrouiller">${ico("serrure")} Verrouiller</button>` : ""}
+        ${c.demarrage ? `<button data-voiture="demarrer">${ico("marche")} Démarrer</button>` : ""}
+        ${c.actualiser ? `<button data-voiture="actualiser">${ico("jouer")} Actualiser</button>` : ""}
+      </div>`;
+  }
+
+  document.addEventListener("click", async (ev) => {
+    const b = ev.target.closest("[data-voiture]");
+    if (!b) return;
+    const action = b.dataset.voiture;
+    if (action === "demarrer" && !confirm("Démarrer la voiture à distance (préchauffage ou climatisation) ?")) return;
+    try {
+      await api("/v1/maison/voiture", { method: "POST", body: JSON.stringify({ action }) });
+      parler({ verrouiller: "Je verrouille la voiture.", demarrer: "Démarrage à distance demandé.", actualiser: "Je demande à la voiture de se mettre à jour." }[action]);
+    } catch (err) { if (err.message !== "401") parler(err.message); }
+    setTimeout(charger, 3000);
+  });
+
+  // ---------------------------------------------------------------- famille (positions de l'appli Home Assistant)
+  let carte = null, couche = null;
+  const kmEntre = (a, b) => {
+    const r = (x) => x * Math.PI / 180, dLat = r(b.lat - a.lat), dLon = r(b.lon - a.lon);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLon / 2) ** 2;
+    return 12742 * Math.asin(Math.sqrt(h));
+  };
+  function chargerLeaflet() {
+    if (window.L) return Promise.resolve();
+    return new Promise((ok, ko) => {
+      const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "/static/home/leaflet/leaflet.css"; document.head.append(css);
+      const js = document.createElement("script"); js.src = "/static/home/leaflet/leaflet.js"; js.onload = ok; js.onerror = ko; document.head.append(js);
+    });
+  }
+
+  async function afficherFamille() {
+    const boite = $("carte-famille");
+    const gens = maison.personnes.filter((p) => nombre(p.lat) != null && nombre(p.lon) != null);
+    const pos = maison.voiture?.champs?.position;
+    const auto = pos && nombre(pos.lat) != null ? { lat: pos.lat, lon: pos.lon } : null;
+    boite.hidden = !gens.length;
+    if (!gens.length) return;
+    if (!boite.dataset.pret) {
+      boite.className = "piece verre"; boite.dataset.pret = "1";
+      boite.innerHTML = `<div class="piece-titre"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+        <h3>Famille</h3><span class="climat">positions de l'appli Home Assistant</span></div>
+        <div class="carte-famille" id="carte"></div><div class="famille-liste" id="famille-liste"></div>`;
+    }
+    const maisonPos = maison.domicile && nombre(maison.domicile.lat) != null ? maison.domicile : null;
+    $("famille-liste").innerHTML = gens.map((p) => {
+      const ici = p.etat === "home", km = maisonPos ? kmEntre(maisonPos, p) : null;
+      const ou = ici ? "À la maison" : km != null ? `à ${km < 10 ? km.toFixed(1).replace(".", ",") : Math.round(km)} km de la maison` : p.etat;
+      return `<div><span class="avatar ${ici ? "maison" : ""}">${e(p.nom.slice(0, 1).toUpperCase())}</span><b>${e(p.nom)}</b><span class="doux">${e(ou)}</span></div>`;
+    }).join("") + (auto && maisonPos ? `<div><span class="avatar" style="background:linear-gradient(135deg,#22c1c3,#2f8bff)">🚗</span><b>${e(maison.voiture.nom)}</b>
+      <span class="doux">${pos.etat === "home" ? "À la maison" : `à ${Math.round(kmEntre(maisonPos, auto))} km de la maison`}</span></div>` : "");
+    try { await chargerLeaflet(); } catch (_) { return; }
+    if (!carte) {
+      carte = L.map("carte", { zoomControl: false, attributionControl: true });
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+        maxZoom: 19, attribution: "© OpenStreetMap · © CARTO" }).addTo(carte);
+      couche = L.layerGroup().addTo(carte);
+    }
+    couche.clearLayers();
+    const points = [];
+    const marqueur = (lat, lon, texte, classe, titre) => {
+      L.marker([lat, lon], { title: titre, icon: L.divIcon({ className: "", html: `<div class="marqueur ${classe}">${texte}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] }) }).addTo(couche);
+      points.push([lat, lon]);
+    };
+    if (maisonPos) marqueur(maisonPos.lat, maisonPos.lon, "⌂", "maison", "Maison");
+    if (auto) marqueur(auto.lat, auto.lon, "🚗", "voiture", maison.voiture.nom);
+    gens.forEach((p) => marqueur(p.lat, p.lon, e(p.nom.slice(0, 1).toUpperCase()), "", p.nom));
+    if (!boite.dataset.cadre) { // cadrage au premier affichage, ensuite on laisse la carte où tu l'as mise
+      boite.dataset.cadre = "1";
+      if (points.length > 1) carte.fitBounds(points, { padding: [30, 30], maxZoom: 15 }); else carte.setView(points[0], 14);
+    }
+  }
+
   // ---------------------------------------------------------------- pièces
   function afficher() {
+    afficherVoiture();
+    afficherFamille();
     const liste = maison.appareils;
     const etages = [...new Set(liste.map((a) => a.etage).filter(Boolean))];
     if (etage && !etages.includes(etage)) etage = "";

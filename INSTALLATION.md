@@ -209,6 +209,16 @@ design de Bêta home, et rien à configurer : tout passe par la connexion Home A
   Le jeton : sur app.plex.tv, ouvre un film › **⋯** › **Infos multimédias** › **Afficher le XML** : il est à la fin
   de l'adresse, après `X-Plex-Token=`.
 
+Deux tuiles apparaissent toutes seules en haut de la vue Maison, dès que Home Assistant a les infos :
+- **Voiture** : quand tu ajoutes l'intégration **FordPass** (HACS) dans Home Assistant. Carburant ou batterie,
+  autonomie, kilométrage, portes, pneus, verrouillée ou non, à la maison ou pas ; boutons **Verrouiller** et
+  **Démarrer** (préchauffage, avec confirmation). Jamais « déverrouiller » depuis la page. Nom affiché :
+  `fiche-api.sh regler VOITURE_NOM "Ford Explorer"`. Autre marque : `regler VOITURE_MOTIF` avec le mot présent
+  dans les identifiants de ses entités.
+- **Famille** : une carte avec la position de chacun (appli Home Assistant des téléphones, localisation
+  autorisée), sa distance de la maison, et la voiture. Le fond de carte vient d'OpenStreetMap / CARTO ; les
+  positions ne quittent pas ta maison.
+
 La barre du bas parle à **Bêta IA**.
 
 **Alexa et HomeKit**, chacun avec sa liste d'appareils (conteneur `beta-ponts`) :

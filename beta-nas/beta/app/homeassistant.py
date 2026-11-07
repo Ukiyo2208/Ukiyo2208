@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 
 import httpx
@@ -39,17 +40,24 @@ _ATTRIBUTS = ["brightness", "supported_color_modes", "current_position", "device
               "unit_of_measurement", "media_title", "media_artist", "media_album_name", "entity_picture",
               "volume_level", "is_volume_muted", "app_name", "source", "battery_level"]
 _TEMPLATE_MAISON = (
-    "{%- set ns = namespace(l=[], p=[]) -%}"
-    "{%- for s in states if s.domain in " + json.dumps(DOMAINES_MAISON) + " -%}"
+    "{%- set ns = namespace(l=[], p=[], v=[]) -%}"
+    "{%- for s in states if s.domain in " + json.dumps(DOMAINES_MAISON) + " and MOTIF_VOITURE not in s.entity_id -%}"
     "{%- set a = area_id(s.entity_id) -%}"
     "{%- set ns.l = ns.l + [{'id': s.entity_id, 'nom': s.name, 'etat': s.state, 'piece': area_name(s.entity_id) or '',"
     " 'piece_id': a or '', 'etage': ((floor_name(a) if a else '') or ''), 'attr': {"
     + ", ".join(f"'{k}': s.attributes.get('{k}')" for k in _ATTRIBUTS) +
     "}}] -%}"
     "{%- endfor -%}"
-    "{%- for s in states.person -%}{%- set ns.p = ns.p + [{'id': s.entity_id, 'nom': s.name, 'etat': s.state}] -%}{%- endfor -%}"
+    "{%- for s in states.person -%}{%- set ns.p = ns.p + [{'id': s.entity_id, 'nom': s.name, 'etat': s.state,"
+    " 'lat': s.attributes.get('latitude'), 'lon': s.attributes.get('longitude'), 'precision': s.attributes.get('gps_accuracy')}] -%}{%- endfor -%}"
+    # La voiture (FordPass…) : ses entités sont mises à part, pour sa propre tuile
+    "{%- for s in states if MOTIF_VOITURE in s.entity_id and s.domain in ['sensor', 'binary_sensor', 'lock', 'switch', 'button', 'device_tracker'] -%}"
+    "{%- set ns.v = ns.v + [{'id': s.entity_id, 'nom': s.name, 'etat': s.state, 'unite': s.attributes.get('unit_of_measurement'),"
+    " 'lat': s.attributes.get('latitude'), 'lon': s.attributes.get('longitude')}] -%}{%- endfor -%}"
+    "{%- set d = states.zone.home -%}"
     "{%- set w = states.weather | first -%}"
-    "{{ {'appareils': ns.l, 'personnes': ns.p, 'meteo': ({'nom': w.name, 'etat': w.state,"
+    "{{ {'appareils': ns.l, 'personnes': ns.p, 'voiture': ns.v,"
+    " 'domicile': ({'lat': d.attributes.get('latitude'), 'lon': d.attributes.get('longitude')} if d else None), 'meteo': ({'nom': w.name, 'etat': w.state,"
     " 'temperature': w.attributes.get('temperature'), 'unite': w.attributes.get('temperature_unit'),"
     " 'humidite': w.attributes.get('humidity'), 'vent': w.attributes.get('wind_speed')} if w else None)} | tojson }}"
 )
@@ -103,14 +111,16 @@ class HomeAssistant:
         r.raise_for_status()
         return json.loads(r.text)
 
-    async def maison(self) -> dict:
+    async def maison(self, motif_voiture: str = "fordpass") -> dict:
         """Tout ce que la page Bêta home affiche, en un seul appel : appareils (avec pièce, étage et
-        attributs utiles), météo et personnes."""
+        attributs utiles), météo, personnes (avec leur position), voiture et position de la maison."""
+        motif = re.sub(r"[^a-z0-9_]", "", motif_voiture.lower()) or "fordpass"
+        template = _TEMPLATE_MAISON.replace("MOTIF_VOITURE", json.dumps(motif).replace('"', "'"))
         try:
-            return await self._rendre(_TEMPLATE_MAISON)
+            return await self._rendre(template)
         except httpx.HTTPStatusError:
             # Home Assistant d'avant les étages (2024.4) : même chose sans les étages
-            return await self._rendre(_TEMPLATE_MAISON.replace("(floor_name(a) if a else '')", "''"))
+            return await self._rendre(template.replace("(floor_name(a) if a else '')", "''"))
 
     async def _rendre(self, template: str) -> dict:
         r = await self._client.post("/api/template", json={"template": template})

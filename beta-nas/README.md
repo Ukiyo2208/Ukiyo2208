@@ -217,13 +217,16 @@ du réseau local : 192.168.x.x, 10.x.x.x…). Hors de chez toi, ou derrière un 
 
 La maison, la musique et Plex avec le design de Bêta home, servis par Bêta et alimentés par **sa** connexion
 Home Assistant (`HA_URL`, `HA_TOKEN`) : le navigateur ne parle jamais à Home Assistant. Pas de mails ni de
-calendrier : seulement la domotique, la musique et Plex. La barre du bas est Bêta IA (`/v1/texte`).
+calendrier : seulement la domotique, la musique et Plex. Tuiles **Voiture** (entités dont l'identifiant contient `VOITURE_MOTIF`,
+`fordpass` par défaut : elles sont retirées des pièces) et **Famille** (positions des `person.*`, carte Leaflet
+incluse dans `static/home/leaflet`). La barre du bas est Bêta IA (`/v1/texte`).
 
 | API | Rôle |
 |---|---|
 | `GET /v1/maison/etat` | appareils (pièce, étage, état, attributs), personnes, météo |
 | `POST /v1/maison/action` | `{"entite", "action", "valeur"}` : basculer, luminosite, ouvrir, fermer, stop, position, temperature, lecture, suivant, precedent, volume, radio… |
 | `GET /v1/maison/image/{entite}` | pochette de ce qui joue sur une enceinte |
+| `POST /v1/maison/voiture` | `{"action": "verrouiller" \| "demarrer" \| "actualiser"}` (jamais déverrouiller) |
 | `GET /v1/musique/radios` | radios en direct |
 | `GET /v1/plex`, `GET /v1/plex/image` | en cours, à reprendre, ajouts récents (`PLEX_URL`, `PLEX_TOKEN`) |
 | `GET /v1/ponts`, `PUT /v1/ponts/choix` | état d'Alexa et HomeKit, appareils partagés (`{"entite", "pour", "visible"}`) |

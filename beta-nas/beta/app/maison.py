@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from pathlib import Path
 
@@ -99,6 +100,62 @@ def _borne(valeur, mini, maxi, type_=int):
         return max(mini, min(maxi, type_(valeur)))
     except (TypeError, ValueError) as e:
         raise ActionRefusee("valeur invalide") from e
+
+
+# ---------------------------------------------------------------- Voiture (FordPass dans Home Assistant)
+
+# (clé, libellé, motif reconnu dans l'identifiant ou le nom, domaines) : repris de Bêta home, dans l'ordre
+CHAMPS_VOITURE = [
+    ("batterie", "Batterie", r"soc|battery_level|elveh|charge_level|state_of_charge|batterie", ("sensor",)),
+    ("autonomie", "Autonomie", r"range|autonomie|distance_to_empty|dte", ("sensor",)),
+    ("carburant", "Carburant", r"fuel|carburant", ("sensor",)),
+    ("charge", "Charge", r"charging|charge_status|en_charge", ("sensor", "binary_sensor")),
+    ("verrou", "Verrouillage", r"lock|verrou", ("lock", "sensor")),
+    ("portes", "Portes", r"door|porte", ("sensor", "binary_sensor")),
+    ("fenetres", "Fenêtres", r"window|fenetre", ("sensor", "binary_sensor")),
+    ("position", "Position", r"tracker|location|position|gps", ("device_tracker", "sensor")),
+    ("kilometrage", "Kilométrage", r"odometer|odo|kilometrage", ("sensor",)),
+    ("pneus", "Pneus", r"tire|tyre|pneu", ("sensor",)),
+    ("huile", "Huile", r"oil|huile", ("sensor",)),
+    ("batterie12v", "Batterie 12 V", r"12v|battery$|batt_12|aux", ("sensor",)),
+    ("demarrage", "Démarrage à distance", r"remote_start|ignition|start|demarr", ("switch", "button")),
+    ("actualiser", "Actualiser", r"refresh|update|actualis", ("button",)),
+]
+
+
+def voiture(entites: list[dict], nom: str = "Voiture") -> dict | None:
+    """La tuile voiture, ou None tant qu'aucune entité de la voiture n'est dans Home Assistant."""
+    if not entites:
+        return None
+    pris, champs = set(), {}
+    for cle, libelle, motif, domaines in CHAMPS_VOITURE:
+        e = next((x for x in entites if x["id"].split(".", 1)[0] in domaines and x["id"] not in pris
+                  and re.search(motif, f"{x['id']} {x.get('nom', '')}", re.IGNORECASE)), None)
+        if e:
+            pris.add(e["id"])
+            champs[cle] = {"id": e["id"], "libelle": libelle, "etat": e.get("etat"), "unite": e.get("unite") or "",
+                           "lat": e.get("lat"), "lon": e.get("lon")}
+    # Une « batterie » qui n'est pas un pourcentage (autonomie, « Unsupported » sur une voiture essence) est ignorée
+    if "batterie" in champs and not (0 <= (_nombre(champs["batterie"]["etat"]) or -1) <= 100):
+        del champs["batterie"]
+    return {"nom": nom, "champs": champs}
+
+
+def commande_voiture(v: dict | None, action: str) -> tuple[str, str, dict]:
+    """Verrouiller, démarrer à distance (préchauffage) ou actualiser. Jamais déverrouiller depuis la page."""
+    champs = (v or {}).get("champs", {})
+    cle = {"verrouiller": "verrou", "demarrer": "demarrage", "actualiser": "actualiser"}.get(action)
+    entite = champs.get(cle, {}).get("id") if cle else None
+    if not entite:
+        raise ActionRefusee("action impossible sur cette voiture")
+    domaine = entite.split(".", 1)[0]
+    if action == "verrouiller" and domaine == "lock":
+        return "lock", "lock", {"entity_id": entite}
+    if action in ("demarrer", "actualiser") and domaine == "button":
+        return "button", "press", {"entity_id": entite}
+    if action == "demarrer" and domaine == "switch":
+        return "switch", "turn_on", {"entity_id": entite}
+    raise ActionRefusee("action impossible sur cette voiture")
 
 
 # ---------------------------------------------------------------- Alexa (Matter) et HomeKit

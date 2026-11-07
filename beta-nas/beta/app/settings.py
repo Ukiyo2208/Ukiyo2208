@@ -102,6 +102,8 @@ class Settings:
     publication_intervalle: int = 60
     tri_url: str = "http://trieur:8802"  # trieur de documents (page servie par Bêta sur /tri/)
     donnees: str = "/data"  # ce que Bêta enregistre (choix des appareils visibles par Alexa…)
+    voiture_motif: str = "fordpass"  # entités de la voiture dans Home Assistant (leur identifiant contient ce mot)
+    voiture_nom: str = "Voiture"
     plex_url: str = ""  # ex : http://192.168.68.91:32400
     plex_token: str = ""
     # À la maison (adresse du réseau local), la page et l'API ne demandent pas de jeton
@@ -158,6 +160,8 @@ def charger(chemin_config: str | None = None) -> Settings:
         publication_intervalle=max(15, int(_env("PUBLICATION_INTERVALLE", "60") or 60)),
         tri_url=_env("TRI_URL", Settings.tri_url).rstrip("/"),
         donnees=_env("BETA_DONNEES", Settings.donnees),
+        voiture_motif=_env("VOITURE_MOTIF", Settings.voiture_motif),
+        voiture_nom=_env("VOITURE_NOM", Settings.voiture_nom),
         plex_url=_env("PLEX_URL").rstrip("/"),
         plex_token=_env("PLEX_TOKEN"),
         acces_local_libre=_env("BETA_LOCAL_LIBRE", "oui").lower() not in ("non", "false", "0", "no"),

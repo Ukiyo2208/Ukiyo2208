@@ -22,12 +22,26 @@ APPAREILS = [
 ]
 
 
+VOITURE = [
+    {"id": "sensor.fordpass_fuel", "nom": "Explorer Fuel", "etat": "63", "unite": "%"},
+    {"id": "sensor.fordpass_elveh", "nom": "Explorer Range", "etat": "512", "unite": "km"},  # « range » dans le nom
+    {"id": "sensor.fordpass_odometer", "nom": "Explorer Odometer", "etat": "24312", "unite": "km"},
+    {"id": "sensor.fordpass_battery", "nom": "Explorer Battery", "etat": "12.4", "unite": "V"},
+    {"id": "lock.fordpass_doorlock", "nom": "Explorer Doorlock", "etat": "unlocked"},
+    {"id": "switch.fordpass_ignition", "nom": "Explorer Ignition", "etat": "off"},
+    {"id": "device_tracker.fordpass_tracker", "nom": "Explorer Tracker", "etat": "not_home", "lat": 48.7, "lon": 7.9},
+]
+
+
 class FauxHA:
     def __init__(self):
         self.services = []
 
-    async def maison(self):
-        return {"appareils": [dict(a) for a in APPAREILS], "personnes": [{"id": "person.bastien", "nom": "Bastien", "etat": "home"}],
+    async def maison(self, motif_voiture="fordpass"):
+        self.motif = motif_voiture
+        return {"appareils": [dict(a) for a in APPAREILS],
+                "personnes": [{"id": "person.bastien", "nom": "Bastien", "etat": "not_home", "lat": 48.6, "lon": 7.8}],
+                "voiture": [dict(v) for v in VOITURE], "domicile": {"lat": 48.58, "lon": 7.75},
                 "meteo": {"nom": "Maison", "etat": "sunny", "temperature": 12}}
 
     async def attributs(self, entite):
@@ -221,3 +235,31 @@ def test_plex(monkeypatch):
         assert asyncio.run(plex.Plex(p.url, "faux").apercu())["erreur"].startswith("jeton Plex refusé")
     finally:
         srv.shutdown()
+
+
+def test_voiture_reconnue():
+    v = maison.voiture(VOITURE, "Explorer")
+    c = v["champs"]
+    assert c["carburant"]["etat"] == "63" and c["kilometrage"]["etat"] == "24312" and c["batterie12v"]["unite"] == "V"
+    assert c["verrou"]["id"] == "lock.fordpass_doorlock" and c["demarrage"]["id"] == "switch.fordpass_ignition"
+    assert c["position"]["lat"] == 48.7
+    assert "batterie" not in c  # 512 km n'est pas un pourcentage de batterie
+    assert maison.voiture([{"id": "sensor.fordpass_soc", "nom": "SOC", "etat": "81", "unite": "%"}])["champs"]["batterie"]["etat"] == "81"
+    assert maison.voiture([], "Explorer") is None  # pas encore de FordPass : pas de tuile
+    assert maison.commande_voiture(v, "verrouiller") == ("lock", "lock", {"entity_id": "lock.fordpass_doorlock"})
+    assert maison.commande_voiture(v, "demarrer") == ("switch", "turn_on", {"entity_id": "switch.fordpass_ignition"})
+    for action in ("deverrouiller", "actualiser"):  # jamais déverrouiller ; pas de bouton « actualiser » ici
+        with pytest.raises(maison.ActionRefusee):
+            maison.commande_voiture(v, action)
+
+
+def test_voiture_et_famille_dans_la_page(client):
+    c, ha = client
+    d = c.get("/v1/maison/etat").json()
+    assert d["voiture"]["champs"]["carburant"]["etat"] == "63" and d["domicile"] == {"lat": 48.58, "lon": 7.75}
+    assert d["personnes"][0]["lat"] == 48.6 and ha.motif == "fordpass"
+    assert not any("fordpass" in a["id"] for a in d["appareils"])
+    assert c.post("/v1/maison/voiture", json={"action": "verrouiller"}).status_code == 200
+    assert c.post("/v1/maison/voiture", json={"action": "deverrouiller"}).status_code == 400
+    assert ha.services == [("lock", "lock", {"entity_id": "lock.fordpass_doorlock"})]
+    assert c.get("/static/home/leaflet/leaflet.js").status_code == 200

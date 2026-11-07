@@ -538,7 +538,7 @@ async def _maison_brute(fraiche: bool = False) -> dict:
     """État de la maison, gardé 1 seconde (le pont Alexa et les écrans interrogent souvent)."""
     if fraiche or _maison_cache["valeur"] is None or time.monotonic() - _maison_cache["instant"] > 1:
         try:
-            _maison_cache["valeur"] = await etat["routeur"].ha.maison()
+            _maison_cache["valeur"] = await etat["routeur"].ha.maison(etat["settings"].voiture_motif)
         except httpx.HTTPError as e:
             raise HTTPException(status_code=503, detail="Home Assistant injoignable") from e
         _maison_cache["instant"] = time.monotonic()
@@ -575,7 +575,28 @@ async def etat_maison():
     liste = [a | {"alexa": partage.visible(a, "alexa"), "homekit": partage.visible(a, "homekit"),
                   "partage_possible": partage.type_pont(a) is not None}
              for a in maison.appareils(donnees)]
-    return {"appareils": liste, "personnes": donnees.get("personnes", []), "meteo": donnees.get("meteo")}
+    return {"appareils": liste, "personnes": donnees.get("personnes", []), "meteo": donnees.get("meteo"),
+            "domicile": donnees.get("domicile"),
+            "voiture": maison.voiture(donnees.get("voiture", []), etat["settings"].voiture_nom)}
+
+
+class ActionVoiture(BaseModel):
+    action: str  # verrouiller, demarrer, actualiser
+
+
+@app.post("/v1/maison/voiture", dependencies=[Depends(verifier_jeton)])
+async def action_voiture(demande: ActionVoiture):
+    """Verrouiller, démarrer à distance ou actualiser la voiture (jamais la déverrouiller depuis la page)."""
+    v = maison.voiture((await _maison_brute()).get("voiture", []))
+    try:
+        domaine, service, donnees = maison.commande_voiture(v, demande.action)
+        await etat["routeur"].ha.service(domaine, service, donnees)
+    except maison.ActionRefusee as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail="Home Assistant a refusé") from e
+    _maison_cache["valeur"] = None
+    return {"ok": True}
 
 
 @app.post("/v1/maison/action", dependencies=[Depends(verifier_jeton)])
