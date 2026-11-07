@@ -1,0 +1,11 @@
+{
+  "name": "beta-ponts",
+  "version": "1.0.0",
+  "description": "Pont Alexa de Bêta : les appareils de Home Assistant choisis dans Bêta home, dans Alexa (Matter, sans skill) et dans l'app Maison d'Apple (HomeKit)",
+  "type": "module",
+  "private": true,
+  "main": "index.js",
+  "scripts": { "start": "node index.js" },
+  "engines": { "node": ">=20" },
+  "dependencies": { "@matter/main": "0.18.0", "hap-nodejs": "0.14.3" }
+}

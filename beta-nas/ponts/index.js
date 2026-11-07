@@ -1,7 +1,7 @@
-// Pont Alexa de Bêta (repris du pont Matter de Bêta home) : les appareils de Home Assistant choisis dans
-// Bêta home (http://IP_DU_NAS:8800/home/ › Alexa) apparaissent dans Alexa comme des appareils Matter locaux.
-// Sans skill, sans compte : « Alexa, allume la lumière du salon » part directement au NAS, puis à Home Assistant
-// par la connexion de Bêta. Il faut une enceinte Echo compatible Matter et l'IPv6 activée sur le réseau local.
+// Ponts de Bêta (repris de Bêta home) : les appareils de Home Assistant choisis dans Bêta home
+// (http://IP_DU_NAS:8800/home/) apparaissent dans Alexa (Matter, sans skill) et dans l'app Maison d'Apple
+// (HomeKit), chacun avec sa propre liste. Les ordres passent par Bêta, puis Home Assistant.
+// Alexa : enceinte Echo compatible Matter et IPv6 sur le réseau. HomeKit : un iPhone sur le même réseau.
 import { Endpoint, Environment, ServerNode, VendorId } from '@matter/main';
 import { BridgedDeviceBasicInformationServer } from '@matter/main/behaviors/bridged-device-basic-information';
 import { WindowCoveringServer } from '@matter/main/behaviors/window-covering';
@@ -16,9 +16,10 @@ import { OccupancySensorDevice } from '@matter/main/devices/occupancy-sensor';
 import { TemperatureSensorDevice } from '@matter/main/devices/temperature-sensor';
 import { HumiditySensorDevice } from '@matter/main/devices/humidity-sensor';
 import { AggregatorEndpoint } from '@matter/main/endpoints/aggregator';
+import { startHomeKit } from './homekit.js';
 
 const BETA = (process.env.BETA_URL || 'http://127.0.0.1:8800').replace(/\/+$/, ''), JETON = process.env.BETA_TOKEN || '';
-let matterOk = false, matterErr = '';
+let matterOk = false, matterErr = '', hk = null, hkErr = '';
 const PORT = +process.env.BRIDGE_PORT || 5540, PASSCODE = +process.env.BRIDGE_PASSCODE || 20252025, DISCR = +process.env.BRIDGE_DISCRIMINATOR || 3125;
 // appairages gardés dans MATTER_STORAGE_PATH (variable lue par matter.js ; /data dans le conteneur)
 if (!process.env.MATTER_STORAGE_PATH) Environment.default.vars.set('storage.path', './data');
@@ -32,7 +33,8 @@ async function beta(path, body) {
   return r.json();
 }
 const KEYS = new Map();   // identifiant Matter de l'appareil → clé Bêta
-const send = (key, patch) => beta('/v1/alexa/commande', { key, patch }).catch(e => console.warn('commande ' + key + ' : ' + e.message));
+const commande = pour => (key, patch) => beta('/v1/ponts/commande', { key, patch, pour }).catch(e => console.warn(pour + ' ' + key + ' : ' + e.message));
+const send = commande('alexa');
 
 // volets : Alexa demande une position (0 = ouvert en Matter, donc on inverse pour Bêta : 100 = ouvert)
 const CoverServer = WindowCoveringServer.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift);
@@ -105,7 +107,7 @@ async function addItem(it) {
   console.log('+ ' + name + ' (' + t + ')');
 }
 async function sync() {
-  let data; try { data = await beta('/v1/alexa/etat'); } catch (e) { return console.warn(e.message); }
+  let data; try { data = await beta('/v1/ponts/etat?pour=alexa'); } catch (e) { return console.warn(e.message); }
   const want = new Map((data.items || []).filter(it => it.matter !== false).map(it => [it.key, it]));   // case « Alexa » cochée
   for (const [k, r] of live) if (!want.has(k)) { live.delete(k); await r.ep.delete().catch(() => { }); console.log('- ' + k); }
   for (const it of want.values()) {
@@ -116,12 +118,17 @@ async function sync() {
   }
 }
 async function status() {
-  const out = { at: Date.now(), matterErr };
+  const out = { at: Date.now(), matterErr, hkErr, hk: hk ? hk.status() : null };
   if (matterOk) { const c = server.state.commissioning, codes = c.pairingCodes || {}; Object.assign(out, { manual: codes.manualPairingCode, qr: codes.qrPairingCode, commissioned: !!c.commissioned, fabrics: Object.values(c.fabrics || {}).map(f => f.label || ('fabric ' + f.fabricIndex)), devices: live.size }); }
-  await beta('/v1/alexa/statut', out).catch(() => { });
+  await beta('/v1/ponts/statut', out).catch(() => { });
 }
 
-try {
+// HomeKit d'abord : il fonctionne même si Matter ne peut pas démarrer (IPv6 absente…)
+if (process.env.HOMEKIT !== 'off') {
+  try { hk = await startHomeKit({ beta, send: commande('homekit'), store: process.env.MATTER_STORAGE_PATH || './data', port: +process.env.HOMEKIT_PORT || 51826 }); }
+  catch (e) { hkErr = e.message; console.warn('HomeKit : ' + e.message); }
+}
+if (process.env.ALEXA !== 'off') try {
   await Promise.race([initMatter(), new Promise((ok, ko) => setTimeout(() => ko(new Error('démarrage trop long (IPv6 ?)')), 20000))]);
   await server.start();
   await sync();
@@ -131,4 +138,4 @@ try {
   setInterval(sync, 2000);
 } catch (e) { matterErr = e.message; console.warn('Matter indisponible : ' + e.message); }
 await status();
-setInterval(status, 30000);
+setInterval(status, 15000);

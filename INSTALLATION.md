@@ -192,23 +192,34 @@ côté par défaut. Les documents validés sont rangés dans ton dossier `Docume
    (`ntfy:https://ntfy.sh/un-nom-long-secret`) ou n'importe quel webhook. Vérifie avec le bouton
    **Envoyer une notification de test** de la page du tri.
 
-## I bis. Bêta home et Alexa
+## I bis. Bêta home : maison, musique, Plex, Alexa et HomeKit
 
-**Bêta home** : **`http://192.168.1.20:8800/home/`** (onglet **Bêta home** de la page de Bêta). C'est ta maison
-de Home Assistant avec le design de Bêta home : pièces avec photo, rangées par étage, tuiles pour les lumières,
-prises, volets, clim, télé, scènes, aspirateur. Rien à configurer : elle passe par la connexion Home Assistant
-de Bêta. Pour qu'une pièce et un étage apparaissent, range tes appareils dans des **pièces** et tes pièces dans
-des **étages** dans Home Assistant. La barre du bas parle à **Bêta IA**. Serrures, portes de garage et portails
-sont affichés mais ne se commandent pas depuis la page.
+**Bêta home** : **`http://192.168.1.20:8800/home/`** (onglet **Bêta home** de la page de Bêta). Trois vues, avec le
+design de Bêta home, et rien à configurer : tout passe par la connexion Home Assistant de Bêta.
+- **Maison** : pièces avec photo, rangées par étage, tuiles pour les lumières, prises, volets, clim, télé, scènes,
+  aspirateur. Range tes appareils dans des **pièces** et tes pièces dans des **étages** dans Home Assistant.
+  Serrures, portes de garage et portails sont affichés mais ne se commandent pas.
+- **Musique** : tes enceintes de Home Assistant (Sonos, Google Cast, Music Assistant…) avec pochette, lecture,
+  morceau suivant, volume ; et les radios (France Inter, FIP, NRJ…) à écouter sur la tablette ou sur une enceinte.
+- **Plex** : en cours, à reprendre, ajouts récents ; toucher une affiche l'ouvre dans Plex. À relier une fois :
+  ```bash
+  sudo /volume1/docker/beta/beta-nas/outils/fiche-api.sh regler PLEX_URL http://192.168.1.20:32400
+  sudo /volume1/docker/beta/beta-nas/outils/fiche-api.sh regler PLEX_TOKEN ton_jeton
+  ```
+  Le jeton : sur app.plex.tv, ouvre un film › **⋯** › **Infos multimédias** › **Afficher le XML** : il est à la fin
+  de l'adresse, après `X-Plex-Token=`.
 
-**Alexa, sans skill** : Bêta partage tes appareils avec Alexa par **Matter**, en local, sans compte ni abonnement.
-1. Il faut une enceinte **Echo compatible Matter** (Echo 4ᵉ génération, Echo Dot 5, Echo Show 8/10…) et
-   l'**IPv6 activée** sur le réseau du NAS (UGOS : *Panneau de configuration → Réseau → la carte réseau → IPv6 : Auto*).
-2. Dans Bêta home, touche le bouton **Alexa** (en haut à droite) : un QR code et un code s'affichent.
-3. Appli **Amazon Alexa** → **+** → **Ajouter un appareil** → **Matter** → scanne le QR code.
-4. **Choisir ce que voit Alexa** (dans Bêta home) : touche « Alexa » sur chaque appareil pour le montrer ou le
-   cacher. Par défaut : lumières, prises, volets et scènes. Jamais les serrures, le garage ni le portail.
-5. « Alexa, allume la lumière du salon », « Alexa, ferme le volet », « Alexa, lance Soirée ciné ».
+La barre du bas parle à **Bêta IA**.
+
+**Alexa et HomeKit**, chacun avec sa liste d'appareils (conteneur `beta-ponts`) :
+- **Choisir ce que voient Alexa et HomeKit** (dans Bêta home) : chaque appareil a deux pastilles, « Alexa » et
+  « HomeKit ». Par défaut : lumières, prises, volets et scènes. Jamais les serrures, le garage ni le portail.
+- **Alexa** (Matter, sans skill) : il faut une **Echo compatible Matter** et l'**IPv6** sur le réseau du NAS
+  (UGOS : *Panneau de configuration → Réseau → la carte réseau → IPv6 : Auto*). Bouton **Alexa** en haut de
+  Bêta home → QR code → appli Alexa → **+** → **Ajouter un appareil** → **Matter** → scanne.
+- **HomeKit** (app Maison d'Apple, Siri) : bouton **HomeKit** en haut de Bêta home → QR code → app **Maison** →
+  **+** → **Ajouter un accessoire** → scanne → « Ajouter quand même » (pont non certifié, c'est normal).
+  L'iPhone doit être sur le même réseau ; un HomePod ou une Apple TV permet de piloter de l'extérieur.
 
 ## J. IA cloud ou PC puissant pour la discussion (optionnel)
 

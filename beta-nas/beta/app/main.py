@@ -24,6 +24,7 @@ from pydantic import BaseModel
 
 from . import settings as cfg
 from . import maison, nas
+from . import plex as plex_
 from . import stats as st
 from .homeassistant import HomeAssistant
 from .llm_local import LLMLocal
@@ -92,7 +93,7 @@ if _reglages_demarrage.cors_origines:
 statistiques = st.Statistiques()
 _PAS_SUIVIS = (
     "/static", "/favicon.ico", "/v1/stats", "/v1/nas", "/v1/appairage", "/v1/tri/etat", "/v1/maison/appareils",
-    "/tableau", "/tri", "/home", "/v1/maison/etat", "/v1/alexa", "/docs", "/openapi.json",
+    "/tableau", "/tri", "/home", "/v1/maison/etat", "/v1/maison/image", "/v1/plex", "/v1/ponts", "/docs", "/openapi.json",
 )
 
 
@@ -518,14 +519,16 @@ class ActionMaison(BaseModel):
     valeur: float | None = None
 
 
-class ChoixAlexa(BaseModel):
+class ChoixPont(BaseModel):
     entite: str
+    pour: str = "alexa"  # « alexa » ou « homekit »
     visible: bool
 
 
-class CommandeAlexa(BaseModel):
+class CommandePont(BaseModel):
     key: str
     patch: dict
+    pour: str = "alexa"
 
 
 _maison_cache: dict = {"instant": 0.0, "valeur": None}
@@ -542,10 +545,17 @@ async def _maison_brute(fraiche: bool = False) -> dict:
     return _maison_cache["valeur"]
 
 
-def _alexa() -> maison.Alexa:
-    if "alexa" not in etat:
-        etat["alexa"] = maison.Alexa(Path(etat["settings"].donnees) / "alexa.json")
-    return etat["alexa"]
+def _partage() -> maison.Partage:
+    if "partage" not in etat:
+        etat["partage"] = maison.Partage(Path(etat["settings"].donnees) / "alexa.json")
+    return etat["partage"]
+
+
+def _plex() -> plex_.Plex:
+    if "plex" not in etat:
+        s: cfg.Settings = etat["settings"]
+        etat["plex"] = plex_.Plex(s.plex_url, s.plex_token)
+    return etat["plex"]
 
 
 @app.get("/home", include_in_schema=False)
@@ -561,8 +571,9 @@ async def page_home():
 @app.get("/v1/maison/etat", dependencies=[Depends(verifier_jeton)])
 async def etat_maison():
     """Appareils (pièce, étage, état, attributs), personnes et météo, pour la page Bêta home."""
-    donnees, alexa = await _maison_brute(), _alexa()
-    liste = [a | {"alexa": alexa.visible(a), "alexa_possible": alexa.type_matter(a) is not None}
+    donnees, partage = await _maison_brute(), _partage()
+    liste = [a | {"alexa": partage.visible(a, "alexa"), "homekit": partage.visible(a, "homekit"),
+                  "partage_possible": partage.type_pont(a) is not None}
              for a in maison.appareils(donnees)]
     return {"appareils": liste, "personnes": donnees.get("personnes", []), "meteo": donnees.get("meteo")}
 
@@ -582,56 +593,94 @@ async def action_maison(demande: ActionMaison):
     return {"ok": True}
 
 
-@app.get("/v1/alexa", dependencies=[Depends(verifier_jeton)])
-async def alexa_etat():
-    """État du pont Alexa (Matter) : en ligne, appairé, code d'appairage, nombre d'appareils."""
-    return _alexa().etat_pont()
+@app.get("/v1/maison/image/{entite}", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
+async def image_maison(entite: str):
+    """Pochette de ce qui joue sur une enceinte, servie par Home Assistant (avec la connexion de Bêta)."""
+    appareil = next((a for a in (await _maison_brute()).get("appareils", []) if a["id"] == entite), None)
+    chemin = ((appareil or {}).get("attr") or {}).get("entity_picture") or ""
+    if chemin.startswith(("http://", "https://")):
+        return RedirectResponse(chemin)
+    if not chemin.startswith("/api/"):
+        raise HTTPException(status_code=404, detail="Pas d'image")
+    try:
+        contenu, type_ = await etat["routeur"].ha.image(chemin)
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=404, detail="Pas d'image") from e
+    return Response(contenu, media_type=type_, headers={"Cache-Control": "max-age=300"})
 
 
-@app.put("/v1/alexa/choix", dependencies=[Depends(verifier_jeton)])
-async def alexa_choix(choix: ChoixAlexa):
-    alexa = _alexa()
-    alexa.choix[choix.entite] = choix.visible
-    alexa.sauver()
+@app.get("/v1/musique/radios", dependencies=[Depends(verifier_jeton)])
+async def radios():
+    """Radios en direct : écoutées dans le navigateur, ou sur une enceinte (action « radio », valeur = rang)."""
+    return maison.RADIOS
+
+
+@app.get("/v1/plex", dependencies=[Depends(verifier_jeton)])
+async def plex_apercu():
+    """En cours, à reprendre et ajouts récents sur ton serveur Plex (PLEX_URL et PLEX_TOKEN dans .env)."""
+    return await _plex().apercu()
+
+
+@app.get("/v1/plex/image", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
+async def plex_image(chemin: str):
+    try:
+        contenu, type_ = await _plex().image(chemin)
+    except (plex_.PlexIndisponible, httpx.HTTPError) as e:
+        raise HTTPException(status_code=404, detail="Image indisponible") from e
+    return Response(contenu, media_type=type_, headers={"Cache-Control": "max-age=86400"})
+
+
+@app.get("/v1/ponts", dependencies=[Depends(verifier_jeton)])
+async def ponts_etat():
+    """Alexa (Matter) et HomeKit : en ligne, appairé, code d'appairage."""
+    return _partage().etat_ponts()
+
+
+@app.put("/v1/ponts/choix", dependencies=[Depends(verifier_jeton)])
+async def ponts_choix(choix: ChoixPont):
+    try:
+        _partage().choisir(choix.entite, choix.pour, choix.visible)
+    except maison.ActionRefusee as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     return {"ok": True}
 
 
-@app.get("/v1/alexa/qr.svg", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
-async def alexa_qr():
+@app.get("/v1/ponts/qr/{pour}.svg", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
+async def ponts_qr(pour: str):
     from .installation import qr_svg
 
-    code = _alexa().statut.get("qr")
+    code = _partage().etat_ponts().get(pour, {}).get("qr")
     if not code:
-        raise HTTPException(status_code=404, detail="Pont Alexa pas encore prêt")
+        raise HTTPException(status_code=404, detail="Pont pas encore prêt")
     return Response(qr_svg(code), media_type="image/svg+xml", headers={"Cache-Control": "no-store"})
 
 
-# Appelés par le pont Matter (conteneur beta-alexa)
-@app.get("/v1/alexa/etat", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
-async def alexa_elements():
-    return {"items": _alexa().elements(maison.appareils(await _maison_brute()))}
+# Appelés par les ponts (conteneur beta-ponts : Matter pour Alexa, HAP pour HomeKit)
+@app.get("/v1/ponts/etat", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
+async def ponts_elements(pour: str = "alexa"):
+    return {"items": _partage().elements(maison.appareils(await _maison_brute()), pour)}
 
 
-@app.post("/v1/alexa/commande", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
-async def alexa_commande(demande: CommandeAlexa):
+@app.post("/v1/ponts/commande", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
+async def ponts_commande(demande: CommandePont):
     appareil = next((a for a in maison.appareils(await _maison_brute()) if a["id"] == demande.key), None)
     if not appareil:
         raise HTTPException(status_code=404, detail="appareil inconnu")
     try:
-        domaine, service, donnees = _alexa().commande(appareil, demande.patch)
+        domaine, service, donnees = _partage().commande(appareil, demande.patch, demande.pour)
         await etat["routeur"].ha.service(domaine, service, donnees)
     except maison.ActionRefusee as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except httpx.HTTPError as e:
         raise HTTPException(status_code=503, detail="Home Assistant a refusé") from e
     _maison_cache["valeur"] = None
-    log.info("Alexa : %s %s", demande.key, demande.patch)
+    log.info("%s : %s %s", demande.pour, demande.key, demande.patch)
     return {"ok": True}
 
 
-@app.post("/v1/alexa/statut", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
-async def alexa_statut(statut: dict):
-    _alexa().statut = {**statut, "recu": time.time()}
+@app.post("/v1/ponts/statut", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
+async def ponts_statut(statut: dict):
+    _partage().statut = {**statut, "recu": time.time()}
     return {"ok": True}
 
 

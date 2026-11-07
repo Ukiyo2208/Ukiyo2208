@@ -215,18 +215,28 @@ du réseau local : 192.168.x.x, 10.x.x.x…). Hors de chez toi, ou derrière un 
 
 ## Bêta home : `http://IP_DU_NAS:8800/home/`
 
-La maison de Home Assistant avec le design de Bêta home (fond, cartes de pièces avec photo, tuiles), servie par
-Bêta et alimentée par **sa** connexion Home Assistant (`HA_URL`, `HA_TOKEN`) : le navigateur ne parle jamais à
-Home Assistant. Pièces et étages viennent de Home Assistant. La barre du bas est Bêta IA (`/v1/texte`).
-API : `GET /v1/maison/etat`, `POST /v1/maison/action` (`{"entite", "action", "valeur"}`). Serrures, portes de
-garage et portails : affichés, jamais commandés.
+La maison, la musique et Plex avec le design de Bêta home, servis par Bêta et alimentés par **sa** connexion
+Home Assistant (`HA_URL`, `HA_TOKEN`) : le navigateur ne parle jamais à Home Assistant. Pas de mails ni de
+calendrier : seulement la domotique, la musique et Plex. La barre du bas est Bêta IA (`/v1/texte`).
 
-### Alexa (pont Matter, conteneur `beta-alexa`)
+| API | Rôle |
+|---|---|
+| `GET /v1/maison/etat` | appareils (pièce, étage, état, attributs), personnes, météo |
+| `POST /v1/maison/action` | `{"entite", "action", "valeur"}` : basculer, luminosite, ouvrir, fermer, stop, position, temperature, lecture, suivant, precedent, volume, radio… |
+| `GET /v1/maison/image/{entite}` | pochette de ce qui joue sur une enceinte |
+| `GET /v1/musique/radios` | radios en direct |
+| `GET /v1/plex`, `GET /v1/plex/image` | en cours, à reprendre, ajouts récents (`PLEX_URL`, `PLEX_TOKEN`) |
+| `GET /v1/ponts`, `PUT /v1/ponts/choix` | état d'Alexa et HomeKit, appareils partagés (`{"entite", "pour", "visible"}`) |
 
-Repris du pont Matter de Bêta home (`alexa/`, matter.js). Il lit `GET /v1/alexa/etat` toutes les 2 secondes,
-envoie les ordres d'Alexa à `POST /v1/alexa/commande`, et son état (code d'appairage, appairé ou non) à
-`POST /v1/alexa/statut`. Le choix des appareils est enregistré dans `data/beta/alexa.json`, l'appairage dans
-`data/alexa` (à garder, sinon il faut réappairer). Réseau « hôte » et IPv6 nécessaires.
+Serrures, portes de garage et portails : affichés, jamais commandés (ni depuis la page, ni par Alexa ou HomeKit).
+
+### Alexa et HomeKit (conteneur `beta-ponts`)
+
+Les ponts de Bêta home (`ponts/`) : Matter (matter.js) pour Alexa, HAP (HAP-NodeJS) pour l'app Maison d'Apple.
+Chacun lit sa liste (`GET /v1/ponts/etat?pour=alexa|homekit`), envoie les ordres à `POST /v1/ponts/commande`
+et son état à `POST /v1/ponts/statut`. Choix des appareils : `data/beta/alexa.json` ; appairages : `data/ponts`
+(à garder, sinon il faut réappairer). Réseau « hôte » ; IPv6 pour Matter. `ALEXA=off` ou `HOMEKIT=off` pour en
+couper un.
 
 ## Fiche de connexion et suivi en temps réel
 

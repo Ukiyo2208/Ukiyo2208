@@ -123,21 +123,24 @@ services:
       - ollama
     restart: unless-stopped
 
-  # Pont Alexa (Matter) : les appareils de Home Assistant choisis dans Bêta home › Alexa apparaissent dans
-  # Alexa, sans skill ni compte. Réseau « hôte » obligatoire (découverte Matter) et IPv6 activée sur le réseau.
-  # Appairage : appli Alexa › Ajouter un appareil › Matter, avec le QR code affiché dans Bêta home.
-  alexa:
-    build: ./alexa
-    container_name: beta-alexa
+  # Ponts Alexa (Matter, sans skill) et HomeKit (app Maison d'Apple) : les appareils de Home Assistant choisis
+  # dans Bêta home › Alexa / HomeKit, chacun sa liste. Réseau « hôte » obligatoire (découverte locale) ;
+  # Alexa a aussi besoin de l'IPv6 sur le réseau. Codes et QR d'appairage : dans Bêta home.
+  ponts:
+    build: ./ponts
+    container_name: beta-ponts
     network_mode: host
     init: true
     environment:
       - BETA_URL=http://127.0.0.1:8800
       - BETA_TOKEN=${BETA_TOKEN}
       - BRIDGE_PORT=${ALEXA_PORT:-5540}
+      - HOMEKIT_PORT=${HOMEKIT_PORT:-51826}
+      - ALEXA=${ALEXA:-on} # « off » pour couper un des deux ponts
+      - HOMEKIT=${HOMEKIT:-on}
       - TZ=${TZ:-Europe/Paris}
     volumes:
-      - ./data/alexa:/data # appairage avec Alexa (ne pas supprimer, sinon il faut réappairer)
+      - ./data/ponts:/data # appairages Alexa et HomeKit (à garder, sinon il faut réappairer)
     depends_on:
       - beta
     restart: unless-stopped

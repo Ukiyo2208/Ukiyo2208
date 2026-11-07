@@ -83,7 +83,40 @@
   .tuiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .tuile { border: 1px solid var(--bord); border-radius: 12px; background: rgba(10, 18, 56, .55); padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; position: relative; }
   .tuile.large { grid-column: 1 / -1; }
-  .alexa-pastille ~ .nom { padding-right: 56px; }
+  .pastilles { display: flex; gap: 4px; order: 99; flex-wrap: wrap; }
+  .scene-partage { display: inline-flex; flex-direction: column; gap: 4px; align-items: center; }
+  nav.vues { display: flex; gap: 8px; margin: 0 0 14px; padding: 6px; width: fit-content; }
+  nav.vues a { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 10px; color: var(--doux); text-decoration: none; font-weight: 600; }
+  nav.vues a.actif { color: #fff; background: linear-gradient(135deg, rgba(47, 139, 255, .45), rgba(123, 91, 255, .45)); box-shadow: 0 0 14px rgba(47, 139, 255, .35); }
+  .ecoute { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  select { background: rgba(0, 0, 0, .3); border: 1px solid var(--bord); border-radius: 10px; padding: 7px 10px; color: var(--texte); font: inherit; }
+  .radios { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+  .radio { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: 0; font-size: 12px; width: 72px; }
+  .radio span.rond-radio { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px;
+                           box-shadow: 0 0 0 2px rgba(255, 255, 255, .15), 0 6px 18px rgba(0, 0, 0, .35); text-align: center; line-height: 1.05; padding: 4px; }
+  .radio.joue span.rond-radio { box-shadow: 0 0 0 3px var(--cyan), 0 0 22px rgba(79, 209, 255, .7); }
+  h3.sous-titre { font-size: 15px; font-weight: 600; margin: 6px 0 10px; color: var(--doux); text-transform: uppercase; letter-spacing: .08em; }
+  .grille-media { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; align-items: start; }
+  .lecteur { display: grid; grid-template-columns: 96px 1fr; gap: 12px; padding: 12px; background: var(--verre2); }
+  .lecteur img { width: 96px; height: 96px; border-radius: 12px; object-fit: cover; background: #111a44; }
+  .lecteur .titre-media { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lecteur .artiste { font-size: 13px; color: var(--doux); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .commandes { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  .commandes button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--bord); background: rgba(255, 255, 255, .06); display: grid; place-items: center; }
+  .commandes button.principal { width: 42px; height: 42px; background: linear-gradient(135deg, #2f8bff, #7b5bff); border: 0; }
+  .lecteur input[type=range] { accent-color: var(--cyan); }
+  .mini-lecteur { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin-bottom: 14px; }
+  .affiches { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 18px; scroll-snap-type: x mandatory; }
+  .affiche { flex: none; width: 150px; scroll-snap-align: start; text-decoration: none; color: var(--texte); }
+  .affiche .image { position: relative; width: 150px; height: 225px; border-radius: 12px; overflow: hidden; background: #111a44 url("/static/home/media/plex-1.jpg") center / cover; box-shadow: 0 8px 20px rgba(0, 0, 0, .4); }
+  .affiche img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .affiche .barre { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(0, 0, 0, .5); }
+  .affiche .barre i { display: block; height: 100%; background: #e5a00d; }
+  .affiche b { display: block; font-size: 13px; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .affiche small { color: var(--doux); font-size: 12px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pastille.plex { background: linear-gradient(135deg, #e5a00d, #cc7b19); }
+  .pastille.musique { background: linear-gradient(135deg, #ff5fa2, #b25bff); }
+  .onglets-pont { display: flex; gap: 6px; margin-bottom: 12px; }
   .tuile .nom { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tuile .ligne { display: flex; align-items: center; gap: 10px; }
   .tuile .etat { font-size: 12px; color: var(--doux); }
@@ -104,7 +137,7 @@
   .thermo { display: flex; align-items: center; gap: 8px; }
   .thermo button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--bord); background: rgba(255, 255, 255, .06); }
   .thermo b { font-size: 18px; font-weight: 600; min-width: 62px; text-align: center; }
-  .alexa-pastille { position: absolute; top: 6px; right: 6px; font-size: 10px; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--bord); background: rgba(0, 0, 0, .35); }
+  .alexa-pastille { font-size: 10px; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--bord); background: rgba(0, 0, 0, .35); }
   .alexa-pastille.on { border-color: #31c4f3; background: rgba(49, 196, 243, .25); }
   .vide { padding: 30px; text-align: center; color: var(--doux); }
 
@@ -154,22 +187,45 @@
       <div class="compteurs" id="compteurs"></div>
     </div>
     <div class="actions-haut verre">
-      <button class="rond" id="ouvrir-alexa" title="Alexa" aria-label="Alexa">
+      <button class="rond" data-pont-ouvrir="alexa" title="Alexa" aria-label="Alexa">
         <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8.5 15.5c1-3 2-5 3.5-7 1.5 2 2.5 4 3.5 7"/></svg></button>
+      <button class="rond" data-pont-ouvrir="homekit" title="HomeKit (app Maison d'Apple)" aria-label="HomeKit">
+        <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><rect x="9" y="12" width="6" height="6" rx="1"/></svg></button>
       <a class="rond" href="/" title="Bêta IA (accueil, discussion)" aria-label="Bêta IA">
-        <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></a>
+        <svg class="i" viewBox="0 0 24 24" fill="none" stroke="#b48cff" stroke-width="2"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/></svg></a>
     </div>
   </header>
 
-  <section class="panneau verre">
+  <nav class="vues verre">
+    <a href="#maison" data-vue="maison"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>Maison</a>
+    <a href="#musique" data-vue="musique"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Musique</a>
+    <a href="#plex" data-vue="plex"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4l8 8-8 8"/></svg>Plex</a>
+  </nav>
+
+  <section class="panneau verre" id="vue-maison">
     <div class="titre-panneau">
       <h2><span class="pastille"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg></span>Pièces et appareils</h2>
       <span class="doux" id="info"></span>
-      <button class="bouton secondaire" id="mode-alexa" style="margin-left:auto">Choisir ce que voit Alexa</button>
+      <button class="bouton secondaire" id="mode-partage" style="margin-left:auto">Choisir ce que voient Alexa et HomeKit</button>
     </div>
     <div class="onglets" id="etages"></div>
     <div class="scenes" id="scenes"></div>
     <div class="grille" id="pieces"><div class="vide">Chargement de la maison…</div></div>
+  </section>
+
+  <section class="panneau verre" id="vue-musique" hidden>
+    <div class="titre-panneau"><h2><span class="pastille musique"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>Musique</h2></div>
+    <div class="mini-lecteur verre" id="mini-lecteur" hidden></div>
+    <div class="ecoute"><span class="doux">Écouter les radios sur</span><select id="sortie"></select></div>
+    <div class="radios" id="radios"></div>
+    <h3 class="sous-titre">Enceintes</h3>
+    <div class="grille-media" id="enceintes"></div>
+    <audio id="audio" preload="none"></audio>
+  </section>
+
+  <section class="panneau verre" id="vue-plex" hidden>
+    <div class="titre-panneau"><h2><span class="pastille plex"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M8 4l8 8-8 8"/></svg></span>Plex</h2><span class="doux" id="plex-serveur"></span></div>
+    <div id="plex"><div class="vide">Chargement…</div></div>
   </section>
 </main>
 
@@ -191,11 +247,11 @@
   </form>
 </div>
 
-<div class="voile" id="fenetre-alexa" hidden>
+<div class="voile" id="fenetre-pont" hidden>
   <div class="fenetre verre">
-    <h2>Alexa</h2>
-    <div id="alexa-contenu" class="doux">Chargement…</div>
-    <p style="text-align:right;margin:14px 0 0"><button class="bouton secondaire" type="button" id="fermer-alexa">Fermer</button></p>
+    <h2 id="pont-titre">Alexa</h2>
+    <div id="pont-contenu" class="doux">Chargement…</div>
+    <p style="text-align:right;margin:14px 0 0"><button class="bouton secondaire" type="button" id="fermer-pont">Fermer</button></p>
   </div>
 </div>
 
@@ -207,7 +263,7 @@
   let jeton = memoire.lire("beta_jeton") || "";
   let maison = { appareils: [], personnes: [], meteo: null };
   let etage = memoire.lire("home_etage") || "";
-  let modeAlexa = false;
+  let modePartage = false;
 
   async function api(chemin, options = {}) {
     const entetes = { "Content-Type": "application/json", ...(jeton ? { Authorization: `Bearer ${jeton}` } : {}) };
@@ -290,9 +346,11 @@
   const dom = (a) => a.id.split(".")[0];
   const INTERDITS = ["garage", "gate", "door"];
 
+  // En mode « partage », chaque appareil montre deux pastilles : Alexa et HomeKit (listes séparées)
   function pastilleAlexa(a) {
-    if (!modeAlexa || !a.alexa_possible) return "";
-    return `<button class="alexa-pastille ${a.alexa ? "on" : ""}" data-alexa="${e(a.id)}" data-visible="${a.alexa ? 0 : 1}">${a.alexa ? "Alexa ✓" : "Alexa"}</button>`;
+    if (!modePartage || !a.partage_possible) return "";
+    const p = (pour, nom) => `<button class="alexa-pastille ${a[pour] ? "on" : ""}" data-pont="${pour}" data-entite="${e(a.id)}" data-visible="${a[pour] ? 0 : 1}">${nom}${a[pour] ? " ✓" : ""}</button>`;
+    return `<span class="pastilles">${p("alexa", "Alexa")}${p("homekit", "HomeKit")}</span>`;
   }
 
   function tuile(a) {
@@ -356,7 +414,7 @@
       `<button class="${n === etage ? "actif" : ""}" data-etage="${e(n)}">${e(n || "Toute la maison")}</button>`).join("");
 
     const scenes = liste.filter((a) => dom(a) === "scene");
-    $("scenes").innerHTML = scenes.map((a) => `<span style="position:relative"><button class="scene" data-act="lancer" data-id="${e(a.id)}">${ico("jouer")}${e(a.nom)}</button>${pastilleAlexa(a)}</span>`).join("");
+    $("scenes").innerHTML = scenes.map((a) => `<span class="scene-partage"><button class="scene" data-act="lancer" data-id="${e(a.id)}">${ico("jouer")}${e(a.nom)}</button>${pastilleAlexa(a)}</span>`).join("");
 
     const pieces = new Map();
     for (const a of liste) {
@@ -383,7 +441,7 @@
         ${tuiles ? `<div class="tuiles">${tuiles}</div>` : `<div class="doux" style="font-size:13px">Capteurs seulement</div>`}
       </article>`;
     }).join("") || `<div class="vide">Aucun appareil. Range tes appareils dans des pièces (et les pièces dans des étages) dans Home Assistant.</div>`;
-    $("info").textContent = modeAlexa ? "Touche « Alexa » sur un appareil pour le montrer ou le cacher à Alexa." : "";
+    $("info").textContent = modePartage ? "Touche « Alexa » ou « HomeKit » sur un appareil pour le montrer ou le cacher." : "";
   }
 
   async function charger() {
@@ -392,6 +450,7 @@
       $("connexion").hidden = true;
       enTete();
       if (!document.activeElement || document.activeElement.type !== "range") afficher();
+      if (vue === "musique") afficherMusique();
     } catch (err) {
       if (err.message !== "401") $("pieces").innerHTML = `<div class="vide">${e(err.message)}</div>`;
     }
@@ -408,13 +467,15 @@
   document.addEventListener("click", async (ev) => {
     const onglet = ev.target.closest("[data-etage]");
     if (onglet) { etage = onglet.dataset.etage; memoire.ecrire("home_etage", etage); return afficher(); }
-    const alexa = ev.target.closest("[data-alexa]");
-    if (alexa) {
-      const visible = alexa.dataset.visible === "1";
-      await api("/v1/alexa/choix", { method: "PUT", body: JSON.stringify({ entite: alexa.dataset.alexa, visible }) }).catch(() => {});
-      const a = maison.appareils.find((x) => x.id === alexa.dataset.alexa); if (a) a.alexa = visible;
+    const pont = ev.target.closest("[data-pont]");
+    if (pont) {
+      const visible = pont.dataset.visible === "1", pour = pont.dataset.pont;
+      await api("/v1/ponts/choix", { method: "PUT", body: JSON.stringify({ entite: pont.dataset.entite, pour, visible }) }).catch(() => {});
+      const a = maison.appareils.find((x) => x.id === pont.dataset.entite); if (a) a[pour] = visible;
       return afficher();
     }
+    const ouvrirPont = ev.target.closest("[data-pont-ouvrir]");
+    if (ouvrirPont) { $("fenetre-pont").hidden = false; return afficherPont(ouvrirPont.dataset.pontOuvrir); }
     const b = ev.target.closest("button[data-act]");
     if (!b) return;
     const a = maison.appareils.find((x) => x.id === b.dataset.id);
@@ -432,10 +493,10 @@
     if (ev.target.dataset.act === "luminosite") agir(ev.target.dataset.id, "luminosite", Number(ev.target.value));
   });
 
-  $("mode-alexa").addEventListener("click", () => {
-    modeAlexa = !modeAlexa;
-    $("mode-alexa").textContent = modeAlexa ? "Terminé" : "Choisir ce que voit Alexa";
-    $("mode-alexa").className = modeAlexa ? "bouton" : "bouton secondaire";
+  $("mode-partage").addEventListener("click", () => {
+    modePartage = !modePartage;
+    $("mode-partage").textContent = modePartage ? "Terminé" : "Choisir ce que voient Alexa et HomeKit";
+    $("mode-partage").className = modePartage ? "bouton" : "bouton secondaire";
     afficher();
   });
 
@@ -454,39 +515,155 @@
     } catch (err) { if (err.message !== "401") parler(`Bêta IA ne répond pas (${err.message}).`); }
   });
 
-  // ---------------------------------------------------------------- Alexa
-  async function afficherAlexa() {
+  // ---------------------------------------------------------------- Alexa et HomeKit
+  const PONTS = {
+    alexa: { nom: "Alexa", conteneur: "beta-ponts",
+      etapes: `<ol><li>Appli <b>Amazon Alexa</b> › <b>+</b> › <b>Ajouter un appareil</b> › <b>Matter</b>.</li>
+        <li>Scanne ce QR code (ou tape le code), puis laisse Alexa trouver les appareils.</li>
+        <li>Dis : « Alexa, allume la lumière du salon ».</li></ol>
+        <p class="doux">Il faut une enceinte Echo compatible Matter (Echo 4ᵉ génération, Echo Dot 5, Echo Show…) et l'IPv6 sur le réseau du NAS.</p>`,
+      aide: "Vérifie que l'IPv6 est activée sur le réseau du NAS (UGOS › Réseau › IPv6 : Auto)." },
+    homekit: { nom: "HomeKit", conteneur: "beta-ponts",
+      etapes: `<ol><li>Sur l'iPhone, app <b>Maison</b> › <b>+</b> › <b>Ajouter un accessoire</b>.</li>
+        <li>Scanne ce QR code (ou <b>Plus d'options</b> › tape le code).</li>
+        <li>« Ajouter quand même » si l'iPhone signale un accessoire non certifié : c'est normal pour un pont maison.</li>
+        <li>Dis : « Dis Siri, allume la lumière du salon ».</li></ol>
+        <p class="doux">L'iPhone doit être sur le même réseau que le NAS. Pas besoin de concentrateur Apple chez toi ; il en faut un (HomePod, Apple TV) pour piloter de l'extérieur.</p>`,
+      aide: "Vérifie que l'iPhone et le NAS sont sur le même réseau." },
+  };
+
+  async function afficherPont(pour) {
+    const P = PONTS[pour];
+    $("pont-titre").textContent = P.nom;
+    $("pont-contenu").textContent = "Chargement…";
     let s;
-    try { s = await api("/v1/alexa"); } catch (err) { $("alexa-contenu").textContent = err.message; return; }
-    const nb = maison.appareils.filter((a) => a.alexa).length;
-    const etapes = `<ol><li>Appli <b>Amazon Alexa</b> › <b>+</b> › <b>Ajouter un appareil</b> › <b>Matter</b>.</li>
-      <li>Scanne ce QR code (ou tape le code), puis laisse Alexa trouver les appareils.</li>
-      <li>Dis : « Alexa, allume la lumière du salon ».</li></ol>`;
+    try { s = (await api("/v1/ponts"))[pour]; } catch (err) { $("pont-contenu").textContent = err.message; return; }
+    const nb = maison.appareils.filter((a) => a[pour]).length;
     if (!s.en_ligne) {
-      $("alexa-contenu").innerHTML = `<p>Le pont Alexa ne répond pas.</p>
-        ${s.matterErr ? `<p class="doux">Dernière erreur : ${e(s.matterErr)}</p>` : ""}
-        <p class="doux">Vérifie que le conteneur <b>beta-alexa</b> tourne (<code>sudo docker logs beta-alexa</code>) et que l'IPv6 est activée sur le réseau du NAS.</p>`;
+      $("pont-contenu").innerHTML = `<p>Le pont ${P.nom} ne répond pas${s.pont_en_ligne ? " (le conteneur tourne, mais ce pont n'a pas démarré)" : ""}.</p>
+        ${s.erreur ? `<p class="doux">Erreur : ${e(s.erreur)}</p>` : ""}
+        <p class="doux">Journal : <code>sudo docker logs ${P.conteneur}</code>. ${P.aide}</p>`;
       return;
     }
-    if (s.commissioned) {
-      $("alexa-contenu").innerHTML = `<p>✅ <b>Appairé</b>${(s.fabrics || []).length ? ` avec ${e(s.fabrics.join(", "))}` : ""}.
-        ${e(s.devices ?? nb)} appareil(s) partagé(s).</p>
-        <p class="doux">Pour choisir ce que voit Alexa, ferme cette fenêtre et touche « Choisir ce que voit Alexa ».
-        Les nouveaux appareils apparaissent dans Alexa en quelques secondes.</p>`;
+    if (s.appaire) {
+      $("pont-contenu").innerHTML = `<p>✅ <b>Appairé</b>${(s.partenaires || []).length ? ` avec ${e(s.partenaires.join(", "))}` : ""}.
+        ${e(s.appareils ?? nb)} appareil(s) partagé(s).</p>
+        <p class="doux">Pour choisir ce que voit ${P.nom}, ferme cette fenêtre et touche « Choisir ce que voient Alexa et HomeKit ».
+        Les changements arrivent en quelques secondes.</p>`;
       return;
     }
-    $("alexa-contenu").innerHTML = `<p>${nb} appareil(s) seront partagés avec Alexa, sans skill ni compte : tout reste chez toi.</p>
-      ${etapes}<div class="qr"><img src="/v1/alexa/qr.svg?${Date.now()}" alt="QR code Matter" style="width:100%" id="qr-alexa"></div>
-      <div class="code">${e(s.manual || "")}</div>
-      <p class="doux">Il faut une enceinte Echo compatible Matter (Echo 4ᵉ génération, Echo Dot 5, Echo Show…).</p>`;
-    if (jeton) { // l'image a besoin du jeton hors de la maison
-      fetch(`/v1/alexa/qr.svg`, { headers: { Authorization: `Bearer ${jeton}` } }).then((r) => r.text()).then((svg) => {
-        const qr = document.querySelector(".qr"); if (qr) qr.innerHTML = svg;
+    $("pont-contenu").innerHTML = `<p>${nb} appareil(s) seront partagés avec ${P.nom}. Tout reste chez toi, sans compte.</p>
+      ${P.etapes}<div class="qr" id="qr-pont"><img src="/v1/ponts/qr/${pour}.svg?${Date.now()}" alt="QR code" style="width:100%"></div>
+      <div class="code">${e(s.code || "")}</div>`;
+    if (jeton) { // hors de la maison, l'image a besoin du jeton
+      fetch(`/v1/ponts/qr/${pour}.svg`, { headers: { Authorization: `Bearer ${jeton}` } }).then((r) => r.text()).then((svg) => {
+        const qr = $("qr-pont"); if (qr) qr.innerHTML = svg;
       }).catch(() => {});
     }
   }
-  $("ouvrir-alexa").addEventListener("click", () => { $("fenetre-alexa").hidden = false; afficherAlexa(); });
-  $("fermer-alexa").addEventListener("click", () => { $("fenetre-alexa").hidden = true; });
+  $("fermer-pont").addEventListener("click", () => { $("fenetre-pont").hidden = true; });
+
+  // ---------------------------------------------------------------- vues
+  let vue = "maison";
+  function ouvrirVue() {
+    vue = ["maison", "musique", "plex"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "maison";
+    for (const v of ["maison", "musique", "plex"]) $(`vue-${v}`).hidden = v !== vue;
+    document.querySelectorAll("nav.vues a").forEach((a) => a.classList.toggle("actif", a.dataset.vue === vue));
+    if (vue === "musique") afficherMusique();
+    if (vue === "plex") chargerPlex();
+  }
+  window.addEventListener("hashchange", ouvrirVue);
+
+  // ---------------------------------------------------------------- Musique
+  let radiosListe = [], radioIci = null;
+  const estPlex = (a) => /plex/i.test(a.id) || /plex/i.test(a.attr?.app_name || "");
+  const enceintes = () => maison.appareils.filter((a) => dom(a) === "media_player" && !estPlex(a));
+  const imageMedia = (a) => a.attr?.entity_picture ? `/v1/maison/image/${encodeURIComponent(a.id)}?v=${encodeURIComponent(a.attr.media_title || "")}` : "/static/home/media/now-playing.jpg";
+
+  function carteLecteur(a) {
+    const at = a.attr || {}, joue = a.etat === "playing", marche = !["off", "standby", "unavailable"].includes(a.etat);
+    const titre = at.media_title || ({ playing: "Lecture", paused: "En pause", idle: "Prêt", off: "Éteint", standby: "En veille", unavailable: "Indisponible" }[a.etat] || a.etat);
+    const volume = at.volume_level != null ? Math.round(at.volume_level * 100) : null;
+    return `<article class="lecteur verre">
+      <img src="${imageMedia(a)}" alt="" onerror="this.src='/static/home/media/now-playing.jpg'">
+      <div style="min-width:0">
+        <div class="ligne" style="display:flex;align-items:center;gap:8px"><b style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e(a.nom)}</b>
+          <button class="marche ${marche ? "on" : ""}" style="width:32px;height:32px" data-act="basculer" data-id="${e(a.id)}" aria-label="Marche">${ico("marche")}</button></div>
+        <div class="titre-media">${e(titre)}</div>
+        <div class="artiste">${e([at.media_artist, at.media_album_name || at.source || at.app_name].filter(Boolean).join(" · "))}</div>
+        <div class="commandes">
+          <button data-act="precedent" data-id="${e(a.id)}" aria-label="Précédent"><svg class="i" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+          <button class="principal" data-act="lecture" data-id="${e(a.id)}" aria-label="Lecture ou pause">${joue ? '<svg class="i" viewBox="0 0 24 24" fill="#fff"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>' : '<svg class="i" viewBox="0 0 24 24" fill="#fff"><path d="M8 5l11 7-11 7z"/></svg>'}</button>
+          <button data-act="suivant" data-id="${e(a.id)}" aria-label="Suivant"><svg class="i" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+        </div>
+        ${volume != null ? `<input type="range" min="0" max="100" value="${volume}" data-act="volume" data-id="${e(a.id)}" aria-label="Volume">` : ""}
+      </div></article>`;
+  }
+
+  async function afficherMusique() {
+    if (!radiosListe.length) radiosListe = await api("/v1/musique/radios").catch(() => []);
+    const choix = $("sortie").value || memoire.lire("home_sortie") || "ici";
+    $("sortie").innerHTML = `<option value="ici">Cet appareil</option>` + enceintes().map((a) => `<option value="${e(a.id)}">${e(a.nom)}</option>`).join("");
+    $("sortie").value = [...$("sortie").options].some((o) => o.value === choix) ? choix : "ici";
+    $("radios").innerHTML = radiosListe.map((r, i) => `<button class="radio ${radioIci === i ? "joue" : ""}" data-radio="${i}">
+      <span class="rond-radio" style="background:${e(r.couleur)}">${e(r.nom.length > 8 ? r.nom.split(" ").map((m) => m[0]).join("") : r.nom)}</span>${e(r.nom)}</button>`).join("");
+    if (document.activeElement?.type !== "range") {
+      $("enceintes").innerHTML = enceintes().map(carteLecteur).join("") || `<div class="vide">Aucune enceinte dans Home Assistant (Sonos, Google Cast, Music Assistant…).</div>`;
+    }
+    $("mini-lecteur").hidden = radioIci === null;
+    if (radioIci !== null) $("mini-lecteur").innerHTML = `<span class="rond-radio" style="width:36px;height:36px;border-radius:50%;background:${e(radiosListe[radioIci].couleur)}"></span>
+      <div style="flex:1"><b>${e(radiosListe[radioIci].nom)}</b><div class="doux" style="font-size:12px">En direct sur cet appareil</div></div>
+      <button class="bouton secondaire" data-radio-stop>Arrêter</button>`;
+  }
+
+  document.addEventListener("click", (ev) => {
+    const radio = ev.target.closest("[data-radio]");
+    if (radio) {
+      const i = Number(radio.dataset.radio), sortie = $("sortie").value;
+      memoire.ecrire("home_sortie", sortie);
+      if (sortie === "ici") {
+        if (radioIci === i) { $("audio").pause(); radioIci = null; }
+        else { $("audio").src = radiosListe[i].url; $("audio").play().catch(() => parler("Touche encore la radio pour lancer le son.")); radioIci = i; }
+      } else {
+        agir(sortie, "radio", i);
+        parler(`${radiosListe[i].nom} sur ${$("sortie").selectedOptions[0].textContent}.`);
+      }
+      return afficherMusique();
+    }
+    if (ev.target.closest("[data-radio-stop]")) { $("audio").pause(); radioIci = null; afficherMusique(); }
+  });
+  document.addEventListener("change", (ev) => {
+    if (ev.target.dataset.act === "volume") agir(ev.target.dataset.id, "volume", Number(ev.target.value));
+  });
+
+  // ---------------------------------------------------------------- Plex
+  const affiche = (m) => `<a class="affiche" href="${e(m.lien)}" target="_blank" rel="noopener" title="Ouvrir dans Plex">
+    <div class="image">${m.image ? `<img src="/v1/plex/image?chemin=${encodeURIComponent(m.image)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
+    ${m.progression ? `<div class="barre"><i style="width:${m.progression}%"></i></div>` : ""}</div>
+    <b>${e(m.titre)}</b><small>${e(m.qui ? `${m.qui} · ${m.lecteur}` : m.sous_titre || m.type)}</small></a>`;
+
+  async function chargerPlex() {
+    let d;
+    try { d = await api("/v1/plex"); } catch (err) { if (err.message !== "401") $("plex").innerHTML = `<div class="vide">${e(err.message)}</div>`; return; }
+    const lecteurs = maison.appareils.filter((a) => dom(a) === "media_player" && estPlex(a));
+    if (!d.configure) {
+      $("plex").innerHTML = `<div class="vide" style="text-align:left;max-width:640px;margin:0 auto">
+        <p><b>Relie ton serveur Plex</b> pour voir ce qui est en cours, à reprendre et les derniers ajouts.</p>
+        <ol><li>Sur <b>app.plex.tv</b>, ouvre un film › <b>⋯</b> › <b>Infos multimédias</b> › <b>Afficher le XML</b> :
+          le jeton est à la fin de l'adresse, après <code>X-Plex-Token=</code>.</li>
+        <li>Sur le NAS : <code>sudo …/fiche-api.sh regler PLEX_URL http://IP_DU_NAS:32400</code></li>
+        <li>Puis : <code>sudo …/fiche-api.sh regler PLEX_TOKEN ton_jeton</code></li></ol></div>`
+        + (lecteurs.length ? `<h3 class="sous-titre">Lecteurs Plex</h3><div class="grille-media">${lecteurs.map(carteLecteur).join("")}</div>` : "");
+      return;
+    }
+    if (d.erreur) { $("plex").innerHTML = `<div class="vide">${e(d.erreur)}</div>`; return; }
+    $("plex-serveur").textContent = d.serveur || "";
+    const bloc = (titre, liste) => liste.length ? `<h3 class="sous-titre">${titre}</h3><div class="affiches">${liste.map(affiche).join("")}</div>` : "";
+    $("plex").innerHTML = bloc("En cours", d.en_cours) + bloc("À reprendre", d.reprendre) + bloc("Ajouts récents", d.ajouts)
+      + (lecteurs.length ? `<h3 class="sous-titre">Lecteurs Plex</h3><div class="grille-media">${lecteurs.map(carteLecteur).join("")}</div>` : "")
+      || `<div class="vide">Rien à afficher pour l'instant.</div>`;
+  }
+  setInterval(() => { if (!document.hidden && vue === "plex") chargerPlex(); }, 30000);
 
   // ---------------------------------------------------------------- connexion et démarrage
   $("form-connexion").addEventListener("submit", async (ev) => {
@@ -497,7 +674,7 @@
   });
 
   horloge(); setInterval(horloge, 10000);
-  charger();
+  charger().then(ouvrirVue);
   setInterval(() => { if (!document.hidden && $("connexion").hidden) charger(); }, 4000);
 </script>
 </body>

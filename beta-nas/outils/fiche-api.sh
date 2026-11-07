@@ -193,7 +193,7 @@ cmd_tester() {
 conteneur_de() { # quel conteneur redémarrer pour une clé
   case "$1" in
     TRI_*|PUID|PGID|NOTIFICATIONS) echo beta-trieur ;;
-    ALEXA_*) echo beta-alexa ;;
+    ALEXA*|HOMEKIT*) echo beta-ponts ;;
     HA_TOKEN|HA_URL) echo "beta beta-presence beta-trieur" ;;
     BETA_TOKEN) echo "beta beta-presence" ;;
     WHISPER_MODEL) echo beta-whisper ;;

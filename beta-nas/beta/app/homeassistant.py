@@ -36,7 +36,8 @@ DOMAINES_MAISON = ["light", "switch", "cover", "climate", "fan", "media_player",
                    "sensor", "binary_sensor", "lock", "vacuum"]
 _ATTRIBUTS = ["brightness", "supported_color_modes", "current_position", "device_class", "temperature",
               "current_temperature", "min_temp", "max_temp", "target_temp_step", "hvac_action",
-              "unit_of_measurement", "media_title", "battery_level"]
+              "unit_of_measurement", "media_title", "media_artist", "media_album_name", "entity_picture",
+              "volume_level", "is_volume_muted", "app_name", "source", "battery_level"]
 _TEMPLATE_MAISON = (
     "{%- set ns = namespace(l=[], p=[]) -%}"
     "{%- for s in states if s.domain in " + json.dumps(DOMAINES_MAISON) + " -%}"
@@ -119,6 +120,12 @@ class HomeAssistant:
     async def service(self, domaine: str, service: str, donnees: dict) -> None:
         r = await self._client.post(f"/api/services/{domaine}/{service}", json=donnees)
         r.raise_for_status()
+
+    async def image(self, chemin: str) -> tuple[bytes, str]:
+        """Une image servie par Home Assistant (pochette d'album, affiche…), avec la connexion de Bêta."""
+        r = await self._client.get(chemin)
+        r.raise_for_status()
+        return r.content, r.headers.get("content-type", "image/jpeg")
 
     async def attributs(self, entite: str) -> dict:
         r = await self._client.get(f"/api/states/{entite}")
