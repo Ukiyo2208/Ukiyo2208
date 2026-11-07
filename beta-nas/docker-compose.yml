@@ -92,6 +92,7 @@ services:
       - ollama
       - presence
       - trieur
+      - beta-home
     restart: unless-stopped
 
   # Tri des documents : propose titre, dossier et tags, et ne range qu'après ta validation.
@@ -120,4 +121,26 @@ services:
       # Les volumes du NAS (/volume1 -> /nas/volume1…) : docker-compose.override.yml, écrit par l'installateur
     depends_on:
       - ollama
+    restart: unless-stopped
+
+  # Bêta home : le tableau de bord de la maison, servi par Bêta sur http://IP_DU_NAS:8800/home/
+  # Version simple : ses appareils passent par Home Assistant (pas de réseau « hôte », ni découverte du
+  # réseau, ni pont HomeKit/Matter, ni go2rtc). Code dans ./home (copie du projet Bêta home).
+  beta-home:
+    build:
+      context: ./home
+      dockerfile: server/Dockerfile
+    container_name: beta-home
+    init: true
+    environment:
+      - PORT=8090
+      - "BETA_KEY=${BETA_HOME_KEY:?BETA_HOME_KEY manquante : relance installer.sh}"
+      - BACKUP_KEEP=${BACKUP_KEEP:-30}
+      - BETA_OFF=${BETA_HOME_OFF:-bridge} # pont Alexa/HomeKit coupé : pas de connexion directe aux appareils
+      - TZ=${TZ:-Europe/Paris}
+    volumes:
+      - ./data/home:/data # sauvegardes, journal partagé, réglages du serveur
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
     restart: unless-stopped

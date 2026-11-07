@@ -36,13 +36,13 @@
   /* Onglets : en haut sur ordinateur, en bas sur téléphone */
   nav.onglets { display: flex; gap: 6px; background: var(--carte); border: 1px solid var(--bord); border-radius: 999px;
                 padding: 5px; width: fit-content; margin-bottom: 18px; backdrop-filter: blur(12px); }
-  nav.onglets button { border: 0; background: none; padding: 9px 18px; border-radius: 999px; cursor: pointer; color: var(--doux);
+  nav.onglets button, nav.onglets a { border: 0; text-decoration: none; font-size: inherit; background: none; padding: 9px 18px; border-radius: 999px; cursor: pointer; color: var(--doux);
                        display: flex; gap: 8px; align-items: center; font-weight: 600; }
   nav.onglets button[aria-selected=true] { background: var(--degrade); color: #0b0f3a; }
   @media (max-width: 700px) {
     nav.onglets { position: fixed; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); width: auto;
                   justify-content: space-around; z-index: 10; margin: 0; }
-    nav.onglets button { flex-direction: column; gap: 2px; padding: 6px 12px; font-size: 12px; }
+    nav.onglets button, nav.onglets a { flex-direction: column; gap: 2px; padding: 6px 12px; font-size: 12px; }
     header .etat-global span { display: none; }
   }
   .icone { width: 18px; height: 18px; flex: none; }
@@ -155,6 +155,8 @@
       <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Discussion</button>
     <button role="tab" aria-selected="false" data-vue="maison">
       <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4.9 1 .9 1.6V16h5.2v-.5c0-.6.3-1.2.9-1.6A6 6 0 0 0 12 3z"/></svg>Maison</button>
+    <a href="/home/" title="Le tableau de bord de la maison">
+      <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Bêta home</a>
   </nav>
 
   <!-- Accueil -->

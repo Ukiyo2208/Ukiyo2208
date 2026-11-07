@@ -192,6 +192,27 @@ côté par défaut. Les documents validés sont rangés dans ton dossier `Docume
    (`ntfy:https://ntfy.sh/un-nom-long-secret`) ou n'importe quel webhook. Vérifie avec le bouton
    **Envoyer une notification de test** de la page du tri.
 
+## I bis. Bêta home, le tableau de bord de la maison
+
+Bêta home est sur le même site : **`http://192.168.1.20:8800/home/`** (onglet **Bêta home** de la page de Bêta).
+Ses appareils passent par **Home Assistant** : pas de connexion directe aux marques, ni découverte du réseau.
+
+1. Au premier lancement, l'assistant de Bêta home s'ouvre. Choisis **Assisté** ou **Automatique**
+   pour reprendre tes étages, pièces et appareils depuis Home Assistant.
+2. **Serveur Bêta** (sauvegardes, journal partagé, routines) : adresse `http://192.168.1.20:8800` et la clé
+   **BETA_HOME_KEY** (`fiche-api.sh --secrets`).
+3. **Home Assistant** : l'adresse que tu utilises dans ton navigateur pour ouvrir Home Assistant, et un jeton
+   longue durée. Pour que le navigateur ait le droit de lui parler, ajoute une fois dans le
+   `configuration.yaml` de Home Assistant (module *File editor*), puis redémarre Home Assistant :
+   ```yaml
+   http:
+     cors_allowed_origins:
+       - http://192.168.1.20:8800
+   ```
+4. **Bêta IA dans Bêta home** : l'assistant de Bêta home répond tout de suite à ce qu'il connaît (« éteins le
+   salon », « météo »…). Le reste (questions, discussion, commandes qu'il ne connaît pas) part à Bêta IA, et
+   la réponse arrive dans la conversation.
+
 ## J. IA cloud ou PC puissant pour la discussion (optionnel)
 
 La discussion (« raconte-moi… », « explique-moi… ») est bien meilleure avec une grosse IA :
@@ -232,6 +253,7 @@ L'app utilise « Hey Jarvis » en attendant ton propre mot d'activation :
 | Pour… | Commande ou adresse |
 |---|---|
 | **La page d'accueil de Bêta** : discuter, piloter la maison, suivre le tri | `http://192.168.1.20:8800` |
+| **Bêta home** : le tableau de bord de la maison | `http://192.168.1.20:8800/home/` |
 | Voir l'état détaillé et l'utilisation | `http://192.168.1.20:8800/tableau` |
 | Tous les codes et commandes | `sudo /volume1/docker/beta/beta-nas/outils/fiche-api.sh` |
 | Suivre l'API en direct | `sudo …/fiche-api.sh suivre` |

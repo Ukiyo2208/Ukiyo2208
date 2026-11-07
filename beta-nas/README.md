@@ -213,6 +213,14 @@ du réseau local : 192.168.x.x, 10.x.x.x…). Hors de chez toi, ou derrière un 
   appareil l'allume ou l'éteint (lumières, prises, volets, ventilateurs, scènes ; jamais les serrures) ;
 - un bouton haut-parleur pour **entendre les réponses** avec la voix de Bêta.
 
+## Bêta home : `http://IP_DU_NAS:8800/home/`
+
+Le tableau de bord de la maison (projet Bêta home, copié dans `home/`, version dans `home/SOURCE`) tourne
+dans le conteneur `beta-home`. Bêta sert sa page sous `/home/` et son serveur sous `/api/` : une seule
+adresse pour tout. Version simple : les appareils passent par Home Assistant, sans réseau « hôte », ni
+découverte, ni ponts HomeKit/Matter, ni go2rtc. Bêta home garde sa propre sécurité (clé `BETA_HOME_KEY`,
+écrans associés par QR code). Ce que son assistant ne comprend pas est envoyé à Bêta IA (`/v1/texte`).
+
 ## Fiche de connexion et suivi en temps réel
 
 ### Le script `outils/fiche-api.sh` (sur le NAS, en SSH)

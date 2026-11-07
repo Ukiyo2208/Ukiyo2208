@@ -92,7 +92,7 @@ if _reglages_demarrage.cors_origines:
 statistiques = st.Statistiques()
 _PAS_SUIVIS = (
     "/static", "/favicon.ico", "/v1/stats", "/v1/nas", "/v1/appairage", "/v1/tri/etat", "/v1/maison/appareils",
-    "/tableau", "/tri", "/docs", "/openapi.json",
+    "/tableau", "/tri", "/home", "/api/", "/docs", "/openapi.json",
 )
 
 
@@ -507,6 +507,51 @@ async def api_tri(chemin: str, request: Request):
                    headers={"Content-Type": "application/json"})
     return Response(r.content, status_code=r.status_code, media_type="application/json",
                     headers={"Cache-Control": "no-store"})
+
+
+# ---------------------------------------------------------------- Bêta home (http://IP_DU_NAS:8800/home/)
+# L'application Bêta home est servie sous /home/ et son serveur répond sur /api/… (Bêta n'utilise que /v1/).
+# Bêta home garde sa propre sécurité (clé BETA_HOME_KEY, écrans associés par QR code).
+
+_ENTETES_VERS_HOME = {"content-type", "accept", "accept-language", "if-none-match", "if-modified-since",
+                      "x-beta-key", "x-beta-device", "x-beta-session"}
+_ENTETES_DE_HOME = {"content-type", "cache-control", "etag", "last-modified", "content-disposition", "location"}
+# Petit script ajouté à la page : ce que l'assistant de Bêta home ne comprend pas part à Bêta IA
+_PONT_HOME = '<script src="/static/pont-beta-home.js" defer></script>'
+
+
+async def _home(request: Request, chemin: str) -> Response:
+    s: cfg.Settings = etat["settings"]
+    entetes = {k: v for k, v in request.headers.items() if k.lower() in _ENTETES_VERS_HOME}
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            r = await client.request(request.method, f"{s.home_url}{chemin}", params=request.query_params,
+                                     content=await request.body(), headers=entetes)
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail="Bêta home injoignable") from e
+    retour = {k: v for k, v in r.headers.items() if k.lower() in _ENTETES_DE_HOME}
+    if retour.get("location", "").startswith("/") and not chemin.startswith("/api/"):
+        retour["location"] = "/home" + retour["location"]
+    contenu = r.content
+    if r.headers.get("content-type", "").startswith("text/html"):
+        contenu = contenu.replace(b"</body>", _PONT_HOME.encode() + b"</body>", 1)
+        retour.pop("etag", None)  # la page modifiée n'a plus la même empreinte
+    return Response(contenu, status_code=r.status_code, headers=retour)
+
+
+@app.get("/home", include_in_schema=False)
+async def page_home_sans_barre():
+    return RedirectResponse("/home/")
+
+
+@app.api_route("/home/{chemin:path}", methods=["GET", "HEAD"], include_in_schema=False)
+async def page_home(chemin: str, request: Request):
+    return await _home(request, "/" + chemin)
+
+
+@app.api_route("/api/{chemin:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], include_in_schema=False)
+async def api_home(chemin: str, request: Request):
+    return await _home(request, "/api/" + chemin)
 
 
 @app.get("/sante")

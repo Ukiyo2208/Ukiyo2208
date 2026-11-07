@@ -1,0 +1,6770 @@
+[
+ {
+  "t": "— alors que la maison est en absence",
+  "f": "notif.js"
+ },
+ {
+  "t": "— cochez ce que vous avez, le nombre se règle avec + / −",
+  "f": "setup.js"
+ },
+ {
+  "t": "— démarrez le conteneur go2rtc pour le direct et HomeKit.",
+  "f": "discover.js"
+ },
+ {
+  "t": "— pilotés en direct, sans Home Assistant",
+  "f": "hub.js"
+ },
+ {
+  "t": "— reliez Somfy, Hue, Samsung, Siemens, Govee, Elgato… directement, sans Home Assistant. Un tuto pour chaque marque.",
+  "f": "hub.js"
+ },
+ {
+  "t": "— trouvée automatiquement, ou à saisir",
+  "f": "discover.js"
+ },
+ {
+  "t": "— vérifiez le service",
+  "f": "notif.js"
+ },
+ {
+  "t": "— vérifiez les caméras",
+  "f": "notif.js"
+ },
+ {
+  "t": ", alarme activée",
+  "f": "extras.js"
+ },
+ {
+  "t": ", connectez-vous à votre compte puis, dans la partie TaHoma, activez le",
+  "f": "hub.js"
+ },
+ {
+  "t": ", connectez-vous avec votre compte Enedis et autorisez le partage : un jeton s’affiche.",
+  "f": "hub.js"
+ },
+ {
+  "t": ", et",
+  "f": "hub.js"
+ },
+ {
+  "t": ", je suis Bêta, votre assistante. Il fait",
+  "f": "voice.js"
+ },
+ {
+  "t": ", nom « Bêta home », droits",
+  "f": "hub.js"
+ },
+ {
+  "t": ", ou touchez « Simuler 3 semaines » pour voir le principe",
+  "f": "journal.js"
+ },
+ {
+  "t": ", partagé avec le vôtre pour la voiture.",
+  "f": "hub.js"
+ },
+ {
+  "t": ", pour l’allumer même en veille.",
+  "f": "hub.js"
+ },
+ {
+  "t": ", puis acceptez la fenêtre qui apparaît sur la TV avec la télécommande.",
+  "f": "hub.js"
+ },
+ {
+  "t": ", puis appuyez dans les 90 s sur la",
+  "f": "hub.js"
+ },
+ {
+  "t": ", puis appuyez sur le",
+  "f": "hub.js"
+ },
+ {
+  "t": ", puis sur la TV cochez",
+  "f": "hub.js"
+ },
+ {
+  "t": ", puis visez le Broadlink avec la vraie télécommande et appuyez sur le bouton dans les 20 s.",
+  "f": "hub.js"
+ },
+ {
+  "t": ", une semaine sur deux",
+  "f": "lockplus.js"
+ },
+ {
+  "t": ": activés.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": aucun appareil supplémentaire",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": ": avec leur pièce IKEA.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": chaque appareil qui lit du Jellyfin apparaît.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": chaque relais devient une tuile.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": chauffage par pièce, prises et interrupteurs Céliane / dooxie, volets, station météo.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": choisissez une radio ou un fichier du NAS",
+  "f": "cast.js"
+ },
+ {
+  "t": ": consignes des radiateurs, chauffe-eau, températures.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": consommation de la veille et puissance.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": créez une clé.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": état, batterie, départ, retour à la base.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": état, puissance, énergie, départ / arrêt de la charge.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": interrupteurs, lumières, volets, capteurs et détecteurs arrivent avec leur nom ESPHome.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": le serveur Bêta attend les bornes sur",
+  "f": "hub.js"
+ },
+ {
+  "t": ": le serveur devient « appareil de confiance », plus de SMS ensuite.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": les lampes arrivent avec le nom de leur pièce Hue.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": marche, consigne, mode, température et humidité de la pièce.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": marche, consigne, modes, température de la pièce.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": marche, luminosité et couleur.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": mouvement par caméra et appui sur les sonnettes G4.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": nom « Bêta home », adresse de retour :",
+  "f": "hub.js"
+ },
+ {
+  "t": ": nom « Bêta home », flux",
+  "f": "hub.js"
+ },
+ {
+  "t": ": nom « Bêta home », Google reCAPTCHA désactivé, adresse de retour :",
+  "f": "hub.js"
+ },
+ {
+  "t": ": prises, lumières, volets, capteurs et boutons.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": production, échange avec le réseau, consommation.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": recopiez le dossier",
+  "f": "hub.js"
+ },
+ {
+  "t": ": température, humidité, vent, pluie, capteurs des pièces.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": TV, lave-linge et clim arrivent avec leur pièce SmartThings.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": un code à 4 chiffres apparaît sur la TV.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": un code arrive par SMS.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": un lien s’affiche sous le titre. Ouvrez-le, connectez-vous à tado° et validez.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": une « présence » par téléphone.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": une tuile par pièce Sonos.",
+  "f": "hub.js"
+ },
+ {
+  "t": ": volets, store et garage sont trouvés automatiquement.",
+  "f": "hub.js"
+ },
+ {
+  "t": "! Je peux piloter les lumières, volets, clim, arrosage, tondeuse, aspirateur, musique et vous donner la météo ou l’agenda.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "! Les notifications fonctionnent 🎉",
+  "f": "notif.js"
+ },
+ {
+  "t": "… et",
+  "f": "extras.js"
+ },
+ {
+  "t": "· à reprendre",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "· aérez !",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "· aujourd’hui à",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "· Bêta home",
+  "f": "core.js"
+ },
+ {
+  "t": "· cet écran émet",
+  "f": "notif.js"
+ },
+ {
+  "t": "· demain : publié vers 11 h",
+  "f": "services.js"
+ },
+ {
+  "t": "· dernière fois",
+  "f": "brain.js"
+ },
+ {
+  "t": "· masqué",
+  "f": "home.js"
+ },
+ {
+  "t": "· masquée",
+  "f": "home.js"
+ },
+ {
+  "t": "· pas encore appairé",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "· réglages dans Connexions",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "· relié",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "· relié à l’app Maison",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "› + : nom « Bêta home ».",
+  "f": "hub.js"
+ },
+ {
+  "t": "› activez l’",
+  "f": "hub.js"
+ },
+ {
+  "t": "› Options développeur : copiez le jeton et la clé secrète.",
+  "f": "hub.js"
+ },
+ {
+  "t": "› Partager : tous les appareils du hub arrivent d’un coup.",
+  "f": "hub.js"
+ },
+ {
+  "t": "› Profil › ⚙️ Réglages ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "› Projet › Créer, choisissez le fichier",
+  "f": "connect.js"
+ },
+ {
+  "t": "› réglages de chaque lampe : notez son",
+  "f": "hub.js"
+ },
+ {
+  "t": "› saisissez le sujet de la personne",
+  "f": "notif.js"
+ },
+ {
+  "t": "\">Nouvelle pièce :",
+  "f": "home.js"
+ },
+ {
+  "t": "« Activer le mode d’association » / « Partager »",
+  "f": "hub.js"
+ },
+ {
+  "t": "« beta-home » et validez.",
+  "f": "hub.js"
+ },
+ {
+  "t": "» : accès réservé, demandez à un administrateur",
+  "f": "home.js"
+ },
+ {
+  "t": "» à Bêta IA",
+  "f": "extras.js"
+ },
+ {
+  "t": "» ajouté",
+  "f": "home.js"
+ },
+ {
+  "t": "» ajoutée",
+  "f": "discover.js"
+ },
+ {
+  "t": "» créée",
+  "f": "setup.js"
+ },
+ {
+  "t": "» et ses appareils ajoutés ?",
+  "f": "home.js"
+ },
+ {
+  "t": "» éteint",
+  "f": "panel.js"
+ },
+ {
+  "t": "» lancée",
+  "f": "home.js"
+ },
+ {
+  "t": "» lancée.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "» sur",
+  "f": "components.js"
+ },
+ {
+  "t": "», ses pièces et ses appareils ?",
+  "f": "home.js"
+ },
+ {
+  "t": "% de la puissance",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "+ list[0].un +",
+  "f": "extras.js"
+ },
+ {
+  "t": "✨ Été — lucioles",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "🍁 Automne — érables",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "$1 degrés",
+  "f": "voice.js"
+ },
+ {
+  "t": "$1 kilomètres",
+  "f": "voice.js"
+ },
+ {
+  "t": "$1 les lumieres",
+  "f": "extras.js"
+ },
+ {
+  "t": "$1 pour cent",
+  "f": "voice.js"
+ },
+ {
+  "t": "€ économisés",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "100 % local, mises à jour toutes les 3 secondes.",
+  "f": "hub.js"
+ },
+ {
+  "t": "192.168.1.120:Cuisine, 192.168.1.121:Entrée",
+  "f": "hub.js"
+ },
+ {
+  "t": "2 téléchargements · sauvegarde OK cette nuit",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "3 semaines d’habitudes simulées",
+  "f": "journal.js"
+ },
+ {
+  "t": "4 à 8 chiffres",
+  "f": "brain.js"
+ },
+ {
+  "t": "À configurer",
+  "f": "services.js"
+ },
+ {
+  "t": "À connecter",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "À découvrir",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "À installer",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "à l’agenda",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "À l’écoute",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "à l’étage 1",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "à l’étage 2",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "à l’extérieur",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "à l’instant",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "à la base",
+  "f": "journal.js"
+ },
+ {
+  "t": "À la base",
+  "f": "panel.js"
+ },
+ {
+  "t": "À la base ·",
+  "f": "panel.js"
+ },
+ {
+  "t": "À la main",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "À la maison",
+  "f": "data.js"
+ },
+ {
+  "t": "À moto",
+  "f": "map.js"
+ },
+ {
+  "t": "À préparer dès maintenant",
+  "f": "hub.js"
+ },
+ {
+  "t": "À reprendre",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "À sortir ce soir :",
+  "f": "notif.js"
+ },
+ {
+  "t": "À terminer dans Marques :",
+  "f": "plug.js"
+ },
+ {
+  "t": "À une heure",
+  "f": "brain.js"
+ },
+ {
+  "t": "À une heure précise",
+  "f": "auto.js"
+ },
+ {
+  "t": "À vélo",
+  "f": "map.js"
+ },
+ {
+  "t": "À vérifier",
+  "f": "car.js"
+ },
+ {
+  "t": "Absence & sécurité",
+  "f": "extras.js"
+ },
+ {
+  "t": "Accès aux fichiers et au tableau de bord",
+  "f": "connect.js"
+ },
+ {
+  "t": "accès développeur",
+  "f": "hub.js"
+ },
+ {
+  "t": "Accès limité",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Accès limité, sans garage ni réglages",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Accès rapide",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Accès réservé",
+  "f": "room.js"
+ },
+ {
+  "t": "Accès réservé : vous pouvez consulter, pas commander.",
+  "f": "panel.js"
+ },
+ {
+  "t": "Accessoire HomeKit : app Maison",
+  "f": "discover.js"
+ },
+ {
+  "t": "accueil et de l",
+  "f": "services.js"
+ },
+ {
+  "t": "accueil, limité à l",
+  "f": "cast.js"
+ },
+ {
+  "t": "accueil, limité aux appareils de l",
+  "f": "cast.js"
+ },
+ {
+  "t": "Achat au réseau",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Action rapide",
+  "f": "auto.js"
+ },
+ {
+  "t": "Activé",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Active la tondeuse",
+  "f": "components.js"
+ },
+ {
+  "t": "activée",
+  "f": "brain.js"
+ },
+ {
+  "t": "Activée",
+  "f": "extras.js"
+ },
+ {
+  "t": "activez « Google Calendar API » dans Google Cloud",
+  "f": "gcal.js"
+ },
+ {
+  "t": "Activez aussi",
+  "f": "hub.js"
+ },
+ {
+  "t": "Activité récente",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Actualisation demandée à Ford…",
+  "f": "car.js"
+ },
+ {
+  "t": "Adresse à saisir",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Adresse copiée",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Adresse de Frigate",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse de la Bbox",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse de la console UniFi",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse de la Freebox",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse de la Livebox",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse de la passerelle",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse de retour à déclarer :",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse du broker MQTT",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse du serveur",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse du serveur Matter",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse du serveur Z-Wave JS",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse et jeton nécessaires.",
+  "f": "setup.js"
+ },
+ {
+  "t": "adresse injoignable ou CORS",
+  "f": "setup.js"
+ },
+ {
+  "t": "Adresse IP",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse IP de l’onduleur / Envoy",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse IP de la box",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse IP de la passerelle",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse IP de la TV",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse IP des panneaux",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse IP du Broadlink",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse IP du Nuki Bridge",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse IP du pont Hue",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresse non acceptée par Google",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Adresses IP",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresses IP des amplis",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresses IP des ampoules",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresses IP des appareils",
+  "f": "connect.js"
+ },
+ {
+  "t": "Adresses IP des clims",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresses IP des enceintes",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresses IP des lampes",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresses IP des modules",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresses IP des robots",
+  "f": "hub.js"
+ },
+ {
+  "t": "Adresses IP des Shelly",
+  "f": "hub.js"
+ },
+ {
+  "t": "Affiché comme",
+  "f": "panel.js"
+ },
+ {
+  "t": "Affiché comme «",
+  "f": "home.js"
+ },
+ {
+  "t": "affichées",
+  "f": "hub.js"
+ },
+ {
+  "t": "Afficher le code",
+  "f": "hub.js"
+ },
+ {
+  "t": "Afficher une caméra",
+  "f": "auto.js"
+ },
+ {
+  "t": "Agenda de la famille",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Ai-je des mails ?",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "AirPlay : depuis l’iPhone",
+  "f": "discover.js"
+ },
+ {
+  "t": "Ajout impossible :",
+  "f": "discover.js"
+ },
+ {
+  "t": "ajouté",
+  "f": "hub.js"
+ },
+ {
+  "t": "Ajouté à vos favoris",
+  "f": "music.js"
+ },
+ {
+  "t": "Ajouté à vos favoris ♥",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Ajouté à votre agenda ·",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Ajoutée",
+  "f": "discover.js"
+ },
+ {
+  "t": "ajouter à l",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Ajouter à la main",
+  "f": "discover.js"
+ },
+ {
+  "t": "Ajouter cet appareil",
+  "f": "hub.js"
+ },
+ {
+  "t": "Ajouter les appareils",
+  "f": "hub.js"
+ },
+ {
+  "t": "Ajouter un admin local",
+  "f": "hub.js"
+ },
+ {
+  "t": "Ajouter un appareil",
+  "f": "home.js"
+ },
+ {
+  "t": "Ajouter un fichier .ics",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Ajouter un profil",
+  "f": "setup.js"
+ },
+ {
+  "t": "Ajouter un véhicule",
+  "f": "map.js"
+ },
+ {
+  "t": "Ajouter une caméra",
+  "f": "discover.js"
+ },
+ {
+  "t": "Ajouter une pièce",
+  "f": "home.js"
+ },
+ {
+  "t": "Ajouter, retirer ou masquer",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Ajoutez vos pièces : bouton « Modifier » puis « + Pièce »",
+  "f": "setup.js"
+ },
+ {
+  "t": "Ajouts récents",
+  "f": "components.js"
+ },
+ {
+  "t": "Alarme : saisissez votre code",
+  "f": "brain.js"
+ },
+ {
+  "t": "Alarme activée",
+  "f": "extras.js"
+ },
+ {
+  "t": "Alarme activée dans",
+  "f": "brain.js"
+ },
+ {
+  "t": "Alarme activée.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Alarme déclenchée",
+  "f": "notif.js"
+ },
+ {
+  "t": "ALARME DÉCLENCHÉE",
+  "f": "brain.js"
+ },
+ {
+  "t": "Alarme désactivée",
+  "f": "extras.js"
+ },
+ {
+  "t": "Alarme désactivée.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Alarme maison",
+  "f": "brain.js"
+ },
+ {
+  "t": "Alarme, détecteurs d’ouverture",
+  "f": "hub.js"
+ },
+ {
+  "t": "Alarme, présence et journal de la maison",
+  "f": "brain.js"
+ },
+ {
+  "t": "Alerte critique, même en silencieux",
+  "f": "notif.js"
+ },
+ {
+  "t": "Alerte météo",
+  "f": "notif.js"
+ },
+ {
+  "t": "Alertes Bêta home",
+  "f": "notif.js"
+ },
+ {
+  "t": "Alexa et Maison",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "allumé",
+  "f": "brain.js"
+ },
+ {
+  "t": "Allumé",
+  "f": "home.js"
+ },
+ {
+  "t": "Allume la lumière :",
+  "f": "ia2.js"
+ },
+ {
+  "t": "allumée",
+  "f": "brain.js"
+ },
+ {
+  "t": "allumée,",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Allumer avec mobile",
+  "f": "hub.js"
+ },
+ {
+  "t": "Allumer l’écran et afficher la caméra",
+  "f": "notif.js"
+ },
+ {
+  "t": "Allumer une lumière",
+  "f": "auto.js"
+ },
+ {
+  "t": "Allumer via Wi-Fi",
+  "f": "hub.js"
+ },
+ {
+  "t": "Allumés en ce moment",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Alors…",
+  "f": "auto.js"
+ },
+ {
+  "t": "Amazon Echo / Fire",
+  "f": "discover.js"
+ },
+ {
+  "t": "Ambiance & saisons",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Amplis et home-cinéma : marche, volume, source",
+  "f": "hub.js"
+ },
+ {
+  "t": "Amplis, barres de son, enceintes",
+  "f": "hub.js"
+ },
+ {
+  "t": "Ampoules et luminaires WiZ",
+  "f": "hub.js"
+ },
+ {
+  "t": "Ampoules et rubans LIFX",
+  "f": "hub.js"
+ },
+ {
+  "t": "Android TV Philips : marche, volume, lecture",
+  "f": "hub.js"
+ },
+ {
+  "t": "Annonce sur les tablettes",
+  "f": "brain.js"
+ },
+ {
+  "t": "Août",
+  "f": "core.js"
+ },
+ {
+  "t": "Aperçu de démonstration — reliez l’entité",
+  "f": "components.js"
+ },
+ {
+  "t": "API fragile, risque de blocage du compte : en préparation, en lecture seule.",
+  "f": "hub.js"
+ },
+ {
+  "t": "API locale de la box.",
+  "f": "hub.js"
+ },
+ {
+  "t": "API locale de la passerelle.",
+  "f": "hub.js"
+ },
+ {
+  "t": "API locale du bridge. Les serrures Nuki 4.0 Pro en Matter passent aussi par la fiche Matter.",
+  "f": "hub.js"
+ },
+ {
+  "t": "API locale, couleurs et luminosité.",
+  "f": "hub.js"
+ },
+ {
+  "t": "API locale, sans compte.",
+  "f": "hub.js"
+ },
+ {
+  "t": "API locale. Fonctionne aussi avec Emby.",
+  "f": "hub.js"
+ },
+ {
+  "t": "API officielle et gratuite.",
+  "f": "hub.js"
+ },
+ {
+  "t": "App Navimow : demandez l’",
+  "f": "hub.js"
+ },
+ {
+  "t": "App Tapo › Moi › Services tiers › activez",
+  "f": "hub.js"
+ },
+ {
+  "t": "App WiZ › Paramètres ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "App Yeelight › lampe › ⚙️ › activez",
+  "f": "hub.js"
+ },
+ {
+  "t": "Appareil mis à jour",
+  "f": "panel.js"
+ },
+ {
+  "t": "Appareils de la pièce",
+  "f": "setup.js"
+ },
+ {
+  "t": "Appareils Home Assistant",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Appareils hors ligne, piles faibles, services",
+  "f": "services.js"
+ },
+ {
+  "t": "Appareils partagés",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "Appareils reliés à Home Assistant",
+  "f": "ha.js"
+ },
+ {
+  "t": "Appareils, caméras, énergie, Verisure, Music Assistant",
+  "f": "connect.js"
+ },
+ {
+  "t": "Appareils, pièces, pages, radios, films, mails, agenda…",
+  "f": "extras.js"
+ },
+ {
+  "t": "Apple HomePod",
+  "f": "hub.js"
+ },
+ {
+  "t": "Appli Nuki › Bridge ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "Appli Reolink › caméra › Paramètres › Réseau › Avancé ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "Appli SwitchBot › Profil › Préférences › touchez 10 fois",
+  "f": "hub.js"
+ },
+ {
+  "t": "Application GPS",
+  "f": "car.js"
+ },
+ {
+  "t": "Applications ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "Apprendre un code",
+  "f": "hub.js"
+ },
+ {
+  "t": "Appuyez sur le",
+  "f": "hub.js"
+ },
+ {
+  "t": "Aqara Hub M3 : app Aqara › Hub ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "Armée · absent",
+  "f": "panel.js"
+ },
+ {
+  "t": "Armée · nuit",
+  "f": "panel.js"
+ },
+ {
+  "t": "Armée · présence",
+  "f": "panel.js"
+ },
+ {
+  "t": "Arrêt",
+  "f": "components.js"
+ },
+ {
+  "t": "Arrêt automatique dans",
+  "f": "panel.js"
+ },
+ {
+  "t": "Arrêté",
+  "f": "services.js"
+ },
+ {
+  "t": "arrêter",
+  "f": "brain.js"
+ },
+ {
+  "t": "Arrêter l’écoute",
+  "f": "voice.js"
+ },
+ {
+  "t": "Arrivée",
+  "f": "map.js"
+ },
+ {
+  "t": "Arrivées et départs",
+  "f": "notif.js"
+ },
+ {
+  "t": "Arrosage annulé",
+  "f": "auto.js"
+ },
+ {
+  "t": "Arrosage arrêté",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Arrosage automatique",
+  "f": "data.js"
+ },
+ {
+  "t": "Arrosage coupé.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Arrosage démarré pour",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Arrosage OFF",
+  "f": "components.js"
+ },
+ {
+  "t": "Aspirateur robot",
+  "f": "data.js"
+ },
+ {
+  "t": "Aspirateur robot lancé au RDC.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Assistant d’association",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Assisté",
+  "f": "setup.js"
+ },
+ {
+  "t": "association refusée",
+  "f": "services.js"
+ },
+ {
+  "t": "associé le",
+  "f": "services.js"
+ },
+ {
+  "t": "Associer automatiquement",
+  "f": "ha.js"
+ },
+ {
+  "t": "Associer un nouvel écran",
+  "f": "services.js"
+ },
+ {
+  "t": "Atlantic, Thermor, Sauter : radiateurs, chauffe-eau",
+  "f": "hub.js"
+ },
+ {
+  "t": "Au coucher du soleil",
+  "f": "auto.js"
+ },
+ {
+  "t": "au dos de la passerelle dans la minute.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Au lever du soleil",
+  "f": "auto.js"
+ },
+ {
+  "t": "Au total",
+  "f": "map.js"
+ },
+ {
+  "t": "Au travail",
+  "f": "data.js"
+ },
+ {
+  "t": "Aucun appareil trouvé : vérifiez le jeton et les droits.",
+  "f": "setup.js"
+ },
+ {
+  "t": "Aucun appareil trouvé sur ce compte.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Aucun compte nécessaire : API locale sur le port 9123.",
+  "f": "hub.js"
+ },
+ {
+  "t": "aucun événement",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Aucun événement trouvé dans",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Aucune alerte météo dans les 24 heures",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "aucune caméra ajoutée",
+  "f": "plug.js"
+ },
+ {
+  "t": "Aucune entité choisie : mode démo",
+  "f": "car.js"
+ },
+ {
+  "t": "Aucune erreur détectée",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Aucune routine.",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "Aucune vidéo YouTube en cours",
+  "f": "components.js"
+ },
+ {
+  "t": "aujourd’hui",
+  "f": "extras.js"
+ },
+ {
+  "t": "Aujourd’hui",
+  "f": "journal.js"
+ },
+ {
+  "t": "Aujourd’hui :",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Aujourd'hui,",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Authentifier l’application",
+  "f": "hub.js"
+ },
+ {
+  "t": "Authorization Code Grant Flow",
+  "f": "hub.js"
+ },
+ {
+  "t": "auto après « Autoriser »",
+  "f": "hub.js"
+ },
+ {
+  "t": "Automatisme créé :",
+  "f": "journal.js"
+ },
+ {
+  "t": "Automatisme enregistré",
+  "f": "auto.js"
+ },
+ {
+  "t": "autorisation de l’agenda manquante",
+  "f": "gcal.js"
+ },
+ {
+  "t": "Autoriser l’agenda",
+  "f": "gcal.js"
+ },
+ {
+  "t": "Autoriser la communication locale",
+  "f": "hub.js"
+ },
+ {
+  "t": "Autorisez Bêta home dans la page qui s’ouvre, puis revenez ici et cliquez « Tester »",
+  "f": "hub.js"
+ },
+ {
+  "t": "Autres appareils",
+  "f": "setup.js"
+ },
+ {
+  "t": "Avant de partir, la page",
+  "f": "extras.js"
+ },
+ {
+  "t": "Avatar de",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Avec la photo de la caméra",
+  "f": "notif.js"
+ },
+ {
+  "t": "avec le compte de l’app Home Connect.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Avec ntfy, envoyées par le serveur Bêta ·",
+  "f": "notif.js"
+ },
+ {
+  "t": "avec photo",
+  "f": "notif.js"
+ },
+ {
+  "t": "Avec plaisir ! À tout à l’heure.",
+  "f": "voice.js"
+ },
+ {
+  "t": "avec votre compte ViCare.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Aventure, fantastique",
+  "f": "data.js"
+ },
+ {
+  "t": "Averses de neige",
+  "f": "core.js"
+ },
+ {
+  "t": "Baisser la luminosité la nuit",
+  "f": "tablet.js"
+ },
+ {
+  "t": "Balade Mont Sainte-Odile",
+  "f": "map.js"
+ },
+ {
+  "t": "Batterie & réseau",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Batterie 12 V",
+  "f": "car.js"
+ },
+ {
+  "t": "Bêta",
+  "f": "components.js"
+ },
+ {
+  "t": "Bêta home",
+  "f": "brain.js"
+ },
+ {
+  "t": "Bêta home –",
+  "f": "notif.js"
+ },
+ {
+  "t": "Bêta home 6.7 · réglages gardés sur cet appareil",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Bêta home est alors servi sur",
+  "f": "connect.js"
+ },
+ {
+  "t": "Bêta home est ouvert depuis",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Bêta home pilote toute la maison depuis cet écran. On fait le tour en une minute ?",
+  "f": "extras.js"
+ },
+ {
+  "t": "Bêta IA",
+  "f": "components.js"
+ },
+ {
+  "t": "Bêta IA cherche vos habitudes : quand la même action revient au même moment au moins 3 jours, elle vous propose de l’automatiser. Utilisez la maison normalement quelques jours",
+  "f": "journal.js"
+ },
+ {
+  "t": "Bêta IA comprend plusieurs ordres : « éteins le salon et ferme les volets », ou « qui a ouvert le garage hier ? ».",
+  "f": "extras.js"
+ },
+ {
+  "t": "Bibliothèque",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Bibliothèque de démonstration",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Bibliothèque et lecture sur les TV",
+  "f": "connect.js"
+ },
+ {
+  "t": "Bibliothèque NAS",
+  "f": "music.js"
+ },
+ {
+  "t": "Bientôt",
+  "f": "hub.js"
+ },
+ {
+  "t": "Bienvenue dans Bêta home",
+  "f": "setup.js"
+ },
+ {
+  "t": "Biodéchets",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Blanc chaud ↔ froid",
+  "f": "panel.js"
+ },
+ {
+  "t": "Bloquer garage, serrures et alarme",
+  "f": "home.js"
+ },
+ {
+  "t": "Boîte de réception",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Bon après-midi",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Bon retour",
+  "f": "extras.js"
+ },
+ {
+  "t": "Bon retour à la maison !",
+  "f": "extras.js"
+ },
+ {
+  "t": "Bonne découverte de Bêta home !",
+  "f": "extras.js"
+ },
+ {
+  "t": "Bonne journée, la maison se met en veille.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Bonne nuit",
+  "f": "auto.js"
+ },
+ {
+  "t": "Bonne nuit, à demain.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Borne de recharge",
+  "f": "data.js"
+ },
+ {
+  "t": "Borne OCPP",
+  "f": "hub.js"
+ },
+ {
+  "t": "Bornes Easee Home / Charge",
+  "f": "hub.js"
+ },
+ {
+  "t": "Bornes Pulsar, Commander, Copper",
+  "f": "hub.js"
+ },
+ {
+  "t": "Bose SoundTouch",
+  "f": "hub.js"
+ },
+ {
+  "t": "Bot, rideaux, stores, capteurs, télécommandes IR",
+  "f": "hub.js"
+ },
+ {
+  "t": "Bouton : « Alexa, allume",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "Bouton de la sonnette",
+  "f": "notif.js"
+ },
+ {
+  "t": "Box internet",
+  "f": "discover.js"
+ },
+ {
+  "t": "Box internet et tablettes",
+  "f": "hub.js"
+ },
+ {
+  "t": "Branchée",
+  "f": "car.js"
+ },
+ {
+  "t": "Brouillard givrant",
+  "f": "core.js"
+ },
+ {
+  "t": "Bruine dense",
+  "f": "core.js"
+ },
+ {
+  "t": "Bruine légère",
+  "f": "core.js"
+ },
+ {
+  "t": "C’est enregistré",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "C’est fait",
+  "f": "hub.js"
+ },
+ {
+  "t": "C’est fait :",
+  "f": "ia2.js"
+ },
+ {
+  "t": "C’est fait : lumières éteintes",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "C’est noté dans l’agenda",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "C’est parti",
+  "f": "plug.js"
+ },
+ {
+  "t": "C’est parti !",
+  "f": "extras.js"
+ },
+ {
+  "t": "Câble branché",
+  "f": "car.js"
+ },
+ {
+  "t": "Caméra",
+  "f": "auto.js"
+ },
+ {
+  "t": "Caméra ·",
+  "f": "ha.js"
+ },
+ {
+  "t": "Caméra $1",
+  "f": "plug.js"
+ },
+ {
+  "t": "Caméra 192.168.1.64",
+  "f": "discover.js"
+ },
+ {
+  "t": "Caméra cour",
+  "f": "data.js"
+ },
+ {
+  "t": "Caméra de la sonnette",
+  "f": "notif.js"
+ },
+ {
+  "t": "Caméra entrée",
+  "f": "data.js"
+ },
+ {
+  "t": "Caméra garage",
+  "f": "data.js"
+ },
+ {
+  "t": "Caméra jardin",
+  "f": "data.js"
+ },
+ {
+  "t": "Caméra salon",
+  "f": "data.js"
+ },
+ {
+  "t": "Caméra séjour",
+  "f": "data.js"
+ },
+ {
+  "t": "Caméras",
+  "f": "discover.js"
+ },
+ {
+  "t": "Caméras & HomeKit",
+  "f": "discover.js"
+ },
+ {
+  "t": "Caméras enregistrées.",
+  "f": "discover.js"
+ },
+ {
+  "t": "Caméras et NVR : mouvement, ligne franchie, intrusion",
+  "f": "hub.js"
+ },
+ {
+  "t": "Caméras et sonnette vidéo : mouvement, personne, appui",
+  "f": "hub.js"
+ },
+ {
+  "t": "Caméras et sonnettes Ubiquiti",
+  "f": "hub.js"
+ },
+ {
+  "t": "Caméras extérieures",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Caméras RDC",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Caméras, NVR et interphones VTO",
+  "f": "hub.js"
+ },
+ {
+  "t": "Caméras, ponts, prises, enceintes… et pont HomeKit pour les caméras ·",
+  "f": "discover.js"
+ },
+ {
+  "t": "Capteur d’humidité",
+  "f": "home.js"
+ },
+ {
+  "t": "Capteur d’ouverture ·",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "Capteur de température",
+  "f": "home.js"
+ },
+ {
+  "t": "Capteur ou événement de la sonnette",
+  "f": "ha.js"
+ },
+ {
+  "t": "Capture enregistrée sur le NAS",
+  "f": "components.js"
+ },
+ {
+  "t": "Carte indisponible.",
+  "f": "map.js"
+ },
+ {
+  "t": "Ce fichier n’est pas une sauvegarde Bêta home",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "ce mois",
+  "f": "map.js"
+ },
+ {
+  "t": "Ce mois :",
+  "f": "map.js"
+ },
+ {
+  "t": "Ce mois-ci",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Ce mot de passe ne sera plus affiché.",
+  "f": "map.js"
+ },
+ {
+  "t": "Ce qui est regardé, lecture/pause",
+  "f": "hub.js"
+ },
+ {
+  "t": "Ce soir :",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Ce téléphone",
+  "f": "cast.js"
+ },
+ {
+  "t": "Certains jours",
+  "f": "brain.js"
+ },
+ {
+  "t": "ces informations sont gardées dans ce navigateur. Une fois le serveur Bêta installé sur le NAS, les mots de passe et jetons y seront déplacés.",
+  "f": "connect.js"
+ },
+ {
+  "t": "Ces trois valeurs doivent être identiques, caractère pour caractère, à celles du client « Beta-os » dans Google Cloud. Version : 5.3.3",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Cet appareil",
+  "f": "cast.js"
+ },
+ {
+  "t": "Cet écran",
+  "f": "setup.js"
+ },
+ {
+  "t": "Cet écran s’ouvrira sur «",
+  "f": "setup.js"
+ },
+ {
+  "t": "cette nuit",
+  "f": "extras.js"
+ },
+ {
+  "t": "Cette pièce existe déjà à ce niveau",
+  "f": "home.js"
+ },
+ {
+  "t": "cette semaine",
+  "f": "extras.js"
+ },
+ {
+  "t": "Cette semaine",
+  "f": "journal.js"
+ },
+ {
+  "t": "Cette semaine :",
+  "f": "extras.js"
+ },
+ {
+  "t": "Cette vidéo refuse la lecture intégrée — ouvrez-la sur YouTube",
+  "f": "music.js"
+ },
+ {
+  "t": "Chambre 1",
+  "f": "data.js"
+ },
+ {
+  "t": "Chambre 2",
+  "f": "data.js"
+ },
+ {
+  "t": "Chambre d’amis",
+  "f": "home.js"
+ },
+ {
+  "t": "Chambre d’enfant",
+  "f": "setup.js"
+ },
+ {
+  "t": "Changer l’ID client",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Chaque jour, un peu mieux.",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Charge arrêtée",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Charge démarrée",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Charge en cours",
+  "f": "car.js"
+ },
+ {
+  "t": "Chaud/froid",
+  "f": "panel.js"
+ },
+ {
+  "t": "Chauffage et climatisation",
+  "f": "hub.js"
+ },
+ {
+  "t": "Chauffage maison",
+  "f": "data.js"
+ },
+ {
+  "t": "Chercher mes appareils",
+  "f": "setup.js"
+ },
+ {
+  "t": "Chill Mix",
+  "f": "data.js"
+ },
+ {
+  "t": "Choisir les marques",
+  "f": "hub.js"
+ },
+ {
+  "t": "Choisir un autre avatar",
+  "f": "extras.js"
+ },
+ {
+  "t": "Choisissez au moins un destinataire et reliez les appareils à Home Assistant",
+  "f": "notif.js"
+ },
+ {
+  "t": "Choisissez d’abord votre profil si besoin",
+  "f": "extras.js"
+ },
+ {
+  "t": "Choisissez l’appareil",
+  "f": "brain.js"
+ },
+ {
+  "t": "Choisissez un message à gauche",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "choses à vérifier",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Chromecast, Nest, TV et enceintes « Chromecast built-in »",
+  "f": "hub.js"
+ },
+ {
+  "t": "Ciel dégagé",
+  "f": "core.js"
+ },
+ {
+  "t": "City Pop",
+  "f": "data.js"
+ },
+ {
+  "t": "Clé API",
+  "f": "hub.js"
+ },
+ {
+  "t": "Clé API Govee",
+  "f": "hub.js"
+ },
+ {
+  "t": "Clé API Sensibo",
+  "f": "hub.js"
+ },
+ {
+  "t": "Clé ConBee / RaspBee",
+  "f": "hub.js"
+ },
+ {
+  "t": "Clé d’application",
+  "f": "hub.js"
+ },
+ {
+  "t": "clé locale",
+  "f": "hub.js"
+ },
+ {
+  "t": "Clé pré-partagée",
+  "f": "hub.js"
+ },
+ {
+  "t": "Clé secrète",
+  "f": "hub.js"
+ },
+ {
+  "t": "clé Zigbee USB",
+  "f": "hub.js"
+ },
+ {
+  "t": "Clés API",
+  "f": "hub.js"
+ },
+ {
+  "t": "Client ID",
+  "f": "hub.js"
+ },
+ {
+  "t": "Client secret",
+  "f": "hub.js"
+ },
+ {
+  "t": "Climatisation / chauffage",
+  "f": "home.js"
+ },
+ {
+  "t": "Climatisation globale",
+  "f": "data.js"
+ },
+ {
+  "t": "Clims infrarouges connectées",
+  "f": "hub.js"
+ },
+ {
+  "t": "Club de sport",
+  "f": "app.js"
+ },
+ {
+  "t": "Code administrateur",
+  "f": "services.js"
+ },
+ {
+  "t": "Code affiché sur la TV",
+  "f": "hub.js"
+ },
+ {
+  "t": "Code d’appairage Matter",
+  "f": "hub.js"
+ },
+ {
+  "t": "Code reçu par SMS",
+  "f": "hub.js"
+ },
+ {
+  "t": "Collecte ce matin",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Collectes des déchets",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Collez la clé,",
+  "f": "hub.js"
+ },
+ {
+  "t": "Collez-la,",
+  "f": "hub.js"
+ },
+ {
+  "t": "Combien je consomme ?",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Commander un appareil",
+  "f": "auto.js"
+ },
+ {
+  "t": "Commandes de la voiture réservées aux administrateurs",
+  "f": "car.js"
+ },
+ {
+  "t": "Comment voulez-vous commencer ?",
+  "f": "setup.js"
+ },
+ {
+  "t": "Compatibilité tierce",
+  "f": "hub.js"
+ },
+ {
+  "t": "compte FordPass dédié",
+  "f": "hub.js"
+ },
+ {
+  "t": "Compte Google connecté — synchronisation de l’agenda…",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Compte YouTube connecté",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Compte YouTube connecté — import de vos playlists…",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Compteur de puissance",
+  "f": "home.js"
+ },
+ {
+  "t": "Configuration des ports",
+  "f": "hub.js"
+ },
+ {
+  "t": "Configuré",
+  "f": "extras.js"
+ },
+ {
+  "t": "Configurées",
+  "f": "services.js"
+ },
+ {
+  "t": "Connecté",
+  "f": "extras.js"
+ },
+ {
+  "t": "Connectée",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Connectée · départs automatiques",
+  "f": "car.js"
+ },
+ {
+  "t": "Connecter mon compte YouTube",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Connexion à Home Assistant",
+  "f": "setup.js"
+ },
+ {
+  "t": "Connexion au compte à terminer ensuite dans Marques ›",
+  "f": "plug.js"
+ },
+ {
+  "t": "Connexion YouTube :",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Connexion YouTube annulée ou refusée",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Connexion…",
+  "f": "plug.js"
+ },
+ {
+  "t": "Connexions enregistrées",
+  "f": "connect.js"
+ },
+ {
+  "t": "Consommation actuelle :",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Consommation de la maison",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Continuer à regarder",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Contrôle à distance simple IP",
+  "f": "hub.js"
+ },
+ {
+  "t": "Contrôle des disques",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Contrôle IP",
+  "f": "hub.js"
+ },
+ {
+  "t": "Contrôle LAN",
+  "f": "hub.js"
+ },
+ {
+  "t": "Contrôle par applis mobiles : Par défaut",
+  "f": "hub.js"
+ },
+ {
+  "t": "Contrôle réseau : Toujours actif",
+  "f": "hub.js"
+ },
+ {
+  "t": "Contrôlez et gérez votre 1er étage",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Contrôlez et gérez votre 2e étage",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Contrôlez et gérez votre rez-de-chaussée",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Contrôlez et surveillez vos espaces extérieurs",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Copié",
+  "f": "notif.js"
+ },
+ {
+  "t": "Copiez Client ID et secret,",
+  "f": "hub.js"
+ },
+ {
+  "t": "Copiez le",
+  "f": "hub.js"
+ },
+ {
+  "t": "Copiez le dossier",
+  "f": "connect.js"
+ },
+ {
+  "t": "Coton 40°",
+  "f": "data.js"
+ },
+ {
+  "t": "Coton 60°",
+  "f": "panel.js"
+ },
+ {
+  "t": "Couleur ajoutée aux favoris",
+  "f": "room.js"
+ },
+ {
+  "t": "Couleur Tempo de demain",
+  "f": "brain.js"
+ },
+ {
+  "t": "Couloir / escalier",
+  "f": "setup.js"
+ },
+ {
+  "t": "Coupe l’arrosage",
+  "f": "components.js"
+ },
+ {
+  "t": "Couper l’arrosage",
+  "f": "auto.js"
+ },
+ {
+  "t": "Couper le son",
+  "f": "components.js"
+ },
+ {
+  "t": "Cour - Vue garage",
+  "f": "data.js"
+ },
+ {
+  "t": "Cour / parking",
+  "f": "setup.js"
+ },
+ {
+  "t": "Cours de yoga",
+  "f": "app.js"
+ },
+ {
+  "t": "Create app",
+  "f": "hub.js"
+ },
+ {
+  "t": "Créer",
+  "f": "notif.js"
+ },
+ {
+  "t": "Créer le jeton",
+  "f": "hub.js"
+ },
+ {
+  "t": "Créer un nouvel accès ? Le téléphone de",
+  "f": "map.js"
+ },
+ {
+  "t": "Créez de préférence un",
+  "f": "hub.js"
+ },
+ {
+  "t": "Créez de préférence un utilisateur « invité » pour Bêta home.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Créez un compte gratuit sur",
+  "f": "hub.js"
+ },
+ {
+  "t": "Ctrl K",
+  "f": "extras.js"
+ },
+ {
+  "t": "D’abord, télécharger une sauvegarde",
+  "f": "setup.js"
+ },
+ {
+  "t": "d’humidité",
+  "f": "extras.js"
+ },
+ {
+  "t": "d’une pièce ouvrent tous ses réglages : thermostat, couleurs, volets.",
+  "f": "extras.js"
+ },
+ {
+  "t": "Dahua / Amcrest",
+  "f": "hub.js"
+ },
+ {
+  "t": "dans Bêta home",
+  "f": "hub.js"
+ },
+ {
+  "t": "Dans ce fichier, changez",
+  "f": "connect.js"
+ },
+ {
+  "t": "dans cette pièce.",
+  "f": "extras.js"
+ },
+ {
+  "t": "Dans chaque appareil, renseignez l’adresse du broker et activez la",
+  "f": "hub.js"
+ },
+ {
+  "t": "Dans la caméra : Configuration › Évènement › cochez",
+  "f": "hub.js"
+ },
+ {
+  "t": "Dans le menu de l’ampli : Réseau ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "Dans le YAML de chaque module, ajoutez",
+  "f": "hub.js"
+ },
+ {
+  "t": "dans les 30 s.",
+  "f": "hub.js"
+ },
+ {
+  "t": "dans les 30 secondes.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Dans les 60 s :",
+  "f": "hub.js"
+ },
+ {
+  "t": "Dans ntfy :",
+  "f": "notif.js"
+ },
+ {
+  "t": "dans Paramètres › Home Assistant pour le flux réel.",
+  "f": "components.js"
+ },
+ {
+  "t": "Dans une ville qui ne dort jamais, une détective androïde enquête sur des rêves volés.",
+  "f": "data.js"
+ },
+ {
+  "t": "Dans votre espace Enedis, activez la",
+  "f": "hub.js"
+ },
+ {
+  "t": "Dans Z-Wave JS UI › Réglages › Home Assistant : activez",
+  "f": "hub.js"
+ },
+ {
+  "t": "de chaque appareil : compte gratuit sur",
+  "f": "hub.js"
+ },
+ {
+  "t": "de l’écran de la Freebox Server.",
+  "f": "hub.js"
+ },
+ {
+  "t": "de température",
+  "f": "extras.js"
+ },
+ {
+  "t": "Débogage ADB : activé",
+  "f": "hub.js"
+ },
+ {
+  "t": "Debout ! Bonne journée.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Débranchée",
+  "f": "car.js"
+ },
+ {
+  "t": "Décembre",
+  "f": "core.js"
+ },
+ {
+  "t": "déclenchée",
+  "f": "brain.js"
+ },
+ {
+  "t": "Déclenchée !",
+  "f": "home.js"
+ },
+ {
+  "t": "DÉCLENCHÉE !",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Déclencheur",
+  "f": "brain.js"
+ },
+ {
+  "t": "Décochez ce que",
+  "f": "home.js"
+ },
+ {
+  "t": "découverte « Home Assistant »",
+  "f": "hub.js"
+ },
+ {
+  "t": "Découvrir",
+  "f": "discover.js"
+ },
+ {
+  "t": "Découvrir des caméras",
+  "f": "discover.js"
+ },
+ {
+  "t": "Découvrir le réseau",
+  "f": "discover.js"
+ },
+ {
+  "t": "degrés à",
+  "f": "voice.js"
+ },
+ {
+  "t": "Déjà créé",
+  "f": "journal.js"
+ },
+ {
+  "t": "déjà défini",
+  "f": "brain.js"
+ },
+ {
+  "t": "déjà enregistrée",
+  "f": "services.js"
+ },
+ {
+  "t": "Déjà sonné il y a moins de 15 s",
+  "f": "notif.js"
+ },
+ {
+  "t": "Déjeuner",
+  "f": "core.js"
+ },
+ {
+  "t": "délai dépassé",
+  "f": "ha.js"
+ },
+ {
+  "t": "Délicat",
+  "f": "panel.js"
+ },
+ {
+  "t": "Demain : jour",
+  "f": "services.js"
+ },
+ {
+  "t": "demain est un jour",
+  "f": "brain.js"
+ },
+ {
+  "t": "Demander «",
+  "f": "extras.js"
+ },
+ {
+  "t": "Demander à Bêta IA",
+  "f": "extras.js"
+ },
+ {
+  "t": "Demander une clé API",
+  "f": "hub.js"
+ },
+ {
+  "t": "Démarrage à distance",
+  "f": "car.js"
+ },
+ {
+  "t": "Démarrage à distance demandé…",
+  "f": "car.js"
+ },
+ {
+  "t": "Démarre l’arrosage",
+  "f": "components.js"
+ },
+ {
+  "t": "Démarre l’arrosage 15 min",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Démarrer le nettoyage",
+  "f": "components.js"
+ },
+ {
+  "t": "démo",
+  "f": "car.js"
+ },
+ {
+  "t": "Démo",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Denon / Marantz",
+  "f": "hub.js"
+ },
+ {
+  "t": "Dentiste Léo",
+  "f": "core.js"
+ },
+ {
+  "t": "Départ",
+  "f": "car.js"
+ },
+ {
+  "t": "Départ à",
+  "f": "car.js"
+ },
+ {
+  "t": "Depuis un lien",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Dernière erreur :",
+  "f": "gcal.js"
+ },
+ {
+  "t": "Dernière fois :",
+  "f": "auto.js"
+ },
+ {
+  "t": "Dernière position",
+  "f": "map.js"
+ },
+ {
+  "t": "des",
+  "f": "ha.js"
+ },
+ {
+  "t": "Des pilotes de rue s’affrontent sur les autoroutes suspendues de Tokyo.",
+  "f": "data.js"
+ },
+ {
+  "t": "désactivée",
+  "f": "brain.js"
+ },
+ {
+  "t": "Désactivée",
+  "f": "brain.js"
+ },
+ {
+  "t": "désactiver",
+  "f": "brain.js"
+ },
+ {
+  "t": "désactiver l’alarme",
+  "f": "brain.js"
+ },
+ {
+  "t": "Désactiver l’alarme",
+  "f": "brain.js"
+ },
+ {
+  "t": "Désarmée",
+  "f": "home.js"
+ },
+ {
+  "t": "Désarmer",
+  "f": "panel.js"
+ },
+ {
+  "t": "Déshumidifie",
+  "f": "room.js"
+ },
+ {
+  "t": "détecte un mouvement",
+  "f": "brain.js"
+ },
+ {
+  "t": "détecte une fuite",
+  "f": "brain.js"
+ },
+ {
+  "t": "Détecteur de fuite",
+  "f": "home.js"
+ },
+ {
+  "t": "Détecteur de mouvement",
+  "f": "home.js"
+ },
+ {
+  "t": "Détecteur de mouvement ·",
+  "f": "ha.js"
+ },
+ {
+  "t": "Détecteurs en mode Absence",
+  "f": "brain.js"
+ },
+ {
+  "t": "Détecteurs en mode Nuit",
+  "f": "brain.js"
+ },
+ {
+  "t": "Détection",
+  "f": "components.js"
+ },
+ {
+  "t": "Détection 100 % locale par IA, sans abonnement.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Deux étudiants se retrouvent chaque printemps sous le même cerisier.",
+  "f": "data.js"
+ },
+ {
+  "t": "Déverrouillage demandé…",
+  "f": "car.js"
+ },
+ {
+  "t": "déverrouillé",
+  "f": "ia2.js"
+ },
+ {
+  "t": "déverrouillée",
+  "f": "extras.js"
+ },
+ {
+  "t": "Déverrouillée",
+  "f": "home.js"
+ },
+ {
+  "t": "déverrouiller",
+  "f": "auto.js"
+ },
+ {
+  "t": "Déverrouiller",
+  "f": "auto.js"
+ },
+ {
+  "t": "devra être reconfiguré.",
+  "f": "map.js"
+ },
+ {
+  "t": "Diffusion sur",
+  "f": "cast.js"
+ },
+ {
+  "t": "Disney+",
+  "f": "panel.js"
+ },
+ {
+  "t": "Disposition :",
+  "f": "tablet.js"
+ },
+ {
+  "t": "Disposition automatique",
+  "f": "home.js"
+ },
+ {
+  "t": "Disposition d’origine",
+  "f": "home.js"
+ },
+ {
+  "t": "Données actualisées",
+  "f": "car.js"
+ },
+ {
+  "t": "Données réelles de Home Assistant",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Droits :",
+  "f": "home.js"
+ },
+ {
+  "t": "Droits de",
+  "f": "home.js"
+ },
+ {
+  "t": "du",
+  "f": "ha.js"
+ },
+ {
+  "t": "du docker-compose suffit.",
+  "f": "hub.js"
+ },
+ {
+  "t": "du pont, puis cliquez",
+  "f": "hub.js"
+ },
+ {
+  "t": "du soleil",
+  "f": "brain.js"
+ },
+ {
+  "t": "Durée",
+  "f": "panel.js"
+ },
+ {
+  "t": "E-mail du compte Somfy",
+  "f": "hub.js"
+ },
+ {
+  "t": "E-mail du compte Tapo",
+  "f": "hub.js"
+ },
+ {
+  "t": "E-mail du compte Verisure",
+  "f": "hub.js"
+ },
+ {
+  "t": "E-mail ou téléphone Easee",
+  "f": "hub.js"
+ },
+ {
+  "t": "Eau chaude",
+  "f": "data.js"
+ },
+ {
+  "t": "Échec :",
+  "f": "notif.js"
+ },
+ {
+  "t": "Echo Dot cuisine",
+  "f": "discover.js"
+ },
+ {
+  "t": "Éclairage",
+  "f": "data.js"
+ },
+ {
+  "t": "Éclairage & prises",
+  "f": "home.js"
+ },
+ {
+  "t": "Éclairage ambiance",
+  "f": "data.js"
+ },
+ {
+  "t": "Éclairage cour",
+  "f": "data.js"
+ },
+ {
+  "t": "Éclairage extérieur",
+  "f": "auto.js"
+ },
+ {
+  "t": "Éclairage jardin",
+  "f": "data.js"
+ },
+ {
+  "t": "Éclairage parking",
+  "f": "data.js"
+ },
+ {
+  "t": "Éclairage RGB",
+  "f": "data.js"
+ },
+ {
+  "t": "Éclairages",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Éco",
+  "f": "auto.js"
+ },
+ {
+  "t": "Éco 50°",
+  "f": "data.js"
+ },
+ {
+  "t": "École",
+  "f": "data.js"
+ },
+ {
+  "t": "Écouter la musique du NAS",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Écran",
+  "f": "journal.js"
+ },
+ {
+  "t": "écran « émetteur » s",
+  "f": "car.js"
+ },
+ {
+  "t": "Écran de veille et luminosité automatique",
+  "f": "tablet.js"
+ },
+ {
+  "t": "écran quand quelqu",
+  "f": "tablet.js"
+ },
+ {
+  "t": "Écrans associés",
+  "f": "services.js"
+ },
+ {
+  "t": "Effacer tout le journal ?",
+  "f": "journal.js"
+ },
+ {
+  "t": "Effets animés",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Électroménager",
+  "f": "home.js"
+ },
+ {
+  "t": "Électroménager & sécurité",
+  "f": "home.js"
+ },
+ {
+  "t": "Électroménager, robots et jardin",
+  "f": "hub.js"
+ },
+ {
+  "t": "Élevé",
+  "f": "core.js"
+ },
+ {
+  "t": "Elgato Control Center",
+  "f": "hub.js"
+ },
+ {
+  "t": "Elgato Key Light",
+  "f": "discover.js"
+ },
+ {
+  "t": "Elles apparaissent dans « Où écouter ? » : les radios de Bêta home y sont jouées directement.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Emplacement dans Bêta home",
+  "f": "discover.js"
+ },
+ {
+  "t": "En attente",
+  "f": "room.js"
+ },
+ {
+  "t": "En attente d’appairage",
+  "f": "services.js"
+ },
+ {
+  "t": "En attente de l’accès développeur Segway.",
+  "f": "hub.js"
+ },
+ {
+  "t": "En ce moment",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "En charge",
+  "f": "car.js"
+ },
+ {
+  "t": "En cours",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "En direct",
+  "f": "music.js"
+ },
+ {
+  "t": "En direct, sans Home Assistant",
+  "f": "hub.js"
+ },
+ {
+  "t": "En lecture",
+  "f": "components.js"
+ },
+ {
+  "t": "En lecture sur la TV",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "En ligne",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "En marche",
+  "f": "panel.js"
+ },
+ {
+  "t": "En marche ·",
+  "f": "components.js"
+ },
+ {
+  "t": "En pause",
+  "f": "components.js"
+ },
+ {
+  "t": "En tonte",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "En veille",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "En ville",
+  "f": "data.js"
+ },
+ {
+  "t": "En voiture",
+  "f": "map.js"
+ },
+ {
+  "t": "Enceinte Salon",
+  "f": "data.js"
+ },
+ {
+  "t": "Enceintes : lecture, volume, radios",
+  "f": "hub.js"
+ },
+ {
+  "t": "Enceintes SoundTouch",
+  "f": "hub.js"
+ },
+ {
+  "t": "Encore allumé",
+  "f": "extras.js"
+ },
+ {
+  "t": "Énergie",
+  "f": "components.js"
+ },
+ {
+  "t": "Énergie, recharge et voiture",
+  "f": "hub.js"
+ },
+ {
+  "t": "Enregistrement ·",
+  "f": "map.js"
+ },
+ {
+  "t": "Enregistrement annulé",
+  "f": "map.js"
+ },
+ {
+  "t": "Enregistrement impossible :",
+  "f": "hub.js"
+ },
+ {
+  "t": "Enregistrement lancé — gardez Bêta home ouvert, écran allumé",
+  "f": "map.js"
+ },
+ {
+  "t": "Enregistrer et actualiser",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Enregistrer et tester",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Enregistrer toutes les connexions",
+  "f": "connect.js"
+ },
+ {
+  "t": "Enregistrer un trajet",
+  "f": "map.js"
+ },
+ {
+  "t": "enregistrés",
+  "f": "home.js"
+ },
+ {
+  "t": "Entité Home Assistant",
+  "f": "home.js"
+ },
+ {
+  "t": "Entre deux heures",
+  "f": "brain.js"
+ },
+ {
+  "t": "Entrée",
+  "f": "data.js"
+ },
+ {
+  "t": "Entrez votre code",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Envoyer une notification",
+  "f": "brain.js"
+ },
+ {
+  "t": "Era 100",
+  "f": "discover.js"
+ },
+ {
+  "t": "err:adresse ou jeton manquant",
+  "f": "connect.js"
+ },
+ {
+  "t": "err:bloqué par le navigateur — passera par le serveur Bêta",
+  "f": "connect.js"
+ },
+ {
+  "t": "err:nécessite le serveur Bêta",
+  "f": "connect.js"
+ },
+ {
+  "t": "err:réponse inattendue",
+  "f": "connect.js"
+ },
+ {
+  "t": "Escalier & Couloir",
+  "f": "data.js"
+ },
+ {
+  "t": "Espace disque",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Essayer la voix",
+  "f": "voice.js"
+ },
+ {
+  "t": "est allumé",
+  "f": "brain.js"
+ },
+ {
+  "t": "est déverrouillé",
+  "f": "brain.js"
+ },
+ {
+  "t": "est éteint",
+  "f": "brain.js"
+ },
+ {
+  "t": "est fermé",
+  "f": "brain.js"
+ },
+ {
+  "t": "est plus interrogée et ses appareils ne reçoivent plus d",
+  "f": "hub.js"
+ },
+ {
+  "t": "est verrouillé",
+  "f": "brain.js"
+ },
+ {
+  "t": "et",
+  "f": "brain.js"
+ },
+ {
+  "t": "et autorisez avec votre compte Samsung.",
+  "f": "hub.js"
+ },
+ {
+  "t": "et la",
+  "f": "hub.js"
+ },
+ {
+  "t": "et le",
+  "f": "hub.js"
+ },
+ {
+  "t": "et notez le jeton.",
+  "f": "hub.js"
+ },
+ {
+  "t": "et réservez-la dans votre box.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Étage",
+  "f": "panel.js"
+ },
+ {
+  "t": "Étage 1",
+  "f": "cast.js"
+ },
+ {
+  "t": "Étage 2",
+  "f": "cast.js"
+ },
+ {
+  "t": "État d’un appareil",
+  "f": "brain.js"
+ },
+ {
+  "t": "état de l",
+  "f": "panel.js"
+ },
+ {
+  "t": "État de l’alarme",
+  "f": "brain.js"
+ },
+ {
+  "t": "État du véhicule",
+  "f": "car.js"
+ },
+ {
+  "t": "Été",
+  "f": "fx.js"
+ },
+ {
+  "t": "éteindre",
+  "f": "auto.js"
+ },
+ {
+  "t": "Éteindre",
+  "f": "auto.js"
+ },
+ {
+  "t": "Éteins",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Éteins tout :",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Éteins tout au RDC",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "éteint",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Éteint",
+  "f": "home.js"
+ },
+ {
+  "t": "Europe/Paris",
+  "f": "gcal.js"
+ },
+ {
+  "t": "événement",
+  "f": "gcal.js"
+ },
+ {
+  "t": "Événement acquitté",
+  "f": "components.js"
+ },
+ {
+  "t": "Événement modifié",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Événement supprimé",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Événements :",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "événements · synchronisé à",
+  "f": "gcal.js"
+ },
+ {
+  "t": "Extérieur",
+  "f": "auto.js"
+ },
+ {
+  "t": "Failed to fetch",
+  "f": "components.js"
+ },
+ {
+  "t": "Fais le point sur la maison",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Famille, véhicules et balades",
+  "f": "map.js"
+ },
+ {
+  "t": "Favoris de",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Fenêtres",
+  "f": "car.js"
+ },
+ {
+  "t": "fermé",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Fermé",
+  "f": "home.js"
+ },
+ {
+  "t": "Ferme le store banne",
+  "f": "components.js"
+ },
+ {
+  "t": "Ferme les volets :",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Ferme les volets de l’étage 1",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Ferme les volets étage 1",
+  "f": "components.js"
+ },
+ {
+  "t": "Ferme les volets étage 2",
+  "f": "components.js"
+ },
+ {
+  "t": "Ferme les volets RDC",
+  "f": "components.js"
+ },
+ {
+  "t": "Ferme tous les volets",
+  "f": "components.js"
+ },
+ {
+  "t": "Fermée",
+  "f": "extras.js"
+ },
+ {
+  "t": "Fermées",
+  "f": "car.js"
+ },
+ {
+  "t": "Fermeture…",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Février",
+  "f": "core.js"
+ },
+ {
+  "t": "Fichiers, photos, agenda et contacts",
+  "f": "connect.js"
+ },
+ {
+  "t": "Films, séries et anime de la maison",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Fin de la pluie vers",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Fini dans",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Fire TV : Paramètres › Ma Fire TV › Options pour les développeurs ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "Fire TV / Android TV",
+  "f": "hub.js"
+ },
+ {
+  "t": "Fire TV salon",
+  "f": "hub.js"
+ },
+ {
+  "t": "Fire TV, Google TV, Shield : marche, volume, applis",
+  "f": "hub.js"
+ },
+ {
+  "t": "flèche ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "Flux d’évènements ISAPI tenu ouvert par le serveur : réaction en moins d’une seconde. Aussi HiLook, Annke.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Flux d’évènements local. Aussi Imou en mode local, Lorex.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Fond d’écran Bêta home rétabli",
+  "f": "extras.js"
+ },
+ {
+  "t": "Fond d’écran du téléphone changé",
+  "f": "extras.js"
+ },
+ {
+  "t": "Fond tél.",
+  "f": "extras.js"
+ },
+ {
+  "t": "Ford Explorer",
+  "f": "car.js"
+ },
+ {
+  "t": "Forte neige",
+  "f": "core.js"
+ },
+ {
+  "t": "Forte pluie",
+  "f": "core.js"
+ },
+ {
+  "t": "Fortes averses",
+  "f": "core.js"
+ },
+ {
+  "t": "France Culture",
+  "f": "data.js"
+ },
+ {
+  "t": "France Inter",
+  "f": "data.js"
+ },
+ {
+  "t": "France Musique",
+  "f": "data.js"
+ },
+ {
+  "t": "Freebox OS › Paramètres › Gestion des accès › Applications › Bêta home : cochez",
+  "f": "hub.js"
+ },
+ {
+  "t": "Fronius, Enphase, SMA, Huawei : production en direct",
+  "f": "hub.js"
+ },
+ {
+  "t": "Fuite d’eau",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Fuite d’eau !",
+  "f": "notif.js"
+ },
+ {
+  "t": "fuite détectée !",
+  "f": "extras.js"
+ },
+ {
+  "t": "Fuite détectée !",
+  "f": "home.js"
+ },
+ {
+  "t": "Fully Kiosk",
+  "f": "hub.js"
+ },
+ {
+  "t": "Garage ouvert",
+  "f": "notif.js"
+ },
+ {
+  "t": "Garage resté ouvert",
+  "f": "notif.js"
+ },
+ {
+  "t": "Gardez l’e-mail de votre compte Roborock : un code de connexion vous sera envoyé.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Général",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Gérer",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Gérer le bridge",
+  "f": "hub.js"
+ },
+ {
+  "t": "Gérer les connexions",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Gérer niveaux, pièces et appareils",
+  "f": "home.js"
+ },
+ {
+  "t": "Google / YouTube",
+  "f": "connect.js"
+ },
+ {
+  "t": "Google Agenda",
+  "f": "gcal.js"
+ },
+ {
+  "t": "Google Agenda :",
+  "f": "gcal.js"
+ },
+ {
+  "t": "Google Cast",
+  "f": "discover.js"
+ },
+ {
+  "t": "Google inaccessible",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Google Maps",
+  "f": "car.js"
+ },
+ {
+  "t": "Govee Home",
+  "f": "hub.js"
+ },
+ {
+  "t": "GPS indisponible sur cet appareil",
+  "f": "map.js"
+ },
+ {
+  "t": "Grains de neige",
+  "f": "core.js"
+ },
+ {
+  "t": "Grenier 1",
+  "f": "data.js"
+ },
+ {
+  "t": "Grenier 2",
+  "f": "data.js"
+ },
+ {
+  "t": "Groupe RDC",
+  "f": "data.js"
+ },
+ {
+  "t": "Habitudes repérées",
+  "f": "journal.js"
+ },
+ {
+  "t": "Hauteur de coupe",
+  "f": "panel.js"
+ },
+ {
+  "t": "Heures creuses",
+  "f": "panel.js"
+ },
+ {
+  "t": "Historique & réglages",
+  "f": "room.js"
+ },
+ {
+  "t": "historique dans la fiche d",
+  "f": "services.js"
+ },
+ {
+  "t": "Historique indisponible",
+  "f": "map.js"
+ },
+ {
+  "t": "Home Assistant",
+  "f": "connect.js"
+ },
+ {
+  "t": "Home Assistant :",
+  "f": "components.js"
+ },
+ {
+  "t": "Home Assistant connecté",
+  "f": "components.js"
+ },
+ {
+  "t": "Home Assistant désactivé : mode démo",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Home Assistant injoignable :",
+  "f": "core.js"
+ },
+ {
+  "t": "Home Assistant répond ! Lancez l’assistant pour relier vos appareils",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Home Assistant, NAS, Nextcloud, mails, IP…",
+  "f": "connect.js"
+ },
+ {
+  "t": "HomeKit ·",
+  "f": "discover.js"
+ },
+ {
+  "t": "Hors ligne",
+  "f": "services.js"
+ },
+ {
+  "t": "Hors ligne : valeurs de démonstration affichées.",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Hub SwitchBot",
+  "f": "hub.js"
+ },
+ {
+  "t": "Hue Bridge",
+  "f": "discover.js"
+ },
+ {
+  "t": "Humidité",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Humidité :",
+  "f": "extras.js"
+ },
+ {
+  "t": "Humidité cible",
+  "f": "room.js"
+ },
+ {
+  "t": "Husqvarna / Gardena",
+  "f": "hub.js"
+ },
+ {
+  "t": "Ici : adresse du NAS,",
+  "f": "hub.js"
+ },
+ {
+  "t": "Ici : adresse du NAS, port 1883, identifiants MQTT, puis",
+  "f": "hub.js"
+ },
+ {
+  "t": "Icône",
+  "f": "home.js"
+ },
+ {
+  "t": "Idéal pour les vieilles TV, clims sans Wi-Fi, ventilateurs, barres de son.",
+  "f": "hub.js"
+ },
+ {
+  "t": "identifiant et le mot de passe sont ajoutés dans l",
+  "f": "discover.js"
+ },
+ {
+  "t": "Il fait",
+  "f": "extras.js"
+ },
+ {
+  "t": "Il faut au moins un déclencheur et une action",
+  "f": "brain.js"
+ },
+ {
+  "t": "Il faut garder au moins un administrateur",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Il faut un",
+  "f": "hub.js"
+ },
+ {
+  "t": "Il faut une",
+  "f": "hub.js"
+ },
+ {
+  "t": "Il va pleuvoir :",
+  "f": "auto.js"
+ },
+ {
+  "t": "Immédiate",
+  "f": "panel.js"
+ },
+ {
+  "t": "Import YouTube :",
+  "f": "youtube.js"
+ },
+ {
+  "t": "importé",
+  "f": "home.js"
+ },
+ {
+  "t": "Importer de Home Assistant",
+  "f": "home.js"
+ },
+ {
+  "t": "Importer la sélection",
+  "f": "home.js"
+ },
+ {
+  "t": "Impossible de lire «",
+  "f": "music.js"
+ },
+ {
+  "t": "Inclinaison des lames",
+  "f": "panel.js"
+ },
+ {
+  "t": "Indice UV",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Indiquez au moins un prénom",
+  "f": "setup.js"
+ },
+ {
+  "t": "Indiquez d’abord l’adresse du serveur",
+  "f": "services.js"
+ },
+ {
+  "t": "Indiquez l’adresse du serveur.",
+  "f": "setup.js"
+ },
+ {
+  "t": "Informations de la maison",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "injoignable ou CORS",
+  "f": "ha.js"
+ },
+ {
+  "t": "Installer le serveur Bêta sur le NAS",
+  "f": "connect.js"
+ },
+ {
+  "t": "Installez l’appli gratuite",
+  "f": "notif.js"
+ },
+ {
+  "t": "Installez le Broadlink avec l’app Broadlink puis",
+  "f": "hub.js"
+ },
+ {
+  "t": "Intensif 70°",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Intensité",
+  "f": "panel.js"
+ },
+ {
+  "t": "Intensité de l’assombrissement ·",
+  "f": "extras.js"
+ },
+ {
+  "t": "Interface :",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Intérieur",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "invitation arrive peu après l",
+  "f": "app.js"
+ },
+ {
+  "t": "Invité",
+  "f": "core.js"
+ },
+ {
+  "t": "IP, id, clé, 3.3 ou 3.4, nom",
+  "f": "hub.js"
+ },
+ {
+  "t": "Itinéraire",
+  "f": "car.js"
+ },
+ {
+  "t": "itinéraire introuvable",
+  "f": "car.js"
+ },
+ {
+  "t": "J’ouvre la porte du garage.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "J’ouvre la voiture.",
+  "f": "car.js"
+ },
+ {
+  "t": "J’ouvre les volets",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Je ferme les volets",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Je l’ajoute à l’agenda ?",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Je lance la lecture. Vous la retrouverez dans Musique › Ma bibliothèque.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Je lance le démarrage à distance de la",
+  "f": "car.js"
+ },
+ {
+  "t": "Je n’ai pas compris. Essayez : « éteins tout au RDC », « ferme les volets étage 1 », « mets 21 degrés », « lance la playlist Gaming », « météo », « mes mails ».",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Je n’ai pas de capteur",
+  "f": "extras.js"
+ },
+ {
+  "t": "Je n’ai rien entendu. Touchez le micro pour reparler.",
+  "f": "voice.js"
+ },
+ {
+  "t": "Je ne trouve pas cet appareil",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Je ne vois rien de tel dans le journal",
+  "f": "extras.js"
+ },
+ {
+  "t": "Je pars",
+  "f": "auto.js"
+ },
+ {
+  "t": "Je pars : tout sécuriser",
+  "f": "extras.js"
+ },
+ {
+  "t": "Je réfléchis…",
+  "f": "voice.js"
+ },
+ {
+  "t": "Je rentre",
+  "f": "auto.js"
+ },
+ {
+  "t": "Je réponds…",
+  "f": "voice.js"
+ },
+ {
+  "t": "Je verrouille la voiture.",
+  "f": "car.js"
+ },
+ {
+  "t": "Je vous écoute…",
+  "f": "voice.js"
+ },
+ {
+  "t": "Je vous ouvre les routines et automatismes.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Je vous ouvre Plex. «",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Jellyfin › Tableau de bord ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "Jeton API du bridge",
+  "f": "hub.js"
+ },
+ {
+  "t": "Jeton conso.boris.sh",
+  "f": "hub.js"
+ },
+ {
+  "t": "jeton refusé",
+  "f": "ha.js"
+ },
+ {
+  "t": "Jour sélectionné",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Journal & habitudes",
+  "f": "connect.js"
+ },
+ {
+  "t": "Journal du NAS",
+  "f": "brain.js"
+ },
+ {
+  "t": "jours observés",
+  "f": "journal.js"
+ },
+ {
+  "t": "Key Light, Light Strip",
+  "f": "hub.js"
+ },
+ {
+  "t": "kg de CO₂ évités",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Kilométrage",
+  "f": "car.js"
+ },
+ {
+  "t": "kilomètres heure",
+  "f": "voice.js"
+ },
+ {
+  "t": "kW. Batterie virtuelle à 76 %.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "L’adresse vidéo et le mot de passe restent sur le NAS : le navigateur ne les garde pas.",
+  "f": "discover.js"
+ },
+ {
+  "t": "l’alarme",
+  "f": "brain.js"
+ },
+ {
+  "t": "l’alarme est",
+  "f": "brain.js"
+ },
+ {
+  "t": "L’aspirateur retourne à sa base.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "L’étage passe en disposition automatique pour afficher la nouvelle pièce",
+  "f": "home.js"
+ },
+ {
+  "t": "la",
+  "f": "ha.js"
+ },
+ {
+  "t": "La clé arrive par e-mail en quelques minutes : collez-la ici puis",
+  "f": "hub.js"
+ },
+ {
+  "t": "La clim est souvent allumée quand il fait environ",
+  "f": "journal.js"
+ },
+ {
+  "t": "La dernière fois :",
+  "f": "extras.js"
+ },
+ {
+  "t": "La dictée vocale n’est pas disponible sur ce navigateur",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "La localisation n’est pas disponible sur cet appareil",
+  "f": "map.js"
+ },
+ {
+  "t": "La Maison",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "La maison :",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "la musique",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "La musique joue sur",
+  "f": "cast.js"
+ },
+ {
+  "t": "la page",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "La porte du garage est ouverte depuis",
+  "f": "notif.js"
+ },
+ {
+  "t": "La santé de la maison est suivie par le serveur Bêta du NAS : reliez-le d’abord.",
+  "f": "services.js"
+ },
+ {
+  "t": "La tondeuse démarre la tonte.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "La tondeuse rentre à sa base.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "La veille au soir, d’après le calendrier",
+  "f": "notif.js"
+ },
+ {
+  "t": "La voiture est à la maison.",
+  "f": "car.js"
+ },
+ {
+  "t": "La voiture n’est pas à la maison",
+  "f": "car.js"
+ },
+ {
+  "t": "Lampes allumées",
+  "f": "panel.js"
+ },
+ {
+  "t": "Lampes et pièces Hue",
+  "f": "hub.js"
+ },
+ {
+  "t": "Lampes et rubans LED Wi-Fi",
+  "f": "hub.js"
+ },
+ {
+  "t": "Lampes Xiaomi Yeelight",
+  "f": "hub.js"
+ },
+ {
+  "t": "Lampes, prises, stores et capteurs IKEA",
+  "f": "hub.js"
+ },
+ {
+  "t": "Lance la playlist Gaming",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Lance ma playlist Japon",
+  "f": "components.js"
+ },
+ {
+  "t": "lancée",
+  "f": "journal.js"
+ },
+ {
+  "t": "Lancer «",
+  "f": "panel.js"
+ },
+ {
+  "t": "Lancer l’aspirateur",
+  "f": "auto.js"
+ },
+ {
+  "t": "Lancer la recherche",
+  "f": "discover.js"
+ },
+ {
+  "t": "Lancer la routine",
+  "f": "extras.js"
+ },
+ {
+  "t": "Lancer une routine",
+  "f": "auto.js"
+ },
+ {
+  "t": "Lancez le conteneur",
+  "f": "hub.js"
+ },
+ {
+  "t": "Lave-linge, lave-vaisselle",
+  "f": "notif.js"
+ },
+ {
+  "t": "le",
+  "f": "brain.js"
+ },
+ {
+  "t": "Le broker",
+  "f": "hub.js"
+ },
+ {
+  "t": "le calendrier",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "le mode absent",
+  "f": "brain.js"
+ },
+ {
+  "t": "le NAS",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Le plus simple :",
+  "f": "hub.js"
+ },
+ {
+  "t": "Le pont Hue doit être branché sur la même box que le NAS.",
+  "f": "hub.js"
+ },
+ {
+  "t": "le premier rentre",
+  "f": "brain.js"
+ },
+ {
+  "t": "Le robot doit tourner sous",
+  "f": "hub.js"
+ },
+ {
+  "t": "Le serveur Bêta doit être joignable en",
+  "f": "hub.js"
+ },
+ {
+  "t": "Le serveur demande le code PIN d’un administrateur",
+  "f": "services.js"
+ },
+ {
+  "t": "le service bloque l’accès direct",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Le son sort de cet écran",
+  "f": "cast.js"
+ },
+ {
+  "t": "Le son sort maintenant sur",
+  "f": "components.js"
+ },
+ {
+  "t": "Le tableau de bord de votre maison. En quelques étapes, on le prépare pour",
+  "f": "setup.js"
+ },
+ {
+  "t": "le week-end",
+  "f": "auto.js"
+ },
+ {
+  "t": "Le Wi-Fi des téléphones se met parfois en veille : le délai évite les faux départs.",
+  "f": "brain.js"
+ },
+ {
+  "t": "Lecture :",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Lecture de",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Lecture de vos appareils Home Assistant…",
+  "f": "ha.js"
+ },
+ {
+  "t": "Lecture des appareils…",
+  "f": "hub.js"
+ },
+ {
+  "t": "Lecture en pause",
+  "f": "components.js"
+ },
+ {
+  "t": "Lecture impossible :",
+  "f": "hub.js"
+ },
+ {
+  "t": "Lecture locale, sans cloud.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Lecture locale, toutes les 10 s.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Lecture sur vos appareils Spotify Connect",
+  "f": "hub.js"
+ },
+ {
+  "t": "Lecture…",
+  "f": "services.js"
+ },
+ {
+  "t": "Léo",
+  "f": "data.js"
+ },
+ {
+  "t": "les",
+  "f": "ha.js"
+ },
+ {
+  "t": "Les",
+  "f": "extras.js"
+ },
+ {
+  "t": "les admins",
+  "f": "brain.js"
+ },
+ {
+  "t": "Les appareils doivent être dans l’appli",
+  "f": "hub.js"
+ },
+ {
+  "t": "Les appareils Samsung doivent déjà être dans l’app",
+  "f": "hub.js"
+ },
+ {
+  "t": "Les bons réflexes",
+  "f": "extras.js"
+ },
+ {
+  "t": "les caméras",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Les identifiants sont gardés sur le NAS, jamais dans le navigateur.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Les infos importantes",
+  "f": "plug.js"
+ },
+ {
+  "t": "Les marques utilisées de cette catégorie restent affichées",
+  "f": "hub.js"
+ },
+ {
+  "t": "Les panneaux dorment",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Les plus utilisés",
+  "f": "journal.js"
+ },
+ {
+  "t": "Les prochaines 24 heures",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Les vidéos YouTube ne se diffusent pas sur",
+  "f": "cast.js"
+ },
+ {
+  "t": "Lever / coucher du soleil",
+  "f": "brain.js"
+ },
+ {
+  "t": "Libre · aucun véhicule branché",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Lidl Silvercrest, Moes, Nedis, Konyks, Blitzwolf…",
+  "f": "hub.js"
+ },
+ {
+  "t": "lié à l’appli Smart Life, ou outil",
+  "f": "hub.js"
+ },
+ {
+  "t": "Lien non reconnu : collez un lien YouTube ou une adresse de fichier audio",
+  "f": "music.js"
+ },
+ {
+  "t": "LinknLink, OpenBeken, et tout ce qui s’annonce sur MQTT",
+  "f": "hub.js"
+ },
+ {
+  "t": "Lire à voix haute les annonces de la maison",
+  "f": "tablet.js"
+ },
+ {
+  "t": "Liste impossible :",
+  "f": "connect.js"
+ },
+ {
+  "t": "Local, mises à jour en direct.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Local, par le débogage réseau. Aussi la tablette Fire / Alexa si besoin.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Local, sans cloud ni Home Assistant. Lumières, prises, volets, thermostats, serrures, capteurs d’ouverture, de mouvement, de fuite, de température et d’humidité.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Local, sans compte Ubiquiti en ligne.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Local, sans Home Assistant : Bêta lit les mêmes annonces.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Local, sans Home Assistant. Si vous protégez le web_server, renseignez son identifiant et son mot de passe.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Lofi Girl · radio",
+  "f": "data.js"
+ },
+ {
+  "t": "Lofi Girl · sleep",
+  "f": "data.js"
+ },
+ {
+  "t": "LoFi Japon",
+  "f": "data.js"
+ },
+ {
+  "t": "Lumière",
+  "f": "auto.js"
+ },
+ {
+  "t": "Lumières",
+  "f": "auto.js"
+ },
+ {
+  "t": "Lumières allumées",
+  "f": "home.js"
+ },
+ {
+  "t": "Lumières de l’étage 2 éteintes",
+  "f": "components.js"
+ },
+ {
+  "t": "Lumières du rez-de-chaussée éteintes",
+  "f": "components.js"
+ },
+ {
+  "t": "luminosité",
+  "f": "journal.js"
+ },
+ {
+  "t": "Luminosité",
+  "f": "panel.js"
+ },
+ {
+  "t": "luminosité…",
+  "f": "brain.js"
+ },
+ {
+  "t": "Lycée",
+  "f": "data.js"
+ },
+ {
+  "t": "M’envoyer une notification",
+  "f": "auto.js"
+ },
+ {
+  "t": "Ma bibliothèque",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Ma playlist ·",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Ma Société",
+  "f": "data.js"
+ },
+ {
+  "t": "Ma voiture",
+  "f": "car.js"
+ },
+ {
+  "t": "Machine à laver",
+  "f": "data.js"
+ },
+ {
+  "t": "Machine terminée",
+  "f": "notif.js"
+ },
+ {
+  "t": "Maintenez le",
+  "f": "hub.js"
+ },
+ {
+  "t": "Maison & sauvegarde",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Maison sécurisée : lumières éteintes, garage fermé",
+  "f": "extras.js"
+ },
+ {
+  "t": "Maison sécurisée · touchez l’empreinte à votre retour",
+  "f": "extras.js"
+ },
+ {
+  "t": "Maison sécurisée par",
+  "f": "notif.js"
+ },
+ {
+  "t": "Marche/arrêt, volume, lecture.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Marque réaffichée dans la page Marques",
+  "f": "discover.js"
+ },
+ {
+  "t": "Marquer non lu",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Marques affichées",
+  "f": "hub.js"
+ },
+ {
+  "t": "masquée",
+  "f": "hub.js"
+ },
+ {
+  "t": "Message supprimé",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Message sur la TV LG",
+  "f": "notif.js"
+ },
+ {
+  "t": "Météo",
+  "f": "connect.js"
+ },
+ {
+  "t": "Météo ·",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Météo-France",
+  "f": "ha.js"
+ },
+ {
+  "t": "Mets 21 degrés dans la suite parentale",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Mets la clim à 21 degrés :",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Mets la radio FIP",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Mets la radio NRJ",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Mettez à jour le serveur Bêta",
+  "f": "hub.js"
+ },
+ {
+  "t": "Mettre en pause",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Micro indisponible",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Midnight City",
+  "f": "data.js"
+ },
+ {
+  "t": "min démarré",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Minuterie : «",
+  "f": "panel.js"
+ },
+ {
+  "t": "mis à jour",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Mis à jour",
+  "f": "car.js"
+ },
+ {
+  "t": "Modbus TCP",
+  "f": "hub.js"
+ },
+ {
+  "t": "Mode « flemmard » : étages, pièces et appareils repris tels quels de Home Assistant.",
+  "f": "setup.js"
+ },
+ {
+  "t": "Mode absence",
+  "f": "extras.js"
+ },
+ {
+  "t": "Mode absent",
+  "f": "brain.js"
+ },
+ {
+  "t": "Mode absent activé",
+  "f": "extras.js"
+ },
+ {
+  "t": "Mode démo",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Mode démo — Home Assistant non configuré",
+  "f": "components.js"
+ },
+ {
+  "t": "Mode développeur",
+  "f": "hub.js"
+ },
+ {
+  "t": "Mode éco",
+  "f": "components.js"
+ },
+ {
+  "t": "Mode jour",
+  "f": "components.js"
+ },
+ {
+  "t": "Mode jour : volets ouverts, lumières éteintes.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Mode nuit",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Mode nuit automatique",
+  "f": "extras.js"
+ },
+ {
+  "t": "Mode nuit de",
+  "f": "extras.js"
+ },
+ {
+  "t": "Mode nuit désactivé",
+  "f": "extras.js"
+ },
+ {
+  "t": "Mode sécurisé activé",
+  "f": "services.js"
+ },
+ {
+  "t": "Mode sécurisé désactivé",
+  "f": "services.js"
+ },
+ {
+  "t": "Mode soir",
+  "f": "components.js"
+ },
+ {
+  "t": "Mode soirée",
+  "f": "components.js"
+ },
+ {
+  "t": "Mode soirée activé : volets fermés et lumières d’ambiance.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Mode test :",
+  "f": "connect.js"
+ },
+ {
+  "t": "Mode vocal",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Modèle",
+  "f": "setup.js"
+ },
+ {
+  "t": "Modèle ajouté : ajustez les jours d’après votre calendrier de Fegersheim",
+  "f": "services.js"
+ },
+ {
+  "t": "Modèle Eurométropole",
+  "f": "services.js"
+ },
+ {
+  "t": "Modéré",
+  "f": "core.js"
+ },
+ {
+  "t": "Modification des réglages",
+  "f": "hub.js"
+ },
+ {
+  "t": "Modifier «",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Modifier la règle",
+  "f": "brain.js"
+ },
+ {
+  "t": "Mot de passe",
+  "f": "hub.js"
+ },
+ {
+  "t": "Mot de passe admin de la Livebox",
+  "f": "hub.js"
+ },
+ {
+  "t": "Mot de passe de la télécommande",
+  "f": "hub.js"
+ },
+ {
+  "t": "Mot de passe MQTT",
+  "f": "hub.js"
+ },
+ {
+  "t": "Mot de passe Somfy",
+  "f": "hub.js"
+ },
+ {
+  "t": "Mot de passe Tapo",
+  "f": "hub.js"
+ },
+ {
+  "t": "Mot de passe Verisure",
+  "f": "hub.js"
+ },
+ {
+  "t": "Moteur arrêté",
+  "f": "car.js"
+ },
+ {
+  "t": "mouv’",
+  "f": "music.js"
+ },
+ {
+  "t": "Mouvement •",
+  "f": "components.js"
+ },
+ {
+  "t": "Mouvement détecté",
+  "f": "notif.js"
+ },
+ {
+  "t": "Mouvement détecté par une caméra",
+  "f": "auto.js"
+ },
+ {
+  "t": "Multimédia",
+  "f": "discover.js"
+ },
+ {
+  "t": "Music Assistant",
+  "f": "hub.js"
+ },
+ {
+  "t": "Musique en pause.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Musique et volume",
+  "f": "hub.js"
+ },
+ {
+  "t": "NAS et partages",
+  "f": "discover.js"
+ },
+ {
+  "t": "ne détecte plus rien",
+  "f": "brain.js"
+ },
+ {
+  "t": "ne détecte rien",
+  "f": "brain.js"
+ },
+ {
+  "t": "ne doit pas pouvoir commander. Alarme et serrures Verisure : à verrouiller ici, le code reste géré par Verisure.",
+  "f": "home.js"
+ },
+ {
+  "t": "Neige faible",
+  "f": "core.js"
+ },
+ {
+  "t": "Néon",
+  "f": "panel.js"
+ },
+ {
+  "t": "Neon Nights",
+  "f": "data.js"
+ },
+ {
+  "t": "Netatmo / Legrand",
+  "f": "hub.js"
+ },
+ {
+  "t": "Nettoyage de «",
+  "f": "panel.js"
+ },
+ {
+  "t": "Nettoyage de zone",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Nettoyage démarré",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Nettoyage en cours",
+  "f": "panel.js"
+ },
+ {
+  "t": "nettoyage lancé",
+  "f": "journal.js"
+ },
+ {
+  "t": "Nettoyage zone",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Nettoyage…",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Nettoyer une pièce",
+  "f": "panel.js"
+ },
+ {
+  "t": "Niveau actuel :",
+  "f": "services.js"
+ },
+ {
+  "t": "Niveau d’origine",
+  "f": "home.js"
+ },
+ {
+  "t": "Niveaux, pièces et appareils",
+  "f": "home.js"
+ },
+ {
+  "t": "Nom de la nouvelle pièce",
+  "f": "home.js"
+ },
+ {
+  "t": "Nom de la TV",
+  "f": "hub.js"
+ },
+ {
+  "t": "Nom du bouton à apprendre",
+  "f": "hub.js"
+ },
+ {
+  "t": "Nom du trajet",
+  "f": "map.js"
+ },
+ {
+  "t": "Non configuré",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Non configurée",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "non connecté",
+  "f": "gcal.js"
+ },
+ {
+  "t": "Non connecté",
+  "f": "extras.js"
+ },
+ {
+  "t": "Non installé",
+  "f": "services.js"
+ },
+ {
+  "t": "Non lus",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Non relié à Home Assistant",
+  "f": "panel.js"
+ },
+ {
+  "t": "Non verrouillée !",
+  "f": "car.js"
+ },
+ {
+  "t": "Notification envoyée à",
+  "f": "notif.js"
+ },
+ {
+  "t": "Notifications activées",
+  "f": "components.js"
+ },
+ {
+  "t": "Notifications coupées",
+  "f": "components.js"
+ },
+ {
+  "t": "Notifications sur les téléphones",
+  "f": "notif.js"
+ },
+ {
+  "t": "Notifier le centre de surveillance",
+  "f": "hub.js"
+ },
+ {
+  "t": "Nouveau : Marques",
+  "f": "hub.js"
+ },
+ {
+  "t": "Nouveau message de",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Nouveau nom",
+  "f": "home.js"
+ },
+ {
+  "t": "Nouveaux ajouts cette semaine",
+  "f": "data.js"
+ },
+ {
+  "t": "Nouvel automatisme",
+  "f": "auto.js"
+ },
+ {
+  "t": "Nouvel avatar pour",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Nouvel emplacement",
+  "f": "discover.js"
+ },
+ {
+  "t": "Nouvelle caméra",
+  "f": "discover.js"
+ },
+ {
+  "t": "Nouvelle collecte",
+  "f": "services.js"
+ },
+ {
+  "t": "Nouvelle photo pour",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Nouvelle pièce",
+  "f": "home.js"
+ },
+ {
+  "t": "Nouvelle règle",
+  "f": "brain.js"
+ },
+ {
+  "t": "Nuit / jour",
+  "f": "brain.js"
+ },
+ {
+  "t": "Offre gratuite « Basic » : 1 450 appels par jour, lecture toutes les 5 min.",
+  "f": "hub.js"
+ },
+ {
+  "t": "On sonne",
+  "f": "brain.js"
+ },
+ {
+  "t": "On sonne à la porte",
+  "f": "auto.js"
+ },
+ {
+  "t": "Open-Meteo, sans compte",
+  "f": "connect.js"
+ },
+ {
+  "t": "Orage et grêle",
+  "f": "core.js"
+ },
+ {
+  "t": "Orages prévus",
+  "f": "core.js"
+ },
+ {
+  "t": "Ordures ménagères",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Organiser «",
+  "f": "home.js"
+ },
+ {
+  "t": "ou",
+  "f": "brain.js"
+ },
+ {
+  "t": "Où écouter ?",
+  "f": "cast.js"
+ },
+ {
+  "t": "Où jouer la musique ?",
+  "f": "components.js"
+ },
+ {
+  "t": "ou plus",
+  "f": "brain.js"
+ },
+ {
+  "t": "où vient l",
+  "f": "journal.js"
+ },
+ {
+  "t": "Oublier ce code",
+  "f": "hub.js"
+ },
+ {
+  "t": "ouvert à",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Ouvert tant que la maison est en absence",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "Ouverte ·",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Ouverte à",
+  "f": "extras.js"
+ },
+ {
+  "t": "Ouverture porte / fenêtre",
+  "f": "home.js"
+ },
+ {
+  "t": "Ouverture…",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Ouvre Plex",
+  "f": "components.js"
+ },
+ {
+  "t": "ouvrir à",
+  "f": "brain.js"
+ },
+ {
+  "t": "ouvrir à…",
+  "f": "brain.js"
+ },
+ {
+  "t": "Ouvrir dans OwnTracks",
+  "f": "map.js"
+ },
+ {
+  "t": "Ouvrir dans YouTube",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Ouvrir directement l’accueil",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Ouvrir UGOS Pro",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Page qui s’ouvre en premier",
+  "f": "setup.js"
+ },
+ {
+  "t": "Panneaux et formes lumineuses",
+  "f": "hub.js"
+ },
+ {
+  "t": "Panneaux solaires",
+  "f": "hub.js"
+ },
+ {
+  "t": "Paramètres",
+  "f": "components.js"
+ },
+ {
+  "t": "Partagé avec",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "Partiellement nuageux",
+  "f": "core.js"
+ },
+ {
+  "t": "pas de connexion temps réel",
+  "f": "ha.js"
+ },
+ {
+  "t": "pas de réponse",
+  "f": "plug.js"
+ },
+ {
+  "t": "Pas encore assez de mesures : le NAS les enregistre au fil du temps.",
+  "f": "services.js"
+ },
+ {
+  "t": "Pas encore de trajet sur 24 h pour",
+  "f": "map.js"
+ },
+ {
+  "t": "Pas encore déclenché",
+  "f": "auto.js"
+ },
+ {
+  "t": "Pas encore relié — mode démo",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Pas encore synchronisé",
+  "f": "gcal.js"
+ },
+ {
+  "t": "Pas envoyé à Google Agenda :",
+  "f": "gcal.js"
+ },
+ {
+  "t": "personne à la maison",
+  "f": "brain.js"
+ },
+ {
+  "t": "Personne détectée",
+  "f": "notif.js"
+ },
+ {
+  "t": "Peu nuageux",
+  "f": "core.js"
+ },
+ {
+  "t": "Philips Hue",
+  "f": "discover.js"
+ },
+ {
+  "t": "Philips WiZ",
+  "f": "hub.js"
+ },
+ {
+  "t": "Phoscon › Passerelle › Avancé ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "Photo trop lourde pour être gardée",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Photos des pièces en fond d’écran de veille",
+  "f": "tablet.js"
+ },
+ {
+  "t": "pièce",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Pièce",
+  "f": "home.js"
+ },
+ {
+  "t": "Pièce «",
+  "f": "home.js"
+ },
+ {
+  "t": "Pièce à «",
+  "f": "home.js"
+ },
+ {
+  "t": "Pièce vide",
+  "f": "setup.js"
+ },
+ {
+  "t": "Pièces",
+  "f": "components.js"
+ },
+ {
+  "t": "Pièces ·",
+  "f": "home.js"
+ },
+ {
+  "t": "Pièces & appareils",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Pièces et appareils",
+  "f": "home.js"
+ },
+ {
+  "t": "PIN de la box",
+  "f": "hub.js"
+ },
+ {
+  "t": "Playlist Japon",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Playlist YouTube",
+  "f": "music.js"
+ },
+ {
+  "t": "playlists et titres aimés importés",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Playlists, titres aimés, recherche",
+  "f": "connect.js"
+ },
+ {
+  "t": "Plex :",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Plug & play",
+  "f": "hub.js"
+ },
+ {
+  "t": "Pluie annoncée pendant l’arrosage",
+  "f": "auto.js"
+ },
+ {
+  "t": "Pluie bientôt",
+  "f": "notif.js"
+ },
+ {
+  "t": "Pluie dans",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Pluie faible",
+  "f": "core.js"
+ },
+ {
+  "t": "Pluie imminente, orage, vent fort, gel",
+  "f": "notif.js"
+ },
+ {
+  "t": "Pluie maintenant",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Pluie probable vers",
+  "f": "notif.js"
+ },
+ {
+  "t": "Pluie verglaçante",
+  "f": "core.js"
+ },
+ {
+  "t": "Pluie vers",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "plus",
+  "f": "auto.js"
+ },
+ {
+  "t": "Plus tard",
+  "f": "extras.js"
+ },
+ {
+  "t": "Pneus à vérifier",
+  "f": "car.js"
+ },
+ {
+  "t": "Point maison",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Pont Matter en marche",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "Ponts et box",
+  "f": "discover.js"
+ },
+ {
+  "t": "Ponts et protocoles",
+  "f": "hub.js"
+ },
+ {
+  "t": "Port d’écoute du serveur",
+  "f": "hub.js"
+ },
+ {
+  "t": "Porte de garage",
+  "f": "home.js"
+ },
+ {
+  "t": "Porte de garage surveillée",
+  "f": "notif.js"
+ },
+ {
+  "t": "Porte du garage",
+  "f": "extras.js"
+ },
+ {
+  "t": "Porte du garage fermée.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Porte garage",
+  "f": "data.js"
+ },
+ {
+  "t": "Portes d’entrée",
+  "f": "brain.js"
+ },
+ {
+  "t": "Position favorite",
+  "f": "panel.js"
+ },
+ {
+  "t": "Position inconnue : reliez son téléphone",
+  "f": "map.js"
+ },
+ {
+  "t": "Position indisponible",
+  "f": "map.js"
+ },
+ {
+  "t": "Poubelle jaune",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Poubelles à sortir",
+  "f": "notif.js"
+ },
+ {
+  "t": "pour «",
+  "f": "car.js"
+ },
+ {
+  "t": "Pour « une semaine sur deux », indiquez la date d’une prochaine collecte : les suivantes sont calculées à partir d’elle.",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "pour les appareils Bluetooth.",
+  "f": "hub.js"
+ },
+ {
+  "t": "pour les détections voulues.",
+  "f": "hub.js"
+ },
+ {
+  "t": "pour obtenir un code à 11 chiffres.",
+  "f": "hub.js"
+ },
+ {
+  "t": "pour ouvrir",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "préchauffage",
+  "f": "car.js"
+ },
+ {
+  "t": "Préchauffage",
+  "f": "car.js"
+ },
+ {
+  "t": "Préfixe de découverte",
+  "f": "hub.js"
+ },
+ {
+  "t": "Préfixe Zigbee2MQTT",
+  "f": "hub.js"
+ },
+ {
+  "t": "préréglage",
+  "f": "journal.js"
+ },
+ {
+  "t": "Préréglage",
+  "f": "room.js"
+ },
+ {
+  "t": "Présence",
+  "f": "home.js"
+ },
+ {
+  "t": "Présence de la famille",
+  "f": "brain.js"
+ },
+ {
+  "t": "Présence et absent auto",
+  "f": "brain.js"
+ },
+ {
+  "t": "Pression des pneus",
+  "f": "car.js"
+ },
+ {
+  "t": "Prêt",
+  "f": "home.js"
+ },
+ {
+  "t": "Prévenir à partir de",
+  "f": "services.js"
+ },
+ {
+  "t": "Prise / appareil",
+  "f": "home.js"
+ },
+ {
+  "t": "Prise bureau",
+  "f": "discover.js"
+ },
+ {
+  "t": "Prise connectée",
+  "f": "home.js"
+ },
+ {
+  "t": "Prises et modules",
+  "f": "discover.js"
+ },
+ {
+  "t": "Prises et modules reprogrammés",
+  "f": "hub.js"
+ },
+ {
+  "t": "Prises, modules et télécommandes",
+  "f": "hub.js"
+ },
+ {
+  "t": "Prises, multiprises, interrupteurs, ampoules Kasa",
+  "f": "hub.js"
+ },
+ {
+  "t": "Prises, relais, variateurs, volets",
+  "f": "hub.js"
+ },
+ {
+  "t": "Probabilité de pluie",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Prochains départs",
+  "f": "car.js"
+ },
+ {
+  "t": "Production et consommation",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Production solaire et consommation",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Profil actif :",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Profil choisi :",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Profil Invité",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Profil invité sur l’écran verrouillé",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Profils, connexions et préférences",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Programme :",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Protocole Cast local, sans compte Google. YouTube et Netflix se lancent toujours depuis leurs applis.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Protocole local WiZ.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Protocole local Yeelight.",
+  "f": "hub.js"
+ },
+ {
+  "t": "puis acceptez la demande sur la TV, et",
+  "f": "hub.js"
+ },
+ {
+  "t": "Qu’est-ce que j’ai aujourd’hui ?",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Qu’est-ce qui est allumé ?",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Qualité de l’air",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Quand la maison passe en absent ou revient",
+  "f": "notif.js"
+ },
+ {
+  "t": "Quand on sonne",
+  "f": "auto.js"
+ },
+ {
+  "t": "Quand prévenir",
+  "f": "notif.js"
+ },
+ {
+  "t": "Quand…",
+  "f": "auto.js"
+ },
+ {
+  "t": "Quel temps fait-il ?",
+  "f": "ia2.js"
+ },
+ {
+  "t": "quelqu’un",
+  "f": "brain.js"
+ },
+ {
+  "t": "quelqu’un à la maison",
+  "f": "brain.js"
+ },
+ {
+  "t": "Quelqu’un à la maison",
+  "f": "brain.js"
+ },
+ {
+  "t": "Quelqu’un est devant la sonnette.",
+  "f": "auto.js"
+ },
+ {
+  "t": "quelqu’un est là",
+  "f": "brain.js"
+ },
+ {
+  "t": "Quelqu’un sonne à la porte",
+  "f": "notif.js"
+ },
+ {
+  "t": "Qui a fait quoi, quand, et par quel temps",
+  "f": "journal.js"
+ },
+ {
+  "t": "Qui a ouvert le garage hier ?",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Qui envoie",
+  "f": "notif.js"
+ },
+ {
+  "t": "Qui est à la maison",
+  "f": "brain.js"
+ },
+ {
+  "t": "Qui est à la maison, Wi-Fi marche/arrêt",
+  "f": "hub.js"
+ },
+ {
+  "t": "Qui est là ?",
+  "f": "extras.js"
+ },
+ {
+  "t": "Qui fait quoi, suggestions de routines",
+  "f": "connect.js"
+ },
+ {
+  "t": "Qui habite ici ?",
+  "f": "setup.js"
+ },
+ {
+  "t": "Qui reçoit les notifications",
+  "f": "notif.js"
+ },
+ {
+  "t": "Radio en direct",
+  "f": "music.js"
+ },
+ {
+  "t": "Radio FG",
+  "f": "data.js"
+ },
+ {
+  "t": "Radios en direct",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Radios, YouTube et fichiers du NAS",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Rafales jusqu’à",
+  "f": "core.js"
+ },
+ {
+  "t": "Range la tondeuse",
+  "f": "components.js"
+ },
+ {
+  "t": "Rapide 30 min",
+  "f": "panel.js"
+ },
+ {
+  "t": "Rapide 45°",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Rapport modifié",
+  "f": "data.js"
+ },
+ {
+  "t": "Re:",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Réactiver le son",
+  "f": "components.js"
+ },
+ {
+  "t": "Recharge en cours · 7,4 kW",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Recherche de vos appareils…",
+  "f": "plug.js"
+ },
+ {
+  "t": "Recherche impossible :",
+  "f": "discover.js"
+ },
+ {
+  "t": "Recherche impossible hors ligne",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Recherche sur le réseau…",
+  "f": "discover.js"
+ },
+ {
+  "t": "Recherche YouTube :",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Rechercher sur YouTube ou coller un lien…",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Récupérez une fois l’",
+  "f": "hub.js"
+ },
+ {
+  "t": "refusé",
+  "f": "connect.js"
+ },
+ {
+  "t": "Regarder sur",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Register Application",
+  "f": "hub.js"
+ },
+ {
+  "t": "Réglages",
+  "f": "car.js"
+ },
+ {
+  "t": "Réglages › Général › Appareils ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "Réglages à mettre chez Google",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Réglages de l’alarme",
+  "f": "brain.js"
+ },
+ {
+  "t": "Réglages enregistrés sur le NAS",
+  "f": "hub.js"
+ },
+ {
+  "t": "Réglages TV › Général › Gestion des appareils externes ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "réglé",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Règle",
+  "f": "brain.js"
+ },
+ {
+  "t": "Règle enregistrée sur le NAS",
+  "f": "brain.js"
+ },
+ {
+  "t": "réglée sur",
+  "f": "extras.js"
+ },
+ {
+  "t": "régler à",
+  "f": "brain.js"
+ },
+ {
+  "t": "régler à…",
+  "f": "brain.js"
+ },
+ {
+  "t": "Réinitialiser",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Réinitialiser Bêta home",
+  "f": "setup.js"
+ },
+ {
+  "t": "Réinitialiser en gardant mes connexions",
+  "f": "setup.js"
+ },
+ {
+  "t": "Relevé mensuel",
+  "f": "data.js"
+ },
+ {
+  "t": "Relevez l’IP de chaque ampoule dans votre box, puis",
+  "f": "hub.js"
+ },
+ {
+  "t": "Relevez l’IP de chaque appareil, puis",
+  "f": "hub.js"
+ },
+ {
+  "t": "Relevez l’IP de la lampe, puis",
+  "f": "hub.js"
+ },
+ {
+  "t": "Relevez le",
+  "f": "hub.js"
+ },
+ {
+  "t": "Relié",
+  "f": "extras.js"
+ },
+ {
+  "t": "Reliée",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Relier FordPass",
+  "f": "car.js"
+ },
+ {
+  "t": "Relier la voiture",
+  "f": "car.js"
+ },
+ {
+  "t": "Relier les appareils",
+  "f": "ha.js"
+ },
+ {
+  "t": "Relier les appareils à Home Assistant",
+  "f": "ha.js"
+ },
+ {
+  "t": "Remettre Bêta home à zéro ? Vos réglages, favoris et agenda seront effacés.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Remplacer la configuration actuelle par «",
+  "f": "connect.js"
+ },
+ {
+  "t": "remplit les adresses, ou saisissez-les.",
+  "f": "hub.js"
+ },
+ {
+  "t": "remplit les appareils trouvés avec leur nom.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Renseignez d’abord l’adresse et le jeton de Home Assistant",
+  "f": "ha.js"
+ },
+ {
+  "t": "Renseignez IP, PIN, e-mail et mot de passe Somfy puis",
+  "f": "hub.js"
+ },
+ {
+  "t": "Reolink RLC-510A",
+  "f": "discover.js"
+ },
+ {
+  "t": "Répétez pour chaque bouton, puis",
+  "f": "hub.js"
+ },
+ {
+  "t": "Répondre",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Reprendre les automatismes de cet écran",
+  "f": "brain.js"
+ },
+ {
+  "t": "Repris de l’écran",
+  "f": "brain.js"
+ },
+ {
+  "t": "réseau ou CORS",
+  "f": "ha.js"
+ },
+ {
+  "t": "Réservé aux administrateurs",
+  "f": "brain.js"
+ },
+ {
+  "t": "Réservez ces IP dans votre box internet pour qu’elles ne changent pas.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Réservez l’IP de chaque tablette dans votre box.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Réservez l’IP du HomePod dans votre box internet.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Restauration impossible :",
+  "f": "connect.js"
+ },
+ {
+  "t": "Restaurer une sauvegarde",
+  "f": "connect.js"
+ },
+ {
+  "t": "Résultats pour «",
+  "f": "youtube.js"
+ },
+ {
+  "t": "Retiré de",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "Retiré de vos favoris.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Retiré des favoris",
+  "f": "music.js"
+ },
+ {
+  "t": "Retirer «",
+  "f": "discover.js"
+ },
+ {
+  "t": "Retirer cet écran ? Il devra être associé à nouveau.",
+  "f": "services.js"
+ },
+ {
+  "t": "retour à la base",
+  "f": "brain.js"
+ },
+ {
+  "t": "Retour à la base",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Retour base",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Retour base…",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Réunion équipe",
+  "f": "core.js"
+ },
+ {
+  "t": "Réunion parents",
+  "f": "core.js"
+ },
+ {
+  "t": "Réveil",
+  "f": "auto.js"
+ },
+ {
+  "t": "Revenez ici et cliquez",
+  "f": "hub.js"
+ },
+ {
+  "t": "Revenir à la démo",
+  "f": "car.js"
+ },
+ {
+  "t": "Revoir la visite",
+  "f": "extras.js"
+ },
+ {
+  "t": "rez-de-chaussée",
+  "f": "voice.js"
+ },
+ {
+  "t": "Rien à signaler",
+  "f": "extras.js"
+ },
+ {
+  "t": "Rien ne sort",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Rien trouvé pour «",
+  "f": "extras.js"
+ },
+ {
+  "t": "Robot tondeuse",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Robots & jardin",
+  "f": "home.js"
+ },
+ {
+  "t": "Roku › Paramètres › Système › Paramètres système avancés ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "Route des Vins",
+  "f": "map.js"
+ },
+ {
+  "t": "Routine «",
+  "f": "auto.js"
+ },
+ {
+  "t": "Routine au départ",
+  "f": "brain.js"
+ },
+ {
+  "t": "Routine au retour",
+  "f": "brain.js"
+ },
+ {
+  "t": "Routine enregistrée",
+  "f": "auto.js"
+ },
+ {
+  "t": "Routines Bêta",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "Rubans et contrôleurs LED",
+  "f": "hub.js"
+ },
+ {
+  "t": "s ajoutés",
+  "f": "hub.js"
+ },
+ {
+  "t": "s importés",
+  "f": "home.js"
+ },
+ {
+  "t": "s’active",
+  "f": "brain.js"
+ },
+ {
+  "t": "s’allume",
+  "f": "brain.js"
+ },
+ {
+  "t": "s’éteint",
+  "f": "brain.js"
+ },
+ {
+  "t": "s’ouvre",
+  "f": "brain.js"
+ },
+ {
+  "t": "S’ouvre 8 s quand on sonne",
+  "f": "matterbridge.js"
+ },
+ {
+  "t": "Saisissez e-mail et mot de passe Verisure puis",
+  "f": "hub.js"
+ },
+ {
+  "t": "Saisissez IP et clé,",
+  "f": "hub.js"
+ },
+ {
+  "t": "Saisissez IP et jeton,",
+  "f": "hub.js"
+ },
+ {
+  "t": "Saisissez IP, utilisateur et mot de passe de la caméra ou de l’interphone.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Saisissez IP, utilisateur, mot de passe, puis",
+  "f": "hub.js"
+ },
+ {
+  "t": "Saisissez le code d’appairage de l’appareil, puis « Ajouter cet appareil »",
+  "f": "discover.js"
+ },
+ {
+  "t": "Saisissez le code,",
+  "f": "hub.js"
+ },
+ {
+  "t": "Saisissez le compte de l’appli",
+  "f": "hub.js"
+ },
+ {
+  "t": "Saisissez le compte,",
+  "f": "hub.js"
+ },
+ {
+  "t": "Saisissez les adresses séparées par des virgules,",
+  "f": "hub.js"
+ },
+ {
+  "t": "Saisissez son IP,",
+  "f": "hub.js"
+ },
+ {
+  "t": "Saisissez-le puis",
+  "f": "hub.js"
+ },
+ {
+  "t": "Sakura Dreams",
+  "f": "data.js"
+ },
+ {
+  "t": "Salle de bains",
+  "f": "data.js"
+ },
+ {
+  "t": "Salle de jeux - TV",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Salon TV",
+  "f": "discover.js"
+ },
+ {
+  "t": "Samsung SmartThings",
+  "f": "hub.js"
+ },
+ {
+  "t": "Sans passer par l’écran verrouillé",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Santé",
+  "f": "services.js"
+ },
+ {
+  "t": "Santé de la maison",
+  "f": "services.js"
+ },
+ {
+  "t": "Sauvegarde complète",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Sauvegarde enregistrée sur le NAS",
+  "f": "connect.js"
+ },
+ {
+  "t": "Sauvegarde impossible :",
+  "f": "connect.js"
+ },
+ {
+  "t": "Sauvegardes, journal partagé, relais mails / Nextcloud",
+  "f": "connect.js"
+ },
+ {
+  "t": "Scénarios et automatismes de la maison",
+  "f": "auto.js"
+ },
+ {
+  "t": "Scène / script",
+  "f": "home.js"
+ },
+ {
+  "t": "Se connecter",
+  "f": "hub.js"
+ },
+ {
+  "t": "se déclenche",
+  "f": "brain.js"
+ },
+ {
+  "t": "se déverrouille",
+  "f": "brain.js"
+ },
+ {
+  "t": "Se reconnecter",
+  "f": "hub.js"
+ },
+ {
+  "t": "Secret d’application",
+  "f": "hub.js"
+ },
+ {
+  "t": "Sécurité",
+  "f": "brain.js"
+ },
+ {
+  "t": "Sécurité : tout vérifier avant de partir",
+  "f": "extras.js"
+ },
+ {
+  "t": "Sécurité et caméras",
+  "f": "hub.js"
+ },
+ {
+  "t": "Segway Navimow",
+  "f": "hub.js"
+ },
+ {
+  "t": "Séjour",
+  "f": "data.js"
+ },
+ {
+  "t": "Séjour / salle à manger",
+  "f": "setup.js"
+ },
+ {
+  "t": "Sélection",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Série",
+  "f": "components.js"
+ },
+ {
+  "t": "Séries",
+  "f": "components.js"
+ },
+ {
+  "t": "Serpillière",
+  "f": "panel.js"
+ },
+ {
+  "t": "Serrure connectée et Opener",
+  "f": "hub.js"
+ },
+ {
+  "t": "Serveur Bêta",
+  "f": "services.js"
+ },
+ {
+  "t": "Serveur Bêta :",
+  "f": "brain.js"
+ },
+ {
+  "t": "Serveur Bêta : réglages des notifications non enregistrés",
+  "f": "notif.js"
+ },
+ {
+  "t": "Serveur Bêta injoignable : commande non envoyée",
+  "f": "hub.js"
+ },
+ {
+  "t": "Serveur Bêta injoignable.",
+  "f": "services.js"
+ },
+ {
+  "t": "Serveur Bêta nécessaire",
+  "f": "brain.js"
+ },
+ {
+  "t": "Serveur Bêta sur le NAS",
+  "f": "extras.js"
+ },
+ {
+  "t": "Serveur Plex relié ·",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Services de la maison",
+  "f": "services.js"
+ },
+ {
+  "t": "session expirée, reconnectez-vous",
+  "f": "youtube.js"
+ },
+ {
+  "t": "session Google expirée",
+  "f": "gcal.js"
+ },
+ {
+  "t": "Seul un administrateur peut changer ce réglage",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Seulement ce que Bêta home ne peut pas deviner. Les marques marquées « automatique » se connectent seules.",
+  "f": "plug.js"
+ },
+ {
+  "t": "Seulement celles que j’utilise",
+  "f": "hub.js"
+ },
+ {
+  "t": "Seulement en mode absent ou alarme activée",
+  "f": "notif.js"
+ },
+ {
+  "t": "Seulement si…",
+  "f": "brain.js"
+ },
+ {
+  "t": "si l’option existe.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Siemens Home Connect",
+  "f": "hub.js"
+ },
+ {
+  "t": "Signal GPS perdu…",
+  "f": "map.js"
+ },
+ {
+  "t": "Simulation de présence activée",
+  "f": "extras.js"
+ },
+ {
+  "t": "Simulation de présence coupée",
+  "f": "extras.js"
+ },
+ {
+  "t": "Simuler 3 semaines",
+  "f": "journal.js"
+ },
+ {
+  "t": "Sinon : app Shelly › appareil › Paramètres › Infos : relevez l’",
+  "f": "hub.js"
+ },
+ {
+  "t": "Sirènes et lumières à déclencher",
+  "f": "brain.js"
+ },
+ {
+  "t": "SmartThings CLI",
+  "f": "hub.js"
+ },
+ {
+  "t": "Soirée",
+  "f": "room.js"
+ },
+ {
+  "t": "Somfy TaHoma",
+  "f": "discover.js"
+ },
+ {
+  "t": "Sonnette testée :",
+  "f": "notif.js"
+ },
+ {
+  "t": "Sonnette, garage et tablettes",
+  "f": "notif.js"
+ },
+ {
+  "t": "sont déjà dans Bêta home.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Sortir la poubelle ce soir",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Spots terrasse",
+  "f": "data.js"
+ },
+ {
+  "t": "Stockage total",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Stockage, services et sauvegardes",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Store banne",
+  "f": "data.js"
+ },
+ {
+  "t": "Store banne fermé.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Store banne ouvert.",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Suite parentale",
+  "f": "cast.js"
+ },
+ {
+  "t": "Suite parentale - TV",
+  "f": "components.js"
+ },
+ {
+  "t": "Suivi projet",
+  "f": "core.js"
+ },
+ {
+  "t": "Suppression Google impossible :",
+  "f": "gcal.js"
+ },
+ {
+  "t": "Supprimer «",
+  "f": "home.js"
+ },
+ {
+  "t": "Supprimer ce trajet ?",
+  "f": "map.js"
+ },
+ {
+  "t": "Supprimer cette règle ?",
+  "f": "brain.js"
+ },
+ {
+  "t": "Supprimer la pièce",
+  "f": "home.js"
+ },
+ {
+  "t": "Sur",
+  "f": "hub.js"
+ },
+ {
+  "t": "sur cette adresse.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Sur chaque tablette, dans Fully Kiosk : Réglages › Remote Administration ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "Sur l’écran verrouillé",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "sur le NAS puis relancez le projet Docker.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Sur le nouvel écran : Connexions › Serveur Bêta › « J’ai un code d’association »",
+  "f": "services.js"
+ },
+ {
+  "t": "Sur le téléphone de",
+  "f": "map.js"
+ },
+ {
+  "t": "Sur un ordinateur, installez",
+  "f": "hub.js"
+ },
+ {
+  "t": "Surplus solaire",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Synthétique",
+  "f": "panel.js"
+ },
+ {
+  "t": "Synthwave radio",
+  "f": "data.js"
+ },
+ {
+  "t": "Tablette murale",
+  "f": "tablet.js"
+ },
+ {
+  "t": "Tablettes murales : écran, luminosité, annonces",
+  "f": "hub.js"
+ },
+ {
+  "t": "TaHoma Switch",
+  "f": "discover.js"
+ },
+ {
+  "t": "Tapo C200",
+  "f": "discover.js"
+ },
+ {
+  "t": "Télécharger",
+  "f": "notif.js"
+ },
+ {
+  "t": "Télécommandes",
+  "f": "discover.js"
+ },
+ {
+  "t": "Télécommandes infrarouges RM mini / RM4",
+  "f": "hub.js"
+ },
+ {
+  "t": "téléphone",
+  "f": "map.js"
+ },
+ {
+  "t": "Télévision",
+  "f": "home.js"
+ },
+ {
+  "t": "température",
+  "f": "brain.js"
+ },
+ {
+  "t": "Température",
+  "f": "home.js"
+ },
+ {
+  "t": "Température de la pièce",
+  "f": "panel.js"
+ },
+ {
+  "t": "Tempo :",
+  "f": "services.js"
+ },
+ {
+  "t": "Temps réel",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "terminé",
+  "f": "notif.js"
+ },
+ {
+  "t": "Terminé ✓",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Terminée cette nuit à 03:00 · 182 Go",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Tester la connexion",
+  "f": "setup.js"
+ },
+ {
+  "t": "Tester la sonnette",
+  "f": "auto.js"
+ },
+ {
+  "t": "Thermostat, vannes, station météo, Legrand with Netatmo",
+  "f": "hub.js"
+ },
+ {
+  "t": "Thermostats, têtes de radiateur, Smart AC",
+  "f": "hub.js"
+ },
+ {
+  "t": "Thriller, néo-noir",
+  "f": "data.js"
+ },
+ {
+  "t": "Tokyo Drift Lights",
+  "f": "data.js"
+ },
+ {
+  "t": "Tondeuse à la base",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Tondeuse démarrée",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Tondeuse OFF",
+  "f": "components.js"
+ },
+ {
+  "t": "Tondeuse robot",
+  "f": "data.js"
+ },
+ {
+  "t": "Tondeuses Automower, arrosage Gardena smart",
+  "f": "hub.js"
+ },
+ {
+  "t": "Tonte en cours",
+  "f": "panel.js"
+ },
+ {
+  "t": "tonte lancée",
+  "f": "journal.js"
+ },
+ {
+  "t": "Touchez ▶ pour lancer la lecture",
+  "f": "music.js"
+ },
+ {
+  "t": "Touchez 🎤 sur le clavier pour dicter, puis Envoyer",
+  "f": "voice.js"
+ },
+ {
+  "t": "Touchez l’empreinte",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Touchez l’empreinte pour déverrouiller",
+  "f": "extras.js"
+ },
+ {
+  "t": "Touchez la vidéo pour activer le son",
+  "f": "music.js"
+ },
+ {
+  "t": "Touchez la vidéo une fois pour lancer le son",
+  "f": "music.js"
+ },
+ {
+  "t": "Touchez le micro pour parler",
+  "f": "voice.js"
+ },
+ {
+  "t": "Touchez pour choisir. Vous ajouterez ensuite les pièces de chaque niveau.",
+  "f": "setup.js"
+ },
+ {
+  "t": "Toujours autoriser",
+  "f": "hub.js"
+ },
+ {
+  "t": "Tous les appareils",
+  "f": "hub.js"
+ },
+ {
+  "t": "Tous les appareils Matter : Aqara, Eve, Nanoleaf, IKEA, Meross, TP-Link…",
+  "f": "hub.js"
+ },
+ {
+  "t": "tous les jours",
+  "f": "auto.js"
+ },
+ {
+  "t": "Tous les niveaux",
+  "f": "journal.js"
+ },
+ {
+  "t": "Tous les services de la maison au même endroit",
+  "f": "connect.js"
+ },
+ {
+  "t": "Tous vos appareils Home Assistant sont déjà dans Bêta home.",
+  "f": "home.js"
+ },
+ {
+  "t": "Tous vos appareils Z-Wave",
+  "f": "hub.js"
+ },
+ {
+  "t": "Tous vos appareils Zigbee : Aqara, IKEA, Xiaomi, Philips, Lidl, Tuya…",
+  "f": "hub.js"
+ },
+ {
+  "t": "Tout",
+  "f": "journal.js"
+ },
+ {
+  "t": "Tout afficher",
+  "f": "hub.js"
+ },
+ {
+  "t": "Tout allumer",
+  "f": "room.js"
+ },
+ {
+  "t": "Tout effacer",
+  "f": "setup.js"
+ },
+ {
+  "t": "Tout effacer définitivement sur cet appareil ?",
+  "f": "setup.js"
+ },
+ {
+  "t": "Tout est calme",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Tout est fermé",
+  "f": "extras.js"
+ },
+ {
+  "t": "Tout éteindre",
+  "f": "components.js"
+ },
+ {
+  "t": "Tout éteindre étage 1",
+  "f": "components.js"
+ },
+ {
+  "t": "Tout éteindre étage 2",
+  "f": "components.js"
+ },
+ {
+  "t": "Tout éteindre extérieur",
+  "f": "components.js"
+ },
+ {
+  "t": "Tout éteindre la maison",
+  "f": "components.js"
+ },
+ {
+  "t": "Tout éteindre RDC",
+  "f": "components.js"
+ },
+ {
+  "t": "Tout éteint",
+  "f": "components.js"
+ },
+ {
+  "t": "Tout l’étage",
+  "f": "cast.js"
+ },
+ {
+  "t": "Tout l’étage 1",
+  "f": "cast.js"
+ },
+ {
+  "t": "Tout l’étage 2",
+  "f": "cast.js"
+ },
+ {
+  "t": "Tout l’extérieur",
+  "f": "cast.js"
+ },
+ {
+  "t": "tout le monde",
+  "f": "brain.js"
+ },
+ {
+  "t": "Tout le monde",
+  "f": "journal.js"
+ },
+ {
+  "t": "tout le monde est parti",
+  "f": "brain.js"
+ },
+ {
+  "t": "Tout le RDC",
+  "f": "cast.js"
+ },
+ {
+  "t": "Tout marquer comme lu",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Toute borne compatible : Schneider, ABB, Alfen, Keba, Zaptec…",
+  "f": "hub.js"
+ },
+ {
+  "t": "Toute la famille",
+  "f": "journal.js"
+ },
+ {
+  "t": "Toute la maison",
+  "f": "cast.js"
+ },
+ {
+  "t": "Toute la maison, pièce par pièce",
+  "f": "home.js"
+ },
+ {
+  "t": "Toute votre musique sur toutes vos enceintes",
+  "f": "hub.js"
+ },
+ {
+  "t": "toutes les 4 semaines",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "Toutes les actions",
+  "f": "journal.js"
+ },
+ {
+  "t": "Toutes les caméras",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Toutes les pages",
+  "f": "components.js"
+ },
+ {
+  "t": "Toutes les pièces",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Toutes les pièces, ajout d’appareils",
+  "f": "home.js"
+ },
+ {
+  "t": "Trajet trop court pour être gardé",
+  "f": "map.js"
+ },
+ {
+  "t": "Transparence des panneaux ·",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Très élevé",
+  "f": "core.js"
+ },
+ {
+  "t": "trouve vos enceintes, ou relevez leur IP dans l’app Sonos › Paramètres › Système › À propos.",
+  "f": "hub.js"
+ },
+ {
+  "t": "trouve vos Kasa, ou relevez leur IP dans votre box.",
+  "f": "hub.js"
+ },
+ {
+  "t": "trouve vos Shelly et remplit les adresses.",
+  "f": "hub.js"
+ },
+ {
+  "t": "trouve vos WLED, ou relevez l’IP dans l’app WLED.",
+  "f": "hub.js"
+ },
+ {
+  "t": "Trouver le pont",
+  "f": "hub.js"
+ },
+ {
+  "t": "Trouvez l’",
+  "f": "hub.js"
+ },
+ {
+  "t": "TV › Paramètres › Réseau › Configuration du réseau domestique ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "TV allumée, réservez son IP dans votre box.",
+  "f": "hub.js"
+ },
+ {
+  "t": "TV et lecteurs Roku",
+  "f": "hub.js"
+ },
+ {
+  "t": "TV, musique et vidéo",
+  "f": "hub.js"
+ },
+ {
+  "t": "Ubuntu 26.04 LTS.iso",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Un appareil change",
+  "f": "brain.js"
+ },
+ {
+  "t": "un appareil, une radio, un mail : la loupe ou",
+  "f": "extras.js"
+ },
+ {
+  "t": "un équilibre au quotidien.",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Un foyer, plus qu’une maison,",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "un membre",
+  "f": "brain.js"
+ },
+ {
+  "t": "un nouveau message : si c",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Un voyage initiatique à travers un Japon onirique, des temples de Kyoto aux néons d’Osaka.",
+  "f": "data.js"
+ },
+ {
+  "t": "Une ligne par appareil :",
+  "f": "hub.js"
+ },
+ {
+  "t": "Une maison d’exemple toute prête, pour découvrir Bêta home sans rien brancher.",
+  "f": "setup.js"
+ },
+ {
+  "t": "Une nuit de pluie à Shinjuku, un chauffeur de taxi se retrouve mêlé à une course-poursuite entre deux clans rivaux.",
+  "f": "data.js"
+ },
+ {
+  "t": "une personne arrive",
+  "f": "brain.js"
+ },
+ {
+  "t": "une personne part",
+  "f": "brain.js"
+ },
+ {
+  "t": "une semaine sur deux",
+  "f": "lockplus.js"
+ },
+ {
+  "t": "UniFi OS › Admins ›",
+  "f": "hub.js"
+ },
+ {
+  "t": "UniFi Protect",
+  "f": "hub.js"
+ },
+ {
+  "t": "Utilisateur local",
+  "f": "hub.js"
+ },
+ {
+  "t": "Utilisateur MQTT",
+  "f": "hub.js"
+ },
+ {
+  "t": "Utiliser ce profil",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Utiliser plutôt Home Assistant",
+  "f": "map.js"
+ },
+ {
+  "t": "Valeurs par défaut",
+  "f": "setup.js"
+ },
+ {
+  "t": "Valider le code",
+  "f": "hub.js"
+ },
+ {
+  "t": "Vanne / arrosage",
+  "f": "home.js"
+ },
+ {
+  "t": "véhicule",
+  "f": "components.js"
+ },
+ {
+  "t": "Véhicules",
+  "f": "map.js"
+ },
+ {
+  "t": "Vélo",
+  "f": "map.js"
+ },
+ {
+  "t": "vérifie tout en un coup d’œil.",
+  "f": "extras.js"
+ },
+ {
+  "t": "Vérifiez le placement",
+  "f": "setup.js"
+ },
+ {
+  "t": "Verres 40°",
+  "f": "pages-floors.js"
+ },
+ {
+  "t": "Verrouillage demandé…",
+  "f": "car.js"
+ },
+ {
+  "t": "verrouillé",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Verrouillé",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "verrouillée",
+  "f": "brain.js"
+ },
+ {
+  "t": "Verrouillée",
+  "f": "home.js"
+ },
+ {
+  "t": "Version de l’appli",
+  "f": "hub.js"
+ },
+ {
+  "t": "Via l’application Home Assistant ·",
+  "f": "notif.js"
+ },
+ {
+  "t": "Vidéo",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Vidéo YouTube",
+  "f": "music.js"
+ },
+ {
+  "t": "Vidéos",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Vidéosurveillance",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Vigilance Météo-France",
+  "f": "brain.js"
+ },
+ {
+  "t": "Ville introuvable",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Vitesse ·",
+  "f": "voice.js"
+ },
+ {
+  "t": "Voir l’agenda",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Voir l’écran de veille",
+  "f": "tablet.js"
+ },
+ {
+  "t": "Voiture déverrouillée",
+  "f": "car.js"
+ },
+ {
+  "t": "Voiture reliée à Home Assistant",
+  "f": "car.js"
+ },
+ {
+  "t": "Voiture verrouillée",
+  "f": "car.js"
+ },
+ {
+  "t": "Volet roulant",
+  "f": "home.js"
+ },
+ {
+  "t": "volets fermés",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Volets fermés",
+  "f": "components.js"
+ },
+ {
+  "t": "Volets, store, porte de garage",
+  "f": "hub.js"
+ },
+ {
+  "t": "Volume 1 · RAID 1",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Volume 2 · cache SSD",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Volume 3 · sauvegardes",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Volume, lecture/pause, arrêt, et diffusion des radios de Bêta home depuis « Où écouter ? ».",
+  "f": "hub.js"
+ },
+ {
+  "t": "vos mails",
+  "f": "pages-home.js"
+ },
+ {
+  "t": "Vos messages, sans prise de tête",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Vos modules ESP32 / ESP8266",
+  "f": "hub.js"
+ },
+ {
+  "t": "Vos niveaux",
+  "f": "setup.js"
+ },
+ {
+  "t": "votre",
+  "f": "setup.js"
+ },
+ {
+  "t": "Votre assistant à la maison",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "Votre commande",
+  "f": "data.js"
+ },
+ {
+  "t": "Votre maison est prête",
+  "f": "plug.js"
+ },
+ {
+  "t": "Votre profil",
+  "f": "extras.js"
+ },
+ {
+  "t": "Vous n’avez pas le droit de piloter",
+  "f": "ia2.js"
+ },
+ {
+  "t": "Vous n’avez pas le droit de piloter cet appareil",
+  "f": "extras.js"
+ },
+ {
+  "t": "Vous n’avez pas le droit de piloter la porte du garage",
+  "f": "extras.js"
+ },
+ {
+  "t": "Vue d’ensemble, pièces ajoutées comprises",
+  "f": "pages-apps.js"
+ },
+ {
+  "t": "warn:ID enregistré, compte non connecté",
+  "f": "connect.js"
+ },
+ {
+  "t": "ws://IP-du-NAS:9220/nom-de-la-borne",
+  "f": "hub.js"
+ },
+ {
+  "t": "Yamaha MT-07",
+  "f": "map.js"
+ },
+ {
+  "t": "Yamaha MusicCast",
+  "f": "hub.js"
+ }
+]
