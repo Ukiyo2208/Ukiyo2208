@@ -1,9 +1,0 @@
-.git
-livrable
-tests
-node_modules
-server/data
-*.zip
-docs
-server/.env
-.github

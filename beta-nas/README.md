@@ -215,11 +215,18 @@ du réseau local : 192.168.x.x, 10.x.x.x…). Hors de chez toi, ou derrière un 
 
 ## Bêta home : `http://IP_DU_NAS:8800/home/`
 
-Le tableau de bord de la maison (projet Bêta home, copié dans `home/`, version dans `home/SOURCE`) tourne
-dans le conteneur `beta-home`. Bêta sert sa page sous `/home/` et son serveur sous `/api/` : une seule
-adresse pour tout. Version simple : les appareils passent par Home Assistant, sans réseau « hôte », ni
-découverte, ni ponts HomeKit/Matter, ni go2rtc. Bêta home garde sa propre sécurité (clé `BETA_HOME_KEY`,
-écrans associés par QR code). Ce que son assistant ne comprend pas est envoyé à Bêta IA (`/v1/texte`).
+La maison de Home Assistant avec le design de Bêta home (fond, cartes de pièces avec photo, tuiles), servie par
+Bêta et alimentée par **sa** connexion Home Assistant (`HA_URL`, `HA_TOKEN`) : le navigateur ne parle jamais à
+Home Assistant. Pièces et étages viennent de Home Assistant. La barre du bas est Bêta IA (`/v1/texte`).
+API : `GET /v1/maison/etat`, `POST /v1/maison/action` (`{"entite", "action", "valeur"}`). Serrures, portes de
+garage et portails : affichés, jamais commandés.
+
+### Alexa (pont Matter, conteneur `beta-alexa`)
+
+Repris du pont Matter de Bêta home (`alexa/`, matter.js). Il lit `GET /v1/alexa/etat` toutes les 2 secondes,
+envoie les ordres d'Alexa à `POST /v1/alexa/commande`, et son état (code d'appairage, appairé ou non) à
+`POST /v1/alexa/statut`. Le choix des appareils est enregistré dans `data/beta/alexa.json`, l'appairage dans
+`data/alexa` (à garder, sinon il faut réappairer). Réseau « hôte » et IPv6 nécessaires.
 
 ## Fiche de connexion et suivi en temps réel
 

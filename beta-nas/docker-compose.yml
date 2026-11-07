@@ -86,13 +86,13 @@ services:
       - "host.docker.internal:host-gateway" # pour joindre Home Assistant (réseau host)
     volumes:
       - ./config:/config:ro
+      - ./data/beta:/data # ce que Bêta enregistre (appareils partagés avec Alexa…)
     depends_on:
       - whisper
       - piper
       - ollama
       - presence
       - trieur
-      - beta-home
     restart: unless-stopped
 
   # Tri des documents : propose titre, dossier et tags, et ne range qu'après ta validation.
@@ -123,24 +123,21 @@ services:
       - ollama
     restart: unless-stopped
 
-  # Bêta home : le tableau de bord de la maison, servi par Bêta sur http://IP_DU_NAS:8800/home/
-  # Version simple : ses appareils passent par Home Assistant (pas de réseau « hôte », ni découverte du
-  # réseau, ni pont HomeKit/Matter, ni go2rtc). Code dans ./home (copie du projet Bêta home).
-  beta-home:
-    build:
-      context: ./home
-      dockerfile: server/Dockerfile
-    container_name: beta-home
+  # Pont Alexa (Matter) : les appareils de Home Assistant choisis dans Bêta home › Alexa apparaissent dans
+  # Alexa, sans skill ni compte. Réseau « hôte » obligatoire (découverte Matter) et IPv6 activée sur le réseau.
+  # Appairage : appli Alexa › Ajouter un appareil › Matter, avec le QR code affiché dans Bêta home.
+  alexa:
+    build: ./alexa
+    container_name: beta-alexa
+    network_mode: host
     init: true
     environment:
-      - PORT=8090
-      - "BETA_KEY=${BETA_HOME_KEY:?BETA_HOME_KEY manquante : relance installer.sh}"
-      - BACKUP_KEEP=${BACKUP_KEEP:-30}
-      - BETA_OFF=${BETA_HOME_OFF:-bridge} # pont Alexa/HomeKit coupé : pas de connexion directe aux appareils
+      - BETA_URL=http://127.0.0.1:8800
+      - BETA_TOKEN=${BETA_TOKEN}
+      - BRIDGE_PORT=${ALEXA_PORT:-5540}
       - TZ=${TZ:-Europe/Paris}
     volumes:
-      - ./data/home:/data # sauvegardes, journal partagé, réglages du serveur
-    logging:
-      driver: json-file
-      options: { max-size: "10m", max-file: "3" }
+      - ./data/alexa:/data # appairage avec Alexa (ne pas supprimer, sinon il faut réappairer)
+    depends_on:
+      - beta
     restart: unless-stopped

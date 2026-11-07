@@ -192,26 +192,23 @@ côté par défaut. Les documents validés sont rangés dans ton dossier `Docume
    (`ntfy:https://ntfy.sh/un-nom-long-secret`) ou n'importe quel webhook. Vérifie avec le bouton
    **Envoyer une notification de test** de la page du tri.
 
-## I bis. Bêta home, le tableau de bord de la maison
+## I bis. Bêta home et Alexa
 
-Bêta home est sur le même site : **`http://192.168.1.20:8800/home/`** (onglet **Bêta home** de la page de Bêta).
-Ses appareils passent par **Home Assistant** : pas de connexion directe aux marques, ni découverte du réseau.
+**Bêta home** : **`http://192.168.1.20:8800/home/`** (onglet **Bêta home** de la page de Bêta). C'est ta maison
+de Home Assistant avec le design de Bêta home : pièces avec photo, rangées par étage, tuiles pour les lumières,
+prises, volets, clim, télé, scènes, aspirateur. Rien à configurer : elle passe par la connexion Home Assistant
+de Bêta. Pour qu'une pièce et un étage apparaissent, range tes appareils dans des **pièces** et tes pièces dans
+des **étages** dans Home Assistant. La barre du bas parle à **Bêta IA**. Serrures, portes de garage et portails
+sont affichés mais ne se commandent pas depuis la page.
 
-1. Au premier lancement, l'assistant de Bêta home s'ouvre. Choisis **Assisté** ou **Automatique**
-   pour reprendre tes étages, pièces et appareils depuis Home Assistant.
-2. **Serveur Bêta** (sauvegardes, journal partagé, routines) : adresse `http://192.168.1.20:8800` et la clé
-   **BETA_HOME_KEY** (`fiche-api.sh --secrets`).
-3. **Home Assistant** : l'adresse que tu utilises dans ton navigateur pour ouvrir Home Assistant, et un jeton
-   longue durée. Pour que le navigateur ait le droit de lui parler, ajoute une fois dans le
-   `configuration.yaml` de Home Assistant (module *File editor*), puis redémarre Home Assistant :
-   ```yaml
-   http:
-     cors_allowed_origins:
-       - http://192.168.1.20:8800
-   ```
-4. **Bêta IA dans Bêta home** : l'assistant de Bêta home répond tout de suite à ce qu'il connaît (« éteins le
-   salon », « météo »…). Le reste (questions, discussion, commandes qu'il ne connaît pas) part à Bêta IA, et
-   la réponse arrive dans la conversation.
+**Alexa, sans skill** : Bêta partage tes appareils avec Alexa par **Matter**, en local, sans compte ni abonnement.
+1. Il faut une enceinte **Echo compatible Matter** (Echo 4ᵉ génération, Echo Dot 5, Echo Show 8/10…) et
+   l'**IPv6 activée** sur le réseau du NAS (UGOS : *Panneau de configuration → Réseau → la carte réseau → IPv6 : Auto*).
+2. Dans Bêta home, touche le bouton **Alexa** (en haut à droite) : un QR code et un code s'affichent.
+3. Appli **Amazon Alexa** → **+** → **Ajouter un appareil** → **Matter** → scanne le QR code.
+4. **Choisir ce que voit Alexa** (dans Bêta home) : touche « Alexa » sur chaque appareil pour le montrer ou le
+   cacher. Par défaut : lumières, prises, volets et scènes. Jamais les serrures, le garage ni le portail.
+5. « Alexa, allume la lumière du salon », « Alexa, ferme le volet », « Alexa, lance Soirée ciné ».
 
 ## J. IA cloud ou PC puissant pour la discussion (optionnel)
 

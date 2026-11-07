@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a1030">
+<title>Bêta home</title>
+<link rel="icon" href="/static/home/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/static/home/logo.png">
+<style>
+  :root {
+    --verre: rgba(16, 26, 74, .58); --verre2: rgba(24, 38, 100, .55); --bord: rgba(110, 160, 255, .22);
+    --texte: #eef3ff; --doux: #9fb0e0; --bleu: #2f8bff; --cyan: #4fd1ff; --jaune: #ffd34d; --rouge: #ff6b7a;
+    --vert: #42e2a0; --rayon: 16px; --flou: blur(18px) saturate(140%);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    color: var(--texte); font: 15px/1.4 Lato, system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: #070b24 url("/static/home/home.jpg") center / cover fixed;
+  }
+  body::before { content: ""; position: fixed; inset: 0; background: linear-gradient(180deg, rgba(6, 10, 36, .55), rgba(6, 10, 36, .78)); z-index: -1; }
+  @media (max-width: 760px) { body { background-image: url("/static/home/mobile.jpg"); } }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .verre { background: var(--verre); border: 1px solid var(--bord); border-radius: var(--rayon);
+           backdrop-filter: var(--flou); -webkit-backdrop-filter: var(--flou); box-shadow: 0 10px 30px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .06); }
+  .doux { color: var(--doux); }
+  main { max-width: 1500px; margin: 0 auto; padding: 18px 18px 120px; }
+  [hidden] { display: none !important; }
+  svg.i { width: 20px; height: 20px; flex: none; }
+
+  /* ---------- en-tête ---------- */
+  header.haut { display: grid; grid-template-columns: auto auto 1fr auto; gap: 14px; align-items: stretch; margin-bottom: 16px; }
+  .marque { display: flex; align-items: center; gap: 12px; padding: 4px 8px; }
+  .marque img { width: 58px; height: 58px; filter: drop-shadow(0 0 14px rgba(79, 140, 255, .6)); }
+  .marque h1 { margin: 0; font-size: 34px; font-weight: 400; letter-spacing: .01em; line-height: 1; }
+  .marque h1 b { font-weight: 400; background: linear-gradient(90deg, #4fa3ff, #7b6dff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .marque small { display: block; letter-spacing: .18em; font-size: 11px; color: var(--doux); margin-top: 6px; }
+  .horloge { padding: 10px 20px; min-width: 190px; }
+  .horloge .date { font-size: 13px; color: var(--doux); text-transform: capitalize; }
+  .horloge .heure { font-size: 40px; font-weight: 300; line-height: 1.1; }
+  .bandeau { display: flex; gap: 14px; align-items: center; padding: 10px 16px; overflow-x: auto; }
+  .meteo { display: flex; gap: 12px; align-items: center; padding-right: 14px; border-right: 1px solid var(--bord); flex: none; }
+  .meteo .temp { font-size: 30px; font-weight: 300; }
+  .personnes { display: flex; gap: 12px; flex: none; }
+  .personne { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; min-width: 58px; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
+            background: linear-gradient(135deg, #3b5bff, #9a5cff); box-shadow: 0 0 0 2px rgba(255, 255, 255, .15); position: relative; }
+  .avatar.maison::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%; background: var(--vert); border: 2px solid #0b1236; }
+  .compteurs { display: flex; gap: 6px; margin-left: auto; flex: none; }
+  .compteur { text-align: center; padding: 2px 12px; border-left: 1px solid var(--bord); }
+  .compteur b { display: block; font-size: 20px; font-weight: 700; }
+  .compteur span { font-size: 11px; color: var(--doux); }
+  .actions-haut { display: flex; gap: 10px; align-items: center; padding: 8px; }
+  .rond { width: 46px; height: 46px; border-radius: 14px; border: 1px solid var(--bord); background: var(--verre2); display: grid; place-items: center; text-decoration: none; color: var(--texte); }
+  .rond:hover { border-color: var(--cyan); box-shadow: 0 0 16px rgba(79, 209, 255, .35); }
+  .rond.actif { background: linear-gradient(135deg, #2f8bff, #6b5bff); }
+
+  /* ---------- pièces ---------- */
+  .panneau { padding: 16px; }
+  .titre-panneau { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .titre-panneau h2 { margin: 0; font-size: 18px; font-weight: 600; display: flex; gap: 10px; align-items: center; }
+  .pastille { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: linear-gradient(135deg, #ffb347, #ff7a59); }
+  .onglets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .onglets button { border: 1px solid var(--bord); background: rgba(255, 255, 255, .04); border-radius: 8px; padding: 6px 14px; font-size: 13px; }
+  .onglets button.actif { border-color: var(--bleu); background: rgba(47, 139, 255, .2); box-shadow: 0 0 12px rgba(47, 139, 255, .35); }
+  .bouton { border: 1px solid rgba(80, 160, 255, .6); background: linear-gradient(135deg, #2f7bff, #2f5bff); border-radius: 10px; padding: 8px 14px; font-size: 13px; display: inline-flex; gap: 8px; align-items: center; color: #fff; text-decoration: none; }
+  .bouton.secondaire { background: rgba(255, 255, 255, .06); border-color: var(--bord); }
+  .scenes { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .scene { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--bord); background: rgba(255, 255, 255, .05); }
+  .scene:hover { border-color: var(--cyan); }
+  .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; align-items: start; }
+  .piece { padding: 12px; background: var(--verre2); display: flex; flex-direction: column; gap: 10px; }
+  .piece-titre { display: flex; align-items: center; gap: 10px; }
+  .piece-titre h3 { margin: 0; font-size: 17px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .piece-titre .climat { font-size: 13px; color: var(--doux); white-space: nowrap; }
+  .photo { position: relative; height: 118px; border-radius: 12px; overflow: hidden; background: #111a44; }
+  .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo .badges { position: absolute; left: 8px; bottom: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge { font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(8, 12, 40, .75); border: 1px solid var(--bord); }
+  .badge.alerte { border-color: var(--rouge); color: #ffd0d5; }
+  .tuiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tuile { border: 1px solid var(--bord); border-radius: 12px; background: rgba(10, 18, 56, .55); padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; position: relative; }
+  .tuile.large { grid-column: 1 / -1; }
+  .alexa-pastille ~ .nom { padding-right: 56px; }
+  .tuile .nom { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tuile .ligne { display: flex; align-items: center; gap: 10px; }
+  .tuile .etat { font-size: 12px; color: var(--doux); }
+  .tuile.allume { border-color: rgba(255, 211, 77, .45); box-shadow: inset 0 0 22px rgba(255, 200, 60, .08); }
+  .ampoule { color: #6f7fb8; }
+  .allume .ampoule { color: var(--jaune); filter: drop-shadow(0 0 6px rgba(255, 211, 77, .8)); }
+  .interrupteur { width: 46px; height: 26px; border-radius: 999px; border: 0; background: rgba(255, 255, 255, .14); position: relative; flex: none; margin-left: auto; }
+  .interrupteur::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #e8ecff; transition: transform .2s; }
+  .interrupteur.on { background: linear-gradient(90deg, #2f8bff, #4fd1ff); box-shadow: 0 0 12px rgba(79, 209, 255, .55); }
+  .interrupteur.on::after { transform: translateX(20px); }
+  .boutons { display: flex; gap: 6px; }
+  .boutons button { flex: 1; height: 34px; border-radius: 9px; border: 1px solid var(--bord); background: rgba(255, 255, 255, .05);
+                    display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; }
+  .boutons button:hover, .boutons button:active { border-color: var(--cyan); background: rgba(47, 139, 255, .25); }
+  .marche { width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(79, 160, 255, .55); background: transparent; display: grid; place-items: center; margin-left: auto; }
+  .marche.on { border-color: var(--cyan); box-shadow: 0 0 14px rgba(79, 209, 255, .6); color: var(--cyan); }
+  input[type=range] { width: 100%; accent-color: var(--jaune); }
+  .thermo { display: flex; align-items: center; gap: 8px; }
+  .thermo button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--bord); background: rgba(255, 255, 255, .06); }
+  .thermo b { font-size: 18px; font-weight: 600; min-width: 62px; text-align: center; }
+  .alexa-pastille { position: absolute; top: 6px; right: 6px; font-size: 10px; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--bord); background: rgba(0, 0, 0, .35); }
+  .alexa-pastille.on { border-color: #31c4f3; background: rgba(49, 196, 243, .25); }
+  .vide { padding: 30px; text-align: center; color: var(--doux); }
+
+  /* ---------- Bêta IA ---------- */
+  .ia { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(16px, env(safe-area-inset-bottom)); width: min(680px, calc(100% - 32px)); z-index: 20; }
+  .ia form { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; border-radius: 999px; }
+  .ia input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; padding: 8px 0; }
+  .ia .cerveau { color: #b48cff; filter: drop-shadow(0 0 8px rgba(160, 120, 255, .7)); }
+  .ia button { width: 40px; height: 40px; border-radius: 50%; border: 0; background: linear-gradient(135deg, #2f8bff, #7b5bff); display: grid; place-items: center; }
+  .bulle { margin-bottom: 10px; padding: 12px 40px 12px 14px; position: relative; }
+  .bulle button { position: absolute; top: 6px; right: 6px; background: none; border: 0; color: var(--doux); }
+
+  /* ---------- fenêtres ---------- */
+  .voile { position: fixed; inset: 0; background: rgba(3, 6, 24, .7); display: grid; place-items: center; z-index: 30; padding: 16px; }
+  .fenetre { width: min(520px, 100%); max-height: 90vh; overflow: auto; padding: 22px; }
+  .fenetre h2 { margin: 0 0 10px; font-weight: 600; }
+  .fenetre input[type=password] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--bord); background: rgba(0, 0, 0, .3); margin: 10px 0; }
+  .qr { background: #fff; border-radius: 12px; padding: 10px; width: 210px; margin: 12px auto; }
+  .qr svg { width: 100%; height: auto; display: block; }
+  .code { font: 600 22px ui-monospace, monospace; letter-spacing: .08em; text-align: center; }
+  ol { padding-left: 20px; } ol li { margin: 4px 0; }
+
+  @media (max-width: 1100px) {
+    header.haut { grid-template-columns: 1fr auto; }
+    .bandeau { grid-column: 1 / -1; order: 3; }
+    .horloge { display: none; }
+  }
+  @media (max-width: 600px) {
+    main { padding: 12px 12px 120px; }
+    .marque h1 { font-size: 26px; } .marque img { width: 44px; height: 44px; }
+    .grille { grid-template-columns: 1fr; }
+    .compteurs { display: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header class="haut">
+    <div class="marque">
+      <img src="/static/home/logo.png" alt="">
+      <div><h1>Bêta <b>home</b></h1><small>MAISON INTELLIGENTE</small></div>
+    </div>
+    <div class="horloge verre"><div class="date" id="date"></div><div class="heure" id="heure"></div></div>
+    <div class="bandeau verre">
+      <div class="meteo" id="meteo" hidden></div>
+      <div class="personnes" id="personnes"></div>
+      <div class="compteurs" id="compteurs"></div>
+    </div>
+    <div class="actions-haut verre">
+      <button class="rond" id="ouvrir-alexa" title="Alexa" aria-label="Alexa">
+        <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8.5 15.5c1-3 2-5 3.5-7 1.5 2 2.5 4 3.5 7"/></svg></button>
+      <a class="rond" href="/" title="Bêta IA (accueil, discussion)" aria-label="Bêta IA">
+        <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></a>
+    </div>
+  </header>
+
+  <section class="panneau verre">
+    <div class="titre-panneau">
+      <h2><span class="pastille"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg></span>Pièces et appareils</h2>
+      <span class="doux" id="info"></span>
+      <button class="bouton secondaire" id="mode-alexa" style="margin-left:auto">Choisir ce que voit Alexa</button>
+    </div>
+    <div class="onglets" id="etages"></div>
+    <div class="scenes" id="scenes"></div>
+    <div class="grille" id="pieces"><div class="vide">Chargement de la maison…</div></div>
+  </section>
+</main>
+
+<div class="ia">
+  <div class="bulle verre" id="bulle" hidden><span id="bulle-texte"></span><button type="button" id="bulle-fermer" aria-label="Fermer">✕</button></div>
+  <form class="verre" id="form-ia">
+    <svg class="i cerveau" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/></svg>
+    <input id="question" placeholder="Demande à Bêta IA : « éteins le salon », « raconte-moi une blague »…" autocomplete="off">
+    <button aria-label="Envoyer"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 12l16-8-6 16-3-7z"/></svg></button>
+  </form>
+</div>
+
+<div class="voile" id="connexion" hidden>
+  <form class="fenetre verre" id="form-connexion">
+    <h2>Bêta home</h2>
+    <p class="doux">Tu n'es pas sur le réseau de la maison : colle ton jeton (BETA_TOKEN).</p>
+    <input id="jeton" type="password" placeholder="BETA_TOKEN" autocomplete="off">
+    <button class="bouton">Entrer</button> <span class="doux" id="erreur-connexion"></span>
+  </form>
+</div>
+
+<div class="voile" id="fenetre-alexa" hidden>
+  <div class="fenetre verre">
+    <h2>Alexa</h2>
+    <div id="alexa-contenu" class="doux">Chargement…</div>
+    <p style="text-align:right;margin:14px 0 0"><button class="bouton secondaire" type="button" id="fermer-alexa">Fermer</button></p>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const e = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const memoire = { lire(k) { try { return localStorage.getItem(k) ?? sessionStorage.getItem(k); } catch (_) { return null; } },
+                    ecrire(k, v) { try { localStorage.setItem(k, v); } catch (_) {} } };
+  let jeton = memoire.lire("beta_jeton") || "";
+  let maison = { appareils: [], personnes: [], meteo: null };
+  let etage = memoire.lire("home_etage") || "";
+  let modeAlexa = false;
+
+  async function api(chemin, options = {}) {
+    const entetes = { "Content-Type": "application/json", ...(jeton ? { Authorization: `Bearer ${jeton}` } : {}) };
+    const r = await fetch(chemin, { ...options, headers: entetes });
+    if (r.status === 401) { $("connexion").hidden = false; throw new Error("401"); }
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || `erreur ${r.status}`);
+    return r.json();
+  }
+
+  // ---------------------------------------------------------------- icônes
+  const I = {
+    ampoule: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4.9 1 .9 1.6V16h5.2v-.5c0-.6.3-1.2.9-1.6A6 6 0 0 0 12 3z"/>',
+    prise: '<path d="M7 3v5M17 3v5M5 8h14v4a7 7 0 0 1-14 0zM12 19v2"/>',
+    volet: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M4 8h16M4 12h16M4 16h16"/>',
+    haut: '<path d="M6 15l6-6 6 6"/>', bas: '<path d="M6 9l6 6 6-6"/>', stop: '<rect x="8" y="8" width="8" height="8" rx="1"/>',
+    marche: '<path d="M12 3v8M6.3 7.5a8 8 0 1 0 11.4 0"/>', jouer: '<path d="M8 5l11 7-11 7z"/>',
+    flocon: '<path d="M12 2v20M4.9 7l14.2 10M4.9 17L19.1 7"/>', tele: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/>',
+    ventilo: '<circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7s2 5-2 7M14 12c4 0 7 1 7 4s-5 2-7-2M12 14c0 4-1 7-4 7s-2-5 2-7M10 12c-4 0-7-1-7-4s5-2 7 2"/>',
+    serrure: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    robot: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>', maison: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>',
+    soleil: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    nuage: '<path d="M7 18h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.5 2A3 3 0 0 0 7 18z"/>',
+    pluie: '<path d="M7 15h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.5 2A3 3 0 0 0 7 15zM8 18l-1 3M12 18l-1 3M16 18l-1 3"/>',
+  };
+  const ico = (n, cls = "") => `<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${I[n] || ""}</svg>`;
+
+  // ---------------------------------------------------------------- photos des pièces (celles de Bêta home)
+  const sansAccent = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const PHOTOS = [
+    [/salon|living/, "rdc-salon"], [/sejour|salle a manger|repas/, "rdc-sejour"], [/cuisine/, "rdc-cuisine"],
+    [/entree|hall/, "rdc-entree"], [/garage/, "rdc-garage"], [/buanderie|cellier|lingerie/, "rdc-buanderie"],
+    [/wc|toilette/, "rdc-wc"], [/suite|parent/, "e1-suite"], [/salle de bain|sdb|douche|bain/, "e1-sdb"],
+    [/couloir|palier|escalier|grenier/, "e1-couloir"], [/bureau|jeux|jeu/, "e2-jeux"], [/ami|invite/, "e2-amis"],
+    [/jardin|piscine/, "ext-jardin"], [/cour/, "ext-cour"], [/terrasse|balcon/, "ext-terrasse"],
+    [/parking|allee|portail/, "ext-parking"], [/robot|aspirateur/, "rdc-robot"],
+  ];
+  const CHAMBRES = ["e1-chambre1", "e1-chambre2", "e1-suite"];
+  const DIVERS = ["rdc-sejour", "rdc-salon", "e2-amis", "rdc-entree"];
+  function photo(nom, rang) {
+    const n = sansAccent(nom);
+    if (/chambre/.test(n)) return CHAMBRES[rang % CHAMBRES.length];
+    const trouve = PHOTOS.find(([re]) => re.test(n));
+    return trouve ? trouve[1] : DIVERS[rang % DIVERS.length];
+  }
+
+  // ---------------------------------------------------------------- en-tête
+  function horloge() {
+    const d = new Date();
+    $("heure").textContent = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    $("date").textContent = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  }
+  const METEO = { sunny: ["soleil", "Ensoleillé"], "clear-night": ["soleil", "Nuit claire"], partlycloudy: ["nuage", "Éclaircies"],
+    cloudy: ["nuage", "Nuageux"], fog: ["nuage", "Brouillard"], rainy: ["pluie", "Pluie"], pouring: ["pluie", "Averses"],
+    snowy: ["nuage", "Neige"], "snowy-rainy": ["pluie", "Neige et pluie"], lightning: ["pluie", "Orage"], "lightning-rainy": ["pluie", "Orage"],
+    windy: ["nuage", "Venteux"], exceptional: ["nuage", "Exceptionnel"] };
+
+  function enTete() {
+    const m = maison.meteo;
+    $("meteo").hidden = !m;
+    if (m) {
+      const [icone, texte] = METEO[m.etat] || ["nuage", m.etat];
+      $("meteo").innerHTML = `${ico(icone)}<div><div class="temp">${e(Math.round(m.temperature))}${e(m.unite || "°")}</div>
+        <div class="doux" style="font-size:12px">${e(texte)}${m.humidite != null ? ` · ${e(m.humidite)} %` : ""}</div></div>`;
+    }
+    $("personnes").innerHTML = maison.personnes.map((p) => {
+      const ici = p.etat === "home";
+      const ou = ici ? "À la maison" : p.etat === "not_home" ? "Absent" : p.etat;
+      return `<div class="personne"><div class="avatar ${ici ? "maison" : ""}">${e((p.nom || "?").slice(0, 1).toUpperCase())}</div>
+        <span>${e(p.nom)}</span><span class="doux">${e(ou)}</span></div>`;
+    }).join("");
+    const liste = maison.appareils;
+    const pieces = new Set(liste.map((a) => a.piece_id).filter(Boolean));
+    const etages = new Set(liste.map((a) => a.etage).filter(Boolean));
+    const allumes = liste.filter((a) => a.id.startsWith("light.") && a.etat === "on").length;
+    $("compteurs").innerHTML = [[etages.size, "Niveaux"], [pieces.size, "Pièces"], [liste.length, "Appareils"], [allumes, "Allumées"]]
+      .map(([v, t]) => `<div class="compteur"><b>${v}</b><span>${t}</span></div>`).join("");
+  }
+
+  // ---------------------------------------------------------------- tuiles
+  const dom = (a) => a.id.split(".")[0];
+  const INTERDITS = ["garage", "gate", "door"];
+
+  function pastilleAlexa(a) {
+    if (!modeAlexa || !a.alexa_possible) return "";
+    return `<button class="alexa-pastille ${a.alexa ? "on" : ""}" data-alexa="${e(a.id)}" data-visible="${a.alexa ? 0 : 1}">${a.alexa ? "Alexa ✓" : "Alexa"}</button>`;
+  }
+
+  function tuile(a) {
+    const d = dom(a), at = a.attr || {}, on = a.etat === "on";
+    const tete = (icone, droite = "") => `<div class="nom" title="${e(a.nom)}">${e(a.nom)}</div><div class="ligne">${icone}${droite}</div>`;
+    if (d === "light") {
+      const variable = (at.supported_color_modes || []).some((m) => m !== "onoff");
+      const pct = at.brightness != null ? Math.round(at.brightness / 2.55) : 0;
+      return `<div class="tuile ${on ? "allume" : ""}">${pastilleAlexa(a)}
+        ${tete(ico("ampoule", "ampoule"), `<button class="interrupteur ${on ? "on" : ""}" data-act="basculer" data-id="${e(a.id)}" aria-label="Allumer ou éteindre"></button>`)}
+        ${variable && on ? `<input type="range" min="1" max="100" value="${pct}" data-act="luminosite" data-id="${e(a.id)}" aria-label="Luminosité">` : ""}</div>`;
+    }
+    if (["switch", "input_boolean", "fan"].includes(d)) {
+      return `<div class="tuile">${pastilleAlexa(a)}${tete(ico(d === "fan" ? "ventilo" : "prise"),
+        `<button class="interrupteur ${on ? "on" : ""}" data-act="basculer" data-id="${e(a.id)}" aria-label="Allumer ou éteindre"></button>`)}</div>`;
+    }
+    if (d === "cover") {
+      const pos = at.current_position;
+      const texte = a.etat === "open" ? (pos != null && pos < 100 ? `Ouvert à ${pos} %` : "Ouvert") : a.etat === "closed" ? "Fermé"
+        : a.etat === "opening" ? "Ouverture…" : a.etat === "closing" ? "Fermeture…" : a.etat;
+      if (INTERDITS.includes(at.device_class)) {
+        return `<div class="tuile">${tete(ico("serrure"))}<div class="etat" title="Se commande depuis Home Assistant">${e(texte)}</div></div>`;
+      }
+      return `<div class="tuile">${pastilleAlexa(a)}${tete(ico("volet"))}<div class="etat">${e(texte)}</div>
+        <div class="boutons"><button data-act="ouvrir" data-id="${e(a.id)}" aria-label="Ouvrir">${ico("haut")}</button>
+        <button data-act="stop" data-id="${e(a.id)}" aria-label="Arrêter">${ico("stop")}</button>
+        <button data-act="fermer" data-id="${e(a.id)}" aria-label="Fermer">${ico("bas")}</button></div></div>`;
+    }
+    if (d === "climate") {
+      const marche = a.etat !== "off" && a.etat !== "unavailable";
+      const consigne = at.temperature != null ? Number(at.temperature).toFixed(1) : "–";
+      return `<div class="tuile large">${tete(ico("flocon"), `<button class="marche ${marche ? "on" : ""}" data-act="${marche ? "eteindre" : "allumer"}" data-id="${e(a.id)}" aria-label="Marche">${ico("marche")}</button>`)}
+        <div class="ligne"><span class="etat">${at.current_temperature != null ? `Il fait ${e(at.current_temperature)} °C` : e(a.etat)}</span>
+        <div class="thermo" style="margin-left:auto"><button data-act="temperature" data-id="${e(a.id)}" data-pas="-${at.target_temp_step || 0.5}" aria-label="Moins">−</button>
+        <b>${e(consigne)} °C</b><button data-act="temperature" data-id="${e(a.id)}" data-pas="${at.target_temp_step || 0.5}" aria-label="Plus">+</button></div></div></div>`;
+    }
+    if (d === "media_player") {
+      const marche = !["off", "standby", "unavailable"].includes(a.etat);
+      const etat = at.media_title || ({ playing: "Lecture", paused: "En pause", idle: "Allumé", off: "Éteint", standby: "En veille" }[a.etat] || a.etat);
+      return `<div class="tuile">${pastilleAlexa(a)}${tete(ico("tele"), `<button class="marche ${marche ? "on" : ""}" data-act="basculer" data-id="${e(a.id)}" aria-label="Marche">${ico("marche")}</button>`)}
+        <div class="etat">${e(etat)}</div></div>`;
+    }
+    if (d === "lock") {
+      const etat = { locked: "Verrouillée", unlocked: "Déverrouillée", jammed: "Bloquée" }[a.etat] || a.etat;
+      return `<div class="tuile">${tete(ico("serrure"))}<div class="etat" title="Se commande depuis Home Assistant">${e(etat)}</div></div>`;
+    }
+    if (d === "vacuum") {
+      const etat = { cleaning: "Nettoyage", docked: "À la base", returning: "Retour à la base", idle: "Arrêté", paused: "En pause" }[a.etat] || a.etat;
+      return `<div class="tuile large">${tete(ico("robot"))}<div class="etat">${e(etat)}${at.battery_level != null ? ` · ${e(at.battery_level)} %` : ""}</div>
+        <div class="boutons"><button data-act="lancer" data-id="${e(a.id)}">${ico("jouer")} Nettoyer</button><button data-act="base" data-id="${e(a.id)}">${ico("maison")} Base</button></div></div>`;
+    }
+    return "";
+  }
+
+  // ---------------------------------------------------------------- pièces
+  function afficher() {
+    const liste = maison.appareils;
+    const etages = [...new Set(liste.map((a) => a.etage).filter(Boolean))];
+    if (etage && !etages.includes(etage)) etage = "";
+    $("etages").innerHTML = (etages.length ? ["", ...etages] : []).map((n) =>
+      `<button class="${n === etage ? "actif" : ""}" data-etage="${e(n)}">${e(n || "Toute la maison")}</button>`).join("");
+
+    const scenes = liste.filter((a) => dom(a) === "scene");
+    $("scenes").innerHTML = scenes.map((a) => `<span style="position:relative"><button class="scene" data-act="lancer" data-id="${e(a.id)}">${ico("jouer")}${e(a.nom)}</button>${pastilleAlexa(a)}</span>`).join("");
+
+    const pieces = new Map();
+    for (const a of liste) {
+      if (dom(a) === "scene" || (etage && a.etage !== etage)) continue;
+      const cle = a.piece_id || "";
+      if (!pieces.has(cle)) pieces.set(cle, { nom: a.piece || "Sans pièce", appareils: [] });
+      pieces.get(cle).appareils.push(a);
+    }
+    const ordre = [...pieces.entries()].sort(([a, x], [b, y]) => (a === "") - (b === "") || x.nom.localeCompare(y.nom, "fr"));
+    $("pieces").innerHTML = ordre.map(([cle, p], rang) => {
+      const temp = p.appareils.find((a) => a.attr?.device_class === "temperature" && dom(a) === "sensor");
+      const hum = p.appareils.find((a) => a.attr?.device_class === "humidity" && dom(a) === "sensor");
+      const climat = [temp && `${Number(temp.etat).toFixed(1)} °C`, hum && `${Math.round(hum.etat)} %`].filter(Boolean).join(" · ");
+      const badges = p.appareils.filter((a) => dom(a) === "binary_sensor" && a.etat === "on").map((a) => {
+        const c = a.attr?.device_class;
+        const t = ["motion", "occupancy", "presence"].includes(c) ? "Mouvement" : c === "moisture" ? "Fuite d'eau" : c === "smoke" ? "Fumée" : `${a.nom} ouvert`;
+        return `<span class="badge ${["moisture", "smoke"].includes(c) ? "alerte" : ""}">${e(t)}</span>`;
+      }).join("");
+      const tuiles = p.appareils.map(tuile).join("");
+      const allumes = p.appareils.filter((a) => dom(a) === "light" && a.etat === "on").length;
+      return `<article class="piece verre">
+        <div class="piece-titre">${ico(cle ? "maison" : "prise")}<h3>${e(p.nom)}</h3><span class="climat">${e(climat || (allumes ? `${allumes} allumée${allumes > 1 ? "s" : ""}` : ""))}</span></div>
+        ${cle ? `<div class="photo"><img src="/static/home/pieces/${photo(p.nom, rang)}.jpg" alt="" loading="lazy"><div class="badges">${badges}</div></div>` : ""}
+        ${tuiles ? `<div class="tuiles">${tuiles}</div>` : `<div class="doux" style="font-size:13px">Capteurs seulement</div>`}
+      </article>`;
+    }).join("") || `<div class="vide">Aucun appareil. Range tes appareils dans des pièces (et les pièces dans des étages) dans Home Assistant.</div>`;
+    $("info").textContent = modeAlexa ? "Touche « Alexa » sur un appareil pour le montrer ou le cacher à Alexa." : "";
+  }
+
+  async function charger() {
+    try {
+      maison = await api("/v1/maison/etat");
+      $("connexion").hidden = true;
+      enTete();
+      if (!document.activeElement || document.activeElement.type !== "range") afficher();
+    } catch (err) {
+      if (err.message !== "401") $("pieces").innerHTML = `<div class="vide">${e(err.message)}</div>`;
+    }
+  }
+
+  // ---------------------------------------------------------------- actions
+  async function agir(id, action, valeur) {
+    try {
+      await api("/v1/maison/action", { method: "POST", body: JSON.stringify({ entite: id, action, valeur }) });
+    } catch (err) { if (err.message !== "401") parler(err.message); }
+    setTimeout(charger, 400); setTimeout(charger, 2000);
+  }
+
+  document.addEventListener("click", async (ev) => {
+    const onglet = ev.target.closest("[data-etage]");
+    if (onglet) { etage = onglet.dataset.etage; memoire.ecrire("home_etage", etage); return afficher(); }
+    const alexa = ev.target.closest("[data-alexa]");
+    if (alexa) {
+      const visible = alexa.dataset.visible === "1";
+      await api("/v1/alexa/choix", { method: "PUT", body: JSON.stringify({ entite: alexa.dataset.alexa, visible }) }).catch(() => {});
+      const a = maison.appareils.find((x) => x.id === alexa.dataset.alexa); if (a) a.alexa = visible;
+      return afficher();
+    }
+    const b = ev.target.closest("button[data-act]");
+    if (!b) return;
+    const a = maison.appareils.find((x) => x.id === b.dataset.id);
+    if (b.dataset.act === "basculer" && a) { // réponse immédiate à l'écran
+      a.etat = a.etat === "on" ? "off" : "on"; afficher();
+    }
+    if (b.dataset.act === "temperature" && a) {
+      const valeur = Math.round(((Number(a.attr.temperature) || 20) + Number(b.dataset.pas)) * 10) / 10;
+      a.attr.temperature = valeur; afficher();
+      return agir(a.id, "temperature", valeur);
+    }
+    agir(b.dataset.id, b.dataset.act);
+  });
+  document.addEventListener("change", (ev) => {
+    if (ev.target.dataset.act === "luminosite") agir(ev.target.dataset.id, "luminosite", Number(ev.target.value));
+  });
+
+  $("mode-alexa").addEventListener("click", () => {
+    modeAlexa = !modeAlexa;
+    $("mode-alexa").textContent = modeAlexa ? "Terminé" : "Choisir ce que voit Alexa";
+    $("mode-alexa").className = modeAlexa ? "bouton" : "bouton secondaire";
+    afficher();
+  });
+
+  // ---------------------------------------------------------------- Bêta IA
+  function parler(texte) { $("bulle-texte").textContent = texte; $("bulle").hidden = false; }
+  $("bulle-fermer").addEventListener("click", () => { $("bulle").hidden = true; });
+  $("form-ia").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const texte = $("question").value.trim();
+    if (!texte) return;
+    $("question").value = ""; parler("…");
+    try {
+      const r = await api("/v1/texte", { method: "POST", body: JSON.stringify({ texte }) });
+      parler(r.reponse);
+      setTimeout(charger, 500);
+    } catch (err) { if (err.message !== "401") parler(`Bêta IA ne répond pas (${err.message}).`); }
+  });
+
+  // ---------------------------------------------------------------- Alexa
+  async function afficherAlexa() {
+    let s;
+    try { s = await api("/v1/alexa"); } catch (err) { $("alexa-contenu").textContent = err.message; return; }
+    const nb = maison.appareils.filter((a) => a.alexa).length;
+    const etapes = `<ol><li>Appli <b>Amazon Alexa</b> › <b>+</b> › <b>Ajouter un appareil</b> › <b>Matter</b>.</li>
+      <li>Scanne ce QR code (ou tape le code), puis laisse Alexa trouver les appareils.</li>
+      <li>Dis : « Alexa, allume la lumière du salon ».</li></ol>`;
+    if (!s.en_ligne) {
+      $("alexa-contenu").innerHTML = `<p>Le pont Alexa ne répond pas.</p>
+        ${s.matterErr ? `<p class="doux">Dernière erreur : ${e(s.matterErr)}</p>` : ""}
+        <p class="doux">Vérifie que le conteneur <b>beta-alexa</b> tourne (<code>sudo docker logs beta-alexa</code>) et que l'IPv6 est activée sur le réseau du NAS.</p>`;
+      return;
+    }
+    if (s.commissioned) {
+      $("alexa-contenu").innerHTML = `<p>✅ <b>Appairé</b>${(s.fabrics || []).length ? ` avec ${e(s.fabrics.join(", "))}` : ""}.
+        ${e(s.devices ?? nb)} appareil(s) partagé(s).</p>
+        <p class="doux">Pour choisir ce que voit Alexa, ferme cette fenêtre et touche « Choisir ce que voit Alexa ».
+        Les nouveaux appareils apparaissent dans Alexa en quelques secondes.</p>`;
+      return;
+    }
+    $("alexa-contenu").innerHTML = `<p>${nb} appareil(s) seront partagés avec Alexa, sans skill ni compte : tout reste chez toi.</p>
+      ${etapes}<div class="qr"><img src="/v1/alexa/qr.svg?${Date.now()}" alt="QR code Matter" style="width:100%" id="qr-alexa"></div>
+      <div class="code">${e(s.manual || "")}</div>
+      <p class="doux">Il faut une enceinte Echo compatible Matter (Echo 4ᵉ génération, Echo Dot 5, Echo Show…).</p>`;
+    if (jeton) { // l'image a besoin du jeton hors de la maison
+      fetch(`/v1/alexa/qr.svg`, { headers: { Authorization: `Bearer ${jeton}` } }).then((r) => r.text()).then((svg) => {
+        const qr = document.querySelector(".qr"); if (qr) qr.innerHTML = svg;
+      }).catch(() => {});
+    }
+  }
+  $("ouvrir-alexa").addEventListener("click", () => { $("fenetre-alexa").hidden = false; afficherAlexa(); });
+  $("fermer-alexa").addEventListener("click", () => { $("fenetre-alexa").hidden = true; });
+
+  // ---------------------------------------------------------------- connexion et démarrage
+  $("form-connexion").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    jeton = $("jeton").value.trim();
+    try { await api("/v1/maison/etat"); memoire.ecrire("beta_jeton", jeton); charger(); }
+    catch (_) { $("erreur-connexion").textContent = "Jeton refusé."; }
+  });
+
+  horloge(); setInterval(horloge, 10000);
+  charger();
+  setInterval(() => { if (!document.hidden && $("connexion").hidden) charger(); }, 4000);
+</script>
+</body>
+</html>

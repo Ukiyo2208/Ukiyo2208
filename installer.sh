@@ -169,7 +169,6 @@ ok "Code copié (réglages et données existants conservés)"
 chmod 600 "$ENV_BETA"
 env_si_vide "$ENV_BETA" BETA_TOKEN "$(aleatoire 32)"
 env_si_vide "$ENV_BETA" BETA_LECTURE_TOKEN "$(aleatoire 32)"
-env_si_vide "$ENV_BETA" BETA_HOME_KEY "$(aleatoire 24)"
 env_si_vide "$ENV_BETA" NAS_NOM "$(hostname 2>/dev/null || echo NAS)"
 [ -n "$CLE_ANTHROPIC" ] && env_ecrire "$ENV_BETA" ANTHROPIC_API_KEY "$CLE_ANTHROPIC"
 if [ -n "${HA_EXISTANT:-}" ]; then
@@ -238,6 +237,9 @@ sous_nas() { # /volume3/Docker/Beta IA/beta -> volume3/Docker/Beta IA/beta (chem
 }
 SURCHARGE="$DEST/beta-nas/docker-compose.override.yml"
 mkdir -p "$DEST/beta-nas/data/tri"
+mkdir -p "$DEST/beta-nas/data/beta" "$DEST/beta-nas/data/alexa"
+# Bêta home n'est plus un conteneur à part : sa page fait partie de Bêta
+docker rm -f beta-home >/dev/null 2>&1 || true
 if [ "$TRI" = o ]; then
   [ -d "$DOCUMENTS" ] || mkdir -p "$DOCUMENTS"
   PROPRIO="$(stat -c '%u' "$DOCUMENTS"):$(stat -c '%g' "$DOCUMENTS")"
@@ -333,7 +335,7 @@ cat <<EOF
   ${G}Home Assistant${N}    $(env_lire "$ENV_BETA" HA_URL | sed "s#host.docker.internal#$IP#")
 EOF
 [ "$TRI" = o ] && echo "  ${G}Tri des documents${N} http://$IP:8800/tri/   (propositions à valider, dossiers à trier)"
-echo "  ${G}Bêta home${N}         http://$IP:8800/home/  (tableau de bord de la maison)"
+echo "  ${G}Bêta home${N}         http://$IP:8800/home/  (la maison, et Alexa : bouton « Alexa » en haut)"
 if [ "${HA_MDP_GENERE:-0}" = 1 ] && [ -z "${HA_ECHEC:-}" ]; then
   echo
   echo "  ${J}Compte Home Assistant${N} : identifiant ${G}$HA_UTILISATEUR${N}, mot de passe ${G}$HA_MDP${N}  ← note-le"

@@ -101,7 +101,7 @@ ${G}SERVICES${N}
      tableau de bord   $BETA/tableau
      documentation     $BETA/docs
   Tri des documents    $BETA/tri/               $(etat "$e_tri")
-  Bêta home            $BETA/home/              $(etat "$(http_code "$BETA/api/ping")")
+  Bêta home            $BETA/home/              $(etat "$(http_code "$BETA/home/")")
   Présence (caméras)   http://$IP:$PORT_PRESENCE                    $(etat "$e_pres")
   Home Assistant       $HA                    $(etat "$e_ha")
   Ollama               http://127.0.0.1:11434 ${D}(NAS seulement)${N}  $(etat "$e_ol")
@@ -111,7 +111,6 @@ ${G}SERVICES${N}
 ${G}CODES${N} ${D}(./fiche-api.sh --secrets pour les voir en entier)${N}
   BETA_TOKEN              $(masquer "$BETA_TOKEN")   ${D}tablette, présence, accès hors de la maison${N}
   BETA_LECTURE_TOKEN      $(masquer "$BETA_LECTURE_TOKEN")   ${D}lecture seule, pour ton site (/v1/nas)${N}
-  BETA_HOME_KEY           $(masquer "$(lire "$ENV_BETA" BETA_HOME_KEY)")   ${D}Bêta home › Connexions › Serveur Bêta${N}
   HA_TOKEN                $(masquer "$HA_TOKEN")   ${D}Home Assistant${N}
   ANTHROPIC_API_KEY       $(masquer "$ANTHROPIC_API_KEY")   ${D}IA web (automatisations)${N}
 
@@ -194,7 +193,7 @@ cmd_tester() {
 conteneur_de() { # quel conteneur redémarrer pour une clé
   case "$1" in
     TRI_*|PUID|PGID|NOTIFICATIONS) echo beta-trieur ;;
-    BETA_HOME_*) echo beta-home ;;
+    ALEXA_*) echo beta-alexa ;;
     HA_TOKEN|HA_URL) echo "beta beta-presence beta-trieur" ;;
     BETA_TOKEN) echo "beta beta-presence" ;;
     WHISPER_MODEL) echo beta-whisper ;;

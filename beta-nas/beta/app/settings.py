@@ -101,7 +101,7 @@ class Settings:
     publication_jeton: str = ""
     publication_intervalle: int = 60
     tri_url: str = "http://trieur:8802"  # trieur de documents (page servie par Bêta sur /tri/)
-    home_url: str = "http://beta-home:8090"  # Bêta home (servi par Bêta sur /home/, son serveur sur /api/)
+    donnees: str = "/data"  # ce que Bêta enregistre (choix des appareils visibles par Alexa…)
     # À la maison (adresse du réseau local), la page et l'API ne demandent pas de jeton
     acces_local_libre: bool = True
 
@@ -155,7 +155,7 @@ def charger(chemin_config: str | None = None) -> Settings:
         publication_jeton=_env("PUBLICATION_JETON"),
         publication_intervalle=max(15, int(_env("PUBLICATION_INTERVALLE", "60") or 60)),
         tri_url=_env("TRI_URL", Settings.tri_url).rstrip("/"),
-        home_url=_env("HOME_URL", Settings.home_url).rstrip("/"),
+        donnees=_env("BETA_DONNEES", Settings.donnees),
         acces_local_libre=_env("BETA_LOCAL_LIBRE", "oui").lower() not in ("non", "false", "0", "no"),
     )
 

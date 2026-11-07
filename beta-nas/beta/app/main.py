@@ -23,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import settings as cfg
-from . import nas
+from . import maison, nas
 from . import stats as st
 from .homeassistant import HomeAssistant
 from .llm_local import LLMLocal
@@ -92,7 +92,7 @@ if _reglages_demarrage.cors_origines:
 statistiques = st.Statistiques()
 _PAS_SUIVIS = (
     "/static", "/favicon.ico", "/v1/stats", "/v1/nas", "/v1/appairage", "/v1/tri/etat", "/v1/maison/appareils",
-    "/tableau", "/tri", "/home", "/api/", "/docs", "/openapi.json",
+    "/tableau", "/tri", "/home", "/v1/maison/etat", "/v1/alexa", "/docs", "/openapi.json",
 )
 
 
@@ -510,33 +510,42 @@ async def api_tri(chemin: str, request: Request):
 
 
 # ---------------------------------------------------------------- Bêta home (http://IP_DU_NAS:8800/home/)
-# L'application Bêta home est servie sous /home/ et son serveur répond sur /api/… (Bêta n'utilise que /v1/).
-# Bêta home garde sa propre sécurité (clé BETA_HOME_KEY, écrans associés par QR code).
+# La maison avec le design de Bêta home, par la connexion Home Assistant de Bêta, et Alexa (pont Matter).
 
-_ENTETES_VERS_HOME = {"content-type", "accept", "accept-language", "if-none-match", "if-modified-since",
-                      "x-beta-key", "x-beta-device", "x-beta-session"}
-_ENTETES_DE_HOME = {"content-type", "cache-control", "etag", "last-modified", "content-disposition", "location"}
-# Petit script ajouté à la page : ce que l'assistant de Bêta home ne comprend pas part à Bêta IA
-_PONT_HOME = '<script src="/static/pont-beta-home.js" defer></script>'
+class ActionMaison(BaseModel):
+    entite: str
+    action: str
+    valeur: float | None = None
 
 
-async def _home(request: Request, chemin: str) -> Response:
-    s: cfg.Settings = etat["settings"]
-    entetes = {k: v for k, v in request.headers.items() if k.lower() in _ENTETES_VERS_HOME}
-    try:
-        async with httpx.AsyncClient(timeout=60) as client:
-            r = await client.request(request.method, f"{s.home_url}{chemin}", params=request.query_params,
-                                     content=await request.body(), headers=entetes)
-    except httpx.HTTPError as e:
-        raise HTTPException(status_code=503, detail="Bêta home injoignable") from e
-    retour = {k: v for k, v in r.headers.items() if k.lower() in _ENTETES_DE_HOME}
-    if retour.get("location", "").startswith("/") and not chemin.startswith("/api/"):
-        retour["location"] = "/home" + retour["location"]
-    contenu = r.content
-    if r.headers.get("content-type", "").startswith("text/html"):
-        contenu = contenu.replace(b"</body>", _PONT_HOME.encode() + b"</body>", 1)
-        retour.pop("etag", None)  # la page modifiée n'a plus la même empreinte
-    return Response(contenu, status_code=r.status_code, headers=retour)
+class ChoixAlexa(BaseModel):
+    entite: str
+    visible: bool
+
+
+class CommandeAlexa(BaseModel):
+    key: str
+    patch: dict
+
+
+_maison_cache: dict = {"instant": 0.0, "valeur": None}
+
+
+async def _maison_brute(fraiche: bool = False) -> dict:
+    """État de la maison, gardé 1 seconde (le pont Alexa et les écrans interrogent souvent)."""
+    if fraiche or _maison_cache["valeur"] is None or time.monotonic() - _maison_cache["instant"] > 1:
+        try:
+            _maison_cache["valeur"] = await etat["routeur"].ha.maison()
+        except httpx.HTTPError as e:
+            raise HTTPException(status_code=503, detail="Home Assistant injoignable") from e
+        _maison_cache["instant"] = time.monotonic()
+    return _maison_cache["valeur"]
+
+
+def _alexa() -> maison.Alexa:
+    if "alexa" not in etat:
+        etat["alexa"] = maison.Alexa(Path(etat["settings"].donnees) / "alexa.json")
+    return etat["alexa"]
 
 
 @app.get("/home", include_in_schema=False)
@@ -544,14 +553,86 @@ async def page_home_sans_barre():
     return RedirectResponse("/home/")
 
 
-@app.api_route("/home/{chemin:path}", methods=["GET", "HEAD"], include_in_schema=False)
-async def page_home(chemin: str, request: Request):
-    return await _home(request, "/" + chemin)
+@app.get("/home/", include_in_schema=False)
+async def page_home():
+    return HTMLResponse((STATIQUE / "home.html").read_text(encoding="utf-8"))
 
 
-@app.api_route("/api/{chemin:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], include_in_schema=False)
-async def api_home(chemin: str, request: Request):
-    return await _home(request, "/api/" + chemin)
+@app.get("/v1/maison/etat", dependencies=[Depends(verifier_jeton)])
+async def etat_maison():
+    """Appareils (pièce, étage, état, attributs), personnes et météo, pour la page Bêta home."""
+    donnees, alexa = await _maison_brute(), _alexa()
+    liste = [a | {"alexa": alexa.visible(a), "alexa_possible": alexa.type_matter(a) is not None}
+             for a in maison.appareils(donnees)]
+    return {"appareils": liste, "personnes": donnees.get("personnes", []), "meteo": donnees.get("meteo")}
+
+
+@app.post("/v1/maison/action", dependencies=[Depends(verifier_jeton)])
+async def action_maison(demande: ActionMaison):
+    ha = etat["routeur"].ha
+    try:
+        attributs = await ha.attributs(demande.entite)
+        domaine, service, donnees = maison.commande_page(demande.entite, demande.action, demande.valeur, attributs)
+        await ha.service(domaine, service, donnees)
+    except maison.ActionRefusee as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail="Home Assistant a refusé") from e
+    _maison_cache["valeur"] = None  # le prochain affichage relit l'état
+    return {"ok": True}
+
+
+@app.get("/v1/alexa", dependencies=[Depends(verifier_jeton)])
+async def alexa_etat():
+    """État du pont Alexa (Matter) : en ligne, appairé, code d'appairage, nombre d'appareils."""
+    return _alexa().etat_pont()
+
+
+@app.put("/v1/alexa/choix", dependencies=[Depends(verifier_jeton)])
+async def alexa_choix(choix: ChoixAlexa):
+    alexa = _alexa()
+    alexa.choix[choix.entite] = choix.visible
+    alexa.sauver()
+    return {"ok": True}
+
+
+@app.get("/v1/alexa/qr.svg", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
+async def alexa_qr():
+    from .installation import qr_svg
+
+    code = _alexa().statut.get("qr")
+    if not code:
+        raise HTTPException(status_code=404, detail="Pont Alexa pas encore prêt")
+    return Response(qr_svg(code), media_type="image/svg+xml", headers={"Cache-Control": "no-store"})
+
+
+# Appelés par le pont Matter (conteneur beta-alexa)
+@app.get("/v1/alexa/etat", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
+async def alexa_elements():
+    return {"items": _alexa().elements(maison.appareils(await _maison_brute()))}
+
+
+@app.post("/v1/alexa/commande", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
+async def alexa_commande(demande: CommandeAlexa):
+    appareil = next((a for a in maison.appareils(await _maison_brute()) if a["id"] == demande.key), None)
+    if not appareil:
+        raise HTTPException(status_code=404, detail="appareil inconnu")
+    try:
+        domaine, service, donnees = _alexa().commande(appareil, demande.patch)
+        await etat["routeur"].ha.service(domaine, service, donnees)
+    except maison.ActionRefusee as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail="Home Assistant a refusé") from e
+    _maison_cache["valeur"] = None
+    log.info("Alexa : %s %s", demande.key, demande.patch)
+    return {"ok": True}
+
+
+@app.post("/v1/alexa/statut", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
+async def alexa_statut(statut: dict):
+    _alexa().statut = {**statut, "recu": time.time()}
+    return {"ok": True}
 
 
 @app.get("/sante")
