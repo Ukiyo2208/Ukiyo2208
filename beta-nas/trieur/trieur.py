@@ -31,6 +31,8 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
+import memoire as mem
+
 log = logging.getLogger("trieur")
 
 RACINE = Path(os.environ.get("TRI_RACINE", "/nas"))
@@ -88,6 +90,9 @@ class Chemins:
         self.sources = etat / "sources.json"
         self.a_traiter = etat / "a_traiter.txt"
         self.dossiers = etat / "dossiers.txt"
+        self.memoire = etat / "memoire.json"  # empreintes des documents déjà triés
+        self.empreintes = etat / "empreintes_cache.json"
+        self.exemples = etat / "exemples.jsonl"  # tes choix pour chaque document validé
 
     def exclusions(self) -> list[str]:
         return lire_liste(self.exclure) + self.ignores
@@ -201,13 +206,18 @@ def _scanner_dossiers(c: Chemins) -> dict[str, str]:
     """Parcourt les dossiers surveillés (au plus toutes les 10 minutes, ou dès que les listes changent)."""
     surveilles, motifs = lire_liste(c.surveiller), c.exclusions()
     signature = (str(c.racine), tuple(surveilles), tuple(motifs), c.gardes.stat().st_mtime if c.gardes.exists() else 0,
-                 c.index.stat().st_mtime if c.index.exists() else 0)
+                 c.index.stat().st_mtime if c.index.exists() else 0,
+                 c.memoire.stat().st_mtime if c.memoire.exists() else 0)
     if signature == _scan["signature"] and time.monotonic() - _scan["instant"] < INTERVALLE_SCAN:
         return _scan["resultat"]
 
     racine = c.racine.resolve()
     deja = deja_ranges(c)
+    memoire = mem.Memoire(c.memoire)
+    empreintes = mem.Empreintes(c.empreintes)
     trouves: dict[str, str] = {}
+    vus: set[str] = set()
+    reconnus = 0
     for dossier in surveilles:
         base = (c.racine / dossier).resolve()
         if not base.is_dir() or not base.is_relative_to(racine):
@@ -221,8 +231,13 @@ def _scanner_dossiers(c: Chemins) -> dict[str, str]:
                 rel = rel_dossier + nom
                 if (Path(nom).suffix.lower() in EXTENSIONS_DOCUMENTS and not nom.startswith((".", "_", "~$"))
                         and not exclu(rel, motifs) and rel not in deja):
+                    vus.add(rel)
+                    if memoire.connu(empreintes.de(c.racine, rel)):
+                        reconnus += 1  # déjà trié (déplacé, renommé, restauré…) : jamais reproposé
+                        continue
                     trouves[identifiant(rel)] = rel
-    _scan.update(instant=time.monotonic(), signature=signature, resultat=trouves)
+    empreintes.sauver(vus)
+    _scan.update(instant=time.monotonic(), signature=signature, resultat=trouves, reconnus=reconnus)
     return trouves
 
 
@@ -236,12 +251,23 @@ def preparer(c: Chemins) -> None:
     en_attente = [i for i in tous if not (c.propositions / f"{i}.json").exists()][:MAX_EN_ATTENTE]
     utiles = set(en_attente) | {p.name[:-5] for p in c.propositions.glob("*.json") if p.name[:-5] in tous}
 
-    for ident in en_attente:
+    memoire = None
+    for ident in list(en_attente):
         fichier = c.racine / tous[ident]
         sortie = c.texte / f"{ident}.txt"
         if not sortie.exists() or sortie.stat().st_mtime < fichier.stat().st_mtime:
             log.info("Lecture de %s", tous[ident])
-            sortie.write_text(extraire(fichier), encoding="utf-8")
+            texte = extraire(fichier)
+            sortie.write_text(texte, encoding="utf-8")
+            memoire = memoire or mem.Memoire(c.memoire)
+            original = memoire.texte_connu(mem.empreinte_texte(texte))
+            if original:
+                log.info("%s : même contenu que %s, déjà trié", tous[ident], original["chemin"])
+                memoire.noter(mem.empreinte_fichier(fichier), tous[ident], "connu")
+                memoire.sauver()
+                en_attente.remove(ident)
+                utiles.discard(ident)
+                del tous[ident]
 
     # Ménage : documents déplacés ou supprimés à la main, ou exclus depuis
     for t in c.texte.glob("*.txt"):
@@ -313,9 +339,41 @@ def destination_libre(dossier: Path, titre: str, ext: str) -> Path:
     return cible
 
 
-def garder(c: Chemins, rel: str) -> None:
+def garder(c: Chemins, rel: str, texte: str = "") -> None:
     with c.gardes.open("a", encoding="utf-8") as f:
         f.write(rel + "\n")
+    memoire = mem.Memoire(c.memoire)
+    try:
+        memoire.noter(mem.empreinte_fichier(c.racine / rel), rel, "garde", mem.empreinte_texte(texte))
+        memoire.sauver()
+    except OSError:
+        pass
+
+
+def _corrige(prop: dict) -> bool:
+    """Tu as changé le titre ou le dossier proposé par le modèle avant de valider."""
+    propre = lambda v: re.sub(r"\s+", " ", str(v or "")).strip(" /").lower()  # noqa: E731
+    return any(cle + "_modele" in prop and propre(prop.get(cle)) != propre(prop[cle + "_modele"])
+               for cle in ("titre", "dossier"))
+
+
+def refaire_ressemblantes(c: Chemins, texte: str, sauf: str) -> list[str]:
+    """Après une correction, les propositions en attente du même genre sont refaites avec ton choix."""
+    exemples = mem.Exemples(c.exemples)
+    reference = mem.mots(texte)
+    refaites = []
+    for f in c.propositions.glob("*.json"):
+        ident = f.name[:-5]
+        prop = proposition_valide(f)
+        texte_prop = c.texte / f"{ident}.txt"
+        if ident == sauf or not prop or prop["statut"] != "propose" or not texte_prop.exists():
+            continue
+        if exemples.ressemblance(reference, mem.mots(texte_prop.read_text(encoding="utf-8"))) >= mem.SEUIL_REFAIRE:
+            f.unlink(missing_ok=True)
+            refaites.append(ident)
+    if refaites:
+        log.info("Correction retenue : %d proposition(s) ressemblante(s) refaite(s)", len(refaites))
+    return refaites
 
 
 def appliquer(c: Chemins) -> None:
@@ -330,9 +388,11 @@ def appliquer(c: Chemins) -> None:
         if not rel_source:
             continue
 
+        fichier_texte = c.texte / f"{ident}.txt"
+        texte = fichier_texte.read_text(encoding="utf-8") if fichier_texte.exists() else ""
         if prop.get("statut") in ("garder", "refuse"):
             # Le document reste où il est et ne sera plus proposé
-            garder(c, rel_source)
+            garder(c, rel_source, texte)
             fichier_prop.unlink()
             (c.texte / f"{ident}.txt").unlink(missing_ok=True)
             log.info("%s : gardé à sa place", rel_source)
@@ -368,15 +428,16 @@ def appliquer(c: Chemins) -> None:
             if nouveau:
                 w.writerow(["date", "chemin", "titre", "tags", "resume", "fichier_origine"])
             w.writerow([maintenant, rel, cible.stem, ", ".join(tags), prop.get("resume", ""), rel_source])
+        # Mémoire : le contenu est retenu (jamais reproposé), et ton choix sert d'exemple aux suivants
+        memoire = mem.Memoire(c.memoire)
+        memoire.noter(mem.empreinte_fichier(cible), rel, "range", mem.empreinte_texte(texte))
+        memoire.sauver()
+        dossier_rel = cible.parent.relative_to(c.rangement).as_posix()
+        mem.Exemples(c.exemples).ajouter(rel, cible.stem, dossier_rel, tags, texte)
         fichier_prop.unlink()
-        (c.texte / f"{ident}.txt").unlink(missing_ok=True)
-
-
-def tour(c: Chemins) -> None:
-    c.creer()
-    appliquer(c)
-    preparer(c)
-    lister_dossiers(c)
+        fichier_texte.unlink(missing_ok=True)
+        if texte and _corrige(prop):
+            refaire_ressemblantes(c, texte, ident)
 
 
 def proposition_valide(fichier: Path) -> dict | None:
@@ -446,9 +507,42 @@ def migrer(c: Chemins) -> None:
     _scan["signature"] = None
 
 
+def completer_memoire(c: Chemins, max_textes: int = 3) -> None:
+    """Ajoute à la mémoire ce qui a été trié avant elle : empreintes (rapide), puis exemples (lecture du
+    texte, quelques documents par tour pour ne pas ralentir le tri)."""
+    memoire = mem.Memoire(c.memoire)
+    connus = memoire.chemins()
+    lignes = []
+    if c.index.exists():
+        with c.index.open(encoding="utf-8", newline="") as f:
+            lignes = [l for l in csv.DictReader(f, delimiter=";") if l.get("chemin")]
+    a_noter = [(l["chemin"], "range") for l in lignes] + [(g, "garde") for g in lire_liste(c.gardes)]
+    change = False
+    for rel, statut in a_noter:
+        if rel not in connus and (c.racine / rel).is_file():
+            memoire.noter(mem.empreinte_fichier(c.racine / rel), rel, statut)
+            change = True
+    if change:
+        memoire.sauver()
+
+    exemples = mem.Exemples(c.exemples)
+    deja = exemples.chemins()
+    for l in lignes:
+        fichier = c.racine / l["chemin"]
+        if max_textes <= 0:
+            break
+        if l["chemin"] in deja or not fichier.is_file() or not fichier.is_relative_to(c.rangement):
+            continue
+        texte = extraire(fichier)
+        tags = [t.strip() for t in l.get("tags", "").split(",") if t.strip()]
+        exemples.ajouter(l["chemin"], fichier.stem, fichier.parent.relative_to(c.rangement).as_posix(), tags, texte)
+        max_textes -= 1
+
+
 def tour(c: Chemins) -> None:
     c.creer()
     appliquer(c)
+    completer_memoire(c)
     nettoyer_propositions(c)
     preparer(c)
     lister_dossiers(c)

@@ -158,3 +158,24 @@ def test_tri_bloque_prevenu_une_fois(plusieurs, monkeypatch):
     for _ in range(8):
         p.etape()
     assert p.continu is False and len(envois) == 1 and "échecs d'affilée" in envois[0]
+
+
+def test_exemples_dans_la_consigne_et_meme_dossier(tmp_path, ollama):
+    recus, _ = ollama
+    import memoire as mem
+
+    c = trieur.Chemins(tmp_path / "nas", tmp_path / "etat", "volume1/Document")
+    c.rangement.mkdir(parents=True)
+    texte = "Bouygues Telecom facture Bbox Ultym abonnement internet fibre numéro client prélèvement"
+    (c.rangement / "b2.txt").write_text(texte + " octobre")
+    trieur._scan["signature"] = None
+    trieur.tour(c)
+    mem.Exemples(c.exemples).ajouter("volume1/Document/x.txt", "2026-09 - Facture - Bouygues Telecom - Bbox",
+                                     "Factures/Internet/Bouygues", ["facture"], texte + " septembre")
+    assert proposeur.Proposeur(c).un_document() is True
+    message = recus[-1]["messages"][1]["content"]
+    assert "Documents déjà rangés qui ressemblent" in message and "Factures/Internet/Bouygues" in message
+    prop = web.lister_propositions(c)[0]
+    # Le modèle (faux) répond « Factures/Énergie/2026 » : le dossier déjà choisi pour ce genre de document l'emporte
+    assert prop["dossier"] == "Factures/Internet/Bouygues" == prop["dossier_modele"]
+    assert prop["ressemble_a"]["score"] >= 0.7

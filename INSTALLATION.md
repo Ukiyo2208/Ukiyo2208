@@ -173,6 +173,13 @@ côté par défaut. Les documents validés sont rangés dans ton dossier `Docume
 4. Les propositions apparaissent avec un titre, un dossier et des tags. Corrige-les si besoin, puis
    **Valider** (le fichier est rangé dans la minute) ou **Garder où il est** (il ne sera plus proposé).
 5. Ensuite, le trieur avance tout seul **chaque nuit** : tu n'as plus qu'à valider sur la page.
+   - **Il n'oublie rien** : chaque document rangé ou gardé est retenu par une empreinte de son contenu.
+     Déplacé, renommé, restauré d'une sauvegarde ou après une réorganisation du NAS, il est reconnu et
+     n'est jamais reproposé (chiffre « Reconnus » sur la page). Rien n'est écrit dans tes fichiers.
+   - **Il apprend de toi** : pour chaque nouveau document, le modèle voit les documents déjà rangés qui lui
+     ressemblent le plus, avec le titre et le dossier que tu as validés, et reprend la même forme. Quand tu
+     corriges une proposition, les propositions en attente du même genre sont refaites avec ta correction.
+     Plus tu valides, plus il devient juste.
 6. **Notifications** (conseillé) : Bêta te prévient quand un « Tout traiter » est fini, le matin s'il a
    préparé des propositions dans la nuit, et si le tri est bloqué. Le plus simple : l'application Home
    Assistant de ton téléphone. Dans Home Assistant, *Outils de développement → Actions*, tape

@@ -177,7 +177,8 @@
     $("tout").checked = d.surveilles.includes(".");
     $("rangement").textContent = d.rangement;
     $("chiffres").innerHTML = [["À trier", d.en_attente], ["Propositions en attente", d.propositions],
-      ["Rangés par Bêta", d.ranges], ["Gardés à leur place", d.gardes.length]]
+      ["Rangés par Bêta", d.ranges], ["Gardés à leur place", d.gardes.length],
+      ["Reconnus (déjà triés)", d.reconnus], ["Exemples appris", d.exemples]]
       .map(([t, v]) => `<div class="carte"><span class="doux">${t}</span><div class="chiffre">${v}</div></div>`).join("");
     afficherGardes(d.gardes);
     $("arbre").replaceChildren(...(await api("api/dossiers")).map(ligne));
@@ -215,6 +216,7 @@
     div.innerHTML = `
       <div class="source">${e(p.chemin_actuel || p.fichier)}</div>
       ${p.deja_bien_range ? `<div class="haute">Déjà bien rangé : tu peux le garder tel quel.</div>` : ""}
+      ${p.ressemble_a ? `<div class="doux">Comme « ${e(p.ressemble_a.titre)} » (${Math.round(p.ressemble_a.score * 100)} %), déjà rangé dans ${e(p.ressemble_a.dossier)}</div>` : ""}
       <div class="champs">
         <label><span class="doux">Titre</span><input type="text" name="titre" value="${e(p.titre)}"></label>
         <label><span class="doux">Dossier</span><input type="text" name="dossier" value="${e(p.dossier)}"></label>
@@ -235,7 +237,11 @@
           fichier: p.fichier, statut: b.dataset.statut,
           titre: div.querySelector("[name=titre]").value, dossier: div.querySelector("[name=dossier]").value }) });
         div.remove(); modifie = false;
-        $("message").textContent = b.dataset.statut === "valide" ? "Validé : rangé dans la minute." : "Gardé à sa place.";
+        const corrige = div.querySelector("[name=titre]").value !== (p.titre_modele ?? p.titre)
+          || div.querySelector("[name=dossier]").value !== (p.dossier_modele ?? p.dossier);
+        $("message").textContent = b.dataset.statut !== "valide" ? "Gardé à sa place."
+          : corrige ? "Validé. Correction retenue : les documents du même genre seront proposés comme ça."
+          : "Validé : rangé dans la minute.";
       } catch (err) {
         b.disabled = false;
         if (err.message !== "401") $("message").textContent = `Erreur : ${err.message}`;

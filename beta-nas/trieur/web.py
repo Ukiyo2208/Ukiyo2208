@@ -91,6 +91,8 @@ def etat(c: trieur.Chemins, proposeur=None) -> dict:
         "propositions": len(lister_propositions(c)),  # le même nombre que la liste affichée
         "gardes": trieur.lire_liste(c.gardes),
         "ranges": max(0, sum(1 for _ in c.index.open(encoding="utf-8")) - 1) if c.index.exists() else 0,
+        "reconnus": trieur._scan.get("reconnus", 0),  # déjà triés, retrouvés à leur contenu
+        "exemples": len(trieur.mem.Exemples(c.exemples).liste),
         "proposeur": proposeur.etat() if proposeur else None,
         "notifications": notifications.resume(),
     }
@@ -133,6 +135,9 @@ def enregistrer(c: trieur.Chemins, donnees: dict) -> None:
         if "reproposer" in donnees:
             a_retirer = {str(x) for x in donnees["reproposer"]}
             _ecrire(c.gardes, "", [g for g in trieur.lire_liste(c.gardes) if g not in a_retirer])
+            memoire = trieur.mem.Memoire(c.memoire)  # sinon il serait reconnu à son contenu
+            memoire.oublier_chemins(a_retirer)
+            memoire.sauver()
     trieur._scan["signature"] = None  # prise en compte immédiate
 
 
