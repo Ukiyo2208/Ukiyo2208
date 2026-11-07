@@ -49,7 +49,6 @@
 </head>
 <body>
 <main>
-  <p><a href="../" class="doux" style="color:var(--accent);text-decoration:none">← Bêta</a></p>
   <h1>Tri des documents</h1>
   <div class="doux" id="etat">Connexion…</div>
 
@@ -308,5 +307,6 @@
   charger().then(() => chargerPropositions(true)).catch(() => {});
   setInterval(() => { if (!document.hidden) chargerPropositions().catch(() => {}); }, 10000);
 </script>
+<script src="/static/nav.js"></script>
 </body>
 </html>

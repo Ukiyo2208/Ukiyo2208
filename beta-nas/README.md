@@ -199,7 +199,12 @@ enregistrées : seules les empreintes des visages enregistrés sont gardées (`d
 
 ---
 
-## La page d'accueil : `http://IP_DU_NAS:8800`
+## Le site : `http://IP_DU_NAS:8800`
+
+Trois onglets en haut de chaque page (`static/nav.js`) : **Bêta IA** (`/`), **Domotique** (`/home/`) et
+**Tri automatique** (`/tri/`).
+
+### Bêta IA : `http://IP_DU_NAS:8800`
 
 Une seule page pour tout, sur PC comme sur téléphone. **À la maison, aucun jeton n'est demandé** (appareils
 du réseau local : 192.168.x.x, 10.x.x.x…). Hors de chez toi, ou derrière un proxy, la page demande le
@@ -209,11 +214,9 @@ du réseau local : 192.168.x.x, 10.x.x.x…). Hors de chez toi, ou derrière un 
   propositions » (page `/tri/`). Notifications de fin de tri : `NOTIFICATIONS` dans `.env` (Home Assistant,
   Discord, ntfy ou webhook) ;
 - **Discussion** : parler à l'IA de discussion (cloud, modèle puissant ou IA locale), avec la mémoire de la conversation ;
-- **Maison** : une barre de commandes (« allume le salon ») et tes appareils rangés par pièce. Un clic sur un
-  appareil l'allume ou l'éteint (lumières, prises, volets, ventilateurs, scènes ; jamais les serrures) ;
 - un bouton haut-parleur pour **entendre les réponses** avec la voix de Bêta.
 
-## Bêta home : `http://IP_DU_NAS:8800/home/`
+## Domotique (Bêta home) : `http://IP_DU_NAS:8800/home/`
 
 La maison, la musique et Plex avec le design de Bêta home, servis par Bêta et alimentés par **sa** connexion
 Home Assistant (`HA_URL`, `HA_TOKEN`) : le navigateur ne parle jamais à Home Assistant. Pas de mails ni de
