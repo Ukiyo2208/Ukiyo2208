@@ -215,7 +215,15 @@ design de Bêta home, et rien à configurer : tout passe par la connexion Home A
   caméras (image en direct). Le bouton **⋯** de chaque tuile ouvre tous ses réglages : couleur et blanc des
   lumières, modes de la clim, sources de la télé, programme et options des machines, inclinaison des lames…
   - ⭐ sur un volet : le bouton « My » de l'appareil s'il en a un (Somfy), sinon la position que tu enregistres
-    dans ⋯ (« Enregistrer la position actuelle comme ma position »). Range tes appareils dans des **pièces** et tes pièces dans des **étages** dans Home Assistant.
+    dans ⋯ (« Enregistrer la position actuelle comme ma position »).
+- **Caméras sans Home Assistant (ONVIF ou RTSP)** : bouton **+ Caméra** en haut de la vue Maison.
+  - **ONVIF** (le plus simple) : adresse IP de la caméra, port (80, 8000 pour Reolink et Hikvision, 2020 pour Tapo),
+    identifiant et mot de passe. Bêta trouve tout seul le flux vidéo et l'image fixe. Sur certaines caméras,
+    ONVIF s'active dans leur application.
+  - **RTSP** : colle l'adresse du flux, par exemple `rtsp://192.168.68.50:554/h264Preview_01_main` (Reolink).
+  - Bêta vérifie qu'il obtient une image avant d'enregistrer. La caméra se range dans la carte de sa pièce ;
+    sa tuile montre une image rafraîchie toutes les 5 secondes, et **⋯** ouvre la **vidéo en direct**
+    (5 images par seconde). Les mots de passe restent sur le NAS. Range tes appareils dans des **pièces** et tes pièces dans des **étages** dans Home Assistant.
   Serrures, portes de garage et portails sont affichés mais ne se commandent pas.
 - **Musique** : tes enceintes de Home Assistant (Sonos, Google Cast, Music Assistant…) avec pochette, lecture,
   morceau suivant, volume ; et les radios (France Inter, FIP, NRJ…) à écouter sur la tablette ou sur une enceinte.

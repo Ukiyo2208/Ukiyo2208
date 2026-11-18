@@ -229,6 +229,8 @@ incluse dans `static/home/leaflet`). La barre du bas est Bêta IA (`/v1/texte`).
 | `GET /v1/maison/etat` | appareils (pièce, étage, état, attributs), personnes, météo |
 | `POST /v1/maison/action` | `{"entite", "action", "valeur"}` : basculer, luminosite, ouvrir, fermer, stop, position, temperature, lecture, suivant, precedent, volume, radio… |
 | `GET /v1/maison/image/{entite}` | pochette de ce qui joue sur une enceinte |
+| `GET/POST /v1/cameras`, `DELETE /v1/cameras/{id}` | caméras ONVIF / RTSP ajoutées directement (jamais les mots de passe) |
+| `GET /v1/cameras/{id}/image`, `GET /v1/cameras/{id}/direct` | image JPEG, vidéo en direct MJPEG (ffmpeg) |
 | `POST /v1/maison/voiture` | `{"action": "verrouiller" \| "demarrer" \| "actualiser"}` (jamais déverrouiller) |
 | `GET /v1/musique/radios` | radios en direct |
 | `GET /v1/plex`, `GET /v1/plex/image` | en cours, à reprendre, ajouts récents (`PLEX_URL`, `PLEX_TOKEN`) |

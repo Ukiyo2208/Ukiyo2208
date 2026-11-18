@@ -174,6 +174,15 @@
   .camera-image .badge { position: absolute; left: 6px; bottom: 6px; }
   .etoile { color: #ffd34d; }
   .boutons button.etoile-active { border-color: #ffd34d; }
+  .formulaire-camera { display: grid; gap: 10px; }
+  .formulaire-camera label { display: grid; gap: 4px; font-size: 13px; color: var(--doux); }
+  .formulaire-camera input, .formulaire-camera select { background: rgba(0, 0, 0, .3); border: 1px solid var(--bord); border-radius: 10px;
+    padding: 10px; color: var(--texte); font: inherit; width: 100%; }
+  .formulaire-camera .deux { display: grid; grid-template-columns: 1fr 110px; gap: 10px; }
+  .choix-source { display: flex; gap: 6px; }
+  .choix-source button { flex: 1; padding: 8px; border-radius: 10px; border: 1px solid var(--bord); background: rgba(255, 255, 255, .05); }
+  .choix-source button.actif { border-color: var(--bleu); background: rgba(47, 139, 255, .25); }
+  .direct { width: 100%; border-radius: 12px; background: #0b1236; display: block; min-height: 200px; }
   /* ---------- fiche d'un appareil (« ⋯ ») ---------- */
   .fiche { width: min(560px, 100%); }
   .fiche .modele { font-size: 13px; color: var(--doux); margin: -6px 0 12px; }
@@ -251,7 +260,8 @@
     <div class="titre-panneau">
       <h2><span class="pastille"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg></span>Pièces et appareils</h2>
       <span class="doux" id="info"></span>
-      <button class="bouton secondaire" id="mode-partage" style="margin-left:auto">Choisir ce que voient Alexa et HomeKit</button>
+      <button class="bouton secondaire" id="ajouter-camera" style="margin-left:auto">+ Caméra</button>
+      <button class="bouton secondaire" id="mode-partage">Choisir ce que voient Alexa et HomeKit</button>
     </div>
     <div class="extras" id="extras"><div id="carte-voiture" hidden></div><div id="carte-famille" hidden></div></div>
     <div class="onglets" id="etages"></div>
@@ -293,6 +303,36 @@
   </form>
 </div>
 
+<div class="voile" id="fenetre-ajout-camera" hidden>
+  <form class="fenetre verre formulaire-camera" id="form-camera">
+    <h2>Ajouter une caméra</h2>
+    <div class="choix-source"><button type="button" class="actif" data-source="onvif">ONVIF (le plus simple)</button><button type="button" data-source="rtsp">Adresse RTSP</button></div>
+    <label>Nom<input name="nom" placeholder="Caméra entrée" required></label>
+    <label>Pièce (pour la ranger dans sa carte)<input name="piece" list="liste-pieces" placeholder="Entrée"></label>
+    <datalist id="liste-pieces"></datalist>
+    <div data-pour="onvif" class="deux"><label>Adresse IP de la caméra<input name="ip" placeholder="192.168.68.50"></label>
+      <label>Port ONVIF<input name="port" type="number" value="80"></label></div>
+    <label data-pour="rtsp" hidden>Adresse du flux<input name="rtsp" placeholder="rtsp://192.168.68.50:554/h264Preview_01_main"></label>
+    <div class="deux" style="grid-template-columns:1fr 1fr"><label>Identifiant<input name="utilisateur" value="admin" autocomplete="off"></label>
+      <label>Mot de passe<input name="mot_de_passe" type="password" autocomplete="new-password"></label></div>
+    <p class="doux" style="margin:0;font-size:13px" data-pour="onvif">ONVIF est souvent à activer dans l'appli de la caméra. Port : 80, 8000 (Reolink, Hikvision) ou 2020 (Tapo).</p>
+    <p class="doux" style="margin:0" id="message-camera"></p>
+    <p style="display:flex;gap:8px;justify-content:flex-end;margin:4px 0 0"><button class="bouton secondaire" type="button" id="fermer-ajout-camera">Annuler</button>
+      <button class="bouton" id="valider-camera">Ajouter</button></p>
+  </form>
+</div>
+
+<div class="voile" id="fenetre-camera" hidden>
+  <div class="fenetre fiche verre">
+    <h2 id="camera-titre"></h2>
+    <img class="direct" id="camera-direct" alt="Vidéo en direct">
+    <p class="doux" id="camera-info" style="font-size:13px"></p>
+    <p style="display:flex;gap:8px;justify-content:space-between;margin:14px 0 0">
+      <button class="bouton secondaire" type="button" id="supprimer-camera">Supprimer cette caméra</button>
+      <button class="bouton secondaire" type="button" id="fermer-camera">Fermer</button></p>
+  </div>
+</div>
+
 <div class="voile" id="fenetre-fiche" hidden>
   <div class="fenetre fiche verre">
     <h2 id="fiche-titre"></h2>
@@ -319,6 +359,7 @@
   let maison = { appareils: [], personnes: [], meteo: null };
   let etage = memoire.lire("home_etage") || "";
   let modePartage = false;
+  let camerasDirectes = [];
   let sansPieceOuvert = false;
 
   async function api(chemin, options = {}) {
@@ -543,7 +584,16 @@
     return html.replace(/<div class="tuile[^"]*">/, (m) => m + plus(g));
   }
 
+  function tuileCameraDirecte(c) {
+    const instant = Math.floor(Date.now() / 5000);
+    return `<div class="tuile large"><button class="plus-tuile" data-camera="${e(c.id)}" aria-label="Direct">⋯</button>
+      <div class="nom" title="${e(c.nom)}">${e(c.nom)}</div>
+      <div class="camera-image" data-camera="${e(c.id)}"><img src="/v1/cameras/${encodeURIComponent(c.id)}/image?t=${instant}" alt="${e(c.nom)}"
+        onerror="this.style.visibility='hidden'"><span class="badge">${e(c.source === "onvif" ? "ONVIF" : "RTSP")}</span></div></div>`;
+  }
+
   function tuileGroupe(g) {
+    if (g.type === "camera_directe") return tuileCameraDirecte(g.camera);
     const p = ent(g.principal);
     if (!p) return "";
     if (["lave_linge", "seche_linge", "lave_vaisselle"].includes(g.type)) return tuileMachine(g);
@@ -560,6 +610,55 @@
     }
     return html.replace(/<div class="tuile[^"]*">/, (m) => m + plus(g));
   }
+
+  // ---------------------------------------------------------------- caméras ONVIF / RTSP
+  let cameraOuverte = null;
+  function ouvrirCamera(id) {
+    const c = camerasDirectes.find((x) => x.id === id);
+    if (!c) return;
+    cameraOuverte = id;
+    $("camera-titre").textContent = c.nom;
+    $("camera-info").textContent = [c.source === "onvif" ? "ONVIF" : "RTSP", c.hote, c.piece, "direct à 5 images par seconde"].filter(Boolean).join(" · ");
+    $("camera-direct").src = `/v1/cameras/${encodeURIComponent(id)}/direct?${Date.now()}`;
+    $("fenetre-camera").hidden = false;
+  }
+  function fermerCamera() {  // couper l'image arrête la vidéo sur le NAS
+    $("camera-direct").removeAttribute("src"); $("fenetre-camera").hidden = true; cameraOuverte = null;
+  }
+  $("fermer-camera").addEventListener("click", fermerCamera);
+  $("camera-direct").addEventListener("error", () => { if (cameraOuverte) $("camera-info").textContent = "Pas d'image : la caméra ne répond pas."; });
+  $("supprimer-camera").addEventListener("click", async () => {
+    if (!cameraOuverte || !confirm("Supprimer cette caméra de Bêta ?")) return;
+    await api(`/v1/cameras/${encodeURIComponent(cameraOuverte)}`, { method: "DELETE" }).catch(() => {});
+    camerasDirectes = camerasDirectes.filter((x) => x.id !== cameraOuverte);
+    fermerCamera(); afficher();
+  });
+
+  let sourceCamera = "onvif";
+  document.querySelectorAll(".choix-source button").forEach((b) => b.addEventListener("click", () => {
+    sourceCamera = b.dataset.source;
+    document.querySelectorAll(".choix-source button").forEach((x) => x.classList.toggle("actif", x === b));
+    document.querySelectorAll("#form-camera [data-pour]").forEach((x) => { x.hidden = x.dataset.pour !== sourceCamera; });
+  }));
+  $("ajouter-camera").addEventListener("click", () => {
+    $("liste-pieces").innerHTML = [...new Set(maison.appareils.map((a) => a.piece).filter(Boolean))].map((p) => `<option value="${e(p)}">`).join("");
+    $("message-camera").textContent = ""; $("fenetre-ajout-camera").hidden = false;
+  });
+  $("fermer-ajout-camera").addEventListener("click", () => { $("fenetre-ajout-camera").hidden = true; });
+  $("form-camera").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const f = new FormData(ev.target), donnees = { nom: f.get("nom"), piece: f.get("piece"), utilisateur: f.get("utilisateur"), mot_de_passe: f.get("mot_de_passe") };
+    if (sourceCamera === "onvif") Object.assign(donnees, { ip: f.get("ip"), port: Number(f.get("port")) || 80 });
+    else donnees.rtsp = f.get("rtsp");
+    $("valider-camera").disabled = true; $("message-camera").textContent = "Connexion à la caméra…";
+    try {
+      const c = await api("/v1/cameras", { method: "POST", body: JSON.stringify(donnees) });
+      camerasDirectes.push(c); $("fenetre-ajout-camera").hidden = true; ev.target.reset(); afficher();
+      parler(`Caméra « ${c.nom} » ajoutée.`);
+    } catch (err) {
+      $("message-camera").textContent = err.message === "401" ? "" : `Impossible : ${err.message}`;
+    } finally { $("valider-camera").disabled = false; }
+  });
 
   // ---------------------------------------------------------------- fiche d'un appareil (« ⋯ »)
   let ficheOuverte = null;
@@ -788,6 +887,11 @@
       const cle = avecPieces ? g.piece_id || "" : `type:${TYPES[g.type] || "Autres"}`;
       piece(cle, avecPieces ? g.piece || "Sans pièce" : TYPES[g.type] || "Autres").groupes.push(g);
     }
+    for (const c of camerasDirectes) {  // caméras ONVIF / RTSP : dans la carte de leur pièce, sinon « Caméras »
+      const cle = [...pieces.keys()].find((k) => pieces.get(k).nom.toLowerCase() === (c.piece || "").toLowerCase()) || "cam:";
+      if (etage && cle === "cam:") continue;
+      piece(cle, cle === "cam:" ? "Caméras" : pieces.get(cle).nom).groupes.push({ id: `cam:${c.id}`, type: "camera_directe", camera: c, entites: [] });
+    }
     for (const a of liste) {  // capteurs de la pièce (température, humidité, détecteurs) pour son en-tête
       if (avecPieces && a.piece_id && pieces.has(a.piece_id)) pieces.get(a.piece_id).appareils.push(a);
     }
@@ -802,7 +906,7 @@
         return `<span class="badge ${["moisture", "smoke"].includes(c) ? "alerte" : ""}">${e(t)}</span>`;
       }).join("");
       const allumes = p.groupes.map((g) => ent(g.principal)).filter((a) => a && dom(a) === "light" && a.etat === "on").length;
-      const estPiece = cle && !cle.startsWith("type:");
+      const estPiece = cle && !cle.startsWith("type:") && cle !== "cam:";
       // « Sans pièce » repliée quand il y a des pièces : elle ne noie pas le reste
       const replie = cle === "" && ordre.length > 1 && !sansPieceOuvert;
       const tuiles = replie ? "" : p.groupes.map(tuileGroupe).join("");
@@ -823,6 +927,7 @@
   async function charger() {
     try {
       maison = await api("/v1/maison/etat");
+      camerasDirectes = await api("/v1/cameras").catch(() => camerasDirectes);
       $("connexion").hidden = true;
       enTete();
       if (!document.activeElement || document.activeElement.type !== "range") afficher();
@@ -843,6 +948,8 @@
 
   document.addEventListener("click", async (ev) => {
     if (ev.target.closest("[data-sans-piece]")) { sansPieceOuvert = !sansPieceOuvert; return afficher(); }
+    const cam = ev.target.closest("[data-camera]");
+    if (cam) return ouvrirCamera(cam.dataset.camera);
     const fiche = ev.target.closest("[data-fiche]");
     if (fiche) { ficheOuverte = fiche.dataset.fiche; $("fenetre-fiche").hidden = false; return afficherFiche(); }
     const onglet = ev.target.closest("[data-etage]");

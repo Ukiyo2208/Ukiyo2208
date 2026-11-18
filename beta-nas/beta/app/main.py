@@ -17,13 +17,14 @@ import httpx
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import settings as cfg
+from . import cameras as cameras_
 from . import maison, nas
 from . import plex as plex_
 from . import stats as st
@@ -94,7 +95,7 @@ if _reglages_demarrage.cors_origines:
 statistiques = st.Statistiques()
 _PAS_SUIVIS = (
     "/static", "/favicon.ico", "/v1/stats", "/v1/nas", "/v1/appairage", "/v1/tri/etat", "/v1/maison/appareils",
-    "/tableau", "/tri", "/home", "/v1/maison/etat", "/v1/maison/image", "/v1/maison/camera", "/v1/plex", "/v1/ponts", "/docs", "/openapi.json",
+    "/tableau", "/tri", "/home", "/v1/maison/etat", "/v1/maison/image", "/v1/maison/camera", "/v1/cameras", "/v1/plex", "/v1/ponts", "/docs", "/openapi.json",
 )
 
 
@@ -673,6 +674,70 @@ async def image_camera(entite: str):
     except httpx.HTTPError as e:
         raise HTTPException(status_code=404, detail="Image indisponible") from e
     return Response(contenu, media_type=type_, headers={"Cache-Control": "max-age=5"})
+
+
+# ---------------------------------------------------------------- Caméras directes (ONVIF ou RTSP, sans Home Assistant)
+
+class NouvelleCamera(BaseModel):
+    nom: str
+    piece: str = ""
+    rtsp: str = ""  # soit l'adresse RTSP…
+    ip: str = ""  # … soit l'adresse IP pour ONVIF
+    port: int = 80
+    utilisateur: str = ""
+    mot_de_passe: str = ""
+
+
+def _cameras() -> cameras_.Cameras:
+    if "cameras" not in etat:
+        etat["cameras"] = cameras_.Cameras(Path(etat["settings"].donnees) / "cameras.json")
+    return etat["cameras"]
+
+
+@app.get("/v1/cameras", dependencies=[Depends(verifier_jeton)])
+async def liste_cameras():
+    """Caméras ajoutées directement (ONVIF ou RTSP). Jamais les mots de passe."""
+    return _cameras().publiques()
+
+
+@app.post("/v1/cameras", dependencies=[Depends(verifier_jeton)])
+async def ajouter_camera(c: NouvelleCamera):
+    """ONVIF (ip, port, utilisateur, mot_de_passe) ou RTSP (rtsp). Bêta vérifie qu'il obtient une image avant d'enregistrer."""
+    if not c.rtsp and not c.ip:
+        raise HTTPException(status_code=400, detail="Donne l'adresse IP de la caméra (ONVIF) ou son adresse rtsp://")
+    try:
+        return await _cameras().ajouter(c.nom, c.piece, c.rtsp, c.ip, c.port, c.utilisateur, c.mot_de_passe)
+    except cameras_.ErreurCamera as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.delete("/v1/cameras/{ident}", dependencies=[Depends(verifier_jeton)])
+async def supprimer_camera(ident: str):
+    try:
+        _cameras().supprimer(ident)
+    except cameras_.ErreurCamera as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return {"ok": True}
+
+
+@app.get("/v1/cameras/{ident}/image", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
+async def image_camera_directe(ident: str):
+    try:
+        contenu = await _cameras().image(_cameras().trouver(ident))
+    except cameras_.ErreurCamera as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    return Response(contenu, media_type="image/jpeg", headers={"Cache-Control": "max-age=2"})
+
+
+@app.get("/v1/cameras/{ident}/direct", dependencies=[Depends(verifier_jeton)], include_in_schema=False)
+async def direct_camera(ident: str):
+    """Vidéo en direct (MJPEG, 5 images par seconde), lue par une balise <img> du navigateur."""
+    try:
+        camera = _cameras().trouver(ident)
+    except cameras_.ErreurCamera as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return StreamingResponse(_cameras().direct(camera), media_type="multipart/x-mixed-replace;boundary=ffmpeg",
+                             headers={"Cache-Control": "no-store"})
 
 
 @app.get("/v1/musique/radios", dependencies=[Depends(verifier_jeton)])
