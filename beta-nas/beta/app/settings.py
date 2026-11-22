@@ -219,6 +219,8 @@ def _charger_ia(s: Settings, section: dict) -> IA:
         "puissant": Modele(
             "puissant", "ollama", _env("PUISSANT_MODELE"), url=_env("PUISSANT_URL"), contexte=8192, timeout=180
         ),
+        # Le modèle du tri des documents, déjà installé sur le NAS : assez bon pour écrire une automatisation
+        "local": Modele("local", "ollama", _env("TRI_MODELE", "qwen3.5:9b"), url=s.ollama_url, contexte=8192, timeout=420),
     }
     for nom, infos in (section.get("modeles") or {}).items():
         infos = infos or {}

@@ -115,7 +115,7 @@ def test_configuration(tmp_path, monkeypatch):
     )
     s = charger(str(config))
     assert s.ia.resume()["conversation"] == ["puissant (qwen3.5:27b)"]
-    assert s.ia.resume()["automatisations"] == ["cloud (claude-opus-5-5)", "puissant (qwen3.5:27b)"]
+    assert s.ia.resume()["automatisations"] == ["cloud (claude-opus-5-5)", "puissant (qwen3.5:27b)", "local (qwen3.5:9b)"]
     assert s.ia.resume()["comprendre"] == ["rapide (qwen2.5:3b)"]
     sans = charger(str(tmp_path / "absent.yaml"))
     assert sans.ia.resume()["conversation"] == ["cloud (claude-opus-5-5)", "rapide (qwen2.5:3b)"]

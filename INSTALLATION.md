@@ -216,6 +216,13 @@ design de Bêta home, et rien à configurer : tout passe par la connexion Home A
   lumières, modes de la clim, sources de la télé, programme et options des machines, inclinaison des lames…
   - ⭐ sur un volet : le bouton « My » de l'appareil s'il en a un (Somfy), sinon la position que tu enregistres
     dans ⋯ (« Enregistrer la position actuelle comme ma position »).
+- **Automatisations** (onglet ⚡) : décris ce que tu veux en français (« tous les soirs au coucher du soleil, ferme
+  les volets du salon »). L'IA écrit l'automatisation ; Bêta vérifie chaque ligne (seulement tes vrais appareils, ni
+  template ni script, jamais ouvrir une serrure ni désarmer une alarme) ; tu relis et modifies le YAML, puis
+  **Créer dans Home Assistant** ou **Télécharger le .yaml**. La liste montre toutes tes automatisations (activer,
+  désactiver, lancer) ; celles créées par Bêta se suppriment d'ici.
+  - Sans IA cloud ni PC puissant, c'est le **modèle local du NAS** (`qwen3.5:9b`, celui du tri des documents) qui
+    écrit : rien ne sort de chez toi, mais compte **1 à 2 minutes** (un peu plus si le tri tourne en même temps).
 - **Caméras sans Home Assistant (ONVIF ou RTSP)** : bouton **+ Caméra** en haut de la vue Maison.
   - **ONVIF** (le plus simple) : adresse IP de la caméra, port (80, 8000 pour Reolink et Hikvision, 2020 pour Tapo),
     identifiant et mot de passe. Bêta trouve tout seul le flux vidéo et l'image fixe. Sur certaines caméras,

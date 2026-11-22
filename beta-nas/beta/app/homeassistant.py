@@ -284,6 +284,19 @@ class HomeAssistant:
         r = await self._client.post(f"/api/config/automation/config/{identifiant}", json=config)
         r.raise_for_status()
 
+    async def automatisations(self) -> list[dict]:
+        """Les automatisations de Home Assistant : nom, activée ou non, dernier déclenchement, identifiant."""
+        r = await self._client.get("/api/states")
+        r.raise_for_status()
+        return [{"entite": e["entity_id"], "nom": (e.get("attributes") or {}).get("friendly_name") or e["entity_id"],
+                 "active": e.get("state") == "on", "derniere": (e.get("attributes") or {}).get("last_triggered"),
+                 "id": str((e.get("attributes") or {}).get("id") or "")}
+                for e in r.json() if e.get("entity_id", "").startswith("automation.")]
+
+    async def supprimer_automatisation(self, identifiant: str) -> None:
+        r = await self._client.delete(f"/api/config/automation/config/{identifiant}")
+        r.raise_for_status()
+
     async def etat(self, entite: str) -> str | None:
         """État d'une entité (ex : person.bastien -> "home"), ou None si inconnu."""
         try:

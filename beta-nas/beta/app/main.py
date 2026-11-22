@@ -9,6 +9,7 @@ import re
 import logging
 import secrets
 import time
+import uuid
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -95,7 +96,7 @@ if _reglages_demarrage.cors_origines:
 statistiques = st.Statistiques()
 _PAS_SUIVIS = (
     "/static", "/favicon.ico", "/v1/stats", "/v1/nas", "/v1/appairage", "/v1/tri/etat", "/v1/maison/appareils",
-    "/tableau", "/tri", "/home", "/v1/maison/etat", "/v1/maison/image", "/v1/maison/camera", "/v1/cameras", "/v1/plex", "/v1/ponts", "/docs", "/openapi.json",
+    "/tableau", "/tri", "/home", "/v1/maison/etat", "/v1/maison/image", "/v1/maison/camera", "/v1/cameras", "/v1/automatisations", "/v1/plex", "/v1/ponts", "/docs", "/openapi.json",
 )
 
 
@@ -674,6 +675,101 @@ async def image_camera(entite: str):
     except httpx.HTTPError as e:
         raise HTTPException(status_code=404, detail="Image indisponible") from e
     return Response(contenu, media_type=type_, headers={"Cache-Control": "max-age=5"})
+
+
+# ---------------------------------------------------------------- Automatisations (Bêta home › Automatisations)
+# L'IA (cloud, PC puissant, ou le modèle local du NAS) écrit le YAML ; Bêta le vérifie ; tu le relis, le modifies
+# si besoin, puis il est créé dans Home Assistant (comme avec son éditeur). Rien n'est créé sans ton clic.
+
+class DemandeAutomatisation(BaseModel):
+    texte: str
+
+
+class YamlAutomatisation(BaseModel):
+    yaml: str
+
+
+class ActionAutomatisation(BaseModel):
+    entite: str
+    action: str  # activer, desactiver, lancer
+
+
+@app.get("/v1/automatisations", dependencies=[Depends(verifier_jeton)])
+async def liste_automatisations():
+    """Tes automatisations Home Assistant, et l'IA qui écrira les nouvelles."""
+    try:
+        liste = await etat["routeur"].ha.automatisations()
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail="Home Assistant injoignable") from e
+    ia = etat["routeur"].ia
+    return {"automatisations": sorted(({**a, "beta": a["id"].startswith("beta_")} for a in liste), key=lambda a: a["nom"].lower()),
+            "ia": [f"{m.nom} ({m.modele})" for m in ia.candidats("automatisations")] if ia else []}
+
+
+@app.post("/v1/automatisations/proposer", dependencies=[Depends(verifier_jeton)])
+async def proposer_automatisation_page(demande: DemandeAutomatisation):
+    """« Tous les soirs au coucher du soleil, ferme les volets du salon » -> un YAML vérifié, à relire."""
+    from .ia_web import ErreurAutomatisation, en_yaml, proposer_automatisation
+
+    s, routeur = etat["settings"], etat["routeur"]
+    if not routeur.ia or not routeur.ia.disponible("automatisations"):
+        raise HTTPException(status_code=503, detail="Aucune IA pour les automatisations (ni cloud, ni PC puissant, ni modèle local)")
+    debut = time.monotonic()
+    try:
+        appareils = await routeur.ha.appareils(s.domaines_exposes)
+        p = await proposer_automatisation(routeur.ia, demande.texte.strip()[:500], appareils, s.domaines_exposes,
+                                          s.envoyer_noms_appareils)
+    except ErreurAutomatisation as e:
+        raise HTTPException(status_code=422, detail=f"L'IA a proposé quelque chose de non valable : {e}. Reformule ou précise.") from e
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail="Home Assistant injoignable") from e
+    return {"possible": p.possible, "resume": p.resume, "yaml": en_yaml(p.config) if p.possible else "",
+            "modele": p.modele, "duree_s": round(time.monotonic() - debut)}
+
+
+@app.post("/v1/automatisations", dependencies=[Depends(verifier_jeton)])
+async def creer_automatisation_page(demande: YamlAutomatisation):
+    """Crée l'automatisation (YAML relu, éventuellement modifié) après les mêmes vérifications que pour l'IA."""
+    from .ia_web import ErreurAutomatisation, verifier
+
+    s, ha = etat["settings"], etat["routeur"].ha
+    try:
+        appareils = await ha.appareils(s.domaines_exposes)
+        config = verifier(demande.yaml, {a.entity_id: a.entity_id for a in appareils}, s.domaines_exposes)
+        identifiant = f"beta_{uuid.uuid4().hex[:12]}"
+        await ha.creer_automatisation(identifiant, {"id": identifiant, **config})
+    except ErreurAutomatisation as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=422, detail=f"Home Assistant refuse cette automatisation : {e.response.text[:200]}") from e
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail="Home Assistant injoignable") from e
+    log.info("Automatisation créée depuis la page : %s (%s)", config.get("alias"), identifiant)
+    return {"id": identifiant, "alias": config.get("alias")}
+
+
+@app.post("/v1/automatisations/action", dependencies=[Depends(verifier_jeton)])
+async def action_automatisation(demande: ActionAutomatisation):
+    service = {"activer": "turn_on", "desactiver": "turn_off", "lancer": "trigger"}.get(demande.action)
+    if not service or not re.fullmatch(r"automation\.[a-z0-9_]+", demande.entite):
+        raise HTTPException(status_code=400, detail="Action inconnue")
+    try:
+        await etat["routeur"].ha.service("automation", service, {"entity_id": demande.entite})
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail="Home Assistant a refusé") from e
+    return {"ok": True}
+
+
+@app.delete("/v1/automatisations/{identifiant}", dependencies=[Depends(verifier_jeton)])
+async def supprimer_automatisation(identifiant: str):
+    """Seules les automatisations créées par Bêta se suppriment d'ici (les tiennes restent dans Home Assistant)."""
+    if not re.fullmatch(r"beta_[0-9a-f]{12}", identifiant):
+        raise HTTPException(status_code=403, detail="Seules les automatisations créées par Bêta se suppriment d'ici")
+    try:
+        await etat["routeur"].ha.supprimer_automatisation(identifiant)
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail="Home Assistant a refusé") from e
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------- Caméras directes (ONVIF ou RTSP, sans Home Assistant)

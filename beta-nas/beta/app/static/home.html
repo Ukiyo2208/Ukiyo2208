@@ -183,6 +183,23 @@
   .choix-source button { flex: 1; padding: 8px; border-radius: 10px; border: 1px solid var(--bord); background: rgba(255, 255, 255, .05); }
   .choix-source button.actif { border-color: var(--bleu); background: rgba(47, 139, 255, .25); }
   .direct { width: 100%; border-radius: 12px; background: #0b1236; display: block; min-height: 200px; }
+  /* ---------- automatisations ---------- */
+  .pastille.autos { background: linear-gradient(135deg, #42e2a0, #2f8bff); }
+  .demande-auto { display: grid; gap: 10px; }
+  .demande-auto textarea, .yaml-auto { width: 100%; background: rgba(0, 0, 0, .3); border: 1px solid var(--bord); border-radius: 12px;
+    padding: 12px; color: var(--texte); font-family: inherit; font-size: 15px; line-height: 1.5; resize: vertical; }
+  .yaml-auto { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; min-height: 220px; white-space: pre; }
+  .exemples-auto { display: flex; gap: 6px; flex-wrap: wrap; }
+  .exemples-auto button { border: 1px solid var(--bord); background: rgba(255, 255, 255, .05); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
+  .proposition-auto { margin-top: 14px; display: grid; gap: 10px; }
+  .resume-auto { font-size: 17px; font-weight: 600; }
+  .liste-autos { display: grid; gap: 8px; margin-top: 8px; }
+  .auto { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--bord);
+    border-radius: 12px; background: rgba(10, 18, 56, .5); }
+  .auto .actions-auto { display: flex; gap: 6px; align-items: center; }
+  .attente { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--cyan); border-right-color: transparent; border-radius: 50%;
+    animation: tourne 1s linear infinite; vertical-align: -2px; margin-right: 6px; }
+  @keyframes tourne { to { transform: rotate(360deg); } }
   /* ---------- fiche d'un appareil (« ⋯ ») ---------- */
   .fiche { width: min(560px, 100%); }
   .fiche .modele { font-size: 13px; color: var(--doux); margin: -6px 0 12px; }
@@ -254,6 +271,7 @@
     <a href="#maison" data-vue="maison"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>Maison</a>
     <a href="#musique" data-vue="musique"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Musique</a>
     <a href="#plex" data-vue="plex"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4l8 8-8 8"/></svg>Plex</a>
+    <a href="#automatisations" data-vue="automatisations"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Automatisations</a>
   </nav>
 
   <section class="panneau verre" id="vue-maison">
@@ -277,6 +295,30 @@
     <h3 class="sous-titre">Enceintes</h3>
     <div class="grille-media" id="enceintes"></div>
     <audio id="audio" preload="none"></audio>
+  </section>
+
+  <section class="panneau verre" id="vue-automatisations" hidden>
+    <div class="titre-panneau"><h2><span class="pastille autos"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span>Automatisations</h2>
+      <span class="doux" id="ia-autos"></span></div>
+    <form class="demande-auto" id="form-auto">
+      <textarea id="texte-auto" rows="2" placeholder="Décris ce que tu veux, par exemple : « Tous les soirs au coucher du soleil, ferme les volets du salon »"></textarea>
+      <div class="exemples-auto">
+        <button type="button">Tous les soirs au coucher du soleil, ferme les volets du salon</button>
+        <button type="button">En semaine à 7h, allume la lumière de la cuisine à 50 %</button>
+        <button type="button">Éteins la lumière du couloir s'il n'y a plus de mouvement depuis 5 minutes</button>
+      </div>
+      <p style="margin:0"><button class="bouton" id="proposer-auto">Écrire l'automatisation</button> <span class="doux" id="etat-auto"></span></p>
+    </form>
+    <div class="proposition-auto" id="proposition-auto" hidden>
+      <div class="resume-auto" id="resume-auto"></div>
+      <label class="doux">YAML (tu peux le modifier avant de le créer)<textarea class="yaml-auto" id="yaml-auto" spellcheck="false"></textarea></label>
+      <p style="display:flex;gap:8px;flex-wrap:wrap;margin:0">
+        <button class="bouton" type="button" id="creer-auto">Créer dans Home Assistant</button>
+        <button class="bouton secondaire" type="button" id="telecharger-auto">Télécharger le .yaml</button>
+        <button class="bouton secondaire" type="button" id="annuler-auto">Annuler</button></p>
+    </div>
+    <h3 class="sous-titre" style="margin-top:22px">Tes automatisations</h3>
+    <div class="liste-autos" id="liste-autos"><div class="doux">Chargement…</div></div>
   </section>
 
   <section class="panneau verre" id="vue-plex" hidden>
@@ -1061,11 +1103,12 @@
   // ---------------------------------------------------------------- vues
   let vue = "maison";
   function ouvrirVue() {
-    vue = ["maison", "musique", "plex"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "maison";
-    for (const v of ["maison", "musique", "plex"]) $(`vue-${v}`).hidden = v !== vue;
+    vue = ["maison", "musique", "plex", "automatisations"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "maison";
+    for (const v of ["maison", "musique", "plex", "automatisations"]) $(`vue-${v}`).hidden = v !== vue;
     document.querySelectorAll("nav.vues a").forEach((a) => a.classList.toggle("actif", a.dataset.vue === vue));
     if (vue === "musique") afficherMusique();
     if (vue === "plex") chargerPlex();
+    if (vue === "automatisations") chargerAutos();
   }
   window.addEventListener("hashchange", ouvrirVue);
 
@@ -1126,6 +1169,68 @@
       return afficherMusique();
     }
     if (ev.target.closest("[data-radio-stop]")) { $("audio").pause(); radioIci = null; afficherMusique(); }
+  });
+
+  // ---------------------------------------------------------------- Automatisations
+  async function chargerAutos() {
+    let d;
+    try { d = await api("/v1/automatisations"); } catch (err) { if (err.message !== "401") $("liste-autos").innerHTML = `<div class="doux">${e(err.message)}</div>`; return; }
+    $("ia-autos").textContent = d.ia.length ? `Écrites par : ${d.ia[0]}` : "Aucune IA disponible pour écrire les automatisations";
+    const date = (t) => t ? new Date(t).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "jamais";
+    $("liste-autos").innerHTML = d.automatisations.map((a) => `<div class="auto">
+      <div style="min-width:0"><b>${e(a.nom)}</b>${a.beta ? ' <span class="badge">Bêta</span>' : ""}<div class="doux" style="font-size:12px">Dernière fois : ${e(date(a.derniere))}</div></div>
+      <div class="actions-auto">
+        <button class="bouton secondaire" data-auto-act="lancer" data-entite="${e(a.entite)}" title="Lancer maintenant">${ico("jouer")}</button>
+        ${a.beta ? `<button class="bouton secondaire" data-auto-suppr="${e(a.id)}" title="Supprimer">✕</button>` : ""}
+        <button class="interrupteur ${a.active ? "on" : ""}" data-auto-act="${a.active ? "desactiver" : "activer"}" data-entite="${e(a.entite)}" aria-label="Activer ou désactiver"></button>
+      </div></div>`).join("") || `<div class="doux">Aucune automatisation pour l'instant.</div>`;
+  }
+
+  document.querySelectorAll(".exemples-auto button").forEach((b) => b.addEventListener("click", () => { $("texte-auto").value = b.textContent; $("texte-auto").focus(); }));
+  $("form-auto").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const texte = $("texte-auto").value.trim();
+    if (!texte) return;
+    $("proposer-auto").disabled = true; $("proposition-auto").hidden = true;
+    $("etat-auto").innerHTML = `<span class="attente"></span>L'IA écrit l'automatisation… (avec le modèle local du NAS, compte 1 à 2 minutes)`;
+    try {
+      const p = await api("/v1/automatisations/proposer", { method: "POST", body: JSON.stringify({ texte }) });
+      if (!p.possible) { $("etat-auto").textContent = `Pas possible : ${p.resume}`; return; }
+      $("resume-auto").textContent = p.resume; $("yaml-auto").value = p.yaml; $("proposition-auto").hidden = false;
+      $("etat-auto").textContent = `Écrite par ${p.modele} en ${p.duree_s} s. Relis-la, puis crée-la.`;
+    } catch (err) {
+      $("etat-auto").textContent = err.message === "401" ? "" : err.message;
+    } finally { $("proposer-auto").disabled = false; }
+  });
+  $("creer-auto").addEventListener("click", async () => {
+    $("creer-auto").disabled = true;
+    try {
+      const r = await api("/v1/automatisations", { method: "POST", body: JSON.stringify({ yaml: $("yaml-auto").value }) });
+      $("proposition-auto").hidden = true; $("texte-auto").value = "";
+      $("etat-auto").textContent = `✅ « ${r.alias} » est créée dans Home Assistant.`;
+      setTimeout(chargerAutos, 1500);
+    } catch (err) { $("etat-auto").textContent = err.message === "401" ? "" : `Pas créée : ${err.message}`; }
+    finally { $("creer-auto").disabled = false; }
+  });
+  $("telecharger-auto").addEventListener("click", () => {
+    const nom = ($("resume-auto").textContent || "automatisation").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "automatisation";
+    const lien = document.createElement("a");
+    lien.href = URL.createObjectURL(new Blob([$("yaml-auto").value], { type: "text/yaml" }));
+    lien.download = `${nom}.yaml`; lien.click(); setTimeout(() => URL.revokeObjectURL(lien.href), 1000);
+  });
+  $("annuler-auto").addEventListener("click", () => { $("proposition-auto").hidden = true; $("etat-auto").textContent = ""; });
+  document.addEventListener("click", async (ev) => {
+    const b = ev.target.closest("[data-auto-act]"), suppr = ev.target.closest("[data-auto-suppr]");
+    if (b) {
+      await api("/v1/automatisations/action", { method: "POST", body: JSON.stringify({ entite: b.dataset.entite, action: b.dataset.autoAct }) }).catch(() => {});
+      if (b.dataset.autoAct === "lancer") parler("Automatisation lancée.");
+      setTimeout(chargerAutos, 800);
+    }
+    if (suppr && confirm("Supprimer cette automatisation de Home Assistant ?")) {
+      await api(`/v1/automatisations/${encodeURIComponent(suppr.dataset.autoSuppr)}`, { method: "DELETE" }).catch(() => {});
+      setTimeout(chargerAutos, 800);
+    }
   });
 
   // ---------------------------------------------------------------- Plex

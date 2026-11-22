@@ -24,7 +24,16 @@ _CONSIGNE = (
     "N'utilise pas de templates Jinja, de scripts, de shell_command ni de rest_command. "
     "Si la demande est impossible avec ces appareils, mets possible=false et explique pourquoi dans 'resume'. "
     "Sinon, 'resume' est une phrase courte en français qui sera lue à voix haute pour demander confirmation, "
-    "par exemple : « Tous les jours à 6h, j'ouvre les volets de la chambre. »"
+    "par exemple : « Tous les jours à 6h, j'ouvre les volets de la chambre. »\n\n"
+    # Des exemples : indispensables pour un modèle local de taille moyenne
+    "Exemples de YAML valides :\n"
+    "alias: Volets au lever du soleil\ntriggers:\n  - trigger: sun\n    event: sunrise\n    offset: \"00:15:00\"\n"
+    "actions:\n  - action: cover.open_cover\n    target:\n      entity_id: cover.appareil_1\n\n"
+    "alias: Lumière du soir en semaine\ntriggers:\n  - trigger: time\n    at: \"19:30:00\"\n"
+    "conditions:\n  - condition: time\n    weekday: [mon, tue, wed, thu, fri]\n"
+    "actions:\n  - action: light.turn_on\n    target:\n      entity_id: light.appareil_2\n    data:\n      brightness_pct: 60\n\n"
+    "alias: Éteindre si plus de mouvement\ntriggers:\n  - trigger: state\n    entity_id: binary_sensor.appareil_1\n"
+    "    to: \"off\"\n    for: \"00:10:00\"\nactions:\n  - action: light.turn_off\n    target:\n      entity_id: light.appareil_1"
 )
 
 _SCHEMA = {
@@ -40,6 +49,8 @@ _SCHEMA = {
 
 # Actions autorisées en plus des domaines exposés
 _ACTIONS_AUTORISEES_EN_PLUS = {"notify", "persistent_notification", "tts"}
+# Jamais dans une automatisation créée par Bêta : ouvrir une serrure, désarmer une alarme
+_ACTIONS_INTERDITES = {"lock.unlock", "lock.open", "alarm_control_panel.alarm_disarm"}
 _FORME_ENTITE = re.compile(r"^[a-z_]+\.[a-z0-9_]+$")
 
 
@@ -122,15 +133,24 @@ def verifier(
             continue
         domaine = noeud.split(".", 1)[0]
         if cle in ("action", "service"):
+            if noeud in _ACTIONS_INTERDITES:
+                raise ErreurAutomatisation(f"Action interdite pour ta sécurité : {noeud}")
             if domaine not in domaines_actions:
                 raise ErreurAutomatisation(f"Action non autorisée : {noeud}")
         elif domaine in domaines_exposes and noeud not in vrais_ids:
             raise ErreurAutomatisation(f"Appareil inconnu : {noeud}")
 
     config.setdefault("alias", alias)
-    config["description"] = "Créée par Bêta (assistant vocal)"
+    config.setdefault("description", "Créée par Bêta")
     config.setdefault("mode", "single")
     return config
+
+
+def en_yaml(config: dict[str, Any]) -> str:
+    """Le YAML à montrer (et à télécharger), dans l'ordre où Home Assistant l'affiche."""
+    ordre = ["alias", "description", "mode", "triggers", "trigger", "conditions", "condition", "actions", "action"]
+    trie = {k: config[k] for k in ordre if k in config} | {k: v for k, v in config.items() if k not in ordre and k != "id"}
+    return yaml.safe_dump(trie, allow_unicode=True, sort_keys=False, width=120)
 
 
 async def proposer_automatisation(

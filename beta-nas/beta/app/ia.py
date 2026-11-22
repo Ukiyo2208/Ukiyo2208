@@ -28,7 +28,8 @@ AUTOMATISATIONS = "automatisations"  # écrire une automatisation Home Assistant
 TACHES_PAR_DEFAUT = {
     COMPRENDRE: ["rapide"],
     CONVERSATION: ["cloud", "puissant", "rapide"],
-    AUTOMATISATIONS: ["cloud", "puissant"],
+    # « local » : le modèle du tri des documents (qwen3.5:9b), sur le NAS : plus lent (1 à 2 min), mais sans Internet
+    AUTOMATISATIONS: ["cloud", "puissant", "local"],
 }
 
 
