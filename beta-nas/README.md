@@ -230,6 +230,7 @@ incluse dans `static/home/leaflet`). La barre du bas est Bêta IA (`/v1/texte`).
 | `POST /v1/maison/action` | `{"entite", "action", "valeur"}` : basculer, luminosite, ouvrir, fermer, stop, position, temperature, lecture, suivant, precedent, volume, radio… |
 | `GET /v1/maison/image/{entite}` | pochette de ce qui joue sur une enceinte |
 | `POST /v1/automatisations/proposer` | `{"texte"}` -> résumé + YAML vérifié, écrit par l'IA de la tâche « automatisations » (cloud, puissant, puis `local` = `TRI_MODELE`) |
+| `GET /v1/automatisations/suggestions` | habitudes (journal des 14 derniers jours) et idées selon les appareils, YAML vérifié (gardées 10 min) |
 | `POST /v1/automatisations`, `GET /v1/automatisations` | crée le YAML relu (mêmes vérifications) ; liste ; `POST …/action` (activer, desactiver, lancer), `DELETE …/{id}` (créées par Bêta seulement) |
 | `GET/POST /v1/cameras`, `DELETE /v1/cameras/{id}` | caméras ONVIF / RTSP ajoutées directement (jamais les mots de passe) |
 | `GET /v1/cameras/{id}/image`, `GET /v1/cameras/{id}/direct` | image JPEG, vidéo en direct MJPEG (ffmpeg) |

@@ -221,6 +221,11 @@ design de Bêta home, et rien à configurer : tout passe par la connexion Home A
   template ni script, jamais ouvrir une serrure ni désarmer une alarme) ; tu relis et modifies le YAML, puis
   **Créer dans Home Assistant** ou **Télécharger le .yaml**. La liste montre toutes tes automatisations (activer,
   désactiver, lancer) ; celles créées par Bêta se suppriment d'ici.
+  - **Suggestions** (sans IA, instantanées) : 🕑 **tes habitudes**, repérées dans le journal de Home Assistant
+    (« tu allumes la cuisine vers 7h05 en semaine : 10 jours sur les 14 derniers ») et 💡 **des idées selon tes
+    appareils** (volets au coucher du soleil, lumière éteinte sans mouvement, clim coupée si une fenêtre reste
+    ouverte, tout éteindre quand tout le monde part…). **Voir et créer** met le YAML prêt dans l'éditeur ; ✕ ne la
+    propose plus.
   - **Automatisations complexes** : plusieurs horaires selon les cas, saisons, température, présence, jours de la
     semaine… Exemple : « En automne et en hiver, ferme les volets du salon à 17h30 ; au printemps et en été, à 21h30 ».
     Pour les **saisons**, ajoute une fois l'intégration **Saison** dans Home Assistant (Paramètres → Appareils et

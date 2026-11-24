@@ -293,6 +293,15 @@ class HomeAssistant:
                  "id": str((e.get("attributes") or {}).get("id") or "")}
                 for e in r.json() if e.get("entity_id", "").startswith("automation.")]
 
+    async def journal(self, jours: int = 14) -> list[dict]:
+        """Le journal de Home Assistant (qui a fait quoi, quand) des derniers jours, pour repérer les habitudes."""
+        from datetime import datetime, timedelta, timezone
+
+        debut = (datetime.now(timezone.utc) - timedelta(days=jours)).strftime("%Y-%m-%dT%H:%M:%S+00:00")
+        r = await self._client.get(f"/api/logbook/{debut}", timeout=60)
+        r.raise_for_status()
+        return r.json()
+
     async def supprimer_automatisation(self, identifiant: str) -> None:
         r = await self._client.delete(f"/api/config/automation/config/{identifiant}")
         r.raise_for_status()

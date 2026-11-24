@@ -712,6 +712,46 @@ async def liste_automatisations():
             "ia": [f"{m.nom} ({m.modele})" for m in ia.candidats("automatisations")] if ia else []}
 
 
+_suggestions_cache: dict = {"instant": 0.0, "valeur": None}
+
+
+@app.get("/v1/automatisations/suggestions", dependencies=[Depends(verifier_jeton)])
+async def suggestions_automatisations(fraiches: bool = False):
+    """Suggestions sans IA : tes habitudes (journal des 14 derniers jours) et des idées selon tes appareils.
+    Chaque YAML est déjà vérifié ; gardées 10 minutes."""
+    from . import suggestions as sugg
+    from .ia_web import ErreurAutomatisation, en_yaml, verifier
+
+    if not fraiches and _suggestions_cache["valeur"] and time.monotonic() - _suggestions_cache["instant"] < 600:
+        return _suggestions_cache["valeur"]
+    s, ha = etat["settings"], etat["routeur"].ha
+    donnees = await _maison_brute()
+    appareils, personnes = donnees.get("appareils", []), donnees.get("personnes", [])
+    try:
+        journal, journal_ok = await ha.journal(14), True
+    except httpx.HTTPError as e:
+        log.info("Journal de Home Assistant indisponible pour les habitudes : %s", e)
+        journal, journal_ok = [], False
+    try:
+        existantes = {a["nom"].lower() for a in await ha.automatisations()}
+    except httpx.HTTPError:
+        existantes = set()
+    noms = {a["id"]: a["nom"] for a in appareils}
+    reels = {eid: eid for eid in [*noms, *(p["id"] for p in personnes)]}
+    resultat = []
+    for idee in [*sugg.habitudes(journal, noms)[:8], *sugg.idees(appareils, personnes)]:
+        if idee["titre"].lower() in existantes:
+            continue  # déjà créée
+        try:
+            config = verifier(en_yaml(idee["config"]), reels, s.domaines_exposes, alias=idee["titre"])
+        except ErreurAutomatisation as e:
+            log.info("Suggestion écartée (%s) : %s", idee["titre"], e)
+            continue
+        resultat.append({"type": idee["type"], "titre": idee["titre"], "pourquoi": idee["pourquoi"], "yaml": en_yaml(config)})
+    _suggestions_cache.update(instant=time.monotonic(), valeur={"suggestions": resultat, "journal": journal_ok})
+    return _suggestions_cache["valeur"]
+
+
 @app.post("/v1/automatisations/proposer", dependencies=[Depends(verifier_jeton)])
 async def proposer_automatisation_page(demande: DemandeAutomatisation):
     """« Tous les soirs au coucher du soleil, ferme les volets du salon » -> un YAML vérifié, à relire."""
@@ -751,6 +791,7 @@ async def creer_automatisation_page(demande: YamlAutomatisation):
         raise HTTPException(status_code=422, detail=f"Home Assistant refuse cette automatisation : {e.response.text[:200]}") from e
     except httpx.HTTPError as e:
         raise HTTPException(status_code=503, detail="Home Assistant injoignable") from e
+    _suggestions_cache["valeur"] = None
     log.info("Automatisation créée depuis la page : %s (%s)", config.get("alias"), identifiant)
     return {"id": identifiant, "alias": config.get("alias")}
 

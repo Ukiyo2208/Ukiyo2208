@@ -197,6 +197,12 @@
   .auto { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--bord);
     border-radius: 12px; background: rgba(10, 18, 56, .5); }
   .auto .actions-auto { display: flex; gap: 6px; align-items: center; }
+  .suggestion { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 12px;
+    border: 1px solid var(--bord); border-radius: 12px; background: rgba(10, 18, 56, .5); }
+  .suggestion .icone-sugg { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 17px;
+    background: rgba(255, 255, 255, .08); }
+  .suggestion.habitude .icone-sugg { background: linear-gradient(135deg, rgba(66, 226, 160, .35), rgba(47, 139, 255, .35)); }
+  @media (max-width: 600px) { .suggestion { grid-template-columns: auto 1fr; } .suggestion .actions-auto { grid-column: 1 / -1; } }
   .attente { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--cyan); border-right-color: transparent; border-radius: 50%;
     animation: tourne 1s linear infinite; vertical-align: -2px; margin-right: 6px; }
   @keyframes tourne { to { transform: rotate(360deg); } }
@@ -322,6 +328,8 @@
         <button class="bouton secondaire" type="button" id="telecharger-auto">Télécharger le .yaml</button>
         <button class="bouton secondaire" type="button" id="annuler-auto">Annuler</button></p>
     </div>
+    <h3 class="sous-titre" style="margin-top:22px">Suggestions</h3>
+    <div class="liste-autos" id="suggestions-autos"><div class="doux">Bêta regarde tes habitudes…</div></div>
     <h3 class="sous-titre" style="margin-top:22px">Tes automatisations</h3>
     <div class="liste-autos" id="liste-autos"><div class="doux">Chargement…</div></div>
   </section>
@@ -1182,6 +1190,7 @@
     try { d = await api("/v1/automatisations"); } catch (err) { if (err.message !== "401") $("liste-autos").innerHTML = `<div class="doux">${e(err.message)}</div>`; return; }
     $("ia-autos").textContent = d.ia.length ? `Écrites par : ${d.ia[0]}` : "Aucune IA disponible pour écrire les automatisations";
     $("aide-saison").hidden = d.saison !== false;
+    chargerSuggestions();
     const date = (t) => t ? new Date(t).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "jamais";
     $("liste-autos").innerHTML = d.automatisations.map((a) => `<div class="auto">
       <div style="min-width:0"><b>${e(a.nom)}</b>${a.beta ? ' <span class="badge">Bêta</span>' : ""}<div class="doux" style="font-size:12px">Dernière fois : ${e(date(a.derniere))}</div></div>
@@ -1191,6 +1200,36 @@
         <button class="interrupteur ${a.active ? "on" : ""}" data-auto-act="${a.active ? "desactiver" : "activer"}" data-entite="${e(a.entite)}" aria-label="Activer ou désactiver"></button>
       </div></div>`).join("") || `<div class="doux">Aucune automatisation pour l'instant.</div>`;
   }
+
+  // Suggestions sans IA : tes habitudes et des idées selon tes appareils, YAML déjà prêt
+  let suggestionsListe = [];
+  const ignorees = () => { try { return new Set(JSON.parse(localStorage.getItem("autos_ignorees") || "[]")); } catch (_) { return new Set(); } };
+  async function chargerSuggestions() {
+    let d;
+    try { d = await api("/v1/automatisations/suggestions"); } catch (err) { $("suggestions-autos").innerHTML = `<div class="doux">${e(err.message)}</div>`; return; }
+    const masquees = ignorees();
+    suggestionsListe = d.suggestions.filter((x) => !masquees.has(x.titre));
+    $("suggestions-autos").innerHTML = suggestionsListe.map((x, i) => `<div class="suggestion ${x.type}">
+      <span class="icone-sugg">${x.type === "habitude" ? "🕑" : "💡"}</span>
+      <div style="min-width:0"><b>${e(x.titre)}</b><div class="doux" style="font-size:12px">${e(x.pourquoi)}</div></div>
+      <div class="actions-auto"><button class="bouton" data-sugg="${i}">Voir et créer</button>
+        <button class="bouton secondaire" data-sugg-ignorer="${i}" title="Ne plus proposer">✕</button></div></div>`).join("")
+      || `<div class="doux">Aucune suggestion pour l'instant${d.journal ? "" : " (le journal de Home Assistant n'est pas lisible : seules les idées selon tes appareils sont proposées)"}.</div>`;
+  }
+  document.addEventListener("click", (ev) => {
+    const voir = ev.target.closest("[data-sugg]"), ignorer = ev.target.closest("[data-sugg-ignorer]");
+    if (voir) {
+      const x = suggestionsListe[Number(voir.dataset.sugg)];
+      $("resume-auto").textContent = x.titre; $("yaml-auto").value = x.yaml; $("proposition-auto").hidden = false;
+      $("etat-auto").textContent = "Suggestion prête : relis-la (tu peux la modifier), puis crée-la.";
+      $("proposition-auto").scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    if (ignorer) {
+      const masquees = ignorees(); masquees.add(suggestionsListe[Number(ignorer.dataset.suggIgnorer)].titre);
+      try { localStorage.setItem("autos_ignorees", JSON.stringify([...masquees])); } catch (_) {}
+      chargerSuggestions();
+    }
+  });
 
   document.querySelectorAll(".exemples-auto button").forEach((b) => b.addEventListener("click", () => { $("texte-auto").value = b.textContent; $("texte-auto").focus(); }));
   $("form-auto").addEventListener("submit", async (ev) => {
