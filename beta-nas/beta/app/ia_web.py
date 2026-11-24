@@ -33,7 +33,28 @@ _CONSIGNE = (
     "conditions:\n  - condition: time\n    weekday: [mon, tue, wed, thu, fri]\n"
     "actions:\n  - action: light.turn_on\n    target:\n      entity_id: light.appareil_2\n    data:\n      brightness_pct: 60\n\n"
     "alias: Éteindre si plus de mouvement\ntriggers:\n  - trigger: state\n    entity_id: binary_sensor.appareil_1\n"
-    "    to: \"off\"\n    for: \"00:10:00\"\nactions:\n  - action: light.turn_off\n    target:\n      entity_id: light.appareil_1"
+    "    to: \"off\"\n    for: \"00:10:00\"\nactions:\n  - action: light.turn_off\n    target:\n      entity_id: light.appareil_1\n\n"
+    # Automatisations complexes, sans template : déclencheurs nommés (id) + bloc choose + conditions
+    "alias: Volets selon la saison\ntriggers:\n  - trigger: time\n    at: \"17:30:00\"\n    id: hiver\n"
+    "  - trigger: time\n    at: \"21:30:00\"\n    id: ete\nactions:\n  - choose:\n      - conditions:\n"
+    "          - condition: trigger\n            id: hiver\n          - condition: state\n            entity_id: sensor.appareil_3\n"
+    "            state: [autumn, winter]\n        sequence:\n          - action: cover.close_cover\n            target:\n"
+    "              entity_id: cover.appareil_1\n      - conditions:\n          - condition: trigger\n            id: ete\n"
+    "          - condition: state\n            entity_id: sensor.appareil_3\n            state: [spring, summer]\n"
+    "        sequence:\n          - action: cover.close_cover\n            target:\n              entity_id: cover.appareil_1\n\n"
+    "alias: Fermer les volets s'il fait chaud et que personne n'est là\ntriggers:\n  - trigger: numeric_state\n"
+    "    entity_id: sensor.appareil_1\n    above: 26\nconditions:\n  - condition: state\n    entity_id: person.appareil_1\n"
+    "    state: not_home\n  - condition: time\n    after: \"11:00:00\"\n    before: \"18:00:00\"\nactions:\n"
+    "  - action: cover.close_cover\n    target:\n      entity_id: [cover.appareil_1, cover.appareil_2]\n\n"
+    "Règles pour les automatisations complexes :\n"
+    "- Plusieurs horaires ou cas : plusieurs déclencheurs avec un « id », puis un bloc « choose » avec "
+    "« condition: trigger » pour chaque cas.\n"
+    "- Saison : utilise le capteur de saison indiqué (états : spring, summer, autumn, winter). S'il n'y en a pas, "
+    "mets possible=false et dis d'ajouter l'intégration « Saison » de Home Assistant, ou propose le coucher du soleil "
+    "(trigger: sun, event: sunset, avec un offset), qui suit naturellement les saisons.\n"
+    "- Conditions utiles : state (personne à la maison : home / not_home), numeric_state (température, luminosité : "
+    "above / below), time (after, before, weekday), sun (after: sunset, before: sunrise).\n"
+    "- Dans « resume », explique toutes les branches en une ou deux phrases."
 )
 
 _SCHEMA = {
@@ -153,6 +174,43 @@ def en_yaml(config: dict[str, Any]) -> str:
     return yaml.safe_dump(trie, allow_unicode=True, sort_keys=False, width=120)
 
 
+_MOTS_VIDES = set("avec dans pour sans tous tout toute toutes quand plus moins entre apres avant chaque jour jours soir "
+                  "matin nuit heure heures fois mets met fais ferme ferme ouvre allume eteins eteint lumiere".split())
+
+
+def _mots(texte: str) -> set[str]:
+    import unicodedata
+    propre = unicodedata.normalize("NFKD", texte or "").encode("ascii", "ignore").decode().lower()
+    return {m[:5] for m in re.findall(r"[a-z0-9]+", propre) if len(m) >= 4 and m not in _MOTS_VIDES}
+
+
+def est_capteur_saison(a: Appareil) -> bool:
+    return a.domaine == "sensor" and bool(re.search(r"season|saison", f"{a.entity_id} {a.nom}", re.IGNORECASE))
+
+
+def choisir_appareils(demande: str, appareils: list[Appareil], maximum: int = 120) -> list[Appareil]:
+    """Les appareils utiles à cette demande : ceux de la phrase (nom, pièce, type), puis ce qui sert aux conditions
+    (saison, températures, personnes), puis le reste, sans dépasser « maximum ». Un modèle local garde ainsi
+    toute son attention pour la demande au lieu de lire des centaines de capteurs."""
+    if len(appareils) <= maximum:
+        return appareils
+    mots = _mots(demande)
+    pilotables = {"light", "cover", "switch", "climate", "fan", "media_player", "scene", "lock", "vacuum", "input_boolean"}
+
+    def score(a: Appareil) -> int:
+        texte = _mots(f"{a.nom} {a.piece} {a.entity_id.replace('_', ' ')}")
+        points = 10 * len(mots & texte)
+        if est_capteur_saison(a) or a.domaine == "person":
+            points += 8
+        elif a.domaine in pilotables:
+            points += 3
+        elif re.search(r"temp|humid|lux|illumin|luminos|mouvement|motion|presence|porte|door|window|fenetre", a.entity_id):
+            points += 2
+        return points
+
+    return sorted(appareils, key=score, reverse=True)[:maximum]
+
+
 async def proposer_automatisation(
     ia: IA,
     demande: str,
@@ -161,8 +219,12 @@ async def proposer_automatisation(
     envoyer_noms: bool,
 ) -> Proposition:
     """Confiée à l'IA de la tâche « automatisations » (le cloud par défaut, sinon le modèle puissant)."""
-    liste, table = anonymiser(appareils, envoyer_noms)
-    message = f"Demande : {demande}\n\nAppareils disponibles :\n{json.dumps(liste, ensure_ascii=False, indent=1)}"
+    choisis = choisir_appareils(demande, appareils)
+    liste, table = anonymiser(choisis, envoyer_noms)
+    alias_de = {vrai: alias for alias, vrai in table.items()}
+    saisons = [alias_de[a.entity_id] for a in choisis if est_capteur_saison(a)]
+    message = (f"Demande : {demande}\n\nCapteur de saison : {saisons[0] if saisons else 'aucun'}\n\n"
+               f"Appareils disponibles :\n{json.dumps(liste, ensure_ascii=False, indent=1)}")
     try:
         donnees, modele = await ia.demander_json(AUTOMATISATIONS, _CONSIGNE, message, _SCHEMA, max_tokens=16000)
     except IndisponibleError as e:

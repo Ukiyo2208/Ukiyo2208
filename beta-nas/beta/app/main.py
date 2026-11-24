@@ -702,7 +702,13 @@ async def liste_automatisations():
     except httpx.HTTPError as e:
         raise HTTPException(status_code=503, detail="Home Assistant injoignable") from e
     ia = etat["routeur"].ia
-    return {"automatisations": sorted(({**a, "beta": a["id"].startswith("beta_")} for a in liste), key=lambda a: a["nom"].lower()),
+    try:  # les règles selon la saison ont besoin de l'intégration « Saison » de Home Assistant
+        from .ia_web import est_capteur_saison
+
+        saison = any(est_capteur_saison(x) for x in await etat["routeur"].ha.appareils(["sensor"]))
+    except httpx.HTTPError:
+        saison = False
+    return {"saison": saison, "automatisations": sorted(({**a, "beta": a["id"].startswith("beta_")} for a in liste), key=lambda a: a["nom"].lower()),
             "ia": [f"{m.nom} ({m.modele})" for m in ia.candidats("automatisations")] if ia else []}
 
 
@@ -716,7 +722,8 @@ async def proposer_automatisation_page(demande: DemandeAutomatisation):
         raise HTTPException(status_code=503, detail="Aucune IA pour les automatisations (ni cloud, ni PC puissant, ni modèle local)")
     debut = time.monotonic()
     try:
-        appareils = await routeur.ha.appareils(s.domaines_exposes)
+        # + les personnes, pour « si personne n'est à la maison »
+        appareils = await routeur.ha.appareils([*s.domaines_exposes, "person"])
         p = await proposer_automatisation(routeur.ia, demande.texte.strip()[:500], appareils, s.domaines_exposes,
                                           s.envoyer_noms_appareils)
     except ErreurAutomatisation as e:
@@ -734,7 +741,7 @@ async def creer_automatisation_page(demande: YamlAutomatisation):
 
     s, ha = etat["settings"], etat["routeur"].ha
     try:
-        appareils = await ha.appareils(s.domaines_exposes)
+        appareils = await ha.appareils([*s.domaines_exposes, "person"])
         config = verifier(demande.yaml, {a.entity_id: a.entity_id for a in appareils}, s.domaines_exposes)
         identifiant = f"beta_{uuid.uuid4().hex[:12]}"
         await ha.creer_automatisation(identifiant, {"id": identifiant, **config})

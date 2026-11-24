@@ -306,7 +306,12 @@
         <button type="button">Tous les soirs au coucher du soleil, ferme les volets du salon</button>
         <button type="button">En semaine à 7h, allume la lumière de la cuisine à 50 %</button>
         <button type="button">Éteins la lumière du couloir s'il n'y a plus de mouvement depuis 5 minutes</button>
+        <button type="button">En automne et en hiver, ferme les volets du salon à 17h30 ; au printemps et en été, à 21h30</button>
+        <button type="button">S'il fait plus de 26 °C et que personne n'est à la maison, ferme tous les volets entre 11h et 18h</button>
       </div>
+      <p class="doux" id="aide-saison" style="margin:0;font-size:13px" hidden>Pour les règles selon la saison, ajoute l'intégration
+        <b>Saison</b> dans Home Assistant : Paramètres → Appareils et services → Ajouter une intégration → « Saison ».
+        Sinon, Bêta peut utiliser le coucher du soleil, qui suit les saisons.</p>
       <p style="margin:0"><button class="bouton" id="proposer-auto">Écrire l'automatisation</button> <span class="doux" id="etat-auto"></span></p>
     </form>
     <div class="proposition-auto" id="proposition-auto" hidden>
@@ -1176,6 +1181,7 @@
     let d;
     try { d = await api("/v1/automatisations"); } catch (err) { if (err.message !== "401") $("liste-autos").innerHTML = `<div class="doux">${e(err.message)}</div>`; return; }
     $("ia-autos").textContent = d.ia.length ? `Écrites par : ${d.ia[0]}` : "Aucune IA disponible pour écrire les automatisations";
+    $("aide-saison").hidden = d.saison !== false;
     const date = (t) => t ? new Date(t).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "jamais";
     $("liste-autos").innerHTML = d.automatisations.map((a) => `<div class="auto">
       <div style="min-width:0"><b>${e(a.nom)}</b>${a.beta ? ' <span class="badge">Bêta</span>' : ""}<div class="doux" style="font-size:12px">Dernière fois : ${e(date(a.derniere))}</div></div>
