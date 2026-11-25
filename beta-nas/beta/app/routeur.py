@@ -22,11 +22,11 @@ import re
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 import httpx
 
-from . import ia as ia_taches, llm_local, settings as cfg
+from . import commandes, ia as ia_taches, llm_local, settings as cfg
 from .homeassistant import HomeAssistant, ReponseHA
 from .ia import CONVERSATION, IA, IndisponibleError
 from .ia_web import ErreurAutomatisation, proposer_automatisation
@@ -86,6 +86,8 @@ class Routeur:
     llm: llm_local.LLMLocal
     ia: IA | None = None
     localisation: Localisation | None = None
+    # Commandes de Bêta en plus de Home Assistant (résumé, énergie, tondeuse, Bêta Tool…) : exécutées par main.py
+    extras: Callable[[commandes.Intention, set], Awaitable["Resultat | None"]] | None = None
     _attentes: dict[str, _Attente] = field(default_factory=dict)
     _discussions: dict[str, tuple[list[dict], float]] = field(default_factory=dict)
 
@@ -137,6 +139,14 @@ class Routeur:
 
         # « Tous les jours à 6h, ouvre les volets » ne doit pas ouvrir les volets tout de suite
         semble_automatisation = llm_local.tri_par_mots_cles(texte).categorie == llm_local.AUTOMATISATION
+
+        intention = commandes.reconnaitre(texte) if self.extras and not semble_automatisation else None
+        if intention:
+            if intention.capacite not in capacites:
+                return await manque(intention.capacite, "Désolé, je ne peux pas faire ça pour toi.")
+            resultat = await self.extras(intention, capacites)
+            if resultat is not None:
+                return resultat
         if cfg.DOMOTIQUE in capacites and not semble_automatisation:
             reponse = await self._ha(texte)
             if reponse and reponse.comprise:

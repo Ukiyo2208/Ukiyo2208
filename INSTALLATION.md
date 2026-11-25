@@ -280,6 +280,27 @@ en haut de *Pièces et appareils* (« 42 tuiles · 40 appareils et 380 entités 
 ne sont rangés dans aucune pièce sont dans la carte **Sans pièce** (repliée) : range-les dans une pièce dans Home
 Assistant. Coche **Entités techniques** pour voir aussi les réglages et capteurs qui n'appartiennent à aucun appareil.
 
+## I ter. Alertes, énergie, résumé du matin, écran de veille, sauvegarde
+
+- **Alertes sur le téléphone** : mets ta destination dans `NOTIFICATIONS` (fichier `.env`), par exemple
+  `ha:mobile_app_pixel_8` (le nom exact : Home Assistant → Outils de développement → Actions → « notify.mobile_app_ »).
+  Puis `http://192.168.1.20:8800/tableau` → **Envoyer une notification d'essai**.
+- **Énergie** : rien à faire si tu as des prises connectées ou un Linky dans Home Assistant. Ajuste `PRIX_KWH`.
+- **Bêta Tool dans Bêta** (résumé, courses, agenda et colis à la voix) : Bêta Tool → **Réglages → API** → nouveau
+  jeton avec le droit « Commandes vocales et widget » → colle-le dans `BETA_TOOL_JETON`, puis relance l'installateur.
+- **Écran de veille** sur la tablette ou un écran : ouvre une fois `http://192.168.1.20:8800/home/?veille=1&piece=Salon`.
+- **Sauvegarde** : automatique chaque nuit. Vérifie le dossier indiqué à la fin de l'installation, et l'état sur le
+  tableau de bord.
+
+### Restaurer une sauvegarde
+
+1. Arrête Bêta : `cd /volume1/docker/beta/beta-nas && sudo docker compose down`.
+2. Choisis l'archive (dans le dossier `SAUVEGARDE_DOSSIER`) et extrais-la dans un dossier temporaire :
+   `sudo mkdir /tmp/restaure && sudo tar -xzf beta-AAAA-MM-JJ_0330.tar.gz -C /tmp/restaure`.
+3. Remets ce qu'il faut : `env/.env` → `beta-nas/.env`, `config/` → `beta-nas/config/`, `beta-nas/*` →
+   `beta-nas/data/`, `beta-tool/*` → le dossier de `BETA_TOOL_DONNEES`.
+4. Relance : `sudo docker compose up -d`. Les appairages Alexa et HomeKit sont revenus, pas besoin de réappairer.
+
 ## J. IA cloud ou PC puissant pour la discussion (optionnel)
 
 La discussion (« raconte-moi… », « explique-moi… ») est bien meilleure avec une grosse IA :

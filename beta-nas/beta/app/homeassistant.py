@@ -242,6 +242,11 @@ class HomeAssistant:
         return self._registre
 
     async def _lire_registre(self) -> dict[str, dict]:
+        resultat = await self._websocket({"type": "config/entity_registry/list_for_display"})
+        return {e["ei"]: e for e in resultat.get("entities", []) if "ei" in e}
+
+    async def _websocket(self, commande: dict):
+        """Une commande sur l'API WebSocket de Home Assistant (celle de son interface) ; renvoie son résultat."""
         from websockets.asyncio.client import connect
 
         adresse = re.sub(r"^http", "ws", self.url.rstrip("/")) + "/api/websocket"
@@ -250,14 +255,30 @@ class HomeAssistant:
             await ws.send(json.dumps({"type": "auth", "access_token": self._token}))
             if json.loads(await ws.recv()).get("type") != "auth_ok":
                 raise PermissionError("jeton refusé")
-            await ws.send(json.dumps({"id": 1, "type": "config/entity_registry/list_for_display"}))
+            await ws.send(json.dumps({"id": 1, **commande}))
             while True:
                 message = json.loads(await ws.recv())
                 if message.get("id") == 1:
                     break
         if not message.get("success"):
             raise RuntimeError(message.get("error", {}).get("message", "refus"))
-        return {e["ei"]: e for e in message["result"].get("entities", []) if "ei" in e}
+        return message["result"]
+
+    async def statistiques(self, ids: list[str], debut: str, periode: str = "day") -> dict[str, list[dict]]:
+        """Statistiques longues de Home Assistant (celles du tableau Énergie) : {id: [{start, change, mean…}]}."""
+        if not ids:
+            return {}
+        return await asyncio.wait_for(self._websocket({
+            "type": "recorder/statistics_during_period", "start_time": debut, "statistic_ids": ids,
+            "period": periode, "types": ["change", "mean", "state"]}), timeout=20)
+
+    async def historique(self, entite: str, debut: str) -> list[dict]:
+        """Valeurs d'une entité depuis `debut` (ISO) : [{"s": état, "lu": instant}…], sans les attributs."""
+        r = await self._client.get(f"/api/history/period/{debut}", params={
+            "filter_entity_id": entite, "minimal_response": "", "no_attributes": "", "significant_changes_only": ""})
+        r.raise_for_status()
+        donnees = r.json()
+        return donnees[0] if donnees else []
 
     async def _rendre(self, template: str) -> dict:
         r = await self._client.post("/api/template", json={"template": template})

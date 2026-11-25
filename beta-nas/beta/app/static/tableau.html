@@ -78,6 +78,14 @@
     <h2>Services</h2>
     <div class="grille" id="services"></div>
 
+    <h2>Sauvegarde et alertes</h2>
+    <div class="grille">
+      <div class="carte" id="sauvegarde"><b>Sauvegarde de la nuit</b><small>…</small></div>
+      <div class="carte"><b>Alertes sur le téléphone</b><small id="destinations">…</small>
+        <p style="margin:8px 0 0"><button type="button" id="tester-alertes">Envoyer une notification d'essai</button> <small id="resultat-test"></small></p></div>
+    </div>
+    <div id="alertes" style="margin-top:10px"></div>
+
     <h2>Utilisation</h2>
     <div class="chiffres" id="chiffres"></div>
     <div id="routes" style="margin-top:10px"></div>
@@ -173,8 +181,33 @@
     }
   }
 
+  async function sauvegardeEtAlertes() {
+    try {
+      const [sv, al] = await Promise.all([fetch("/v1/sauvegarde", { headers: entetes() }).then((r) => r.json()),
+                                          fetch("/v1/alertes", { headers: entetes() }).then((r) => r.json())]);
+      const quand = (t) => t ? new Date(t * 1000).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "jamais";
+      const mo = (o) => `${Math.round((o || 0) / 1048576).toLocaleString("fr-FR")} Mo`;
+      $("sauvegarde").innerHTML = `<b><span class="point ${sv.existe && !sv.erreur && sv.derniere_reussie ? "vert" : "rouge"}"></span>Sauvegarde de la nuit</b>` + (sv.existe
+        ? `<small>Dernière réussie : ${echapper(quand(sv.derniere_reussie))}${sv.erreur ? ` · <span class="err">échec : ${echapper(sv.erreur)}</span>` : ""}<br>
+           ${sv.archives || 0} archives (${mo(sv.taille_totale)}), gardées ${sv.jours_gardes || 14} jours</small>`
+        : `<small>Pas encore de sauvegarde (conteneur beta-sauvegarde, chaque nuit).</small>`);
+      $("destinations").textContent = !al.actives ? "Coupées (ALERTES=non)" : al.destinations.length
+        ? `Envoyées vers : ${al.destinations.join(", ")}` : "Aucune destination : remplis NOTIFICATIONS dans .env";
+      $("alertes").innerHTML = al.alertes.slice(0, 8).map((a) => `<span class="badge">${echapper(new Date(a.quand * 1000).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }))} · ${echapper(a.titre)} : ${echapper(a.message)}</span>`).join(" ")
+        || `<small style="color:var(--doux)">Aucune alerte depuis le démarrage de Bêta.</small>`;
+    } catch (e) { /* jeton demandé : affiché par actualiser() */ }
+  }
+  $("tester-alertes").addEventListener("click", async () => {
+    $("resultat-test").textContent = "Envoi…";
+    const r = await fetch("/v1/alertes/test", { method: "POST", headers: entetes() });
+    const d = await r.json().catch(() => ({}));
+    $("resultat-test").textContent = r.ok ? Object.entries(d).map(([k, v]) => `${k} : ${v === "ok" ? "✅" : v}`).join(" · ") : (d.detail || "Échec");
+  });
+
   actualiser();
+  sauvegardeEtAlertes();
   setInterval(() => { if ($("connexion").hidden && !document.hidden) actualiser(); }, 2000);
+  setInterval(() => { if ($("connexion").hidden && !document.hidden) sauvegardeEtAlertes(); }, 30000);
 </script>
 <script src="/static/nav.js"></script>
 </body>

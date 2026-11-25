@@ -87,6 +87,7 @@ services:
     volumes:
       - ./config:/config:ro
       - ./data/beta:/data # ce que Bêta enregistre (appareils partagés avec Alexa…)
+      - ${SAUVEGARDE_DOSSIER:-./data/sauvegardes}:/sauvegardes:ro # état de la sauvegarde (tableau de bord, alertes)
     depends_on:
       - whisper
       - piper
@@ -237,4 +238,24 @@ services:
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
       - net.ipv4.ip_forward=1
+    restart: unless-stopped
+
+  # Sauvegarde chaque nuit (SAUVEGARDE_HEURE) : réglages, appairages Alexa/HomeKit, données de Bêta, du tri,
+  # configuration de Home Assistant et données de Bêta Tool, dans SAUVEGARDE_DOSSIER (gardée SAUVEGARDE_JOURS jours).
+  # Tout de suite : docker exec beta-sauvegarde sh /sauvegarde.sh maintenant
+  sauvegarde:
+    image: alpine:3.20
+    container_name: beta-sauvegarde
+    command: ["sh", "/sauvegarde.sh"]
+    environment:
+      - TZ=${TZ:-Europe/Paris}
+      - SAUVEGARDE_HEURE=${SAUVEGARDE_HEURE:-03:30}
+      - SAUVEGARDE_JOURS=${SAUVEGARDE_JOURS:-14}
+    volumes:
+      - ./outils/sauvegarde.sh:/sauvegarde.sh:ro
+      - ./.env:/source/env/.env:ro
+      - ./config:/source/config:ro
+      - ./data:/source/beta-nas:ro
+      - ${BETA_TOOL_DONNEES:-/volume3/Docker/Beta-tool/data}:/source/beta-tool:ro
+      - ${SAUVEGARDE_DOSSIER:-./data/sauvegardes}:/sauvegardes
     restart: unless-stopped

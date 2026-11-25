@@ -293,6 +293,14 @@ for c in beta-tool beta-work vaultwarden wg-easy; do
   fi
 done
 
+# Sauvegarde de la nuit : sur un autre volume que le projet si le NAS en a un (un disque qui lâche ne prend pas tout)
+if [ -z "$(env_lire "$ENV_BETA" SAUVEGARDE_DOSSIER)" ]; then
+  AUTRE=$(ls -d /volume[0-9]* 2>/dev/null | grep -vx "$VOLUME" | head -n1 || true)
+  env_ecrire "$ENV_BETA" SAUVEGARDE_DOSSIER "${AUTRE:-$VOLUME}/Sauvegardes/Beta"
+fi
+mkdir -p "$(env_lire "$ENV_BETA" SAUVEGARDE_DOSSIER)"
+ok "Sauvegarde chaque nuit dans $(env_lire "$ENV_BETA" SAUVEGARDE_DOSSIER)"
+
 # ====================================================================== 5. Bêta
 
 etape "Démarrage de Bêta (première fois : 5 à 15 minutes)"

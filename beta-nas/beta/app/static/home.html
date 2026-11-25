@@ -184,6 +184,26 @@
   .direct { width: 100%; border-radius: 12px; background: #0b1236; display: block; min-height: 200px; }
   /* ---------- automatisations ---------- */
   .pastille.autos { background: linear-gradient(135deg, #42e2a0, #2f8bff); }
+  /* ---------- énergie ---------- */
+  .pastille.energie { background: linear-gradient(135deg, #ffc43d, #ff7a3d); }
+  .chiffres-energie { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .chiffre-energie { padding: 14px; border: 1px solid var(--bord); border-radius: 14px; background: rgba(10, 18, 56, .5); }
+  .chiffre-energie span { color: var(--doux); font-size: 13px; } .chiffre-energie b { display: block; font-size: 26px; margin: 4px 0 2px; }
+  .chiffre-energie small { color: var(--doux); }
+  .barres { display: flex; align-items: flex-end; gap: 3px; height: 150px; padding: 10px 0 0; }
+  .barres div { flex: 1; min-width: 4px; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, #ffc43d, #ff7a3d); opacity: .85; position: relative; }
+  .barres div.aujourdhui { background: linear-gradient(180deg, #7b5bff, #2f8bff); }
+  .barres div:hover { opacity: 1; }
+  .axe-barres { display: flex; justify-content: space-between; color: var(--doux); font-size: 11px; margin-top: 4px; }
+  .table-energie { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+  .table-energie th { text-align: left; color: var(--doux); font-weight: 500; font-size: 12px; padding: 6px 8px; }
+  .table-energie td { padding: 8px; border-top: 1px solid var(--bord); } .table-energie td.n { text-align: right; white-space: nowrap; }
+  .jauge-energie { height: 4px; border-radius: 4px; background: linear-gradient(90deg, #ffc43d, #ff7a3d); margin-top: 4px; }
+  /* ---------- courbes des fiches ---------- */
+  .courbe { width: 100%; height: 64px; margin-top: 6px; } .courbe svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .courbe { height: auto; } .courbe svg { height: 52px; }
+  .legende-courbe { display: flex; justify-content: space-between; color: var(--doux); font-size: 11px; margin-top: 3px; }
+  .resume-bouton { gap: 6px; }
   .demande-auto { display: grid; gap: 10px; }
   .demande-auto textarea, .yaml-auto { width: 100%; background: rgba(0, 0, 0, .3); border: 1px solid var(--bord); border-radius: 12px;
     padding: 12px; color: var(--texte); font-family: inherit; font-size: 15px; line-height: 1.5; resize: vertical; }
@@ -268,6 +288,8 @@
       <div class="compteurs" id="compteurs"></div>
     </div>
     <div class="actions-haut verre">
+      <button class="rond" id="bouton-resume" title="Résumé du matin (lu à voix haute)" aria-label="Résumé du matin">
+        <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
       <button class="rond" data-pont-ouvrir="alexa" title="Alexa" aria-label="Alexa">
         <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8.5 15.5c1-3 2-5 3.5-7 1.5 2 2.5 4 3.5 7"/></svg></button>
       <button class="rond" data-pont-ouvrir="homekit" title="HomeKit (app Maison d'Apple)" aria-label="HomeKit">
@@ -280,6 +302,7 @@
     <a href="#musique" data-vue="musique"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Musique</a>
     <a href="#plex" data-vue="plex"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4l8 8-8 8"/></svg>Plex</a>
     <a href="#automatisations" data-vue="automatisations"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Automatisations</a>
+    <a href="#energie" data-vue="energie"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>Énergie</a>
   </nav>
 
   <section class="panneau verre" id="vue-maison">
@@ -305,6 +328,18 @@
     <h3 class="sous-titre">Enceintes</h3>
     <div class="grille-media" id="enceintes"></div>
     <audio id="audio" preload="none"></audio>
+  </section>
+
+  <section class="panneau verre" id="vue-energie" hidden>
+    <div class="titre-panneau"><h2><span class="pastille energie"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg></span>Énergie</h2>
+      <span class="doux" id="info-energie"></span></div>
+    <div class="chiffres-energie" id="chiffres-energie"><div class="doux">Chargement…</div></div>
+    <h3 class="sous-titre" style="margin-top:22px">30 derniers jours</h3>
+    <div class="barres" id="barres-energie"></div><div class="axe-barres" id="axe-energie"></div>
+    <h3 class="sous-titre" style="margin-top:22px">Par appareil</h3>
+    <div id="appareils-energie"></div>
+    <h3 class="sous-titre" style="margin-top:22px">En ce moment</h3>
+    <div id="puissance-energie"></div>
   </section>
 
   <section class="panneau verre" id="vue-automatisations" hidden>
@@ -843,6 +878,11 @@
     if (d === "input_button") return `<div class="ligne-fiche"><span class="libelle">${nomL}</span><button class="bouton secondaire" data-act="appuyer" data-id="${e(a.id)}">Appuyer</button></div>`;
     if (d === "button") return `<div class="ligne-fiche"><span class="libelle">${nomL}</span><button class="bouton secondaire" data-act="appuyer" data-id="${e(a.id)}">Appuyer</button></div>`;
     if (d === "lock") return `<div class="ligne-fiche"><span class="libelle">${nomL}</span><span class="valeur">${e({ locked: "Verrouillée", unlocked: "Déverrouillée" }[a.etat] || a.etat)}</span></div>`;
+    if (d === "sensor" && nb(a.etat) != null && at.device_class !== "timestamp") {
+      const c = courbes.get(a.id);
+      return `<div class="ligne-fiche large"><div style="display:flex;justify-content:space-between;gap:10px"><span class="libelle">${nomL}</span><span class="valeur">${e(valeurLisible(a))}</span></div>
+        <div class="courbe" data-courbe="${e(a.id)}">${c ? courbeSVG(c.points, at.unit_of_measurement) : ""}</div></div>`;
+    }
     return `<div class="ligne-fiche"><span class="libelle">${nomL}</span><span class="valeur">${e(valeurLisible(a))}</span></div>`;
   }
 
@@ -861,6 +901,7 @@
       + (techniques.length ? `<div class="titre-technique">Réglages avancés et diagnostic</div>`
         + techniques.map((a) => ligneFiche(a, g).replace('class="ligne-fiche', 'class="ligne-fiche technique')).join("") : ""))
       || `<div class="doux">Rien à régler.</div>`;
+    remplirCourbes();
   }
 
   // ---------------------------------------------------------------- voiture (FordPass dans Home Assistant)
@@ -1177,12 +1218,14 @@
   // ---------------------------------------------------------------- vues
   let vue = "maison";
   function ouvrirVue() {
-    vue = ["maison", "musique", "plex", "automatisations"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "maison";
-    for (const v of ["maison", "musique", "plex", "automatisations"]) $(`vue-${v}`).hidden = v !== vue;
+    const VUES = ["maison", "musique", "plex", "automatisations", "energie"];
+    vue = VUES.includes(location.hash.slice(1)) ? location.hash.slice(1) : "maison";
+    for (const v of VUES) $(`vue-${v}`).hidden = v !== vue;
     document.querySelectorAll("nav.vues a").forEach((a) => a.classList.toggle("actif", a.dataset.vue === vue));
     if (vue === "musique") afficherMusique();
     if (vue === "plex") chargerPlex();
     if (vue === "automatisations") chargerAutos();
+    if (vue === "energie") chargerEnergie();
   }
   window.addEventListener("hashchange", ouvrirVue);
 
@@ -1244,6 +1287,75 @@
     }
     if (ev.target.closest("[data-radio-stop]")) { $("audio").pause(); radioIci = null; afficherMusique(); }
   });
+
+  // ---------------------------------------------------------------- Énergie
+  const kwh = (v) => `${(Math.round(v * 10) / 10).toLocaleString("fr-FR")} kWh`;
+  const euros = (v) => v.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+  async function chargerEnergie() {
+    let d;
+    try { d = await api("/v1/energie"); } catch (err) { if (err.message !== "401") $("chiffres-energie").innerHTML = `<div class="doux">${e(err.message)}</div>`; return; }
+    const r = d.resume;
+    $("info-energie").textContent = d.avertissement || `${d.prix_kwh.toLocaleString("fr-FR")} € le kWh${d.compteur_general ? " · compteur général" : " · somme des appareils"}`;
+    const carte = (titre, x) => `<div class="chiffre-energie"><span>${titre}</span><b>${euros(x.euros)}</b><small>${kwh(x.kwh)}</small></div>`;
+    $("chiffres-energie").innerHTML = carte("Aujourd'hui", r.aujourdhui) + carte("Hier", r.hier) + carte("Ce mois-ci", r.mois)
+      + `<div class="chiffre-energie"><span>En ce moment</span><b>${d.puissance.maintenant.toLocaleString("fr-FR")} W</b><small>${e(d.puissance.source)}</small></div>`;
+    const max = Math.max(0.1, ...d.jours.map((j) => j.kwh));
+    $("barres-energie").innerHTML = d.jours.map((j, i) => `<div class="${i === d.jours.length - 1 ? "aujourdhui" : ""}" style="height:${Math.max(1, j.kwh / max * 100)}%"
+      title="${e(new Date(j.jour).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }))} : ${e(kwh(j.kwh))} · ${e(euros(j.euros))}"></div>`).join("");
+    const date = (j) => new Date(j).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    $("axe-energie").innerHTML = d.jours.length ? `<span>${e(date(d.jours[0].jour))}</span><span>${e(date(d.jours[15].jour))}</span><span>aujourd'hui</span>` : "";
+    const lignes = d.appareils.filter((l) => !l.general || !d.compteur_general);
+    const maxMois = Math.max(0.001, ...lignes.map((l) => l.mois));
+    $("appareils-energie").innerHTML = lignes.length ? `<table class="table-energie"><tr><th>Appareil</th><th class="n">Aujourd'hui</th><th class="n">Ce mois-ci</th><th class="n">Coût du mois</th></tr>
+      ${lignes.map((l) => `<tr><td>${e(l.nom)}${l.piece ? ` <span class="doux">· ${e(l.piece)}</span>` : ""}<div class="jauge-energie" style="width:${l.mois / maxMois * 100}%"></div></td>
+        <td class="n">${e(kwh(l.aujourdhui))}</td><td class="n">${e(kwh(l.mois))}</td><td class="n">${e(euros(l.mois * d.prix_kwh))}</td></tr>`).join("")}</table>`
+      : `<div class="doux">Aucun capteur d'énergie (kWh) dans Home Assistant. Les prises connectées et le Linky en donnent.</div>`;
+    $("puissance-energie").innerHTML = d.puissance.detail.length ? `<table class="table-energie">${d.puissance.detail.map((p) =>
+      `<tr><td>${e(p.nom)}${p.piece ? ` <span class="doux">· ${e(p.piece)}</span>` : ""}</td><td class="n">${p.watts.toLocaleString("fr-FR")} W</td></tr>`).join("")}</table>`
+      : `<div class="doux">Aucun capteur de puissance (W).</div>`;
+  }
+
+  // ---------------------------------------------------------------- Résumé du matin
+  async function direResume() {
+    parler("Je prépare ton résumé…");
+    try {
+      const r = await api("/v1/resume?voix=1");
+      parler(r.texte);
+      if (r.audio_wav_base64) new Audio(`data:audio/wav;base64,${r.audio_wav_base64}`).play().catch(() => {});
+    } catch (err) { if (err.message !== "401") parler(err.message); }
+  }
+  $("bouton-resume").addEventListener("click", direResume);
+  window.direResume = direResume;  // l'écran de veille le lance au premier passage du matin
+
+  // ---------------------------------------------------------------- courbes des capteurs (fiche)
+  const courbes = new Map();  // entité -> {instant, points}
+  function courbeSVG(points, unite) {
+    if (points.length < 2) return `<span class="doux" style="font-size:12px">Pas encore d'historique.</span>`;
+    const L = 300, H = 56, vals = points.map((p) => p[1]);
+    let min = Math.min(...vals), max = Math.max(...vals);
+    if (max - min < 1e-9) { min -= 1; max += 1; }
+    const t0 = new Date(points[0][0]).getTime(), t1 = new Date(points[points.length - 1][0]).getTime() || t0 + 1;
+    const xy = points.map(([t, v]) => [((new Date(t).getTime() - t0) / Math.max(1, t1 - t0)) * L, H - ((v - min) / (max - min)) * H]);
+    const ligne = xy.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+    const arrondi = (v) => (Math.round(v * 10) / 10).toLocaleString("fr-FR");
+    return `<svg viewBox="0 0 ${L} ${H}" preserveAspectRatio="none" role="img" aria-label="Évolution sur 24 heures">
+      <defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2fd0c0" stop-opacity=".45"/><stop offset="1" stop-color="#2fd0c0" stop-opacity="0"/></linearGradient></defs>
+      <path d="${ligne} L${L},${H} L0,${H} Z" fill="url(#dg)"/><path d="${ligne}" fill="none" stroke="#2fd0c0" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
+      <div class="legende-courbe"><span>24 dernières heures</span><span>min ${e(arrondi(min))} · max ${e(arrondi(max))} ${e(unite || "")}</span></div>`;
+  }
+  async function remplirCourbes() {
+    for (const boite of [...document.querySelectorAll("#fiche-contenu [data-courbe]")].slice(0, 8)) {
+      const id = boite.dataset.courbe, a = ent(id);
+      let c = courbes.get(id);
+      if (!c || Date.now() - c.instant > 300000) {
+        try { c = { instant: Date.now(), points: (await api(`/v1/maison/historique/${encodeURIComponent(id)}?heures=24`)).points }; }
+        catch (_) { c = { instant: Date.now(), points: [] }; }
+        courbes.set(id, c);
+      }
+      const ici = document.querySelector(`#fiche-contenu [data-courbe="${CSS.escape(id)}"]`);
+      if (ici) ici.innerHTML = courbeSVG(c.points, a?.attr?.unit_of_measurement);
+    }
+  }
 
   // ---------------------------------------------------------------- Automatisations
   async function chargerAutos() {
@@ -1367,6 +1479,7 @@
       || `<div class="vide">Rien à afficher pour l'instant.</div>`;
   }
   setInterval(() => { if (!document.hidden && vue === "plex") chargerPlex(); }, 30000);
+  setInterval(() => { if (!document.hidden && vue === "energie") chargerEnergie(); }, 60000);
 
   // ---------------------------------------------------------------- connexion et démarrage
   $("form-connexion").addEventListener("submit", async (ev) => {

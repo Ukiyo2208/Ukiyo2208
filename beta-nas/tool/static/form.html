@@ -32,6 +32,12 @@
   .send { background: var(--form); box-shadow: none; }
   .pub-foot { color: var(--muted); font-size: .82rem; text-align: center; margin-top: 18px; }
 </style>
+<script>/* Fond « Japon » du moment, comme sur le site de Bêta : jour, coucher de soleil ou nuit, et la saison */
+(function () { var d = new Date(), m = d.getMonth() + 1, h = d.getHours() + d.getMinutes() / 60;
+  var s = m >= 3 && m <= 5 ? "printemps" : m >= 6 && m <= 8 ? "ete" : m >= 9 && m <= 11 ? "automne" : "hiver";
+  var lc = { printemps: [7, 20], ete: [6, 21.5], automne: [7.5, 18.5], hiver: [8.25, 17.25] }[s];
+  var mo = h >= lc[0] + 1 && h < lc[1] - 1 ? "jour" : h >= lc[0] - 0.75 && h < lc[1] + 0.75 ? "soir" : "nuit";
+  document.documentElement.style.setProperty("--fond-japon", 'url("/fonds/japon-' + s + '-' + mo + '.svg")'); })();</script>
 </head>
 <body>
 <div class="pub" id="app"><div class="card"><div class="loading"><span class="spinner"></span>Chargement…</div></div></div>

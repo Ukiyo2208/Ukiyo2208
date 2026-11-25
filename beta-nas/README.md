@@ -247,8 +247,58 @@ chauffe-eau, déshumidificateur, tondeuse, alarme, vanne… Les entités « rég
 cachées dans Home Assistant vont dans la fiche de leur appareil (« ⋯ » → *Réglages avancés et diagnostic*). La case
 **Entités techniques** affiche aussi celles qui n'appartiennent à aucun appareil.
 
-**Fond d'écran** : une scène du Japon de nuit (`static/fond-japon.svg`, vectorielle) commune à toutes les pages
-(Bêta IA, Domotique, Tri, tableau de bord et Bêta Tool), posée par `static/nav.js` avec une teinte par section.
+**Fond d'écran** : une scène du Japon (`static/fonds/`, vectorielle, générée par `outils/fonds-japon.py`) commune à
+toutes les pages (Bêta IA, Domotique, Tri, tableau de bord et Bêta Tool), posée par `static/nav.js` avec une teinte
+par section. Elle suit l'heure (jour, coucher de soleil, nuit) et la saison (cerisiers, lucioles, érables, neige).
+`?fond=nuit` garde toujours la nuit sur un appareil, `?fond=auto` revient au fond qui change.
+
+**Courbes** : dans la fiche d'un appareil (« ⋯ »), chaque capteur chiffré a sa courbe des 24 dernières heures.
+
+**Énergie** (onglet de Bêta home) : aujourd'hui, hier, ce mois-ci en kWh et en euros (`PRIX_KWH`), barres des 30
+derniers jours, consommation par appareil et puissance du moment. Les chiffres viennent des statistiques de Home
+Assistant (capteurs `energy` en kWh, `power` en W) ; un compteur général (Linky, « compteur », « total »…) est
+compté à part pour ne pas compter deux fois la maison et ses prises.
+
+**Résumé du matin** (bouton ☀ en haut de Bêta home, ou « résumé », « quoi de neuf ? » à la voix) : météo, fête du
+jour, poubelles, colis (Bêta Tool), lumières restées allumées, fenêtres ouvertes, machine terminée, alertes de la
+nuit, consommation d'hier. L'agenda et les tâches n'y sont que pour une personne reconnue.
+
+**Écran de veille** : ouvre une page de Bêta une fois avec `?veille=1` sur la tablette ou l'écran (options
+`&minutes=3`, `&piece=Salon` pour se réveiller au mouvement de la pièce ; `?veille=0` pour l'enlever). L'heure, la
+date et la météo sur le fond du moment ; au premier réveil du matin, Bêta lit le résumé.
+
+**Commandes vocales en plus** (avant Home Assistant) : « lance / rentre la tondeuse », « mets le ballon à 60 »,
+« éteins le chauffe-eau », « mets le déshumidificateur à 50 % », « combien j'ai consommé ? », « résumé ». Et, avec
+Bêta Tool relié (`BETA_TOOL_JETON`) et la personne reconnue : « ajoute du lait à la liste de courses »,
+« rappelle-moi d'appeler le garage demain à 9h », « rendez-vous chez le dentiste mardi à 14h »,
+« qu'est-ce que j'ai demain ? », « où en sont mes colis ? », « combien j'ai dépensé ce mois-ci ? ».
+
+| API | Rôle |
+|---|---|
+| `GET /v1/energie` | bilan énergie (gardé 5 min, `?fraiche=1` pour recalculer) |
+| `GET /v1/maison/historique/{entite}?heures=24` | valeurs d'un capteur (240 points au plus) |
+| `GET /v1/resume?voix=1` | résumé du matin, avec la voix de Piper |
+| `GET /v1/alertes`, `POST /v1/alertes/test` | dernières alertes, destinations ; notification d'essai |
+| `GET /v1/sauvegarde` | état de la sauvegarde de la nuit |
+
+## Alertes sur le téléphone
+
+Toutes les minutes, Bêta regarde la maison et envoie aux destinations de `NOTIFICATIONS` (les mêmes que le tri :
+appli Home Assistant, Discord, ntfy, webhook) : fuite d'eau, fumée, gaz, monoxyde de carbone (tout de suite) ;
+porte, fenêtre ou garage ouvert quand tout le monde est parti depuis 5 minutes ; lave-linge, sèche-linge ou
+lave-vaisselle terminé ; piles faibles (`BATTERIE_FAIBLE`, une fois par jour) ; service de Bêta en panne depuis
+5 minutes (et son retour) ; sauvegarde ratée ou de plus de 36 heures. Une alerte part une fois et se réarme quand
+tout redevient normal. `ALERTES=non` pour les couper. Le tableau de bord montre les dernières et teste l'envoi.
+
+## Sauvegarde de la nuit (conteneur `beta-sauvegarde`)
+
+Chaque nuit à `SAUVEGARDE_HEURE` (3 h 30), une archive `beta-AAAA-MM-JJ_HHMM.tar.gz` dans `SAUVEGARDE_DOSSIER`
+(l'installateur choisit un autre volume que le projet s'il y en a un), gardée `SAUVEGARDE_JOURS` jours : `.env`,
+`config/`, appairages Alexa et HomeKit, données de Bêta, du tri et de la présence, configuration de Home Assistant
+(sans sa base d'historique) et données de Bêta Tool. Pas les modèles d'IA ni les voix (ils se retéléchargent).
+Tout de suite : `docker exec beta-sauvegarde sh /sauvegarde.sh maintenant`. L'archive contient `.env` : elle n'est
+lisible que par root ; pour une copie hors du NAS, synchronise ce dossier avec l'outil de sauvegarde d'UGOS vers un
+disque USB ou un cloud **chiffré**.
 
 ## Bêta Tool : `http://IP_DU_NAS:8080`
 

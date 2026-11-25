@@ -108,6 +108,17 @@ class Settings:
     plex_token: str = ""
     # À la maison (adresse du réseau local), la page et l'API ne demandent pas de jeton
     acces_local_libre: bool = True
+    # Alertes sur le téléphone (même format que le tri : ha:mobile_app_xxx, Discord, ntfy, webhook)
+    notifications: str = ""
+    alertes: bool = True
+    batterie_faible: int = 15  # % sous lequel un capteur est signalé
+    # Énergie
+    prix_kwh: float = 0.2516  # € TTC (tarif bleu base 2025) ; PRIX_KWH dans .env
+    # Bêta Tool (résumé du matin, agenda, courses, colis à la voix) : jeton « assistant » créé dans Bêta Tool
+    beta_tool_url: str = "http://beta-tool:8080"
+    beta_tool_jeton: str = ""
+    # Sauvegardes (conteneur beta-sauvegarde) : dossier lu pour l'état et les alertes
+    sauvegardes: str = "/sauvegardes"
 
     # Présence (service beta-presence + caméras)
     presence_url: str = "http://presence:8801"
@@ -165,6 +176,13 @@ def charger(chemin_config: str | None = None) -> Settings:
         plex_url=_env("PLEX_URL").rstrip("/"),
         plex_token=_env("PLEX_TOKEN"),
         acces_local_libre=_env("BETA_LOCAL_LIBRE", "oui").lower() not in ("non", "false", "0", "no"),
+        notifications=_env("NOTIFICATIONS"),
+        alertes=_env("ALERTES", "oui").lower() not in ("non", "false", "0", "no", "off"),
+        batterie_faible=int(_env("BATTERIE_FAIBLE", "15") or 15),
+        prix_kwh=float(_env("PRIX_KWH", "0.2516").replace(",", ".") or 0.2516),
+        beta_tool_url=_env("BETA_TOOL_URL", Settings.beta_tool_url).rstrip("/"),
+        beta_tool_jeton=_env("BETA_TOOL_JETON"),
+        sauvegardes=_env("BETA_SAUVEGARDES", Settings.sauvegardes),
     )
 
     chemin = Path(chemin_config or _env("BETA_CONFIG", "/config/config.yaml"))

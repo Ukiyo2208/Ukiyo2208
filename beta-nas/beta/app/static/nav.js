@@ -1,6 +1,9 @@
 /* Barre commune du site de Bêta (http://IP_DU_NAS:8800), sur chaque page :
    - les onglets Bêta IA (/) · Domotique (/home/) · Tri automatique (/tri/) · Bêta Tool (port 8080) ;
-   - le fond d'écran « Japon de nuit » (static/fond-japon.svg), le même partout, avec une teinte par partie. */
+   - le fond d'écran « Japon » (static/fonds/), le même partout, avec une teinte par partie : il suit l'heure
+     (jour, coucher de soleil, nuit) et la saison (cerisiers, été et lucioles, érables, neige).
+     ?fond=nuit garde la nuit de printemps sur cet appareil, ?fond=auto revient au fond qui change ;
+   - l'écran de veille (static/veille.js, activé avec ?veille=1). */
 (function () {
   if (document.querySelector("nav.beta-sections")) return;
   const chemin = location.pathname;
@@ -16,17 +19,31 @@
 
   // Fond d'écran unifié, teinté selon la partie (et l'onglet de la Domotique)
   const TEINTES = { ia: "123, 91, 255", tri: "47, 208, 192", maison: "47, 139, 255", musique: "255, 95, 162",
-    plex: "229, 160, 13", automatisations: "66, 226, 160" };
+    plex: "229, 160, 13", automatisations: "66, 226, 160", energie: "255, 176, 61" };
+  const memoire = (k, v) => { try { return v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (_) { return null; } };
+  const choixFond = new URLSearchParams(location.search).get("fond");
+  if (choixFond) memoire("beta_fond", choixFond === "nuit" ? "nuit" : "auto");
+  function fondDuMoment(d = new Date()) {
+    if (memoire("beta_fond") === "nuit") return "/static/fond-japon.svg";
+    const m = d.getMonth() + 1, h = d.getHours() + d.getMinutes() / 60;
+    const saison = m >= 3 && m <= 5 ? "printemps" : m >= 6 && m <= 8 ? "ete" : m >= 9 && m <= 11 ? "automne" : "hiver";
+    const [lever, coucher] = { printemps: [7, 20], ete: [6, 21.5], automne: [7.5, 18.5], hiver: [8.25, 17.25] }[saison];
+    const moment = h >= lever + 1 && h < coucher - 1 ? "jour" : h >= lever - 0.75 && h < coucher + 0.75 ? "soir" : "nuit";
+    return `/static/fonds/japon-${saison}-${moment}.svg`;
+  }
+  window.betaFond = fondDuMoment;
   function fond() {
     const vue = actif === "domotique" ? (location.hash.slice(1) || "maison") : actif;
     const teinte = TEINTES[vue] || TEINTES.maison;
+    const image = fondDuMoment(), jour = image.endsWith("-jour.svg");
     document.body.style.setProperty("background",
       `radial-gradient(1400px 700px at 50% -15%, rgba(${teinte}, .28), transparent 70%),` +
-      "linear-gradient(180deg, rgba(5, 8, 30, .35), rgba(5, 8, 30, .7))," +
-      'url("/static/fond-japon.svg") center bottom / cover fixed, #070b24', "important");
+      `linear-gradient(180deg, rgba(5, 8, 30, ${jour ? .45 : .35}), rgba(5, 8, 30, ${jour ? .78 : .7})),` +
+      `url("${image}") center bottom / cover fixed, #070b24`, "important");
   }
   fond();
   window.addEventListener("hashchange", fond);
+  setInterval(fond, 10 * 60000);  // le fond suit l'heure
   const style = document.createElement("style");
   style.textContent = `
     nav.beta-sections { position: sticky; top: 0; z-index: 60; display: flex; justify-content: center; padding: 10px 12px 6px;
@@ -49,4 +66,7 @@
     `<a href="${href}" class="${id === actif ? "actif" : ""}" ${id === actif ? 'aria-current="page"' : ""}>${svg}${nom}</a>`).join("")}</div>`;
   document.head.append(style);
   document.body.prepend(nav);
+  const veille = document.createElement("script");
+  veille.src = "/static/veille.js";
+  document.body.append(veille);
 })();

@@ -2323,13 +2323,14 @@ select.inline { display: inline-block; width: auto; padding: 4px 8px; margin: 0 
 .ex-code { display: inline-flex; align-items: baseline; gap: 10px; }
 .ex-code b { font-size: 1.6rem; letter-spacing: .12em; font-variant-numeric: tabular-nums; }
 
-/* Fond d'écran « Japon de nuit », le même que sur le site de Bêta (BetaNova) : net à toutes les tailles.
+/* Fond d'écran « Japon » (jour, soir ou nuit selon l'heure, et la saison : --fond-japon, posé dans chaque page),
+   le même que sur le site de Bêta (BetaNova) : net à toutes les tailles.
    Thème sombre : la scène sous un voile léger ; thème clair : la même scène, très éclaircie. */
 body {
   background:
     radial-gradient(1400px 700px at 50% -15%, rgb(47 134 255 / .16), transparent 70%),
     linear-gradient(180deg, rgb(238 243 251 / .82), rgb(238 243 251 / .9)),
-    url("fond-japon.svg") center bottom / cover fixed, var(--bg);
+    var(--fond-japon, url("fond-japon.svg")) center bottom / cover fixed, var(--bg);
   background-attachment: fixed;
 }
 @media (prefers-color-scheme: dark) {
@@ -2337,12 +2338,12 @@ body {
     background:
       radial-gradient(1400px 700px at 50% -15%, rgb(47 134 255 / .26), transparent 70%),
       linear-gradient(180deg, rgb(3 8 22 / .35), rgb(3 8 22 / .72)),
-      url("fond-japon.svg") center bottom / cover fixed, var(--bg);
+      var(--fond-japon, url("fond-japon.svg")) center bottom / cover fixed, var(--bg);
   }
 }
 :root[data-theme="dark"] body {
   background:
     radial-gradient(1400px 700px at 50% -15%, rgb(47 134 255 / .26), transparent 70%),
     linear-gradient(180deg, rgb(3 8 22 / .35), rgb(3 8 22 / .72)),
-    url("fond-japon.svg") center bottom / cover fixed, var(--bg);
+    var(--fond-japon, url("fond-japon.svg")) center bottom / cover fixed, var(--bg);
 }

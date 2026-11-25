@@ -104,6 +104,8 @@ def commande_page(entite: str, action: str, valeur, attributs: dict, option: str
         ("input_button", "appuyer"): ("input_button", "press", {}),
         ("remote", "basculer"): ("remote", "toggle", {}),
         ("humidifier", "basculer"): ("humidifier", "toggle", {}),
+        ("humidifier", "allumer"): ("humidifier", "turn_on", {}),
+        ("humidifier", "eteindre"): ("humidifier", "turn_off", {}),
         ("humidifier", "humidite"): ("humidifier", "set_humidity", lambda: {"humidity": _borne(
             valeur, int(at.get("min_humidity") or 0), int(at.get("max_humidity") or 100))}),
         ("humidifier", "mode"): ("humidifier", "set_mode", lambda: {"mode": _choix(option, at.get("available_modes"), "mode")}),

@@ -10,8 +10,10 @@ import logging
 import secrets
 import time
 import uuid
+import json
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import httpx
@@ -26,13 +28,14 @@ from pydantic import BaseModel
 
 from . import settings as cfg
 from . import cameras as cameras_
-from . import maison, nas
+from . import alertes as alertes_, commandes, energie as energie_, maison, nas, notifications
+from . import resume as resume_
 from . import plex as plex_
 from . import stats as st
 from .homeassistant import HomeAssistant
 from .llm_local import LLMLocal
 from .localisation import Localisation, prenom_dans
-from .routeur import APRES_CAMERA, IDENTIFICATION_REQUISE, INITIALE, QUI_REQUIS, Routeur
+from .routeur import APRES_CAMERA, IDENTIFICATION_REQUISE, INITIALE, QUI_REQUIS, Resultat, Routeur
 from .voix import ErreurAudio, synthetiser, transcrire
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -52,15 +55,19 @@ async def lifespan(app: FastAPI):
     ha = HomeAssistant(s.ha_url, s.ha_token, s.ha_agent_id, s.langue)
     llm = LLMLocal(s.ia, s.ollama_url, s.ollama_model)
     localisation = Localisation(s, ha)
-    etat.update(settings=s, routeur=Routeur(s, ha, llm, s.ia, localisation))
+    etat.update(settings=s, routeur=Routeur(s, ha, llm, s.ia, localisation, extras=_commandes_beta),
+                surveillance=alertes_.Surveillance(s.batterie_faible))
     prechauffage = asyncio.create_task(llm.prechauffer())
     publication = asyncio.create_task(_publier_en_boucle()) if s.publication_url else None
+    surveillance = asyncio.create_task(_surveiller_en_boucle()) if s.alertes else None
     for tache, modeles in s.ia.resume().items():
         log.info("IA pour « %s » : %s", tache, " → ".join(modeles) or "aucune")
     yield
     prechauffage.cancel()
     if publication:
         publication.cancel()
+    if surveillance:
+        surveillance.cancel()
     await ha.fermer()
     await llm.fermer()
     await localisation.fermer()
@@ -972,3 +979,162 @@ async def sante():
         "ia_web": routeur.ia is not None and routeur.ia.disponible("automatisations"),
         "ia": routeur.ia.resume() if routeur.ia else {},
     }
+
+
+# ---------------------------------------------------------------- alertes, énergie, résumé, sauvegarde
+
+def _etat_sauvegarde() -> dict:
+    """État de la sauvegarde de la nuit (fichier écrit par le conteneur beta-sauvegarde)."""
+    dossier = Path(etat["settings"].sauvegardes)
+    fichier = dossier / "etat.json"
+    if not fichier.exists():
+        return {"existe": False}
+    try:
+        info = json.loads(fichier.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"existe": True, "erreur": "état illisible"}
+    archives = sorted(dossier.glob("beta-*.tar.gz"))
+    return {"existe": True, **info, "archives": len(archives), "taille_totale": sum(a.stat().st_size for a in archives)}
+
+
+async def _surveiller_en_boucle() -> None:
+    """Toutes les minutes : la maison, les services et la sauvegarde ; les alertes partent sur le téléphone."""
+    await asyncio.sleep(30)  # laisse les autres services démarrer
+    while True:
+        try:
+            donnees = await _maison_brute()
+            toutes = donnees.get("appareils", [])
+            nouvelles = etat["surveillance"].verifier(
+                toutes, maison.groupes(toutes, donnees.get("appareils_ha", {}), True), donnees.get("personnes", []),
+                await _services(), _etat_sauvegarde())
+            for a in nouvelles:
+                log.info("Alerte : %s : %s", a.titre, a.message)
+                notifications.envoyer(a.titre, a.message)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:  # Home Assistant arrêté, etc. : on réessaie à la minute suivante
+            log.info("Surveillance impossible ce tour-ci : %s", e)
+        await asyncio.sleep(60)
+
+
+@app.get("/v1/alertes", dependencies=[Depends(verifier_jeton)])
+async def liste_alertes():
+    s: cfg.Settings = etat["settings"]
+    return {"actives": s.alertes, "destinations": notifications.resume(),
+            "alertes": [a.__dict__ for a in etat["surveillance"].historique]}
+
+
+@app.post("/v1/alertes/test", dependencies=[Depends(verifier_jeton)])
+async def tester_alertes():
+    """Envoie une notification d'essai à chaque destination et dit ce qui a marché."""
+    if not notifications.destinations():
+        raise HTTPException(status_code=400, detail="Aucune destination : remplis NOTIFICATIONS dans .env")
+    resultats = await asyncio.to_thread(notifications.envoyer_maintenant, "🔔 Bêta", "Les alertes de la maison arrivent bien ici.")
+    return {notifications.type_de(d): r for d, r in resultats.items()}
+
+
+@app.get("/v1/sauvegarde", dependencies=[Depends(verifier_jeton)])
+async def etat_sauvegarde():
+    return _etat_sauvegarde()
+
+
+_energie_cache: dict = {"instant": 0.0, "valeur": None}
+
+
+async def _energie(fraiche: bool = False) -> dict:
+    """Bilan énergie, gardé 5 minutes (les statistiques de Home Assistant sont calculées toutes les 5 minutes)."""
+    if not fraiche and _energie_cache["valeur"] and time.monotonic() - _energie_cache["instant"] < 300:
+        return _energie_cache["valeur"]
+    s: cfg.Settings = etat["settings"]
+    appareils = (await _maison_brute()).get("appareils", [])
+    capteurs, _ = energie_.capteurs(appareils)
+    debut = (datetime.now().astimezone().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=31)).isoformat()
+    avertissement = ""
+    try:
+        stats = await etat["routeur"].ha.statistiques([c["id"] for c in capteurs], debut)
+    except Exception as e:  # WebSocket refusé, ancienne version de Home Assistant…
+        log.info("Statistiques d'énergie indisponibles : %s", e)
+        stats, avertissement = {}, "Historique de consommation indisponible : seule la puissance actuelle est affichée."
+    valeur = energie_.bilan(appareils, stats, s.prix_kwh) | {"avertissement": avertissement}
+    _energie_cache.update(instant=time.monotonic(), valeur=valeur)
+    return valeur
+
+
+@app.get("/v1/energie", dependencies=[Depends(verifier_jeton)])
+async def page_energie(fraiche: bool = False):
+    """Consommation par appareil et coût : aujourd'hui, hier, ce mois-ci, 30 jours ; puissance actuelle."""
+    return await _energie(fraiche)
+
+
+@app.get("/v1/maison/historique/{entite}", dependencies=[Depends(verifier_jeton)])
+async def historique_entite(entite: str, heures: int = 24):
+    """Valeurs d'un capteur sur les dernières heures (graphique de la fiche)."""
+    if not re.fullmatch(r"[a-z_]+\.[a-z0-9_]+", entite):
+        raise HTTPException(status_code=400, detail="Entité invalide")
+    debut = (datetime.now(timezone.utc) - timedelta(hours=max(1, min(heures, 24 * 7)))).strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        brut = await etat["routeur"].ha.historique(entite, debut)
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail="Historique indisponible") from e
+    return {"entite": entite, "points": energie_.points_historique(brut)}
+
+
+async def _resume(perso: bool) -> dict:
+    s: cfg.Settings = etat["settings"]
+    donnees = await _maison_brute()
+    groupes = maison.groupes(donnees.get("appareils", []), donnees.get("appareils_ha", {}))
+    outil = await resume_.lire_beta_tool(s.beta_tool_url, s.beta_tool_jeton)
+    nuit = time.time() - 12 * 3600
+    alertes = [a for a in etat["surveillance"].historique
+               if a.quand > nuit and a.cle.split(":")[0] in ("urgence", "absence", "service", "sauvegarde")]
+    try:
+        hier = (await _energie())["resume"]["hier"]
+    except Exception:
+        hier = None
+    return resume_.composer(donnees, groupes, outil, alertes, hier, perso)
+
+
+@app.get("/v1/resume", dependencies=[Depends(verifier_jeton)])
+async def resume_du_matin(voix: bool = False):
+    """Le résumé du matin (sans l'agenda ni les tâches : la tablette est partagée), avec la voix si `voix=1`."""
+    r = await _resume(perso=False)
+    return r | {"audio_wav_base64": await _voix(r["texte"]) if voix else None}
+
+
+async def _commandes_beta(intention: commandes.Intention, capacites: set) -> Resultat | None:
+    """Exécute ce que commandes.reconnaitre a compris (appelé par le routeur)."""
+    s: cfg.Settings = etat["settings"]
+    if intention.type == "resume":
+        return Resultat((await _resume(perso=cfg.MAILS in capacites))["texte"], "resume")
+    if intention.type == "energie":
+        e = await _energie()
+        if not e["appareils"] and not e["puissance"]["detail"]:
+            return Resultat("Je ne trouve aucun capteur d'énergie dans Home Assistant.", "energie")
+        r = e["resume"]
+        nombre = lambda x, n=1: f"{x:.{n}f}".replace(".", ",")  # noqa: E731
+        texte = (f"Aujourd'hui, {nombre(r['aujourdhui']['kwh'])} kilowattheures, soit {nombre(r['aujourdhui']['euros'], 2)} euros. "
+                 f"Hier, {nombre(r['hier']['kwh'])} kilowattheures. Ce mois-ci, {nombre(r['mois']['euros'], 2)} euros.")
+        if e["puissance"]["maintenant"]:
+            texte += f" En ce moment, la maison consomme {e['puissance']['maintenant']} watts."
+        return Resultat(texte, "energie")
+    if intention.type == "appareil":
+        donnees = await _maison_brute()
+        cible = commandes.choisir_entite(intention, donnees.get("appareils", []), intention.texte or "")
+        if not cible:
+            return None  # Home Assistant essaiera
+        try:
+            domaine, service, donnees_service = maison.commande_page(cible["id"], intention.action, intention.valeur, cible.get("attr") or {})
+            await etat["routeur"].ha.service(domaine, service, donnees_service)
+        except maison.ActionRefusee as e:
+            return Resultat(str(e), "refus")
+        except httpx.HTTPError:
+            return Resultat("Home Assistant n'a pas répondu.", "erreur")
+        _maison_cache["valeur"] = None
+        return Resultat(commandes.phrase(intention, cible), "beta")
+    if intention.type == "beta_tool":
+        if not s.beta_tool_jeton:
+            return Resultat("Pour ça, relie Bêta Tool : crée un jeton dans Bêta Tool, Réglages, API, puis mets-le dans BETA_TOOL_JETON.",
+                            "beta_tool")
+        reponse = await resume_.commande_beta_tool(s.beta_tool_url, s.beta_tool_jeton, intention.texte)
+        return Resultat(reponse or "Bêta Tool ne répond pas.", "beta_tool")
+    return None
