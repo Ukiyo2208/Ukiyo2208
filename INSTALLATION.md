@@ -282,15 +282,18 @@ Assistant. Coche **Entités techniques** pour voir aussi les réglages et capteu
 
 ## I ter. Alertes, énergie, résumé du matin, écran de veille, sauvegarde
 
-- **Alertes sur le téléphone** : mets ta destination dans `NOTIFICATIONS` (fichier `.env`), par exemple
-  `ha:mobile_app_pixel_8` (le nom exact : Home Assistant → Outils de développement → Actions → « notify.mobile_app_ »).
-  Puis `http://192.168.1.20:8800/tableau` → **Envoyer une notification d'essai**.
-- **Énergie** : rien à faire si tu as des prises connectées ou un Linky dans Home Assistant. Ajuste `PRIX_KWH`.
-- **Bêta Tool dans Bêta** (résumé, courses, agenda et colis à la voix) : Bêta Tool → **Réglages → API** → nouveau
-  jeton avec le droit « Commandes vocales et widget » → colle-le dans `BETA_TOOL_JETON`, puis relance l'installateur.
-- **Écran de veille** sur la tablette ou un écran : ouvre une fois `http://192.168.1.20:8800/home/?veille=1&piece=Salon`.
-- **Sauvegarde** : automatique chaque nuit. Vérifie le dossier indiqué à la fin de l'installation, et l'état sur le
-  tableau de bord.
+L'installateur s'en occupe tout seul :
+
+- **Alertes** : il trouve les téléphones qui ont l'appli **Home Assistant** (connectée à ta maison) et leur envoie
+  une notification d'essai. Pas d'appli ? Installe-la, connecte-la, puis relance l'installateur. Autre destination
+  (Discord, ntfy) : `NOTIFICATIONS` dans `.env`. Test à tout moment : `http://192.168.1.20:8800/tableau`.
+- **Énergie** : il demande le prix du kWh de ta facture (`PRIX_KWH`). Les prises connectées et le Linky de Home
+  Assistant suffisent.
+- **Bêta Tool** : il crée le jeton qui relie Bêta à Bêta Tool (résumé du matin, courses, agenda, colis à la voix),
+  visible et révocable dans Bêta Tool → Réglages → API.
+- **Sauvegarde** : il choisit le dossier (un autre volume si le NAS en a un) ; elle tourne chaque nuit.
+- **Écran de veille** : il affiche l'adresse à ouvrir une fois sur l'écran de la tablette
+  (`http://192.168.1.20:8800/home/?veille=1&piece=salon`).
 
 ### Restaurer une sauvegarde
 

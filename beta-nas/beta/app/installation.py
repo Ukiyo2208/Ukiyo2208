@@ -139,6 +139,15 @@ async def jeton_home_assistant(url: str, nom: str, utilisateur: str, mot_de_pass
     return await _jeton_longue_duree(url, jeton), compte_a_creer
 
 
+async def telephones_home_assistant(url: str, jeton: str) -> list[str]:
+    """Les téléphones qui ont l'appli Home Assistant (services notify.mobile_app_…), au format de NOTIFICATIONS."""
+    async with httpx.AsyncClient(timeout=15) as client:
+        r = await client.get(f"{url.rstrip('/')}/api/services", headers={"Authorization": f"Bearer {jeton}"})
+        r.raise_for_status()
+    notify = next((d.get("services") or {} for d in r.json() if d.get("domain") == "notify"), {})
+    return [f"ha:{nom}" for nom in sorted(notify) if nom.startswith("mobile_app_")]
+
+
 def main(arguments: list[str] | None = None) -> int:
     parseur = argparse.ArgumentParser(prog="python -m app.installation")
     sous = parseur.add_subparsers(dest="commande", required=True)
@@ -151,7 +160,18 @@ def main(arguments: list[str] | None = None) -> int:
     qr.add_argument("--url", required=True)
     qr.add_argument("--jeton", required=True)
     qr.add_argument("--piece", default="")
+    tel = sous.add_parser("telephones")
+    tel.add_argument("--url", required=True)
+    tel.add_argument("--jeton", required=True)
     args = parseur.parse_args(arguments)
+
+    if args.commande == "telephones":
+        try:
+            print(" ".join(asyncio.run(telephones_home_assistant(args.url, args.jeton))))
+        except (httpx.HTTPError, ValueError) as e:
+            print(f"ERREUR : {e}", file=sys.stderr)
+            return 1
+        return 0
 
     if args.commande == "qr":
         afficher_qr(lien_appairage(args.url, args.jeton, args.piece))

@@ -184,3 +184,18 @@ def test_api_resume_energie_et_voix(monkeypatch, tmp_path):
         assert c.get("/v1/sauvegarde").json() == {"existe": False}
         assert c.get("/v1/alertes").json()["actives"] is False
         assert c.get("/v1/maison/historique/pas une entité").status_code in (400, 404)
+
+
+def test_telephones_de_home_assistant(monkeypatch):
+    import httpx
+
+    from app import installation
+
+    def reponse(requete):
+        assert requete.url.path == "/api/services" and requete.headers["Authorization"] == "Bearer j"
+        return httpx.Response(200, json=[{"domain": "light", "services": {"turn_on": {}}},
+                                         {"domain": "notify", "services": {"mobile_app_pixel_8": {}, "notify": {}, "mobile_app_ipad": {}}}])
+    vrai_client = httpx.AsyncClient
+    monkeypatch.setattr(installation.httpx, "AsyncClient", lambda **k: vrai_client(transport=httpx.MockTransport(reponse), **k))
+    import asyncio
+    assert asyncio.run(installation.telephones_home_assistant("http://ha:8123/", "j")) == ["ha:mobile_app_ipad", "ha:mobile_app_pixel_8"]

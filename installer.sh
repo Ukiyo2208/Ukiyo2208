@@ -154,6 +154,10 @@ echo "  Discussion et automatisations : IA cloud, ou modèle puissant sur un PC 
 demander CLE_ANTHROPIC "Clé de l'IA cloud Claude (vide = aucune)" "" secret
 demander PUISSANT_URL "Adresse d'Ollama sur un PC puissant, ex http://192.168.1.50:11434 (vide = aucun)" ""
 [ -n "$PUISSANT_URL" ] && demander PUISSANT_MODELE "Modèle de ce PC" "qwen3.5:27b"
+PRIX_KWH=""
+if [ -z "$(env_lire "$ENV_BETA" PRIX_KWH)" ]; then
+  demander PRIX_KWH "Prix du kWh TTC sur ta facture d'électricité, en euros (page Énergie)" "0.2516"
+fi
 
 # ====================================================================== 3. Fichiers
 
@@ -293,6 +297,10 @@ for c in beta-tool beta-work vaultwarden wg-easy; do
   fi
 done
 
+# Énergie et lien ouvert en touchant une alerte
+[ -n "$PRIX_KWH" ] && env_ecrire "$ENV_BETA" PRIX_KWH "${PRIX_KWH/,/.}"
+env_ecrire "$ENV_BETA" BETA_LIEN "http://$(ip_nas):8800/home/"
+
 # Sauvegarde de la nuit : sur un autre volume que le projet si le NAS en a un (un disque qui lâche ne prend pas tout)
 if [ -z "$(env_lire "$ENV_BETA" SAUVEGARDE_DOSSIER)" ]; then
   AUTRE=$(ls -d /volume[0-9]* 2>/dev/null | grep -vx "$VOLUME" | head -n1 || true)
@@ -345,6 +353,44 @@ else
   ok "Jeton Home Assistant déjà configuré"
 fi
 
+etape "Alertes sur le téléphone et Bêta Tool"
+REDEMARRER=0
+if [ -z "$(env_lire "$ENV_BETA" NOTIFICATIONS)" ] && [ -n "$(env_lire "$ENV_BETA" HA_TOKEN)" ]; then
+  # Les téléphones qui ont l'appli Home Assistant reçoivent les alertes (et les notifications du tri)
+  TELEPHONES=$(docker exec beta python -m app.installation telephones --url "$(env_lire "$ENV_BETA" HA_URL)" \
+    --jeton "$(env_lire "$ENV_BETA" HA_TOKEN)" 2>/dev/null | tail -n1 || true)
+  if [ -n "$TELEPHONES" ]; then
+    env_ecrire "$ENV_BETA" NOTIFICATIONS "$TELEPHONES"; REDEMARRER=1
+    ok "Alertes envoyées sur : $(echo "$TELEPHONES" | sed 's/ha:mobile_app_//g; s/ /, /g')"
+  else
+    avertir "Aucun téléphone avec l'appli Home Assistant : installe l'appli « Home Assistant » sur ton téléphone,"
+    avertir "connecte-la à ta maison, puis relance l'installateur (ou remplis NOTIFICATIONS dans .env)."
+  fi
+elif [ -n "$(env_lire "$ENV_BETA" NOTIFICATIONS)" ]; then
+  ok "Alertes : $(env_lire "$ENV_BETA" NOTIFICATIONS | sed 's#https\?://[^ ]*#(lien)#g')"
+fi
+if [ -z "$(env_lire "$ENV_BETA" BETA_TOOL_JETON)" ]; then
+  # Jeton « Commandes vocales et widget » créé dans Bêta Tool (visible et révocable dans Réglages → API)
+  attendre "Bêta Tool" 300 docker exec beta-tool python -c "import api" >/dev/null 2>&1 || true
+  JETON_TOOL=$(docker exec beta-tool python scripts/jeton_beta.py "$PRENOM" 2>/dev/null | tail -n1 || true)
+  if [ "${JETON_TOOL#bt_}" != "$JETON_TOOL" ]; then
+    env_ecrire "$ENV_BETA" BETA_TOOL_JETON "$JETON_TOOL"; REDEMARRER=1
+    ok "Bêta relié à Bêta Tool (résumé du matin, courses, agenda et colis à la voix)"
+  else
+    avertir "Bêta Tool pas encore prêt : relance l'installateur plus tard pour relier Bêta et Bêta Tool"
+  fi
+else
+  ok "Bêta est relié à Bêta Tool"
+fi
+if [ "$REDEMARRER" = 1 ]; then
+  "${DC[@]}" up -d beta trieur >/dev/null 2>&1
+  if [ -n "$(env_lire "$ENV_BETA" NOTIFICATIONS)" ] \
+     && attendre "Bêta" 90 curl -sf --noproxy '*' -o /dev/null http://127.0.0.1:8800/sante \
+     && curl -sf --noproxy '*' -X POST -H "Authorization: Bearer $BETA_TOKEN" http://127.0.0.1:8800/v1/alertes/test >/dev/null; then
+    ok "Notification d'essai envoyée : regarde ton téléphone 🔔"
+  fi
+fi
+
 etape "Modèle d'IA local de Bêta"
 MODELE=$(env_lire "$ENV_BETA" OLLAMA_MODEL); MODELE=${MODELE:-qwen2.5:3b}
 attendre "Ollama" 120 docker exec beta-ollama ollama list || true
@@ -367,6 +413,7 @@ EOF
 [ "$TRI" = o ] && echo "  ${G}Tri des documents${N} http://$IP:8800/tri/   (propositions à valider, dossiers à trier)"
 echo "  ${G}Bêta home${N}         http://$IP:8800/home/  (maison, musique, Plex ; Alexa et HomeKit : boutons en haut)"
 echo "  ${G}Bêta Tool${N}         http://$IP:8080        (ta boîte à outils : onglet « Bêta Tool » de la barre)"
+echo "  ${G}Écran de veille${N}   http://$IP:8800/home/?veille=1&piece=$PIECE  (à ouvrir une fois sur l'écran de la tablette)"
 if [ "${HA_MDP_GENERE:-0}" = 1 ] && [ -z "${HA_ECHEC:-}" ]; then
   echo
   echo "  ${J}Compte Home Assistant${N} : identifiant ${G}$HA_UTILISATEUR${N}, mot de passe ${G}$HA_MDP${N}  ← note-le"
