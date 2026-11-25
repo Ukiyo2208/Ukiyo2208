@@ -92,6 +92,8 @@ Il faut que SSH soit activé sur le NAS (étape A). Les étapes B et C ci-dessou
 2. Dans **Services**, les points doivent être verts : Home Assistant, IA locale, écoute, voix, présence
    et tri des documents. Juste après l'installation, l'IA locale peut rester rouge une ou deux minutes.
 3. L'état détaillé (chaque requête, temps de réponse) est sur **`http://192.168.1.20:8800/tableau`**.
+4. **Bêta Tool** (ta boîte à outils) est sur **`http://192.168.1.20:8080`**, aussi dans la barre du haut.
+   S'il était déjà installé dans `/volume3/Docker/Beta-tool`, ses comptes et ses données sont repris.
 
 Un test rapide en ligne de commande : `sudo /volume1/docker/beta/beta-nas/outils/fiche-api.sh tester`.
 
@@ -272,6 +274,11 @@ La barre du bas parle à **Bêta IA**.
 - **HomeKit** (app Maison d'Apple, Siri) : bouton **HomeKit** en haut de Bêta home → QR code → app **Maison** →
   **+** → **Ajouter un accessoire** → scanne → « Ajouter quand même » (pont non certifié, c'est normal).
   L'iPhone doit être sur le même réseau ; un HomePod ou une Apple TV permet de piloter de l'extérieur.
+
+**Il manque des appareils ?** Bêta montre maintenant tous les appareils de Home Assistant. Le nombre lu est écrit
+en haut de *Pièces et appareils* (« 42 tuiles · 40 appareils et 380 entités lus dans Home Assistant »). Ceux qui
+ne sont rangés dans aucune pièce sont dans la carte **Sans pièce** (repliée) : range-les dans une pièce dans Home
+Assistant. Coche **Entités techniques** pour voir aussi les réglages et capteurs qui n'appartiennent à aucun appareil.
 
 ## J. IA cloud ou PC puissant pour la discussion (optionnel)
 

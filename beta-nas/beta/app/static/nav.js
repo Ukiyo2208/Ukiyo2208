@@ -1,5 +1,6 @@
-/* Barre commune du site de Bêta (http://IP_DU_NAS:8800) : trois onglets, sur chaque page.
-   Bêta IA (/) · Domotique (/home/) · Tri automatique (/tri/) */
+/* Barre commune du site de Bêta (http://IP_DU_NAS:8800), sur chaque page :
+   - les onglets Bêta IA (/) · Domotique (/home/) · Tri automatique (/tri/) · Bêta Tool (port 8080) ;
+   - le fond d'écran « Japon de nuit » (static/fond-japon.svg), le même partout, avec une teinte par partie. */
 (function () {
   if (document.querySelector("nav.beta-sections")) return;
   const chemin = location.pathname;
@@ -9,7 +10,23 @@
     ["ia", "/", "Bêta IA", ico('<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/>')],
     ["domotique", "/home/", "Domotique", ico('<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-6h6v6"/>')],
     ["tri", "/tri/", 'Tri<span class="long"> automatique</span>', ico('<path d="M4 4h6l2 2h8v4H4z"/><path d="M4 10h16v10H4z"/><path d="M9 15h6"/>')],
+    ["tool", `${location.protocol}//${location.hostname}:8080/`, 'Bêta<span class="long"> Tool</span>',
+      ico('<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>')],
   ];
+
+  // Fond d'écran unifié, teinté selon la partie (et l'onglet de la Domotique)
+  const TEINTES = { ia: "123, 91, 255", tri: "47, 208, 192", maison: "47, 139, 255", musique: "255, 95, 162",
+    plex: "229, 160, 13", automatisations: "66, 226, 160" };
+  function fond() {
+    const vue = actif === "domotique" ? (location.hash.slice(1) || "maison") : actif;
+    const teinte = TEINTES[vue] || TEINTES.maison;
+    document.body.style.setProperty("background",
+      `radial-gradient(1400px 700px at 50% -15%, rgba(${teinte}, .28), transparent 70%),` +
+      "linear-gradient(180deg, rgba(5, 8, 30, .35), rgba(5, 8, 30, .7))," +
+      'url("/static/fond-japon.svg") center bottom / cover fixed, #070b24', "important");
+  }
+  fond();
+  window.addEventListener("hashchange", fond);
   const style = document.createElement("style");
   style.textContent = `
     nav.beta-sections { position: sticky; top: 0; z-index: 60; display: flex; justify-content: center; padding: 10px 12px 6px;
@@ -22,8 +39,9 @@
     nav.beta-sections a:hover { color: #fff; }
     nav.beta-sections a.actif { color: #fff; background: linear-gradient(135deg, #2f8bff, #7b5bff); box-shadow: 0 0 14px rgba(79, 140, 255, .45); }
     nav.beta-sections svg { width: 18px; height: 18px; flex: none; }
-    @media (max-width: 480px) { nav.beta-sections a { padding: 8px 12px; font-size: 13px; gap: 6px; } }
-    @media (max-width: 400px) { nav.beta-sections .long { display: none; } }`;
+    @media (max-width: 480px) { nav.beta-sections a { padding: 8px 10px; font-size: 13px; gap: 5px; }
+      nav.beta-sections .barre { max-width: 100%; overflow-x: auto; scrollbar-width: none; } }
+    @media (max-width: 400px) { nav.beta-sections .long { display: none; } nav.beta-sections a { padding: 8px 9px; } }`;
   const nav = document.createElement("nav");
   nav.className = "beta-sections";
   nav.setAttribute("aria-label", "Sections de Bêta");

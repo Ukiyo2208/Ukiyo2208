@@ -1,0 +1,127 @@
+// Registre des outils : menu, accueil, recherche et réglages sont générés à partir de cette liste.
+// `view` : section déjà présente dans index.html ; `load` : module chargé à la demande (render(root, parts)).
+
+export const CATS = [
+  ["medias", "Médias"],
+  ["documents", "Documents"],
+  ["fichiers", "Fichiers"],
+  ["maison", "Maison"],
+  ["utilitaires", "Utilitaires"],
+];
+
+// Thèmes plus fins pour Réglages › Outils : [id, nom, icône, couleur, outils]
+export const THEMES = [
+  ["quotidien", "Au quotidien", "sun", "ambre", ["journee", "agenda", "taches", "recettes", "inventaire", "entretien", "sante"]],
+  ["communication", "Mails, contacts et colis", "mail", "bleu-vert", ["mails", "contacts", "colis"]],
+  ["argent", "Argent et papiers", "receipt", "vert", ["budget", "patrimoine", "immo", "prix", "paperasse", "scanner"]],
+  ["medias", "Vidéos, musique et photos", "play", "rose", ["telecharger", "abonnements", "medias", "photos"]],
+  ["creation", "Retouche et transcription", "wand", "violet", ["video", "image", "transcription", "traduction"]],
+  ["bureau", "Documents et bureautique", "briefcase", "bleu", ["convertir", "pdf", "work", "notes", "questionnaires"]],
+  ["fichiers", "Fichiers et sauvegardes", "folder", "", ["fichiers", "drop", "decompresser", "stockage", "sauvegardes", "sauvegarde-tel"]],
+  ["reseau", "Partage, sécurité et réseau", "shield", "bleu-vert", ["presse-papier", "qr", "liens", "nas", "surveillance", "vpn", "coffre"]],
+];
+
+export const TOOLS = [
+  { id: "telecharger", name: "Téléchargeur", icon: "download", tile: "", cat: "medias", view: "telecharger",
+    desc: "Colle un lien, récupère la vidéo ou la musique en meilleure qualité.", chips: ["YouTube", "TikTok", "+1800 sites"] },
+  { id: "video", name: "Compresseur vidéo", icon: "video", tile: "rose", cat: "medias", load: () => import("./tools/video.js"),
+    desc: "Réduis une vidéo à la taille voulue, coupe le début et la fin.", chips: ["Discord", "WhatsApp", "Découpe"] },
+  { id: "image", name: "Studio Image", icon: "image", tile: "violet", cat: "medias", load: () => import("./tools/image.js"),
+    desc: "Recadre, retouche, redimensionne en lot, retire l'arrière-plan.", chips: ["Retouche", "Lot", "Détourage"] },
+  { id: "transcription", name: "Transcription", icon: "mic", tile: "vert", cat: "medias", load: () => import("./tools/transcribe.js"),
+    desc: "Transforme une vidéo ou un audio en texte et en sous-titres.", chips: ["Texte", "SRT", "VTT"] },
+  { id: "abonnements", name: "Abonnements", icon: "rss", tile: "rose", cat: "medias", load: () => import("./tools/subs.js"),
+    desc: "Suis tes youtubeurs : notification à chaque vidéo, téléchargement automatique.", chips: ["YouTube", "Podcasts", "Auto"] },
+  { id: "medias", name: "Médiathèque", icon: "play", tile: "", cat: "medias", load: () => import("./tools/media.js"),
+    desc: "Regarde tes vidéos et écoute ta musique, même sur téléphone.", chips: ["Vidéos", "Musique", "Playlist"] },
+  { id: "photos", name: "Album photo", icon: "camera", tile: "ambre", cat: "medias", load: () => import("./tools/photos.js"),
+    desc: "Tes photos rangées par date, avec partage d'album.", chips: ["Chronologie", "Albums", "Partage"] },
+
+  { id: "convertir", name: "Convertisseur", icon: "convert", tile: "violet", cat: "documents", view: "convertir",
+    desc: "Vidéo, audio, image, document, e-book… plus de 60 formats.", chips: ["MP4 → MP3", "HEIC → JPG", "Word → PDF"] },
+  { id: "pdf", name: "Studio PDF", icon: "pdf", tile: "rose", cat: "documents", view: "pdf",
+    desc: "Modifie, signe, remplis, organise, fusionne, compresse tes PDF.", chips: ["Signer", "Fusionner", "OCR"] },
+  { id: "work", name: "Bêta Work", icon: "briefcase", tile: "bleu-vert", cat: "documents", view: "work",
+    desc: "Documents, tableurs et présentations compatibles Office.", chips: ["Texte", "Tableur", "Présentations"] },
+  { id: "notes", name: "Bêta Notes", icon: "notebook", tile: "ambre", cat: "documents", load: () => import("./tools/notes.js"),
+    desc: "Notes et listes de tâches, rangées et cherchables.", chips: ["Markdown", "Tâches", "Dossiers"] },
+  { id: "paperasse", name: "Paperasse", icon: "receipt", tile: "bleu-vert", cat: "documents", load: () => import("./tools/papers.js"),
+    desc: "Factures, fiches de paie, impôts : lus, renommés et rangés tout seuls, avec rappels d'échéances.", chips: ["Classement auto", "Échéances", "Recherche"] },
+  { id: "scanner", name: "Scanner", icon: "scan", tile: "violet", cat: "documents", load: () => import("./tools/scanner.js"),
+    desc: "Photographie un document : il est redressé, nettoyé et transformé en PDF.", chips: ["Recadrage auto", "PDF", "OCR"] },
+  { id: "traduction", name: "Traduction", icon: "translate", tile: "vert", cat: "documents", load: () => import("./tools/translate.js"),
+    desc: "Traduis textes, documents et sous-titres, sans rien envoyer sur Internet.", chips: ["Texte", "Word", "Sous-titres"] },
+  { id: "questionnaires", name: "Questionnaires", icon: "form", tile: "vert", cat: "documents", load: () => import("./tools/forms.js"),
+    desc: "Crée un formulaire, partage le lien, analyse les réponses.", chips: ["Sondage", "Inscription", "Export Excel"] },
+
+  { id: "fichiers", name: "Fichiers", icon: "folder", tile: "ambre", cat: "fichiers", load: () => import("./tools/files.js"),
+    desc: "Parcours, range et ouvre tous les fichiers du NAS.", chips: ["Aperçu", "Déplacer", "Ouvrir avec"] },
+  { id: "drop", name: "Bêta Drop", icon: "send", tile: "", cat: "fichiers", load: () => import("./tools/drop.js"),
+    desc: "Partage des fichiers par lien, ou reçois-en de n'importe qui.", chips: ["Lien temporaire", "Mot de passe", "Dépôt"] },
+  { id: "decompresser", name: "Décompresseur", icon: "archive", tile: "vert", cat: "fichiers", view: "decompresser",
+    desc: "Ouvre un ZIP, RAR ou 7Z et extrais ce que tu veux.", chips: ["ZIP", "RAR", "7Z"] },
+  { id: "stockage", name: "Stockage", icon: "pie", tile: "ambre", cat: "fichiers", load: () => import("./tools/storage.js"),
+    desc: "Vois ce qui prend de la place, supprime les doublons, range tes dossiers.", chips: ["Carte", "Doublons", "Rangement"] },
+  { id: "sauvegardes", name: "Sauvegardes", icon: "shield", tile: "bleu-vert", cat: "fichiers", load: () => import("./tools/backup.js"), admin: true,
+    desc: "Copie automatique de tes dossiers chaque nuit, avec historique.", chips: ["Planifié", "Incrémental", "Rapport"] },
+
+  { id: "journee", name: "Ma journée", icon: "sun", tile: "ambre", cat: "maison", load: () => import("./tools/journee.js"),
+    desc: "Météo, rendez-vous, poubelles, mails, colis et papiers du jour, sur une page et en notification le matin.", chips: ["Météo", "Résumé", "Notification"] },
+  { id: "mails", name: "Mails", icon: "mail", tile: "bleu-vert", cat: "maison", load: () => import("./tools/mail.js"),
+    desc: "Tes boîtes mail iCloud, Gmail, Outlook, Orange… réunies, avec notifications.", chips: ["iCloud", "Gmail", "Outlook"] },
+  { id: "colis", name: "Colis", icon: "send", tile: "ambre", cat: "maison", load: () => import("./tools/colis.js"),
+    desc: "Tes colis repérés tout seuls dans tes mails, avec leur avancement jusqu'à la livraison.", chips: ["Colissimo", "Amazon", "Mondial Relay"] },
+  { id: "taches", name: "Tâches", icon: "check", tile: "vert", cat: "maison", load: () => import("./tools/taches.js"),
+    desc: "Listes de choses à faire, perso ou partagées avec la maison, avec rappels et tâches qui reviennent.", chips: ["Partagées", "Répétées", "Rappels"] },
+  { id: "budget", name: "Budget", icon: "chart", tile: "vert", cat: "maison", load: () => import("./tools/budget.js"),
+    desc: "Tes relevés bancaires rangés par catégorie, tes charges fixes et des pistes d'économies (assurances, box, abonnements…).", chips: ["Relevés CSV / OFX", "Économies", "Assurances"] },
+  { id: "sauvegarde-tel", name: "Téléphones", icon: "phone", tile: "bleu-vert", cat: "maison", load: () => import("./tools/telephones.js"),
+    desc: "Sauvegarde les photos, documents et SMS de vos téléphones sur le NAS, et relis tes anciens SMS.", chips: ["Photos", "SMS", "WebDAV"] },
+  { id: "patrimoine", name: "Patrimoine", icon: "landmark", tile: "violet", cat: "maison", load: () => import("./tools/patrimoine.js"),
+    desc: "Tes actions (Revolut, actions de l'entreprise), tes crédits et ce qu'il reste à rembourser, ton immobilier et un simulateur d'achat pour louer.", chips: ["Actions", "Crédits", "Projet locatif"] },
+  { id: "immo", name: "Immobilier", icon: "home", tile: "ambre", cat: "maison", load: () => import("./tools/immo.js"),
+    desc: "Annonces suivies avec alerte de baisse, prix réels du quartier, gestion de ta location (loyers, quittances, IRL, état des lieux) et aide à la déclaration.", chips: ["Annonces", "Prix DVF", "Quittances"] },
+  { id: "prix", name: "Suivi des prix", icon: "tag", tile: "vert", cat: "maison", load: () => import("./tools/prix.js"),
+    desc: "L'historique des prix des produits que tu regardes, une alerte quand ça baisse et les prix des autres boutiques.", chips: ["Historique", "Alertes", "Comparaison"] },
+  { id: "entretien", name: "Entretien", icon: "settings", tile: "bleu-vert", cat: "maison", load: () => import("./tools/entretien.js"),
+    desc: "Voiture, chaudière, logement, jardin : vidange, contrôle technique, ramonage… avec rappels et factures.", chips: ["Voiture", "Chaudière", "Rappels"] },
+  { id: "sante", name: "Santé", icon: "heart", tile: "rose", cat: "maison", load: () => import("./tools/sante.js"),
+    desc: "La santé de la famille : vaccins et rappels, rendez-vous médicaux, ordonnances, remboursements.", chips: ["Vaccins", "Rendez-vous", "Remboursements"] },
+  { id: "inventaire", name: "Inventaire", icon: "archive", tile: "bleu", cat: "maison", load: () => import("./tools/inventaire.js"),
+    desc: "Ce qu'il y a à la maison : photos, factures, garanties, péremptions, et la liste prête pour l'assurance.", chips: ["Garanties", "Assurance", "Congélateur"] },
+  { id: "contacts", name: "Contacts", icon: "users", tile: "violet", cat: "maison", load: () => import("./tools/contacts.js"),
+    desc: "Tes carnets d'adresses Perso, Pro et Famille, synchronisés avec vos téléphones.", chips: ["Perso / Pro", "iPhone / Android", "Anniversaires"] },
+  { id: "agenda", name: "Agenda", icon: "calendar", tile: "", cat: "maison", load: () => import("./tools/agenda.js"),
+    desc: "Agenda Famille partagé, synchronisé avec vos téléphones, et tes agendas iCloud, Google, Outlook.", chips: ["Famille", "iCloud / Google", "Outlook"] },
+  { id: "recettes", name: "Recettes", icon: "utensils", tile: "rose", cat: "maison", load: () => import("./tools/recipes.js"),
+    desc: "Ton carnet de recettes, importées d'un lien, et la liste de courses partagée.", chips: ["Import", "Mode cuisine", "Courses"] },
+  { id: "presse-papier", name: "Presse-papier", icon: "clipboard", tile: "bleu-vert", cat: "utilitaires", load: () => import("./tools/clipboard.js"),
+    desc: "Copie sur ton téléphone, colle sur ton PC (et l'inverse), en un instant.", chips: ["Texte", "Images", "Fichiers"] },
+  { id: "qr", name: "QR codes", icon: "qr", tile: "violet", cat: "utilitaires", load: () => import("./tools/qr.js"),
+    desc: "Crée un QR code (lien, Wi-Fi, contact) ou lis-en un.", chips: ["Wi-Fi", "Contact", "Lecture"] },
+  { id: "liens", name: "Liens courts", icon: "link", tile: "", cat: "utilitaires", load: () => import("./tools/links.js"),
+    desc: "Raccourcis un long lien et compte les clics.", chips: ["Lien court", "Statistiques"] },
+  { id: "nas", name: "Santé du NAS", icon: "server", tile: "vert", cat: "utilitaires", load: () => import("./tools/nas.js"), admin: true,
+    desc: "Disques, processeur, mémoire, températures et état SMART, avec la date où le disque sera plein.", chips: ["Disques", "Températures", "SMART"] },
+  { id: "surveillance", name: "Surveillance", icon: "pulse", tile: "vert", cat: "utilitaires", load: () => import("./tools/monitor.js"), admin: true,
+    desc: "Sois prévenu si un site, un service ou le NAS ne répond plus.", chips: ["Sites", "Services", "Disque"] },
+  { id: "vpn", name: "VPN", icon: "globe", tile: "bleu-vert", cat: "utilitaires", load: () => import("./tools/vpn.js"), admin: true,
+    desc: "Accède à la maison depuis n'importe où, en toute sécurité (WireGuard).", chips: ["WireGuard", "QR code", "Wi-Fi public"] },
+  { id: "coffre", name: "Coffre", icon: "key", tile: "rose", cat: "utilitaires", load: () => import("./tools/vault.js"),
+    desc: "Gestionnaire de mots de passe compatible Bitwarden.", chips: ["Vaultwarden", "Applis", "Extensions"] },
+];
+
+export const SYSTEM = [
+  { id: "suggestions", name: "Suggestions", icon: "lightbulb", tile: "ambre", view: "suggestions" },
+  { id: "reglages", name: "Réglages", icon: "settings", tile: "", load: () => import("./tools/settings.js") },
+];
+
+export const byId = id => TOOLS.find(t => t.id === id) || SYSTEM.find(t => t.id === id);
+
+/** Outils rangés par thème (menu, accueil, réglages) : [id, nom, icône, couleur, [outils]], les outils sans thème dans « Autres ». */
+export function themeGroups(filter = () => true) {
+  const known = new Set(THEMES.flatMap(t => t[4]));
+  return [...THEMES, ["autres", "Autres", "grid", "", TOOLS.filter(t => !known.has(t.id)).map(t => t.id)]]
+    .map(([id, name, ic, tile, ids]) => [id, name, ic, tile, ids.map(byId).filter(t => t && TOOLS.includes(t) && filter(t))])
+    .filter(g => g[4].length);
+}

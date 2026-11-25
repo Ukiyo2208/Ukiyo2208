@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connexion · Bêta Tool</title>
+<link rel="icon" href="brand/favicon.ico" sizes="any">
+<link rel="stylesheet" href="style.css">
+<style>
+  .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+  .login .card { width: min(400px, 100%); text-align: center; padding: 32px 28px; }
+  .login img { width: 72px; height: 72px; border-radius: 18px; box-shadow: var(--glow); }
+  .login h1 { margin: 16px 0 4px; font-size: 1.5rem; }
+  .login p { color: var(--muted); margin: 0 0 22px; }
+  .login input { margin-bottom: 14px; text-align: center; }
+  .login .code-input { font-size: 1.6rem; letter-spacing: .25em; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="login">
+  <form class="card" method="post" action="/login">
+    <img src="brand/apple-touch-icon.png" alt="">
+    <h1>Bêta Tool<span class="badge">bêta</span></h1>
+    <p id="lead">Connecte-toi pour accéder à tes outils.</p>
+    <input type="text" name="username" id="username" placeholder="Identifiant" autocomplete="username" autocapitalize="none" hidden>
+    <input type="password" name="password" placeholder="Mot de passe" autocomplete="current-password" required>
+    <button class="btn wide">Se connecter</button>
+    <button type="button" class="btn ghost wide" id="pk-btn" hidden style="margin-top:10px">🔑 Avec une clé d'accès</button>
+    <p class="msg" id="err" style="margin:12px 0 0"></p>
+  </form>
+  <form class="card" method="post" action="/login/code" id="code-form" hidden>
+    <img src="brand/apple-touch-icon.png" alt="">
+    <h1>Code de sécurité</h1>
+    <p>Ouvre ton appli d'authentification et tape le code à 6 chiffres.</p>
+    <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" placeholder="123 456" maxlength="11" required class="code-input">
+    <button class="btn wide">Valider</button>
+    <p class="msg" id="code-err" style="margin:12px 0 0"></p>
+    <p class="hint" style="margin:14px 0 0">Téléphone perdu ? Tape un de tes <b>codes de secours</b> (ex. 1a2b-3c4d).</p>
+  </form>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get("etape") === "code") {
+    document.querySelector("form").hidden = true;
+    document.getElementById("code-form").hidden = false;
+    document.querySelector(".code-input").focus();
+    if (q.has("erreur")) document.getElementById("code-err").textContent = "Code incorrect, réessaie";
+  } else if (q.get("erreur") === "expire") document.getElementById("err").textContent = "Délai dépassé : reconnecte-toi";
+  else if (q.has("erreur")) document.getElementById("err").textContent = "Identifiant ou mot de passe incorrect";
+  fetch("/api/auth/mode").then(r => r.json()).then(m => {
+    if (m.mode === "open") return location.replace("/");
+    const user = document.getElementById("username");
+    if (q.get("etape") === "code") return;
+    if (m.mode === "accounts") { user.hidden = false; user.required = true; user.focus(); }
+    else { document.getElementById("lead").textContent = "Entre le mot de passe pour accéder à tes outils."; document.querySelector("[name=password]").focus(); }
+    if (m.site) document.querySelector("h1").firstChild.textContent = m.site;
+  });
+</script>
+<script>
+  // Clés d'accès : empreinte, visage ou code de l'appareil (seulement sur une adresse sécurisée)
+  const b64 = b => btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const unb64 = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+  let pkAbort = null;
+  async function passkey(conditional) {
+    const o = await (await fetch("/api/auth/passkey/options", { method: "POST" })).json();
+    if (!o.available) return;
+    if (pkAbort) pkAbort.abort();
+    pkAbort = new AbortController();
+    const cred = await navigator.credentials.get({ mediation: conditional ? "conditional" : "optional", signal: pkAbort.signal,
+      publicKey: { challenge: unb64(o.challenge), rpId: o.rpId, timeout: o.timeout, userVerification: o.userVerification, allowCredentials: [] } });
+    const r = cred.response;
+    const res = await fetch("/api/auth/passkey", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: cred.id,
+      clientDataJSON: b64(r.clientDataJSON), authenticatorData: b64(r.authenticatorData), signature: b64(r.signature), userHandle: r.userHandle ? b64(r.userHandle) : null }) });
+    if (res.ok) return location.replace("/");
+    document.getElementById("err").textContent = (await res.json()).error || "Connexion refusée";
+  }
+  if (window.PublicKeyCredential && isSecureContext && new URLSearchParams(location.search).get("etape") !== "code") {
+    fetch("/api/auth/mode").then(r => r.json()).then(m => {
+      if (m.mode !== "accounts") return;
+      const btn = document.getElementById("pk-btn");
+      btn.hidden = false;
+      btn.onclick = () => passkey(false).catch(e => { if (e.name !== "AbortError" && e.name !== "NotAllowedError") document.getElementById("err").textContent = e.message; });
+      document.getElementById("username").setAttribute("autocomplete", "username webauthn");
+      PublicKeyCredential.isConditionalMediationAvailable?.().then(ok => ok && passkey(true).catch(() => {}));
+    });
+  }
+</script>
+<script type="module">import { apply, preferred } from "/js/i18n.js"; apply(preferred());</script>
+</body>
+</html>

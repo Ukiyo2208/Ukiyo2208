@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bêta · Tri des documents</title>
 <style>
-  :root { --fond: #0d1141; --carte: #161b52; --bord: #262c6b; --texte: #eceeff; --doux: #a0a8d7;
+  :root { --fond: #0d1141; --carte: rgba(20, 26, 80, .66); --bord: #262c6b; --texte: #eceeff; --doux: #a0a8d7;
           --accent: #56c8ff; --ko: #f87171; --ok: #4ade80; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.45 system-ui, sans-serif; }
@@ -13,7 +13,7 @@
   h1 { font-size: 22px; margin: 0 0 4px; }
   h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--doux); margin: 26px 0 10px; }
   .doux { color: var(--doux); font-size: 13px; }
-  .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 12px; padding: 14px; }
+  .carte { backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); background: var(--carte); border: 1px solid var(--bord); border-radius: 12px; padding: 14px; }
   .chiffres { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
   .chiffre { font-size: 24px; font-weight: 700; color: var(--accent); }
   ul.arbre { list-style: none; margin: 0; padding-left: 22px; }

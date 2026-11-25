@@ -585,11 +585,12 @@ async def page_home():
 
 
 @app.get("/v1/maison/etat", dependencies=[Depends(verifier_jeton)])
-async def etat_maison():
-    """Appareils (pièce, étage, état, attributs), personnes et météo, pour la page Bêta home."""
+async def etat_maison(tout: bool = False):
+    """Appareils (pièce, étage, état, attributs), personnes et météo, pour la page Bêta home.
+    tout=1 : aussi les entités techniques seules (réglages, diagnostic, capteurs sans appareil)."""
     donnees, partage = await _maison_brute(), _partage()
     toutes = donnees.get("appareils", [])
-    groupes = maison.groupes(toutes, donnees.get("appareils_ha", {}))
+    groupes = maison.groupes(toutes, donnees.get("appareils_ha", {}), tout)
     dans_un_groupe = {eid for g in groupes for eid in g["entites"]}
     # Entités envoyées : celles des tuiles, plus les capteurs utiles à l'en-tête des pièces et les scènes
     liste = [a | {"alexa": partage.visible(a, "alexa"), "homekit": partage.visible(a, "homekit"),
@@ -598,7 +599,9 @@ async def etat_maison():
                  "sensor", "binary_sensor", "scene")]
     return {"appareils": liste, "groupes": groupes, "personnes": donnees.get("personnes", []), "meteo": donnees.get("meteo"),
             "domicile": donnees.get("domicile"), "avertissement": donnees.get("avertissement", ""),
-            "voiture": maison.voiture(donnees.get("voiture", []), etat["settings"].voiture_nom)}
+            "voiture": maison.voiture(donnees.get("voiture", []), etat["settings"].voiture_nom),
+            "compte": {"entites": len(toutes), "appareils": len(donnees.get("appareils_ha", {})), "tuiles": len(groupes),
+                       "techniques": sum(1 for a in toutes if a.get("technique"))}}
 
 
 class ActionVoiture(BaseModel):
@@ -634,7 +637,7 @@ async def action_maison(demande: ActionMaison):
                 favoris.enregistrer(demande.entite, position)
                 return {"ok": True, "position": favoris.positions[demande.entite]}
             brute = await _maison_brute()
-            groupe = next((g for g in maison.groupes(brute.get("appareils", []), brute.get("appareils_ha", {}))
+            groupe = next((g for g in maison.groupes(brute.get("appareils", []), brute.get("appareils_ha", {}), True)
                            if demande.entite in g["entites"]), None)
             domaine, service, donnees = maison.commande_ma_position(demande.entite, groupe, favoris)
         else:
@@ -726,7 +729,8 @@ async def suggestions_automatisations(fraiches: bool = False):
         return _suggestions_cache["valeur"]
     s, ha = etat["settings"], etat["routeur"].ha
     donnees = await _maison_brute()
-    appareils, personnes = donnees.get("appareils", []), donnees.get("personnes", [])
+    appareils = [a for a in donnees.get("appareils", []) if not a.get("technique")]
+    personnes = donnees.get("personnes", [])
     try:
         journal, journal_ok = await ha.journal(14), True
     except httpx.HTTPError as e:

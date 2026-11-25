@@ -226,7 +226,7 @@ incluse dans `static/home/leaflet`). La barre du bas est Bêta IA (`/v1/texte`).
 
 | API | Rôle |
 |---|---|
-| `GET /v1/maison/etat` | appareils (pièce, étage, état, attributs), personnes, météo |
+| `GET /v1/maison/etat` | appareils (pièce, étage, état, attributs), une tuile par appareil Home Assistant (`groupes`), personnes, météo, `compte` ; `?tout=1` : aussi les entités techniques seules |
 | `POST /v1/maison/action` | `{"entite", "action", "valeur"}` : basculer, luminosite, ouvrir, fermer, stop, position, temperature, lecture, suivant, precedent, volume, radio… |
 | `GET /v1/maison/image/{entite}` | pochette de ce qui joue sur une enceinte |
 | `POST /v1/automatisations/proposer` | `{"texte"}` -> résumé + YAML vérifié, écrit par l'IA de la tâche « automatisations » (cloud, puissant, puis `local` = `TRI_MODELE`) |
@@ -240,6 +240,24 @@ incluse dans `static/home/leaflet`). La barre du bas est Bêta IA (`/v1/texte`).
 | `GET /v1/ponts`, `PUT /v1/ponts/choix` | état d'Alexa et HomeKit, appareils partagés (`{"entite", "pour", "visible"}`) |
 
 Serrures, portes de garage et portails : affichés, jamais commandés (ni depuis la page, ni par Alexa ou HomeKit).
+L'alarme, les vannes et les sirènes non plus.
+
+**Tous les appareils de Home Assistant** ont leur tuile : capteurs (station météo, capteur de porte…), téléphones,
+chauffe-eau, déshumidificateur, tondeuse, alarme, vanne… Les entités « réglage » ou « diagnostic » et les entités
+cachées dans Home Assistant vont dans la fiche de leur appareil (« ⋯ » → *Réglages avancés et diagnostic*). La case
+**Entités techniques** affiche aussi celles qui n'appartiennent à aucun appareil.
+
+**Fond d'écran** : une scène du Japon de nuit (`static/fond-japon.svg`, vectorielle) commune à toutes les pages
+(Bêta IA, Domotique, Tri, tableau de bord et Bêta Tool), posée par `static/nav.js` avec une teinte par section.
+
+## Bêta Tool : `http://IP_DU_NAS:8080`
+
+La boîte à outils du NAS (dossier `tool/`, conteneur `beta-tool`) : téléchargements, conversions, PDF, fichiers,
+agenda, tâches, budget, colis… avec ses propres comptes. Elle est dans la barre du haut de toutes les pages.
+Fichiers : `BETA_TOOL_FICHIERS` (par défaut `/volume3/BetaTool`), données : `BETA_TOOL_DONNEES` (par défaut
+`/volume3/Docker/Beta-tool/data` : une installation existante est reprise telle quelle). Options :
+`docker compose --profile work up -d` (OnlyOffice, port 8081), `--profile vault` (Vaultwarden, 8082),
+`--profile vpn` (WireGuard). Le premier `docker compose build` est long (LibreOffice, Calibre, ffmpeg…).
 
 ### Alexa et HomeKit (conteneur `beta-ponts`)
 

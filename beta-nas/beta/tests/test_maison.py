@@ -315,7 +315,11 @@ def test_pieces_etages_et_entites_techniques():
                 "switch.cachee": {"ei": "switch.cachee", "hb": True}, "light.salon": {"ei": "light.salon"}}
     d = _maison(lambda r: httpx.Response(200, text=__import__("json").dumps(pieces)), registre)
     par_id = {a["id"]: a for a in d["appareils"]}
-    assert set(par_id) == {"light.salon", "switch.prise_bureau"}  # réglage et entité cachée retirés
+    # tout est récupéré ; le réglage et l'entité cachée sont marqués « technique » (fiche de l'appareil, pas de tuile)
+    assert set(par_id) == {"light.salon", "switch.prise_bureau", "switch.lampe_led_indicateur", "switch.cachee"}
+    assert par_id["switch.lampe_led_indicateur"]["technique"] and par_id["switch.cachee"]["technique"]
+    assert "technique" not in par_id["light.salon"]
+    assert not maison.utile(par_id["switch.cachee"]) and maison.utile(par_id["light.salon"])
     assert par_id["light.salon"]["piece"] == "Salon" and par_id["light.salon"]["etage"] == "RDC"
     assert par_id["switch.prise_bureau"]["piece_id"] == "bureau" and d["avertissement"] == ""
     assert d["voiture"][0]["id"] == "sensor.fordpass_fuel" and d["domicile"]["lat"] == 48.5
@@ -357,7 +361,7 @@ APPAREILS_HA = {"d_ll": {"nom": "Lave-linge", "fabricant": "Bosch", "modele": "S
 
 def test_une_tuile_par_appareil():
     g = {x["id"]: x for x in maison.groupes(ENTITES_APPAREILS, APPAREILS_HA)}
-    assert "d_tel" not in g  # un téléphone (que des capteurs) ne fait pas de tuile
+    assert g["d_tel"]["type"] == "telephone" or g["d_tel"]["type"] == "capteur"  # tous les appareils ont leur tuile
     ll = g["d_ll"]
     assert ll["type"] == "lave_linge" and ll["principal"] == "switch.lave_linge" and ll["piece"] == "Buanderie"
     assert ll["etat"] == "sensor.lave_linge_etat" and ll["restant"] == "sensor.lave_linge_temps_restant"
@@ -415,7 +419,8 @@ def test_page_par_appareil(client):
     d = c.get("/v1/maison/etat").json()
     assert {g["type"] for g in d["groupes"]} >= {"lave_linge", "tele", "camera", "volet", "lumiere"}
     assert "sensor.lave_linge_temps_restant" in {a["id"] for a in d["appareils"]}
-    assert "sensor.telephone_batterie" not in {a["id"] for a in d["appareils"]}
+    assert "sensor.telephone_batterie" in {a["id"] for a in d["appareils"]}  # l'iPhone a sa tuile
+    assert d["compte"]["appareils"] == 5 and d["compte"]["tuiles"] == len(d["groupes"])
     assert c.post("/v1/maison/action", json={"entite": "cover.volet_salon", "action": "ma_position"}).status_code == 200
     assert c.post("/v1/maison/action", json={"entite": "cover.volet_chambre", "action": "enregistrer_ma_position"}).json()["position"] == 30
     assert c.post("/v1/maison/action", json={"entite": "cover.volet_chambre", "action": "ma_position"}).status_code == 200
@@ -427,3 +432,44 @@ def test_page_par_appareil(client):
     r = c.get("/v1/maison/camera/camera.jardin")
     assert r.content == b"JPEG" and ha.image_demandee == "/api/camera_proxy/camera.jardin"
     assert c.get("/v1/maison/camera/light.lampe").status_code == 404
+
+
+def test_tous_les_appareils_et_entites_techniques():
+    """Chaque appareil de Home Assistant a sa tuile ; les entités techniques vont dans sa fiche, et seules elles
+    n'ont de tuile qu'avec « afficher aussi les entités techniques »."""
+    entites = [
+        {"id": "sensor.station_temperature", "nom": "Station Température", "etat": "12", "appareil": "d_meteo",
+         "attr": {"device_class": "temperature"}},
+        {"id": "sensor.station_signal", "nom": "Station Signal", "etat": "-60", "appareil": "d_meteo", "technique": True,
+         "attr": {"device_class": "signal_strength"}},
+        {"id": "select.prise_led", "nom": "Prise LED", "etat": "on", "appareil": "d_prise", "technique": True, "attr": {}},
+        {"id": "switch.prise", "nom": "Prise", "etat": "on", "appareil": "d_prise", "attr": {}},
+        {"id": "update.firmware", "nom": "Firmware", "etat": "off", "appareil": "d_maj", "technique": True, "attr": {}},
+        {"id": "sensor.sun_next_dawn", "nom": "Aube", "etat": "2026-01-01T07:00:00", "technique": True, "attr": {}},
+        {"id": "sensor.tension", "nom": "Tension", "etat": "230", "attr": {"device_class": "voltage"}},
+        {"id": "water_heater.ballon", "nom": "Ballon", "etat": "eco", "appareil": "d_ballon", "attr": {}},
+        {"id": "lawn_mower.tondeuse", "nom": "Tondeuse", "etat": "docked", "appareil": "d_tondeuse", "attr": {}},
+        {"id": "alarm_control_panel.maison", "nom": "Alarme", "etat": "armed_away", "attr": {}},
+        {"id": "sensor.porte_batterie", "nom": "Porte Batterie", "etat": "90", "appareil": "d_porte", "attr": {"device_class": "battery"}},
+        {"id": "binary_sensor.porte", "nom": "Porte", "etat": "off", "appareil": "d_porte", "attr": {"device_class": "door"}},
+    ]
+    g = {x["id"]: x for x in maison.groupes(entites, {"d_meteo": {"nom": "Station météo"}, "d_prise": {"nom": "Prise"}})}
+    assert g["d_meteo"]["type"] == "capteur" and g["d_meteo"]["principal"] == "sensor.station_temperature"
+    assert "sensor.station_signal" in g["d_meteo"]["entites"]  # dans la fiche
+    assert g["d_prise"]["principal"] == "switch.prise" and "select.prise_led" in g["d_prise"]["entites"]
+    assert g["d_ballon"]["type"] == "chauffe_eau" and g["d_tondeuse"]["type"] == "tondeuse"
+    assert g["alarm_control_panel.maison"]["type"] == "alarme" and g["d_porte"]["principal"] == "binary_sensor.porte"
+    assert not {"d_maj", "sensor.sun_next_dawn", "sensor.tension"} & set(g)
+    tout = {x["id"] for x in maison.groupes(entites, {}, tout=True)}
+    assert {"d_maj", "sensor.sun_next_dawn", "sensor.tension"} <= tout
+
+
+def test_nouveaux_domaines_commandes_et_refus():
+    assert maison.commande_page("water_heater.ballon", "temperature", 99, {"min_temp": 40, "max_temp": 65}) == (
+        "water_heater", "set_temperature", {"entity_id": "water_heater.ballon", "temperature": 65.0})
+    assert maison.commande_page("humidifier.d", "humidite", 45, {})[2]["humidity"] == 45
+    assert maison.commande_page("lawn_mower.t", "lancer", None, {})[:2] == ("lawn_mower", "start_mowing")
+    for entite, action in (("alarm_control_panel.maison", "basculer"), ("valve.eau", "ouvrir"), ("siren.s", "basculer"),
+                           ("lock.porte", "basculer")):
+        with pytest.raises(maison.ActionRefusee):
+            maison.commande_page(entite, action, None, {})

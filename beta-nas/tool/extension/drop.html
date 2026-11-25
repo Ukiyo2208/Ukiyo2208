@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Déposer sur le NAS · Bêta Tool</title><link rel="stylesheet" href="ext.css">
+<style>body{max-width:640px;margin:0 auto;padding:24px 16px}
+#zone{border:2px dashed var(--border);border-radius:16px;padding:40px 16px;text-align:center;cursor:pointer;background:var(--card)}#zone.on{border-color:var(--accent);background:var(--accent-soft)}</style></head>
+<body>
+  <div class="row" style="margin-bottom:16px"><img class="logo" src="icons/icon48.png" alt=""><h1>Déposer sur le NAS</h1></div>
+  <div class="card" id="fromurl" hidden><b id="u-name"></b><div class="meta" id="u-url" style="word-break:break-all"></div>
+    <div class="row" style="margin-top:8px"><select id="u-dest" class="grow"></select><button class="btn p" id="u-send">Envoyer</button></div></div>
+  <label class="f">Où le ranger ?</label><select id="dest"></select>
+  <p class="meta">« Automatique » : relevé bancaire (CSV, OFX, QIF) → Budget, relevé Revolut → Patrimoine, PDF et factures → Paperasse, photos → Album photo, le reste → Téléchargements/Navigateur.</p>
+  <div id="zone"><b>Glisse tes fichiers ici</b><br><span class="meta">ou clique pour les choisir</span><input type="file" id="file" multiple hidden></div>
+  <div class="list" id="done" style="margin-top:12px"></div>
+<script type="module" src="drop.js"></script>
+</body></html>

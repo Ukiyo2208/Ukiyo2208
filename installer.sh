@@ -271,6 +271,28 @@ else
   printf 'services:\n  trieur:\n    volumes: []\n' > "$SURCHARGE"
 fi
 
+# ---------------------------------------------------------------- Bêta Tool (http://IP:8080)
+# Reprend ton installation existante (/volume3/BetaTool et /volume3/Docker/Beta-tool/data) si elle existe
+if [ -z "$(env_lire "$ENV_BETA" BETA_TOOL_DONNEES)" ]; then
+  if [ -d /volume3/Docker/Beta-tool/data ]; then env_ecrire "$ENV_BETA" BETA_TOOL_DONNEES /volume3/Docker/Beta-tool/data
+  else env_ecrire "$ENV_BETA" BETA_TOOL_DONNEES "$DEST/beta-nas/data/tool"; fi
+fi
+if [ -z "$(env_lire "$ENV_BETA" BETA_TOOL_FICHIERS)" ]; then
+  if [ -d /volume3/BetaTool ]; then env_ecrire "$ENV_BETA" BETA_TOOL_FICHIERS /volume3/BetaTool
+  else env_ecrire "$ENV_BETA" BETA_TOOL_FICHIERS "$VOLUME/BetaTool"; fi
+fi
+env_si_vide "$ENV_BETA" ONLYOFFICE_JWT_SECRET "$(aleatoire 21)"
+FICHIERS_TOOL=$(env_lire "$ENV_BETA" BETA_TOOL_FICHIERS)
+for d in Telechargements Conversions PDF Decompresses Documents Photos Recus Telephones; do mkdir -p "$FICHIERS_TOOL/$d"; done
+mkdir -p "$(env_lire "$ENV_BETA" BETA_TOOL_DONNEES)"
+# L'ancien Bêta Tool lancé à part (son propre docker-compose) laisse la place : ses données restent dans ses dossiers
+for c in beta-tool beta-work vaultwarden wg-easy; do
+  projet=$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$c" 2>/dev/null || true)
+  if [ -n "$projet" ] && [ "$projet" != beta-nas ]; then
+    docker rm -f "$c" >/dev/null 2>&1 && ok "Ancien conteneur $c retiré (ses données sont conservées)"
+  fi
+done
+
 # ====================================================================== 5. Bêta
 
 etape "Démarrage de Bêta (première fois : 5 à 15 minutes)"
@@ -336,6 +358,7 @@ cat <<EOF
 EOF
 [ "$TRI" = o ] && echo "  ${G}Tri des documents${N} http://$IP:8800/tri/   (propositions à valider, dossiers à trier)"
 echo "  ${G}Bêta home${N}         http://$IP:8800/home/  (maison, musique, Plex ; Alexa et HomeKit : boutons en haut)"
+echo "  ${G}Bêta Tool${N}         http://$IP:8080        (ta boîte à outils : onglet « Bêta Tool » de la barre)"
 if [ "${HA_MDP_GENERE:-0}" = 1 ] && [ -z "${HA_ECHEC:-}" ]; then
   echo
   echo "  ${J}Compte Home Assistant${N} : identifiant ${G}$HA_UTILISATEUR${N}, mot de passe ${G}$HA_MDP${N}  ← note-le"

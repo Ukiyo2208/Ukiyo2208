@@ -41,16 +41,22 @@ _TEMPLATE_APPAREILS = """
 
 
 # Domaines lus pour la page Bêta home (les serrures y sont affichées, jamais commandées)
+# (alarme, vannes et sirènes aussi : affichées, jamais commandées)
 DOMAINES_MAISON = ["light", "switch", "cover", "climate", "fan", "media_player", "scene", "input_boolean",
                    "sensor", "binary_sensor", "lock", "vacuum", "camera", "number", "select", "button",
-                   "input_number", "input_select"]
+                   "input_number", "input_select", "input_button", "water_heater", "humidifier", "lawn_mower",
+                   "remote", "valve", "alarm_control_panel", "siren", "device_tracker", "event", "update",
+                   "text", "input_text"]
 _ATTRIBUTS = ["brightness", "supported_color_modes", "color_mode", "color_temp_kelvin", "min_color_temp_kelvin",
               "max_color_temp_kelvin", "hs_color", "current_position", "current_tilt_position", "device_class",
               "temperature", "current_temperature", "min_temp", "max_temp", "target_temp_step", "hvac_action",
               "hvac_modes", "fan_mode", "fan_modes", "preset_mode", "preset_modes", "unit_of_measurement",
               "media_title", "media_artist", "media_album_name", "entity_picture", "volume_level",
               "is_volume_muted", "app_name", "source", "source_list", "battery_level", "fan_speed",
-              "fan_speed_list", "percentage", "options", "min", "max", "step", "supported_features"]
+              "fan_speed_list", "percentage", "options", "min", "max", "step", "supported_features", "humidity",
+              "current_humidity", "min_humidity", "max_humidity", "mode", "available_modes", "operation_mode",
+              "operation_list", "current_valve_position", "installed_version", "latest_version", "event_type",
+              "source_type"]
 # Seulement les pièces : leur nom, leur étage et leurs entités (petite réponse, même avec des milliers d'entités).
 # area_entities() compte aussi les entités rangées par leur appareil.
 _TEMPLATE_PIECES = (
@@ -148,8 +154,8 @@ class HomeAssistant:
         - les états viennent de GET /api/states (pas de limite de taille) ;
         - les pièces et étages d'un petit modèle ; s'il est refusé, tout s'affiche sans les pièces, avec la
           raison dans « avertissement » ;
-        - les entités techniques (configuration, diagnostic) et cachées sont retirées, d'après la liste
-          d'affichage de Home Assistant."""
+        - les entités techniques (configuration, diagnostic) et cachées sont gardées avec « technique »: True,
+          d'après la liste d'affichage de Home Assistant : elles vont dans la fiche de leur appareil, pas en tuile."""
         motif = re.sub(r"[^a-z0-9_]", "", motif_voiture.lower()) or "fordpass"
         r = await self._client.get("/api/states")
         r.raise_for_status()
@@ -173,11 +179,12 @@ class HomeAssistant:
                                     "lat": attr.get("latitude"), "lon": attr.get("longitude")})
             elif domaine in DOMAINES_MAISON:
                 fiche = registre.get(eid) or {}
-                if "ec" in fiche or fiche.get("hb"):  # réglage, diagnostic ou entité cachée
-                    continue
                 area_id, piece, etage = piece_de.get(eid, ("", "", ""))
-                appareils.append({"id": eid, "nom": nom, "etat": e.get("state"), "piece": piece, "piece_id": area_id,
-                                  "etage": etage, "attr": {k: attr[k] for k in _ATTRIBUTS if attr.get(k) is not None}})
+                appareil = {"id": eid, "nom": nom, "etat": e.get("state"), "piece": piece, "piece_id": area_id,
+                            "etage": etage, "attr": {k: attr[k] for k in _ATTRIBUTS if attr.get(k) is not None}}
+                if "ec" in fiche or fiche.get("hb") or domaine == "update":  # réglage, diagnostic, caché, mise à jour
+                    appareil["technique"] = True
+                appareils.append(appareil)
             elif domaine == "person":
                 personnes.append({"id": eid, "nom": nom, "etat": e.get("state"), "lat": attr.get("latitude"),
                                   "lon": attr.get("longitude"), "precision": attr.get("gps_accuracy")})

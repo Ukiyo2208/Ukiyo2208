@@ -1,0 +1,17 @@
+yt-dlp[default]
+flask>=3.0
+waitress>=3.0
+pillow>=11.3
+pillow-heif>=0.22
+pikepdf>=9.0
+ocrmypdf>=16.0
+faster-whisper>=1.1
+rembg[cpu]>=2.0.60
+openpyxl>=3.1
+radicale>=3.2
+sentencepiece>=0.2
+requests>=2.31
+cryptography>=42
+wsgidav>=4.3
+fpdf2>=2.7
+opencv-contrib-python-headless>=4.9

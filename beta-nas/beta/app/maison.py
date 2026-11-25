@@ -22,10 +22,16 @@ class ActionRefusee(ValueError):
     pass
 
 
+SANS_TUILE_SEULE = {"device_tracker", "event", "update", "text", "input_text"}  # seulement dans la fiche de leur appareil
+
+
 def utile(a: dict) -> bool:
-    """Garde ce qu'une page de maison doit montrer, sans les centaines de capteurs techniques."""
+    """Garde ce qu'une page de maison doit montrer seul (et ce qu'Alexa, HomeKit et les suggestions voient), sans
+    les centaines de capteurs et réglages techniques."""
     domaine = a["id"].split(".", 1)[0]
     classe = (a.get("attr") or {}).get("device_class")
+    if a.get("technique") or domaine in SANS_TUILE_SEULE:
+        return False
     if a.get("etat") == "unavailable" and domaine in ("sensor", "binary_sensor"):
         return False
     if domaine == "sensor":
@@ -51,6 +57,8 @@ def commande_page(entite: str, action: str, valeur, attributs: dict, option: str
     at = attributs
     if domaine == "lock" or (domaine == "cover" and attributs.get("device_class") in INTERDITS):
         raise ActionRefusee("Serrures, portes de garage et portails ne se commandent pas depuis la page")
+    if domaine in ("alarm_control_panel", "valve", "siren"):
+        raise ActionRefusee("L'alarme, les vannes et les sirènes se commandent depuis Home Assistant")
     cible = {"entity_id": entite}
     table = {
         ("light", "basculer"): ("light", "toggle", {}),
@@ -93,6 +101,21 @@ def commande_page(entite: str, action: str, valeur, attributs: dict, option: str
         ("scene", "lancer"): ("scene", "turn_on", {}),
         ("vacuum", "lancer"): ("vacuum", "start", {}),
         ("vacuum", "base"): ("vacuum", "return_to_base", {}),
+        ("input_button", "appuyer"): ("input_button", "press", {}),
+        ("remote", "basculer"): ("remote", "toggle", {}),
+        ("humidifier", "basculer"): ("humidifier", "toggle", {}),
+        ("humidifier", "humidite"): ("humidifier", "set_humidity", lambda: {"humidity": _borne(
+            valeur, int(at.get("min_humidity") or 0), int(at.get("max_humidity") or 100))}),
+        ("humidifier", "mode"): ("humidifier", "set_mode", lambda: {"mode": _choix(option, at.get("available_modes"), "mode")}),
+        ("water_heater", "allumer"): ("water_heater", "turn_on", {}),
+        ("water_heater", "eteindre"): ("water_heater", "turn_off", {}),
+        ("water_heater", "temperature"): ("water_heater", "set_temperature", lambda: {"temperature": _borne(
+            valeur, float(at.get("min_temp") or 30), float(at.get("max_temp") or 70), float)}),
+        ("water_heater", "mode"): ("water_heater", "set_operation_mode",
+                                   lambda: {"operation_mode": _choix(option, at.get("operation_list"), "mode")}),
+        ("lawn_mower", "lancer"): ("lawn_mower", "start_mowing", {}),
+        ("lawn_mower", "pause"): ("lawn_mower", "pause", {}),
+        ("lawn_mower", "base"): ("lawn_mower", "dock", {}),
     }
     if (domaine, action) not in table:
         raise ActionRefusee(f"Action « {action} » impossible sur {domaine}")
@@ -130,8 +153,11 @@ def _borne(valeur, mini, maxi, type_=int):
 
 # ---------------------------------------------------------------- Appareils (une tuile par appareil de Home Assistant)
 
-_ORDRE_PRINCIPAL = ["camera", "vacuum", "climate", "media_player", "cover", "light", "fan", "switch", "input_boolean",
-                    "lock", "select", "number", "input_select", "input_number", "button", "sensor", "binary_sensor"]
+_ORDRE_PRINCIPAL = ["camera", "vacuum", "lawn_mower", "climate", "water_heater", "humidifier", "media_player", "cover",
+                    "light", "fan", "switch", "input_boolean", "lock", "alarm_control_panel", "valve", "siren", "remote",
+                    "select", "number", "input_select", "input_number", "button", "input_button", "sensor",
+                    "binary_sensor", "device_tracker", "event", "text", "input_text", "update"]
+_CLASSES_CAPTEUR = ["temperature", "humidity", "power", "energy", "co2", "pm25", "illuminance", "pressure", "battery"]
 _TYPES_TEXTE = [  # (motif dans le nom ou le modèle de l'appareil, type)
     (r"lave.?linge|washer|washing|machine a laver|lavelinge|waschmaschine", "lave_linge"),
     (r"seche.?linge|dryer|trockner|sechoir", "seche_linge"),
@@ -164,11 +190,15 @@ def type_appareil(nom: str, modele: str, entites: list[dict]) -> str:
             return type_
     if any(e["id"].startswith("media_player.") and (e.get("attr") or {}).get("device_class") == "tv" for e in entites):
         return "tele"
-    for domaine, type_ in (("climate", "clim"), ("cover", "volet"), ("media_player", "enceinte"), ("light", "lumiere"),
-                           ("fan", "ventilateur"), ("switch", "prise"), ("input_boolean", "prise"), ("lock", "serrure")):
+    for domaine, type_ in (("lawn_mower", "tondeuse"), ("climate", "clim"), ("water_heater", "chauffe_eau"),
+                           ("humidifier", "humidificateur"), ("cover", "volet"), ("media_player", "enceinte"),
+                           ("light", "lumiere"), ("fan", "ventilateur"), ("switch", "prise"), ("input_boolean", "prise"),
+                           ("lock", "serrure"), ("alarm_control_panel", "alarme"), ("valve", "vanne")):
         if domaine in domaines:
             return type_
-    return "capteur" if domaines <= {"sensor", "binary_sensor"} else "autre"
+    if "device_tracker" in domaines and domaines <= {"sensor", "binary_sensor", "device_tracker", "button", "event"}:
+        return "telephone"
+    return "capteur" if domaines <= {"sensor", "binary_sensor", "event", "update", "button", "text"} else "autre"
 
 
 def _cherche(entites: list[dict], motif: str, domaines: tuple) -> str | None:
@@ -178,22 +208,39 @@ def _cherche(entites: list[dict], motif: str, domaines: tuple) -> str | None:
     return None
 
 
-def groupes(entites: list[dict], appareils_ha: dict[str, dict]) -> list[dict]:
-    """Une tuile par appareil : son type, son entité principale, ses infos importantes, toutes ses entités.
-    Les entités sans appareil restent seules. Les appareils faits uniquement de capteurs ne font pas de tuile
-    (leurs températures, humidités et détecteurs vont dans l'en-tête de la pièce)."""
+def _rang_principal(m: dict) -> tuple:
+    domaine, classe = m["id"].split(".", 1)[0], (m.get("attr") or {}).get("device_class")
+    rang = _ORDRE_PRINCIPAL.index(domaine) if domaine in _ORDRE_PRINCIPAL else 99
+    if domaine == "binary_sensor" and classe in DETECTEURS:
+        rang = _ORDRE_PRINCIPAL.index("sensor") - 0.5  # porte, fenêtre, mouvement : avant sa batterie
+    return (bool(m.get("technique")), m.get("etat") == "unavailable", rang,
+            _CLASSES_CAPTEUR.index(classe) if classe in _CLASSES_CAPTEUR else 99)
+
+
+def groupes(entites: list[dict], appareils_ha: dict[str, dict], tout: bool = False) -> list[dict]:
+    """Une tuile par appareil de Home Assistant (tous, capteurs, téléphones et modules compris) : son type, son
+    entité principale, ses infos importantes, toutes ses entités (réglages et diagnostic compris, pour la fiche).
+
+    Les entités sans appareil restent seules ; seules, les techniques et les capteurs sans intérêt (tension,
+    signal…) ne font pas de tuile, sauf avec tout=True (« afficher aussi les entités techniques »)."""
     paquets: dict[str, list[dict]] = {}
     for e in entites:
         paquets.setdefault(e.get("appareil") or e["id"], []).append(e)
     resultat = []
     for cle, membres in paquets.items():
         info = appareils_ha.get(cle, {})
+        vrai_appareil = bool(membres[0].get("appareil"))
+        if all(m["id"].startswith("scene.") for m in membres):
+            continue
+        if not tout and all(m.get("technique") for m in membres):
+            continue  # que des réglages ou du diagnostic (ex. : intégration « Sun », mises à jour)
+        if not tout and not vrai_appareil and not utile(membres[0]):
+            continue  # entité seule : capteur technique, suivi GPS…
         nom = info.get("nom") or (membres[0]["nom"] if len(membres) == 1 else cle)
         type_ = type_appareil(nom, info.get("modele", ""), membres)
-        if type_ == "capteur" or all(m["id"].startswith("scene.") for m in membres):
-            continue
-        rang = {d: i for i, d in enumerate(_ORDRE_PRINCIPAL)}
-        principal = min(membres, key=lambda m: rang.get(m["id"].split(".", 1)[0], 99))["id"]
+        if type_ == "capteur" and not vrai_appareil and not tout:
+            continue  # température ou détecteur seul : il est déjà dans l'en-tête de sa pièce
+        principal = min(membres, key=_rang_principal)["id"]
         extra = {}
         if type_ in ("lave_linge", "seche_linge", "lave_vaisselle"):
             extra = {"etat": _cherche(membres, _ETAT_MACHINE, ("sensor", "select", "binary_sensor")),

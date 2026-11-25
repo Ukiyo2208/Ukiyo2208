@@ -7,7 +7,7 @@
 <link rel="icon" href="/static/favicon.png">
 <style>
   :root {
-    --fond: #0d1141; --carte: #161b52; --bord: #262c6b; --texte: #eceeff;
+    --fond: #0d1141; --carte: rgba(20, 26, 80, .66); --bord: #262c6b; --texte: #eceeff;
     --doux: #a0a8d7; --accent: #56c8ff; --ok: #4ade80; --ko: #f87171; --violet: #b38cff;
   }
   * { box-sizing: border-box; }
@@ -19,7 +19,7 @@
   h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--doux); margin: 26px 0 10px; }
   .etat { color: var(--doux); font-size: 13px; }
   .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
-  .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 12px; padding: 12px 14px; }
+  .carte { backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); background: var(--carte); border: 1px solid var(--bord); border-radius: 12px; padding: 12px 14px; }
   .carte b { display: block; }
   .carte small { color: var(--doux); }
   .point { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; }
