@@ -295,6 +295,14 @@ L'installateur s'en occupe tout seul :
 - **Écran de veille** : il affiche l'adresse à ouvrir une fois sur l'écran de la tablette
   (`http://192.168.1.20:8800/home/?veille=1&piece=salon`).
 
+### Tes papiers du NAS, rangés par Paperasse
+
+L'installateur donne à Bêta Tool l'accès aux volumes du NAS (question « Laisser Paperasse chercher tes papiers… »).
+Chaque nuit, **Bêta Tool › Paperasse › Sur le NAS** liste les papiers trouvés : vérifie, puis **Ajouter** (ou
+**Tout ajouter**). Les factures, impôts, fiches de paie, papiers de santé… vont dans Paperasse, les relevés
+bancaires CSV/OFX dans le Budget. Le premier passage peut prendre un moment sur un gros NAS. Tu recevras aussi sur
+ton téléphone (appli Home Assistant) les colis, les rendez-vous, les tâches et les échéances.
+
 ### Restaurer une sauvegarde
 
 1. Arrête Bêta : `cd /volume1/docker/beta/beta-nas && sudo docker compose down`.

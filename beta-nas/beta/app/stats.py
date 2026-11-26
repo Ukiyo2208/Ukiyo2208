@@ -83,18 +83,25 @@ async def _http(client: httpx.AsyncClient, url: str, **kwargs) -> httpx.Response
         return None
 
 
+async def _rien():
+    return None
+
+
 async def etat_services(settings) -> dict:
     """Chaque service joint par Bêta : en ligne ou non, et le modèle chargé dans Ollama."""
     async with httpx.AsyncClient() as client:
-        ha, ollama_ps, presence, whisper, piper, trieur = await asyncio.gather(
+        ha, ollama_ps, presence, whisper, piper, trieur, paperasse = await asyncio.gather(
             _http(client, f"{settings.ha_url}/api/", headers={"Authorization": f"Bearer {settings.ha_token}"}),
             _http(client, f"{settings.ollama_url}/api/ps"),
             _http(client, f"{settings.presence_url}/sante"),
             _port_ouvert(settings.whisper_host, settings.whisper_port),
             _port_ouvert(settings.piper_host, settings.piper_port),
-            _http(client, f"{settings.tri_url}/api/etat"),
+            _http(client, f"{settings.tri_url}/api/etat") if settings.tri_url not in ("", "off") else _rien(),
+            _http(client, f"{settings.beta_tool_url}/api/v1/paperasse",
+                  headers={"Authorization": f"Bearer {settings.beta_tool_jeton}"}) if settings.beta_tool_jeton else _rien(),
         )
     tri = trieur.json() if trieur is not None and trieur.status_code == 200 else None
+    papiers = paperasse.json() if paperasse is not None and paperasse.status_code == 200 else None
     modeles = []
     if ollama_ps is not None and ollama_ps.status_code == 200:
         modeles = [m.get("name", "?") for m in ollama_ps.json().get("models", [])]
@@ -109,8 +116,11 @@ async def etat_services(settings) -> dict:
                      "detail": (f"{presence.json().get('cameras', 0)} caméras, "
                                 f"{presence.json().get('personnes', 0)} personnes")
                      if presence is not None and presence.status_code == 200 else ""},
-        "trieur": {"ok": tri is not None,
-                   "detail": f"{tri.get('propositions', 0)} propositions à valider" if tri else ""},
+        **({"trieur": {"ok": tri is not None, "detail": f"{tri.get('propositions', 0)} propositions à valider" if tri else ""}}
+           if settings.tri_url not in ("", "off") else {}),
+        **({"paperasse": {"ok": papiers is not None,
+                          "detail": f"{papiers.get('propositions', 0)} papiers trouvés sur le NAS" if papiers else "Bêta Tool ne répond pas"}}
+           if settings.beta_tool_jeton else {}),
         **{
             f"ia · {tache}": {"ok": bool(modeles), "detail": " → ".join(modeles) or "aucune IA configurée"}
             for tache, modeles in (settings.ia.resume().items() if settings.ia else [])

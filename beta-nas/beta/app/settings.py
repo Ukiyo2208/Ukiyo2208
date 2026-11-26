@@ -100,7 +100,7 @@ class Settings:
     publication_url: str = ""
     publication_jeton: str = ""
     publication_intervalle: int = 60
-    tri_url: str = "http://trieur:8802"  # trieur de documents (page servie par Bêta sur /tri/)
+    tri_url: str = "off"  # ancien trieur (http://trieur:8802) ; « off » : Paperasse de Bêta Tool le remplace
     donnees: str = "/data"  # ce que Bêta enregistre (choix des appareils visibles par Alexa…)
     voiture_motif: str = "fordpass"  # entités de la voiture dans Home Assistant (leur identifiant contient ce mot)
     voiture_nom: str = "Voiture"

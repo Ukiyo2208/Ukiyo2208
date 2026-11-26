@@ -111,7 +111,10 @@ def process(job, src, name, user, source):
                **{k: info[k] for k in ("type", "category", "issuer", "date", "due", "amount", "title", "confidence")},
                "name": info["suggested_name"]}
         save_doc(doc)
-        if load()["settings"].get("auto") and info["confidence"] == "haute":
+        if job in _presets:  # déjà validé dans « Sur le NAS »
+            doc = file_doc(doc_id, _presets.pop(job))
+            activity.log(user, "paperasse", f"Rangé : {doc['name']} ({doc['category']})", "#/paperasse/docs", push=False)
+        elif load()["settings"].get("auto") and info["confidence"] == "haute":
             doc = file_doc(doc_id, {})
             activity.log("*", "paperasse", f"Classé automatiquement : {doc['name']} ({doc['category']})", "#/paperasse/docs", push=False)
         else:
@@ -159,13 +162,21 @@ def enqueue(src, name, user, source="upload", cleanup=True):
     return job
 
 
-def ingest_file(path, user, source="rangement", move=True):
-    """Envoie un fichier du NAS vers Paperasse (déplacé ou copié dans la file)."""
+# Documents déjà validés (proposition « Sur le NAS » acceptée) : rangés dès qu'ils sont lus, avec ces réglages
+_presets = {}
+
+
+def ingest_file(path, user, source="rangement", move=True, preset=None):
+    """Envoie un fichier du NAS vers Paperasse (déplacé ou copié dans la file). preset : document déjà validé,
+    rangé tout de suite avec ces champs (ex. {"category": "Santé"})."""
     tmp_dir = os.path.join(WORK_DIR, "paperasse-entrants")
     os.makedirs(tmp_dir, exist_ok=True)
     tmp = os.path.join(tmp_dir, uuid.uuid4().hex[:8] + os.path.splitext(path)[1].lower())
     (shutil.move if move else shutil.copy2)(path, tmp)
-    return enqueue(tmp, os.path.basename(path), user, source)
+    job = enqueue(tmp, os.path.basename(path), user, source)
+    if preset is not None:
+        _presets[job] = preset
+    return job
 
 
 def folder_for(doc):

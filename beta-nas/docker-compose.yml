@@ -93,12 +93,12 @@ services:
       - piper
       - ollama
       - presence
-      - trieur
     restart: unless-stopped
 
-  # Tri des documents : propose titre, dossier et tags, et ne range qu'après ta validation.
-  # Page : http://IP_DU_NAS:8800/tri/ (servie par Bêta ; le trieur n'est pas joignable directement)
+  # Ancien tri des documents, remplacé par Paperasse (Bêta Tool › Paperasse › Sur le NAS). Gardé de côté :
+  # COMPOSE_PROFILES=tri-ancien et TRI_URL=http://trieur:8802 dans .env pour le relancer.
   trieur:
+    profiles: ["tri-ancien"]
     build: ./trieur
     container_name: beta-trieur
     user: "${PUID:-1000}:${PGID:-1000}" # même propriétaire que tes fichiers du NAS
@@ -183,6 +183,18 @@ services:
       - MS_CLIENT_ID=${MS_CLIENT_ID:-}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      # Paperasse › Sur le NAS : les volumes du NAS sont montés dans /nas (docker-compose.override.yml, écrit par l'installateur)
+      - PAPERASSE_IGNORER=${PAPERASSE_IGNORER:-}
+      - PAPERASSE_IA_URL=http://ollama:11434 # l'IA locale aide pour les papiers que les mots-clés ne reconnaissent pas
+      - PAPERASSE_IA_MODELE=${TRI_MODELE:-qwen3.5:9b}
+      # Home Assistant : notifications (colis, rendez-vous, tâches, échéances…) et capteurs sensor.beta_tool_*
+      - HA_URL=${HA_URL:-http://host.docker.internal:8123}
+      - HA_TOKEN=${HA_TOKEN:-}
+      - HA_NOTIFY=${NOTIFICATIONS:-}
+      - HA_COMPTE=${BETA_TOOL_COMPTE:-}
+      - BETA_TOOL_LIEN=${BETA_TOOL_LIEN:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # pour joindre Home Assistant
     restart: unless-stopped
 
   # Options de Bêta Tool, à ajouter dans COMPOSE_PROFILES (.env) : work, vault, vpn

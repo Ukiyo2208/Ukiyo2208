@@ -321,6 +321,17 @@ def v1_widget():
     return jsonify(out)
 
 
+@bp.get("/api/v1/paperasse")
+@need("assistant:use")
+def v1_paperasse():
+    """Paperasse pour Bêta et Home Assistant : papiers trouvés sur le NAS, documents à valider, échéances."""
+    import explorateur
+    import paperasse
+    docs = paperasse.load()["docs"].values()
+    return jsonify({**explorateur.resume(), "a_valider": sum(1 for d in docs if d["status"] == "inbox"),
+                    "echeances": len(paperasse.upcoming(15)), "lien": "#/paperasse/nas"})
+
+
 # --- Description OpenAPI ---------------------------------------------------------------------------
 
 def _op(summary, scope, params=(), body=None, tag=""):

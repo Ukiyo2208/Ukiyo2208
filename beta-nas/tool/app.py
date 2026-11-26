@@ -59,6 +59,8 @@ import passkeys
 import patrimoine
 import profil
 import paperasse
+import explorateur
+import homeassistant
 import pdftools
 import push
 import recipes
@@ -681,7 +683,7 @@ def secret_key():
         return f.read().strip()
 
 
-for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones, profil, patrimoine, immo, banque, visages, entretien, sante, nas, prix, extension):
+for module in (files, drop, media, photos, videotool, transcribe, imagetool, forms, notes, links, backup, vault, push, subscriptions, clipboard, monitor, paperasse, explorateur, scanner, storage, recipes, agenda, translate, vpn, accounts, mailrules, mail, contacts, api, journee, colis, mailplus, taches, inventaire, budget, famille, passkeys, commande, telephones, profil, patrimoine, immo, banque, visages, entretien, sante, nas, prix, extension):
     app.register_blueprint(module.bp)
 SEARCHERS.update(recherche.SOURCES, prix=prix.search)
 SEARCHERS.update(fichiers=files.search, drop=drop.search, medias=media.search, questionnaires=forms.search, notes=notes.search,
@@ -710,6 +712,8 @@ if __name__ == "__main__":
     clipboard.start()
     monitor.start()
     paperasse.start()
+    explorateur.start()
+    homeassistant.start()
     agenda.start()
     translate.start()
     mail.start()

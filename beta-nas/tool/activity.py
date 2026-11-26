@@ -33,6 +33,8 @@ def log(user, tool, text, link=None, kind="ok", push=True, title=None, image=Non
         import push as push_
         push_.notify(entry["user"], title or TITLES.get(tool, "Bêta Tool"), text, "/" + (link or "#/"), tool, tag=str(entry["id"]),
                       image=image, icon=icon, skip=skip)
+        import homeassistant  # aussi sur les téléphones de l'appli Home Assistant (HA_NOTIFY)
+        homeassistant.transmettre(entry, title or TITLES.get(tool, "Bêta Tool"))
     return entry
 
 

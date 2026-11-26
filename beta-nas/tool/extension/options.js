@@ -15,6 +15,7 @@ async function paint() {
   $("#o-prices").checked = c.opts.prices;
   $("#o-pill").checked = c.opts.pill;
   $("#o-video").checked = c.opts.video;
+  $("#o-links").checked = c.opts.links;
   if (linked) {
     try {
       const s = await call("/api/v1/ext/status");
@@ -45,7 +46,7 @@ $("#unlink").onclick = async () => {
   msg("Navigateur délié.");
   paint();
 };
-for (const k of ["downloads", "beforeSave", "prices", "pill", "video"]) {
+for (const k of ["downloads", "beforeSave", "prices", "pill", "video", "links"]) {
   $("#o-" + k).onchange = e => setOpts({ [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
 }
 paint();

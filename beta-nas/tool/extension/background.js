@@ -239,7 +239,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   (async () => {
     const c = await config();
     const tabUrl = msg.tabId != null ? (await chrome.tabs.get(msg.tabId).catch(() => null))?.url : sender.tab?.url;
-    if (msg.type === "opts") return c.opts;
+    if (msg.type === "opts") return { ...c.opts, linked: !!c.token };
     if (!c.token) return null;
     if (msg.type === "product") {
       if (!c.opts.prices) return null;

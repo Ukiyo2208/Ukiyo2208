@@ -120,14 +120,8 @@ PRENOM=$(normaliser "$PRENOM")
 demander PIECE "Pièce où sera la tablette" "salon"
 PIECE=$(normaliser "$PIECE")
 if [ "$TRI" = o ]; then
-  demander TRI "Activer le tri des documents (tous les volumes du NAS) ? (o/n)" "o"
+  demander TRI "Laisser Paperasse (Bêta Tool) chercher tes papiers dans tous les volumes du NAS ? (o/n)" "o"
   TRI=$(echo "$TRI" | cut -c1 | tr '[:upper:]' '[:lower:]')
-fi
-if [ "$TRI" = o ]; then
-  # « Document », « Documents », sur le volume du téléchargement d'abord
-  docs_defaut=$(ls -d "$VOLUME"/[Dd]ocument "$VOLUME"/[Dd]ocuments /volume[0-9]*/[Dd]ocument /volume[0-9]*/[Dd]ocuments 2>/dev/null | head -n1 || true)
-  demander DOCUMENTS "Dossier où ranger les documents triés" "${docs_defaut:-$VOLUME/Documents}"
-  DOCUMENTS=${DOCUMENTS%/}
 fi
 ENV_BETA="$DEST/beta-nas/.env"
 if [ -z "$(env_lire "$ENV_BETA" HA_TOKEN)" ]; then
@@ -236,43 +230,33 @@ if [ -d "$DEST/openclaw-nas" ] || docker inspect openclaw >/dev/null 2>&1 || doc
   ok "OpenClaw retiré (le tri des documents fait maintenant partie de Bêta)"
 fi
 
-sous_nas() { # /volume3/Docker/Beta IA/beta -> volume3/Docker/Beta IA/beta (chemin vu par le trieur)
-  case "$1" in /volume[0-9]*) echo "${1#/}" ;; *) echo "documents${1#"$DOCUMENTS"}" ;; esac
+sous_nas() { # /volume3/Docker/beta -> /nas/volume3/Docker/beta (chemin vu par Bêta Tool)
+  case "$1" in /volume[0-9]*) echo "/nas${1}" ;; *) echo "" ;; esac
 }
 SURCHARGE="$DEST/beta-nas/docker-compose.override.yml"
-mkdir -p "$DEST/beta-nas/data/tri"
 mkdir -p "$DEST/beta-nas/data/beta" "$DEST/beta-nas/data/ponts"
 # Bêta home n'est plus un conteneur à part : sa page fait partie de Bêta
 docker rm -f beta-home beta-alexa >/dev/null 2>&1 || true
-if [ "$TRI" = o ]; then
-  [ -d "$DOCUMENTS" ] || mkdir -p "$DOCUMENTS"
-  PROPRIO="$(stat -c '%u' "$DOCUMENTS"):$(stat -c '%g' "$DOCUMENTS")"
-  env_ecrire "$ENV_BETA" PUID "${PROPRIO%:*}"
-  env_ecrire "$ENV_BETA" PGID "${PROPRIO#*:}"
-  env_si_vide "$ENV_BETA" TRI_MODELE "qwen3.5:9b"
-  env_ecrire "$ENV_BETA" TRI_PROPOSITIONS oui
-  env_ecrire "$ENV_BETA" TRI_LIEN "http://$(ip_nas):8800/tri/"
-  # Le trieur voit tous les volumes du NAS (/volume1 -> /nas/volume1…) ; sur un autre Linux, le dossier des documents
+# Le trieur de documents est remplacé par Paperasse (Bêta Tool › Paperasse › Sur le NAS) ; ses données restent dans data/tri
+if docker inspect beta-trieur >/dev/null 2>&1; then
+  docker rm -f beta-trieur >/dev/null 2>&1 && ok "Ancien trieur de documents retiré : Paperasse (Bêta Tool) le remplace"
+fi
+env_ecrire "$ENV_BETA" TRI_URL off
+env_ecrire "$ENV_BETA" BETA_TOOL_LIEN "http://$(ip_nas):8080"
+VOLUMES_NAS=$(ls -d /volume[0-9]* 2>/dev/null || true)
+if [ "$TRI" = o ] && [ -n "$VOLUMES_NAS" ]; then
+  env_si_vide "$ENV_BETA" TRI_MODELE "qwen3.5:9b"  # l'IA locale aide Paperasse pour les papiers difficiles
+  # Paperasse voit tous les volumes du NAS (/volume1 -> /nas/volume1…) pour y trouver tes papiers
   {
-    echo "# Écrit par installer.sh : les volumes que le trieur de documents peut parcourir."
+    echo "# Écrit par installer.sh : les volumes du NAS où Paperasse (Bêta Tool) cherche tes papiers."
     echo "services:"
-    echo "  trieur:"
+    echo "  beta-tool:"
     echo "    volumes:"
-    volumes=$(ls -d /volume[0-9]* 2>/dev/null || true)
-    if [ -n "$volumes" ] && [[ "$DOCUMENTS" == /volume* ]]; then
-      for v in $volumes; do echo "      - \"$v:/nas/${v#/}\""; done
-    else
-      echo "      - \"$DOCUMENTS:/nas/documents\""
-    fi
+    for v in $VOLUMES_NAS; do echo "      - \"$v:/nas/${v#/}\""; done
   } > "$SURCHARGE"
-  env_ecrire "$ENV_BETA" TRI_RANGEMENT "$(sous_nas "$DOCUMENTS")"
-  # Jamais trié : l'installation de Bêta et le dossier téléchargé
-  env_ecrire "$ENV_BETA" TRI_IGNORER "$(sous_nas "$DEST");$(sous_nas "$SOURCE")"
-  chown -R "$PROPRIO" "$DEST/beta-nas/data/tri"
-  ok "Tri des documents : tous les volumes, rangement dans $DOCUMENTS"
+  ok "Paperasse cherchera tes papiers dans : $(echo $VOLUMES_NAS | tr ' ' ',')"
 else
-  env_ecrire "$ENV_BETA" TRI_PROPOSITIONS non
-  printf 'services:\n  trieur:\n    volumes: []\n' > "$SURCHARGE"
+  printf 'services:\n  beta-tool:\n    volumes: []\n' > "$SURCHARGE"
 fi
 
 # ---------------------------------------------------------------- Bêta Tool (http://IP:8080)
@@ -308,6 +292,13 @@ if [ -z "$(env_lire "$ENV_BETA" SAUVEGARDE_DOSSIER)" ]; then
 fi
 mkdir -p "$(env_lire "$ENV_BETA" SAUVEGARDE_DOSSIER)"
 ok "Sauvegarde chaque nuit dans $(env_lire "$ENV_BETA" SAUVEGARDE_DOSSIER)"
+# Jamais parcourus par Paperasse : l'installation de Bêta, le dossier téléchargé, les dossiers de Bêta Tool, les sauvegardes
+IGNORER=""
+for d in "$DEST" "$SOURCE" "$(env_lire "$ENV_BETA" BETA_TOOL_FICHIERS)" "$(env_lire "$ENV_BETA" BETA_TOOL_DONNEES)" \
+         "$(env_lire "$ENV_BETA" SAUVEGARDE_DOSSIER)" "$VOLUME/docker" "$VOLUME/Docker"; do
+  c=$(sous_nas "$d"); [ -n "$c" ] && IGNORER="${IGNORER:+$IGNORER;}$c"
+done
+env_ecrire "$ENV_BETA" PAPERASSE_IGNORER "$IGNORER"
 
 # ====================================================================== 5. Bêta
 
@@ -397,7 +388,7 @@ attendre "Ollama" 120 docker exec beta-ollama ollama list || true
 docker exec beta-ollama ollama pull "$MODELE" 2>&1 | tail -n1 && ok "$MODELE prêt" || avertir "Téléchargement de $MODELE à refaire"
 if [ "$TRI" = o ]; then
   MODELE_TRI=$(env_lire "$ENV_BETA" TRI_MODELE)
-  echo "  Modèle du tri des documents : $MODELE_TRI (environ 6 Go, une seule fois)…"
+  echo "  Modèle qui aide Paperasse pour les papiers difficiles : $MODELE_TRI (environ 6 Go, une seule fois)…"
   docker exec beta-ollama ollama pull "$MODELE_TRI" 2>&1 | tail -n1 && ok "$MODELE_TRI prêt" || avertir "Téléchargement de $MODELE_TRI à refaire"
 fi
 
@@ -410,7 +401,7 @@ cat <<EOF
   ${G}Bêta${N}              http://$IP:8800        (accueil, discussion, maison ; sans jeton à la maison)
   ${G}Home Assistant${N}    $(env_lire "$ENV_BETA" HA_URL | sed "s#host.docker.internal#$IP#")
 EOF
-[ "$TRI" = o ] && echo "  ${G}Tri des documents${N} http://$IP:8800/tri/   (propositions à valider, dossiers à trier)"
+[ "$TRI" = o ] && echo "  ${G}Papiers du NAS${N}    http://$IP:8080/#/paperasse/nas  (Paperasse : les papiers trouvés, à ranger d'un clic)"
 echo "  ${G}Bêta home${N}         http://$IP:8800/home/  (maison, musique, Plex ; Alexa et HomeKit : boutons en haut)"
 echo "  ${G}Bêta Tool${N}         http://$IP:8080        (ta boîte à outils : onglet « Bêta Tool » de la barre)"
 echo "  ${G}Écran de veille${N}   http://$IP:8800/home/?veille=1&piece=$PIECE  (à ouvrir une fois sur l'écran de la tablette)"

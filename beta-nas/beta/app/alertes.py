@@ -23,7 +23,8 @@ URGENCES = {"moisture": ("💧 Fuite d'eau", "Fuite d'eau détectée"), "smoke":
             "safety": ("⚠️ Sécurité", "Alerte de sécurité")}
 OUVERTURES = {"door", "window", "garage_door", "opening"}
 SERVICES_SURVEILLES = {"home_assistant": "Home Assistant", "whisper": "l'écoute (Whisper)", "piper": "la voix (Piper)",
-                       "ollama": "l'IA locale (Ollama)", "presence": "la présence", "trieur": "le tri des documents"}
+                       "ollama": "l'IA locale (Ollama)", "presence": "la présence", "trieur": "le tri des documents",
+                       "paperasse": "Bêta Tool"}
 MACHINES = {"lave_linge": "Le lave-linge", "seche_linge": "Le sèche-linge", "lave_vaisselle": "Le lave-vaisselle"}
 _EN_MARCHE = re.compile(r"run|marche|wash|lavage|dry|sechage|séchage|rinc|spin|essor|in_progress|cycle|active|actif|working|^on$", re.I)
 _PAS_EN_MARCHE = re.compile(r"pause|finish|termin|end|complete|fini|done|idle|off|standby|ready|pret|prêt|arret|arrêt|stop|inactive", re.I)

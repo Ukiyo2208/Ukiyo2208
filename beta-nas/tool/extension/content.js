@@ -108,6 +108,69 @@
     document.documentElement.appendChild(vbtn);
   }
 
+  // --- Liens de fichiers de la page (PDF, relevés, documents, archives) -------------------------------
+  const FICHIER = /\.(pdf|csv|ofx|qif|qfx|xlsx?|docx?|odt|ods|odp|pptx?|rtf|txt|zip|rar|7z|epub|jpe?g|png|heic)(?:$|[?#])/i;
+  const DOCUMENT = /\.(pdf|csv|ofx|qif|qfx|xlsx?|docx?|odt|ods|zip)(?:$|[?#])/i;
+  const MOT_TELECHARGER = /t[ée]l[ée]charger|download|facture|relev[ée]|attestation|bulletin|avis d'imp|justificatif|re[çc]u|quittance|export/i;
+  function scanLinks() {
+    const vus = new Map();
+    for (const a of document.querySelectorAll("a[href]")) {
+      let url;
+      try { url = new URL(a.getAttribute("href"), location.href); } catch { continue; }
+      if (!/^https?:$/.test(url.protocol) || vus.has(url.href)) continue;
+      const texte = (a.innerText || a.title || a.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim().slice(0, 80);
+      const fichier = FICHIER.test(url.pathname) || a.hasAttribute("download");
+      const probable = !fichier && MOT_TELECHARGER.test(texte) && !/\.(html?|php|aspx?)$/i.test(url.pathname) && url.href !== location.href
+        && !/^#/.test(a.getAttribute("href"));
+      if (!fichier && !probable) continue;
+      let nom = a.getAttribute("download") || (fichier ? decodeURIComponent(url.pathname.split("/").pop() || "") : texte) || texte || "fichier";
+      try { nom = decodeURIComponent(nom); } catch {}
+      vus.set(url.href, { url: url.href, nom: nom.slice(0, 120), texte, document: DOCUMENT.test(url.pathname) || probable, sur: !probable });
+      if (vus.size >= 60) break;
+    }
+    return [...vus.values()];
+  }
+
+  let bulle = null;
+  async function bulleDocuments() {
+    if (bulle || sessionStorage.getItem("beta-tool-liens") === "non" || location.protocol !== "https:" && location.protocol !== "http:") return;
+    const opts = await send({ type: "opts" });
+    if (!opts || !opts.linked || opts.links === false) return;
+    const liens = scanLinks().filter(l => l.document && l.sur);
+    if (!liens.length) return;
+    bulle = document.createElement("div");
+    const root = bulle.attachShadow({ mode: "closed" });
+    root.innerHTML = `<style>
+      .b{position:fixed;left:16px;bottom:16px;z-index:2147483645;font:13px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;background:#fff;color:#111;
+         border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.18);border:1px solid #e5e7eb;max-width:360px;overflow:hidden}
+      .h{display:flex;align-items:center;gap:8px;padding:9px 10px 9px 12px;cursor:pointer}.h img{width:18px;height:18px;border-radius:5px}
+      .t{flex:1;font-weight:600}.x{border:0;background:none;font-size:16px;cursor:pointer;color:#6b7280;padding:0 4px}
+      .c{display:none;padding:0 12px 10px;max-height:300px;overflow:auto}.open .c{display:block}
+      .r{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid #f1f5f9}.r span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .btn{border:1px solid #d1d5db;background:#f9fafb;border-radius:9px;padding:5px 9px;cursor:pointer;font:inherit;white-space:nowrap}
+      .btn.p{background:#2563eb;color:#fff;border-color:#2563eb}.tout{width:100%;margin-top:8px}
+      @media (prefers-color-scheme: dark){.b{background:#1f2937;color:#f3f4f6;border-color:#374151}.r{border-color:#374151}.btn{background:#111827;color:#f3f4f6;border-color:#4b5563}}
+    </style>
+    <div class="b"><div class="h"><img src="${chrome.runtime.getURL("icons/icon32.png")}" alt="">
+      <span class="t">${liens.length} document${liens.length > 1 ? "s" : ""} sur cette page : sur le NAS ?</span><button class="x" title="Ne plus proposer sur ce site pour l'instant">×</button></div>
+      <div class="c">${liens.map((l, i) => `<div class="r"><span title="${esc(l.url)}">${esc(l.nom)}</span><button class="btn" data-i="${i}">Sur le NAS</button></div>`).join("")}
+        ${liens.length > 1 ? `<button class="btn p tout" data-tout>Tout envoyer sur le NAS (${liens.length})</button>` : ""}</div></div>`;
+    root.querySelector(".h").onclick = e => { if (!e.target.closest(".x")) root.querySelector(".b").classList.toggle("open"); };
+    root.querySelector(".x").onclick = () => { sessionStorage.setItem("beta-tool-liens", "non"); bulle.remove(); };
+    const envoyer = async (b, l) => {
+      b.disabled = true; b.textContent = "Envoi…";
+      const rep = await send({ type: "send-link", url: l.url, dest: "auto", name: l.nom });
+      b.textContent = rep && !rep.error ? `✓ ${rep.label || "Envoyé"}` : "Erreur";
+    };
+    root.querySelectorAll("[data-i]").forEach(b => b.onclick = () => envoyer(b, liens[+b.dataset.i]));
+    root.querySelector("[data-tout]")?.addEventListener("click", async e => {
+      e.target.disabled = true;
+      for (const b of root.querySelectorAll("[data-i]:not(:disabled)")) await envoyer(b, liens[+b.dataset.i]);
+      e.target.textContent = "✓ Envoyés";
+    });
+    document.documentElement.appendChild(bulle);
+  }
+
   // --- Demandes de l'extension ---------------------------------------------------------------------
   chrome.runtime.onMessage.addListener((msg, _s, reply) => {
     if (msg.type === "scan-parcels") {
@@ -128,12 +191,15 @@
         fr.readAsDataURL(blob);
       }).catch(e => reply({ error: e.message }));
       return true;
+    } else if (msg.type === "scan-links") {
+      reply(scanLinks());
     } else if (msg.type === "show-pill") {
       showPill(msg.product);
     }
   });
 
   setTimeout(checkProduct, 1200);
+  setTimeout(bulleDocuments, 2500);
   videoButton();
   let last = location.href;  // sites « une seule page » (YouTube, Amazon…) : l'adresse change sans rechargement
   setInterval(() => { if (location.href !== last) { last = location.href; pill?.remove(); pill = null; setTimeout(checkProduct, 1500); videoButton(); } }, 1000);

@@ -199,3 +199,21 @@ def test_telephones_de_home_assistant(monkeypatch):
     monkeypatch.setattr(installation.httpx, "AsyncClient", lambda **k: vrai_client(transport=httpx.MockTransport(reponse), **k))
     import asyncio
     assert asyncio.run(installation.telephones_home_assistant("http://ha:8123/", "j")) == ["ha:mobile_app_ipad", "ha:mobile_app_pixel_8"]
+
+
+def test_paperasse_remplace_le_trieur(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+
+    from app import main
+
+    monkeypatch.setenv("BETA_TOKEN", "secret")
+    monkeypatch.setenv("BETA_CONFIG", str(tmp_path / "absent.yaml"))
+    monkeypatch.setenv("OLLAMA_URL", "http://127.0.0.1:9")
+    monkeypatch.setenv("ALERTES", "non")
+    monkeypatch.delenv("TRI_URL", raising=False)
+    monkeypatch.delenv("BETA_TOOL_JETON", raising=False)
+    with TestClient(main.app, client=("192.168.68.20", 50000), follow_redirects=False) as c:
+        assert main.etat["settings"].tri_url == "off"
+        r = c.get("/tri/")
+        assert r.status_code == 307 and r.headers["location"].endswith(":8080/#/paperasse/nas")
+        assert c.get("/v1/tri/etat").json() == {"paperasse": None}  # Bêta Tool pas encore relié

@@ -1,5 +1,5 @@
 /* Barre commune du site de Bêta (http://IP_DU_NAS:8800), sur chaque page :
-   - les onglets Bêta IA (/) · Domotique (/home/) · Tri automatique (/tri/) · Bêta Tool (port 8080) ;
+   - les onglets Bêta IA (/) · Domotique (/home/) · Papiers du NAS (Paperasse de Bêta Tool) · Bêta Tool (port 8080) ;
    - le fond d'écran « Japon » (static/fonds/), le même partout, avec une teinte par partie : il suit l'heure
      (jour, coucher de soleil, nuit) et la saison (cerisiers, été et lucioles, érables, neige).
      ?fond=nuit garde la nuit de printemps sur cet appareil, ?fond=auto revient au fond qui change ;
@@ -12,7 +12,8 @@
   const SECTIONS = [
     ["ia", "/", "Bêta IA", ico('<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/>')],
     ["domotique", "/home/", "Domotique", ico('<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-6h6v6"/>')],
-    ["tri", "/tri/", 'Tri<span class="long"> automatique</span>', ico('<path d="M4 4h6l2 2h8v4H4z"/><path d="M4 10h16v10H4z"/><path d="M9 15h6"/>')],
+    ["tri", `${location.protocol}//${location.hostname}:8080/#/paperasse/nas`, 'Papiers<span class="long"> du NAS</span>',
+      ico('<path d="M4 4h6l2 2h8v4H4z"/><path d="M4 10h16v10H4z"/><path d="M9 15h6"/>')],
     ["tool", `${location.protocol}//${location.hostname}:8080/`, 'Bêta<span class="long"> Tool</span>',
       ico('<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>')],
   ];

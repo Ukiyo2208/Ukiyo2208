@@ -107,6 +107,27 @@ $("#actions").onclick = async e => {
       const r = await call("/api/v1/ext/immo", { json: { url: tab.url, html: p?.html || "" } });
       out(esc(r.warning || `Annonce suivie${r.listing.price ? " · " + eur(r.listing.price) : ""}`), r.warning ? "" : "ok");
     }
+    if (a === "liens") {
+      const liens = await chrome.tabs.sendMessage(tab.id, { type: "scan-links" }).catch(() => null);
+      if (!liens?.length) out("Aucun lien de fichier repéré sur cette page. Clic droit sur un lien › « Envoyer sur le NAS » marche aussi.");
+      else out(`<div class="small meta" style="margin-bottom:6px">${liens.length} fichier${liens.length > 1 ? "s" : ""} sur cette page :</div>
+        ${liens.map((l, i) => `<label class="row small" style="gap:6px"><input type="checkbox" data-lien="${i}" ${l.document && l.sur ? "checked" : ""}>
+          <span class="grow" title="${esc(l.url)}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.nom)}${l.sur ? "" : ' <span class="meta">(probable)</span>'}</span></label>`).join("")}
+        <button class="btn p wide" id="envoyer-liens" style="margin-top:8px">Envoyer la sélection sur le NAS</button>`);
+      const bouton = $("#envoyer-liens");
+      if (bouton) bouton.onclick = async () => {
+        const choix = [...document.querySelectorAll("[data-lien]:checked")].map(c => liens[+c.dataset.lien]);
+        if (!choix.length) return;
+        bouton.disabled = true;
+        let ok = 0;
+        for (const [i, l] of choix.entries()) {
+          bouton.textContent = `Envoi ${i + 1} / ${choix.length}…`;
+          const r = await bg({ type: "send-link", url: l.url, dest: "auto", name: l.nom, tabId: tab.id });
+          if (r && !r.error) ok++;
+        }
+        bouton.textContent = `✓ ${ok} envoyé${ok > 1 ? "s" : ""} sur le NAS${ok < choix.length ? ` · ${choix.length - ok} en échec` : ""}`;
+      };
+    }
     if (a === "parcels") {
       const found = await chrome.tabs.sendMessage(tab.id, { type: "scan-parcels", patterns: status.parcel_patterns, context: status.parcel_context }).catch(() => null);
       if (!found?.length) out("Aucun numéro de suivi repéré sur cette page. Sélectionne-le puis clic droit › « Suivre le colis ».");

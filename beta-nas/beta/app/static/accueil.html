@@ -161,7 +161,7 @@
     <p class="doux" id="date"></p>
     <div class="grille" style="margin-top:16px">
       <div class="carte">
-        <h2>Tri des documents</h2>
+        <h2>Papiers du NAS</h2>
         <div id="tri"><p class="doux">Chargement…</p></div>
       </div>
       <div class="carte">
@@ -238,7 +238,7 @@
     $("date").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
   }
 
-  const NOMS_SERVICES = { home_assistant: "Home Assistant", ollama: "IA locale", whisper: "Écoute", piper: "Voix", presence: "Présence", trieur: "Tri des documents" };
+  const NOMS_SERVICES = { home_assistant: "Home Assistant", ollama: "IA locale", whisper: "Écoute", piper: "Voix", presence: "Présence", trieur: "Tri des documents", paperasse: "Bêta Tool" };
   const NOMS_TACHES = { comprendre: "comprendre", conversation: "discussion", automatisations: "automatisations" };
 
   async function chargerAccueil() {
@@ -254,6 +254,22 @@
     } catch (_) {}
     try {
       const t = await api("/v1/tri/etat");
+      if ("paperasse" in t) {  // Paperasse (Bêta Tool) remplace l'ancien trieur
+        const p = t.paperasse, lien = `${location.protocol}//${location.hostname}:8080/`;
+        $("tri").innerHTML = p ? `
+          <div class="chiffres">
+            <div class="chiffre"><b>${p.propositions}</b><span>trouvés sur le NAS</span></div>
+            <div class="chiffre"><b>${p.a_valider}</b><span>à valider</span></div>
+            <div class="chiffre"><b>${p.echeances}</b><span>à payer bientôt</span></div>
+          </div>
+          <p class="doux">${p.en_cours ? "Analyse du NAS en cours…" : p.dernier ? `Dernière analyse : ${new Date(p.dernier.fin * 1000).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : "Première analyse cette nuit"}
+            · Paperasse range factures, impôts, santé, banque…</p>
+          <div class="ligne-actions"><a class="bouton principal" href="${lien}#/paperasse/nas">Voir les papiers trouvés</a>
+            <a class="bouton secondaire" href="${lien}#/paperasse">Paperasse</a></div>`
+          : `<p class="doux">Paperasse (Bêta Tool) range tes papiers du NAS. Relance l'installateur pour relier Bêta et Bêta Tool.</p>
+             <div class="ligne-actions"><a class="bouton principal" href="${lien}#/paperasse/nas">Ouvrir Paperasse</a></div>`;
+        return;
+      }
       const total = t.en_attente + t.propositions + t.ranges + t.gardes.length;
       const fait = t.ranges + t.gardes.length;
       const p = t.proposeur;

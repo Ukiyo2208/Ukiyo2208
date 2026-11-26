@@ -281,6 +281,32 @@ Bêta Tool relié (`BETA_TOOL_JETON`) et la personne reconnue : « ajoute du lai
 | `GET /v1/alertes`, `POST /v1/alertes/test` | dernières alertes, destinations ; notification d'essai |
 | `GET /v1/sauvegarde` | état de la sauvegarde de la nuit |
 
+## Papiers du NAS : Paperasse (Bêta Tool) remplace le trieur
+
+Bêta Tool › **Paperasse › Sur le NAS** parcourt les volumes du NAS (montés dans `/nas` par l'installateur), chaque
+nuit et à la demande, et propose de ranger ce qu'il trouve : factures, impôts, fiches de paie, santé (visibles aussi
+dans l'outil Santé), logement, assurances… dans Paperasse ; relevés bancaires CSV/OFX/QIF dans le Budget. Rien ne
+bouge sans ta validation (« Ajouter » déplace le papier dans Paperasse, ou le copie selon le réglage ; « Ignorer »
+ne le propose plus). Reconnaissance par mots-clés, puis l'IA locale (`TRI_MODELE`) pour les cas difficiles ; les
+doublons, les dossiers système, Docker, Bêta Tool et les sauvegardes sont ignorés (`PAPERASSE_IGNORER`). L'ancien
+trieur reste disponible : `COMPOSE_PROFILES=tri-ancien` et `TRI_URL=http://trieur:8802`.
+
+## Bêta Tool dans Home Assistant
+
+Ce que Bêta Tool annonce (colis expédié, en livraison, livré ; rappel de rendez-vous ; tâches du jour ; échéance
+d'un papier ; papiers trouvés sur le NAS ; résumé du matin) part aussi sur les téléphones de `NOTIFICATIONS`
+(entrées `ha:mobile_app_…`). Et toutes les 5 minutes, des capteurs pour tes tableaux de bord et automatisations :
+`sensor.beta_tool_colis`, `sensor.beta_tool_prochain_rendez_vous`, `sensor.beta_tool_agenda_aujourdhui`,
+`sensor.beta_tool_taches`, `sensor.beta_tool_echeances`, `sensor.beta_tool_poubelles`,
+`sensor.beta_tool_papiers_a_ranger` (compte `BETA_TOOL_COMPTE`, sinon le premier administrateur).
+
+## Extension du navigateur
+
+Après un téléchargement (PDF, relevé, photo…), elle propose de l'envoyer sur le NAS (rangé dans le bon outil).
+Sur une page qui contient des liens de documents (factures, relevés, PDF…), une bulle propose de les envoyer sur le
+NAS ; le bouton **📄 Fichiers de la page** du menu de l'extension les liste tous. Nouvelle version 2.9.2 : à
+recharger dans le navigateur (Bêta Tool › Réglages › Extension).
+
 ## Alertes sur le téléphone
 
 Toutes les minutes, Bêta regarde la maison et envoie aux destinations de `NOTIFICATIONS` (les mêmes que le tri :

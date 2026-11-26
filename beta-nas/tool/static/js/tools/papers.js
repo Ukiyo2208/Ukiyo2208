@@ -10,15 +10,16 @@ const catOf = name => cats.find(c => c[0] === name) || ["Autres", "file", ""];
 const daysLeft = d => Math.round((new Date(d + "T12:00") - new Date(new Date().toDateString() + " 12:00")) / 86400000);
 
 export async function render(root, parts) {
-  const tab = ["docs", "echeances", "doc"].includes(parts[0]) ? parts[0] : "inbox";
-  const d = await api("/api/papers?status=inbox");
+  const tab = ["docs", "echeances", "doc", "nas"].includes(parts[0]) ? parts[0] : "inbox";
+  const [d, nasEtat] = await Promise.all([api("/api/papers?status=inbox"), api("/api/explorateur").catch(() => null)]);
   cats = d.categories;
   root.innerHTML = pageHead("paperasse", `<a class="btn ghost" href="#/scanner?dest=paperasse">${icon("scan")}Scanner</a>
       <label class="btn"><input type="file" id="pp-files" multiple accept=".pdf,image/*" hidden>${icon("upload")}Ajouter</label>`) + `
     <div id="pp-processing"></div>
     <nav class="tabs"><a href="#/paperasse" class="${tab === "inbox" ? "on" : ""}">${icon("inbox")}À valider ${d.counts.inbox ? `<span class="count">${d.counts.inbox}</span>` : ""}</a>
       <a href="#/paperasse/docs" class="${tab === "docs" || tab === "doc" ? "on" : ""}">${icon("folder")}Documents</a>
-      <a href="#/paperasse/echeances" class="${tab === "echeances" ? "on" : ""}">${icon("calendar")}Échéances</a></nav>
+      <a href="#/paperasse/echeances" class="${tab === "echeances" ? "on" : ""}">${icon("calendar")}Échéances</a>
+      ${nasEtat ? `<a href="#/paperasse/nas" class="${tab === "nas" ? "on" : ""}">${icon("search")}Sur le NAS ${nasEtat.total ? `<span class="count nas-count">${nasEtat.total}</span>` : ""}</a>` : ""}</nav>
     <div id="pp-body"></div>`;
   $("#pp-files").onchange = e => upload([...e.target.files]);
   const zone = root;
@@ -29,6 +30,81 @@ export async function render(root, parts) {
   if (tab === "docs") docs($("#pp-body"), d);
   if (tab === "doc") { docs($("#pp-body"), d); detail(parts[1]); }
   if (tab === "echeances") deadlines($("#pp-body"));
+  if (tab === "nas") nas($("#pp-body"), nasEtat, root, parts);
+}
+
+// --- Sur le NAS : les papiers trouvés dans les dossiers du NAS, à ranger dans le bon outil ----------------
+let nasTimer = null;
+const quand = t => t ? new Date(t * 1000).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "jamais";
+function nas(el, e, root, parts) {
+  if (!e) { el.innerHTML = `<div class="card"><div class="empty">${icon("lock")}<b>Réservé aux administrateurs</b></div></div>`; return; }
+  const enCours = e.en_cours.en_cours;
+  const props = e.propositions;
+  const ligne = p => {
+    const [, ic, tile] = catOf(p.categorie);
+    const details = [p.type, p.emetteur, p.date ? fmtDate(p.date) : "", p.montant != null ? money(p.montant) : "", p.operations ? `${p.operations} opérations` : ""].filter(Boolean).join(" · ");
+    return `<div class="card nas-row" data-id="${p.id}">
+      <input type="checkbox" class="nas-sel" aria-label="Choisir">
+      <a class="nas-thumb" href="/api/explorateur/${p.id}/fichier" target="_blank" title="Ouvrir">${p.outil === "budget" ? `<span class="tile vert">${icon("chart")}</span>`
+        : `<span class="tile ${tile}" style="position:absolute">${icon(ic)}</span><img src="/api/explorateur/${p.id}/miniature" alt="" loading="lazy" style="position:relative" onerror="this.remove()">`}</a>
+      <div class="nas-txt"><b>${esc(p.titre || p.nom)}</b><small class="meta">${esc(details)}</small>
+        <small class="meta nas-chemin" title="${esc(p.affiche)}">${icon("folder")} ${esc(p.affiche)}</small></div>
+      <div class="nas-dest">${p.outil === "budget" ? `<span class="badge">→ Budget · ${esc(p.compte || "")}</span>`
+        : `<label class="meta">→ Paperasse ${catSelect(p.categorie, "categorie")}</label>`}
+        <span class="pp-conf ${p.confiance}" title="Reconnu par ${esc(p.reconnu_par || "mots-clés")}">${p.confiance === "haute" ? "✓" : p.confiance === "moyenne" ? "~" : "?"}</span></div>
+      <div class="nas-btns"><button class="btn ghost small" data-a="ignorer">Ignorer</button><button class="btn small" data-a="ajouter">${icon("check")}Ajouter</button></div></div>`;
+  };
+  el.innerHTML = `<div class="card nas-tete">
+      <div class="txt"><b>Les papiers rangés n'importe où sur le NAS</b>
+        <small class="meta">Factures, impôts, fiches de paie, santé, banque… trouvés dans ${esc(e.racines.join(", ") || "aucun dossier")}.
+        Rien ne bouge sans toi : « Ajouter » les range dans Paperasse (ou le Budget pour les relevés CSV/OFX).</small>
+        <small class="meta">Dernière analyse : ${esc(quand(e.dernier?.fin))}${e.dernier ? ` · ${e.dernier.fichiers} fichiers regardés` : ""} · ${e.analyses} documents déjà lus
+          ${e.ia ? " · IA locale pour les cas difficiles" : ""}</small>
+        ${enCours ? `<small class="meta"><span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block"></span>
+          Analyse en cours : ${e.en_cours.fichiers} fichiers · ${esc(e.en_cours.dossier || "")}</small>` : ""}</div>
+      <button class="btn" id="nas-go" ${enCours ? "disabled" : ""}>${icon("search")}Analyser maintenant</button></div>
+    <div class="card set-row nas-reglages"><span class="tile">${icon("settings")}</span>
+      <div class="txt"><b>Quand j'ajoute un papier</b><small>Déplacé dans Paperasse (rangé et renommé), ou copié en laissant l'original à sa place.</small></div>
+      <select id="nas-dep"><option value="1" ${e.settings.deplacer ? "selected" : ""}>Le déplacer</option><option value="0" ${!e.settings.deplacer ? "selected" : ""}>Le copier</option></select>
+      <label class="meta" style="display:flex;gap:6px;align-items:center">Chaque nuit à <input type="time" id="nas-heure" value="${esc(e.settings.heure)}"></label>
+      <label class="switch" title="Analyse automatique chaque nuit"><input type="checkbox" id="nas-actif" ${e.settings.actif ? "checked" : ""}><span></span></label></div>
+    ${props.length ? `<div class="pp-bar"><label class="meta" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="nas-tout"> Tout choisir</label>
+        <span class="grow"></span><button class="btn ghost small" id="nas-ign">Ignorer la sélection</button>
+        <button class="btn small" id="nas-add">${icon("check")}Ajouter la sélection</button>
+        <button class="btn small" id="nas-all">${icon("sparkles")}Tout ajouter (${e.total})</button></div>
+      ${props.map(ligne).join("")}${e.total > props.length ? `<p class="hint">Et ${e.total - props.length} autres : ajoute ou ignore ceux-ci pour voir la suite.</p>` : ""}`
+    : `<div class="card"><div class="empty">${icon("check")}<b>Rien à ranger pour l'instant</b>${enCours ? "L'analyse est en cours…" : "Lance une analyse, ou attends celle de la nuit."}</div></div>`}`;
+
+  const recharger = () => render(root, parts);
+  const envoyer = async (action, ids) => {
+    if (!ids.length) return toast("Choisis au moins un document", "err");
+    const categories = {};
+    ids.forEach(id => { const s = el.querySelector(`.nas-row[data-id="${id}"] select`); if (s) categories[id] = s.value; });
+    try {
+      const r = await api(`/api/explorateur/${action}`, { json: { ids, categories } });
+      if (action === "accepter") toast(`${r.faits} document${r.faits > 1 ? "s" : ""} ajouté${r.faits > 1 ? "s" : ""}${r.erreurs.length ? ` · ${r.erreurs[0]}` : ""}`, r.erreurs.length ? "err" : "ok");
+      else toast(`${r.ignores} ignoré${r.ignores > 1 ? "s" : ""} : ils ne seront plus proposés`);
+    } catch (err) { toast(err.message, "err"); }
+    recharger();
+  };
+  const choisis = () => [...el.querySelectorAll(".nas-sel:checked")].map(c => c.closest(".nas-row").dataset.id);
+  el.querySelector("#nas-go").onclick = async () => {
+    try { await api("/api/explorateur/analyser", { json: {} }); toast("Analyse lancée : les papiers trouvés apparaissent ici"); setTimeout(recharger, 1500); }
+    catch (err) { toast(err.message, "err"); }
+  };
+  el.querySelector("#nas-tout")?.addEventListener("change", ev => el.querySelectorAll(".nas-sel").forEach(c => { c.checked = ev.target.checked; }));
+  el.querySelector("#nas-add")?.addEventListener("click", () => envoyer("accepter", choisis()));
+  el.querySelector("#nas-ign")?.addEventListener("click", () => envoyer("ignorer", choisis()));
+  el.querySelector("#nas-all")?.addEventListener("click", () => {
+    if (confirm(`Ajouter les ${props.length} documents affichés à Paperasse et au Budget ?`)) envoyer("accepter", props.map(p => p.id));
+  });
+  el.querySelectorAll(".nas-row [data-a]").forEach(b => b.onclick = () => envoyer(b.dataset.a === "ajouter" ? "accepter" : "ignorer", [b.closest(".nas-row").dataset.id]));
+  const reglage = async patch => { try { await api("/api/explorateur/reglages", { method: "PUT", json: patch }); toast("Enregistré"); } catch (err) { toast(err.message, "err"); } };
+  el.querySelector("#nas-dep").onchange = ev => reglage({ deplacer: ev.target.value === "1" });
+  el.querySelector("#nas-heure").onchange = ev => reglage({ heure: ev.target.value });
+  el.querySelector("#nas-actif").onchange = ev => reglage({ actif: ev.target.checked });
+  clearTimeout(nasTimer);
+  if (enCours) nasTimer = setTimeout(() => { if (location.hash.startsWith("#/paperasse/nas")) recharger(); }, 4000);
 }
 
 async function upload(files) {

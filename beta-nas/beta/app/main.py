@@ -476,10 +476,25 @@ async def _tri_json(methode: str, chemin: str, **kwargs) -> dict:
     return r.json()
 
 
+def _tri_remplace() -> bool:
+    return etat["settings"].tri_url in ("", "off")
+
+
 @app.get("/v1/tri/etat", dependencies=[Depends(verifier_jeton)])
 async def etat_tri():
-    """État du tri des documents."""
-    return await _tri_json("GET", "/api/etat")
+    """État du tri des documents : Paperasse (Bêta Tool) qui remplace l'ancien trieur, ou le trieur s'il tourne encore."""
+    if not _tri_remplace():
+        return await _tri_json("GET", "/api/etat")
+    s: cfg.Settings = etat["settings"]
+    if not s.beta_tool_jeton:
+        return {"paperasse": None}
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(f"{s.beta_tool_url}/api/v1/paperasse", headers={"Authorization": f"Bearer {s.beta_tool_jeton}"})
+            r.raise_for_status()
+            return {"paperasse": r.json()}
+    except (httpx.HTTPError, ValueError):
+        return {"paperasse": None}
 
 
 class LancementTri(BaseModel):
@@ -505,8 +520,11 @@ async def page_tri_sans_barre():
 
 
 @app.get("/tri/", include_in_schema=False)
-async def page_tri():
-    """Page du tri (validation des propositions, dossiers à trier). Elle appelle /tri/api/…"""
+async def page_tri(request: Request):
+    """Page du tri (validation des propositions, dossiers à trier). Elle appelle /tri/api/…
+    Remplacé par Paperasse : renvoie vers Bêta Tool › Paperasse › Sur le NAS."""
+    if _tri_remplace():
+        return RedirectResponse(f"{request.url.scheme}://{request.url.hostname}:8080/#/paperasse/nas")
     r = await _tri("GET", "/")
     return HTMLResponse(r.text, status_code=r.status_code)
 
