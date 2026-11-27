@@ -96,7 +96,7 @@ def mail_part(user, today):
     important = []
     try:
         trusted, _ = mail.trust_lists(user)
-        for a in accs[:3]:
+        for a in [x for x in accs if accounts.imap(x)][:3]:
             with mail.session(a) as c:
                 mail.select(c, "INBOX")
                 uids = mail.search_uids(c, "", unread=True)[:15]

@@ -270,7 +270,8 @@ def ics_events(acc, start, end):
 def _graph(acc, method, path, **kw):
     try:
         r = requests.request(method, path if path.startswith("http") else GRAPH + path, timeout=30,
-                             headers={"Authorization": "Bearer " + accounts.token(acc, "ms_cal"), **UA, **kw.pop("headers", {})}, **kw)
+                             headers={"Authorization": "Bearer " + accounts.token(acc, acc["cal"].get("token") or "ms_cal"), **UA,
+                                      **kw.pop("headers", {})}, **kw)
     except requests.RequestException as e:
         raise ValueError(f"Outlook injoignable ({e.__class__.__name__})") from None
     if r.status_code >= 400:
@@ -290,7 +291,8 @@ def _gtime(t):
 
 def graph_discover(acc):
     cals = _graph(acc, "GET", "/me/calendars?$top=100").get("value", [])
-    return [{"id": _short(c["id"]), "gid": c["id"], "name": c.get("name") or "Agenda", "ro": not c.get("canEdit", True),
+    lecture_seule = bool(acc["cal"].get("readonly"))  # compte pro : jamais modifié depuis Bêta Tool
+    return [{"id": _short(c["id"]), "gid": c["id"], "name": c.get("name") or "Agenda", "ro": lecture_seule or not c.get("canEdit", True),
              "color": c.get("hexColor") if re.fullmatch(r"#[0-9a-fA-F]{6}", c.get("hexColor") or "") else None, "on": True} for c in cals]
 
 
@@ -564,6 +566,8 @@ def _invalidate(cid):
 
 
 def _writer(acc):
+    if acc["cal"].get("readonly"):
+        return None  # compte professionnel en lecture seule
     return {"caldav": caldav_write, "graph": graph_write, "google": google_write}.get(acc["cal"]["kind"])
 
 

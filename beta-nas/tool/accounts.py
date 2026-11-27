@@ -36,6 +36,12 @@ GOOGLE_REDIRECT = "http://127.0.0.1:53682/"
 MS_SCOPES = {
     "mail": "offline_access openid email https://outlook.office.com/IMAP.AccessAsUser.All https://outlook.office.com/SMTP.Send",
     "cal": "offline_access openid email https://graph.microsoft.com/Calendars.ReadWrite",
+    # Compte professionnel en lecture seule (Microsoft Graph, sans IMAP) : lire les mails et le calendrier…
+    "pro": "offline_access openid email https://graph.microsoft.com/User.Read https://graph.microsoft.com/Mail.Read "
+           "https://graph.microsoft.com/Calendars.Read",
+    # … et pouvoir ranger les mails dans des dossiers (déplacer, archiver, lu / non lu) : jamais envoyer ni supprimer
+    "pro_tri": "offline_access openid email https://graph.microsoft.com/User.Read https://graph.microsoft.com/Mail.ReadWrite "
+               "https://graph.microsoft.com/Calendars.Read",
 }
 GOOGLE_SCOPES = "openid email https://www.googleapis.com/auth/calendar"
 
@@ -114,6 +120,11 @@ def get(user, acc_id):
 
 def everyone():
     return _all()
+
+
+def imap(a):
+    """Boîte mail classique (IMAP/SMTP) : lire, envoyer… Les comptes pro par Microsoft Graph sont en lecture seule."""
+    return bool(a.get("mail")) and a["mail"].get("kind", "imap") != "graph"
 
 
 def save(acc):
@@ -476,6 +487,11 @@ def ms_poll_route():
     s["ms_" + purpose] = tok
     acc["secret"] = seal(s)
     save(acc)  # le jeton est gardé même si le test échoue
+    if purpose in ("pro", "pro_tri"):  # compte pro : lecture seule par Microsoft Graph, mails + calendrier
+        acc["label"] = acc.get("label") or email
+        acc["pro"] = True
+        return jsonify(_finish(acc, True, True, {"kind": "graph", "readonly": True, "move": purpose == "pro_tri", "token": "ms_" + purpose},
+                               cal_cfg={"kind": "graph", "readonly": True, "token": "ms_" + purpose}))
     if purpose == "mail":
         (ih, ip, isec), (sh, sp, ssec), auto = SERVERS["microsoft"]
         return jsonify(_finish(acc, True, False, {"imap_host": ih, "imap_port": ip, "imap_sec": isec, "smtp_host": sh, "smtp_port": sp,

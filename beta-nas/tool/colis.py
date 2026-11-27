@@ -368,7 +368,7 @@ def scan_mails():
     import mail
     user = g.user["name"]
     found = 0
-    for acc in [a for a in accounts.of(user) if a.get("mail")]:
+    for acc in [a for a in accounts.of(user) if accounts.imap(a)]:
         with mail.session(acc) as c:
             mail.select(c, "INBOX")
             since = time.strftime("%d-%b-%Y", time.localtime(time.time() - 60 * 86400))

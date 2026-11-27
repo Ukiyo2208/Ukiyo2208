@@ -611,6 +611,11 @@ def check_reminders(sent):
                     where = f" · {text(ev, 'location')}" if text(ev, "location") else ""
                     activity.log("*" if c["shared"] else user, "agenda", f"{text(ev, 'summary')} · {when}{where}", "#/agenda",
                                  title=f"Rappel · {c['name']}")
+    try:  # rendez-vous des comptes professionnels (Microsoft 365 en lecture seule)
+        import graphmail
+        graphmail.rappels(sent, now)
+    except Exception as e:  # noqa: BLE001
+        print("agenda pro", e, flush=True)
     cutoff = time.time() - 3 * 86400
     return {k: v for k, v in sent.items() if v > cutoff}
 

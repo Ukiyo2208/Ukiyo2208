@@ -20,6 +20,10 @@ const who = list => (list && list[0]) ? (list[0].name || list[0].email) : "?";
 const initial = s => (s || "?").trim().charAt(0).toUpperCase();
 const hue = s => [...(s || "")].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
 const addr = list => (list || []).map(a => a.name ? `${a.name} <${a.email}>` : a.email).join(", ");
+// Compte professionnel (Microsoft 365 par Graph) : lecture seule ; ranger seulement si autorisé à la connexion
+const lectureSeule = () => acc?.mail?.kind === "graph";
+const peutRanger = () => !lectureSeule() || !!acc?.mail?.move;
+const U = uid => encodeURIComponent(uid);
 
 export async function render(el, parts, q) {
   root = el;
@@ -101,6 +105,8 @@ function paintAccounts() {
 }
 
 async function loadFolders() {
+  const ecrire = $("#ml-write");
+  if (ecrire) ecrire.hidden = lectureSeule();  // compte pro : jamais d'envoi
   try { ({ folders } = await api(`/api/mail/${acc.id}/folders`)); }
   catch (err) { $("#ml-folders") && ($("#ml-folders").innerHTML = `<p class="hint">${icon("alert")} ${esc(err.message)}</p>`); return; }
   const inbox = folders.find(f => f.role === "inbox");
@@ -174,10 +180,10 @@ function paintList() {
   list.innerHTML = msgs.map((m, i) => {
     const name = sentLike ? "À : " + who(m.to) : who(m.from);
     return `<div class="ml-item ${m.seen ? "" : "unread"} ${current === m.uid ? "on" : ""} ${selected.has(m.uid) ? "sel" : ""}" data-i="${i}">
-      <label class="ml-check" title="Sélectionner"><input type="checkbox" data-sel="${m.uid}" ${selected.has(m.uid) ? "checked" : ""}><span class="ml-av" style="--h:${hue(name)}">${initial(name.replace("À : ", ""))}</span></label>
+      <label class="ml-check" title="Sélectionner"><input type="checkbox" data-sel="${esc(m.uid)}" ${selected.has(m.uid) ? "checked" : ""}><span class="ml-av" style="--h:${hue(name)}">${initial(name.replace("À : ", ""))}</span></label>
       <div class="grow ml-lines"><div class="ml-l1"><b class="grow">${esc(name)}</b><small class="meta">${when(m.date)}</small></div>
         <div class="ml-l2"><span class="grow">${m.answered ? icon("back") : ""}${esc(m.subject)}</span>${secBadge(m.security)}${m.attach ? icon("link", "ml-pj") : ""}
-          <button class="icon-btn plain ml-star ${m.flagged ? "on" : ""}" data-star="${m.uid}" title="${m.flagged ? "Ne plus suivre" : "Suivre"}">${icon("star")}</button></div></div></div>`;
+          ${peutRanger() ? `<button class="icon-btn plain ml-star ${m.flagged ? "on" : ""}" data-star="${esc(m.uid)}" title="${m.flagged ? "Ne plus suivre" : "Suivre"}">${icon("star")}</button>` : ""}</div></div></div>`;
   }).join("") + (more ? `<button class="btn ghost small wide" id="ml-more">Afficher plus (${total - msgs.length} restants)</button>` : "");
   list.onclick = e => {
     const st = e.target.closest("[data-star]");
@@ -203,6 +209,14 @@ function paintBulk() {
   bar.hidden = !selected.size;
   if (!selected.size) return;
   const inTrash = role() === "trash", inJunk = role() === "junk";
+  if (lectureSeule()) {  // compte pro : ranger seulement (jamais supprimer)
+    bar.innerHTML = `<b>${selected.size} sélectionné${selected.size > 1 ? "s" : ""}</b><span class="grow"></span>
+      ${peutRanger() ? `<button class="icon-btn plain" data-b="read" title="Marquer comme lu">${icon("eye")}</button>
+      <button class="icon-btn plain" data-b="unread" title="Marquer comme non lu">${icon("mail")}</button>
+      <button class="icon-btn plain" data-b="archive" title="Archiver">${icon("archive")}</button>
+      <button class="icon-btn plain" data-b="move" title="Déplacer">${icon("move")}</button>` : `<small class="meta">Compte pro en lecture seule</small>`}
+      <button class="icon-btn plain" data-b="none" title="Annuler la sélection">${icon("x")}</button>`;
+  } else
   bar.innerHTML = `<b>${selected.size} sélectionné${selected.size > 1 ? "s" : ""}</b><span class="grow"></span>
     <button class="icon-btn plain" data-b="read" title="Marquer comme lu">${icon("eye")}</button>
     <button class="icon-btn plain" data-b="unread" title="Marquer comme non lu">${icon("mail")}</button>
@@ -274,7 +288,7 @@ async function openMessage(uid, images = false) {
   $(".ml-layout").dataset.pane = "read";
   showReader(`<p class="meta" style="padding:20px"><span class="spinner"></span></p>`);
   let d;
-  try { d = await api(`/api/mail/${acc.id}/message?folder=${encodeURIComponent(folder)}&uid=${uid}`); }
+  try { d = await api(`/api/mail/${acc.id}/message?folder=${encodeURIComponent(folder)}&uid=${U(uid)}`); }
   catch (err) { return showReader(`<div class="empty">${icon("alert")}<b>Mail introuvable</b>${esc(err.message)}</div>`); }
   if (current !== String(uid)) return;
   const m = msgs.find(x => x.uid === current);
@@ -282,6 +296,10 @@ async function openMessage(uid, images = false) {
   const inTrash = role() === "trash";
   showReader(`<div class="ml-rbar">
       <button class="icon-btn plain ml-only-mobile" data-r="back" title="Retour">${icon("left")}</button>
+      ${lectureSeule() ? `<span class="badge">${icon("lock")}Compte pro · lecture seule</span><span class="grow"></span>
+        ${peutRanger() ? `<button class="icon-btn plain" data-r="archive" title="Archiver">${icon("archive")}</button>
+        <button class="icon-btn plain" data-r="unread" title="Marquer comme non lu">${icon("mail")}</button>
+        <button class="icon-btn plain" data-r="move" title="Déplacer">${icon("move")}</button>` : ""}</div>` : `
       <button class="btn small" data-r="reply">${icon("back")}Répondre</button>
       ${d.to.length + d.cc.length > 1 ? `<button class="btn ghost small" data-r="replyall">${icon("users")}<span class="ml-hide-s">Répondre à tous</span></button>` : ""}
       <button class="btn ghost small" data-r="forward">${icon("send")}<span class="ml-hide-s">Transférer</span></button><span class="grow"></span>
@@ -290,7 +308,7 @@ async function openMessage(uid, images = false) {
       <button class="icon-btn plain" data-r="unread" title="Marquer comme non lu">${icon("mail")}</button>
       <button class="icon-btn plain" data-r="move" title="Déplacer">${icon("move")}</button>
       <button class="icon-btn plain" data-r="rule" title="Créer une règle pour ces mails">${icon("sliders")}</button>
-      <button class="icon-btn plain" data-r="event" title="Ajouter à l'agenda">${icon("calendar")}</button></div>
+      <button class="icon-btn plain" data-r="event" title="Ajouter à l'agenda">${icon("calendar")}</button></div>`}
     <div class="ml-rhead"><h2>${esc(d.subject)}</h2>
       <div class="ml-from"><span class="ml-av big" style="--h:${hue(who(d.from))}">${initial(who(d.from))}</span>
         <div class="grow"><b>${esc(who(d.from))}</b> <small class="meta">${esc(d.from[0]?.email || "")}</small>
@@ -302,8 +320,8 @@ async function openMessage(uid, images = false) {
     ${secBanner(d.security)}
     ${d.remote_images && !images && d.security?.level !== "phishing" ? `<div class="ml-imgs">${icon("eye")}<span class="grow">Images distantes bloquées pour protéger ta vie privée (elles servent souvent à savoir si tu as ouvert le mail).</span><button class="btn ghost small" data-r="images">Afficher les images</button></div>` : ""}
     ${d.attachments.length ? `<div class="ml-atts">${d.attachments.map(a => `<div class="ml-att">${icon(a.type === "application/pdf" ? "pdf" : a.type.startsWith("image/") ? "image" : "file")}
-      <a class="grow" href="/api/mail/${acc.id}/part?folder=${encodeURIComponent(folder)}&uid=${d.uid}&n=${a.n}&inline=1" target="_blank" rel="noopener" title="Ouvrir"><b>${esc(a.name)}</b><small class="meta">${sizeStr(a.size)}</small></a>
-      <a class="icon-btn plain" href="/api/mail/${acc.id}/part?folder=${encodeURIComponent(folder)}&uid=${d.uid}&n=${a.n}" title="Télécharger">${icon("download")}</a>
+      <a class="grow" href="/api/mail/${acc.id}/part?folder=${encodeURIComponent(folder)}&uid=${U(d.uid)}&n=${a.n}&inline=1" target="_blank" rel="noopener" title="Ouvrir"><b>${esc(a.name)}</b><small class="meta">${sizeStr(a.size)}</small></a>
+      <a class="icon-btn plain" href="/api/mail/${acc.id}/part?folder=${encodeURIComponent(folder)}&uid=${U(d.uid)}&n=${a.n}" title="Télécharger">${icon("download")}</a>
       <button class="icon-btn plain" data-save="${a.n}" title="Enregistrer sur le NAS">${icon("nas")}</button>
       ${/pdf|image\/(jpe?g|png|heic)/.test(a.type) ? `<button class="icon-btn plain" data-paper="${a.n}" title="Envoyer à Paperasse">${icon("receipt")}</button>` : ""}</div>`).join("")}</div>` : ""}
     <div class="ml-frame-wrap"><iframe class="ml-frame" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" title="Contenu du mail"></iframe></div>`);
@@ -540,7 +558,7 @@ async function answerInvite(d, answer, b) {
 
 async function mailToEvent(d) {
   let s;
-  try { s = await api(`/api/mail/${acc.id}/event-suggest?folder=${encodeURIComponent(folder)}&uid=${d.uid}`); } catch (err) { return toast(err.message, "err"); }
+  try { s = await api(`/api/mail/${acc.id}/event-suggest?folder=${encodeURIComponent(folder)}&uid=${U(d.uid)}`); } catch (err) { return toast(err.message, "err"); }
   const { newEvent } = await import("./agenda.js");
   const open = c => newEvent({ title: s.title, notes: s.notes, ...(c ? { start: c.start, end: c.end, allday: c.allday } : {}) }, () => {});
   if (s.candidates.length <= 1) return open(s.candidates[0]);

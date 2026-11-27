@@ -7,16 +7,18 @@ const MAIL = [
   ["icloud", "iCloud", "Adresses @icloud.com, @me.com", "cloud"],
   ["gmail", "Gmail", "Adresses @gmail.com", "mail"],
   ["microsoft", "Outlook", "Outlook, Hotmail, Live, Microsoft 365", "mail"],
+  ["pro", "Compte professionnel (lecture seule)", "Mail et agenda d'entreprise Microsoft 365, sans mot de passe d'application", "briefcase"],
   ["imap", "Autre adresse", "Orange, Free, SFR, La Poste, Yahoo, ton domaine…", "at"],
 ];
 const CAL = [
   ["icloud", "iCloud", "Calendrier de l'iPhone et du Mac", "cloud"],
   ["google", "Google Agenda", "Agendas de ton compte Google", "calendar"],
   ["microsoft", "Outlook", "Outlook.com, Hotmail, Microsoft 365", "calendar"],
+  ["pro", "Compte professionnel (lecture seule)", "Agenda et mails d'entreprise Microsoft 365, juste pour les lire", "briefcase"],
   ["caldav", "Serveur CalDAV", "Nextcloud, Synology Calendar, Fastmail…", "server"],
   ["ics", "Lien d'abonnement", "Jours fériés, vacances scolaires, club de sport (.ics)", "link"],
 ];
-const TILE = { icloud: "", gmail: "rose", google: "vert", microsoft: "bleu-vert", imap: "violet", caldav: "ambre", ics: "violet" };
+const TILE = { icloud: "", gmail: "rose", google: "vert", microsoft: "bleu-vert", pro: "bleu", imap: "violet", caldav: "ambre", ics: "violet" };
 export const PROVIDER_ICON = { icloud: "cloud", gmail: "mail", google: "calendar", microsoft: "mail", caldav: "server", ics: "link" };
 
 let oauth = null;
@@ -87,6 +89,23 @@ function form(el, p, want, done) {
       return;
     }
     return icsForm(el, done, "outlook");
+  } else if (p === "pro") {
+    if (!oauth.microsoft) {
+      el.innerHTML = `<div class="acc-off"><span class="tile ambre">${icon("alert")}</span><div><b>La connexion Microsoft n'est pas encore activée</b>
+        <p class="hint">Les comptes professionnels se connectent avec « Se connecter avec Microsoft », sans mot de passe d'application. ${isAdmin() ? `Active-la en 5 minutes dans <a href="#/reglages/enligne" data-close>Réglages → Comptes en ligne</a>.` : "Demande à l'administrateur de Bêta Tool de l'activer (Réglages → Comptes en ligne)."}</p></div></div>
+        <div class="modal-foot">${backBtn}</div>`;
+      return;
+    }
+    el.innerHTML = `<form><div class="acc-off"><span class="tile bleu">${icon("briefcase")}</span><div><b>Mail et agenda d'entreprise, en lecture seule</b>
+        <p class="hint">Bêta Tool peut <b>lire</b> tes mails et ton agenda pro et te prévenir (nouveaux mails, rendez-vous). Il ne peut <b>jamais</b> envoyer,
+        répondre, supprimer ni modifier ton agenda : Microsoft ne lui donne pas ces droits. Ta connexion d'entreprise (et sa double authentification) est utilisée
+        telle quelle, sans mot de passe d'application.</p></div></div>
+      <label class="check"><input type="checkbox" name="tri"><span>Pouvoir aussi <b>ranger</b> mes mails pro dans des dossiers (déplacer, archiver, marquer comme lu)</span></label>
+      <p class="hint">Si ton entreprise affiche « Approbation de l'administrateur requise », demande à ton service informatique d'autoriser l'application avec les droits
+        <code>Mail.Read</code> (ou <code>Mail.ReadWrite</code> pour ranger), <code>Calendars.Read</code> et <code>User.Read</code>.</p>
+      ${foot("Se connecter avec Microsoft")}</form>`;
+    el.querySelector("form").onsubmit = e => { e.preventDefault(); microsoft(el, e.target.tri.checked ? "pro_tri" : "pro", done); };
+    return;
   } else if (p === "google") {
     if (oauth.google) return google(el, done);
     return icsForm(el, done, "google");

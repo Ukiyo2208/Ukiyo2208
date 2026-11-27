@@ -167,6 +167,10 @@ def mail_messages():
     folder = request.args.get("folder") or "INBOX"
     limit = max(1, min(200, int(request.args.get("limit", 20) or 20)))
     page = max(0, int(request.args.get("page", 0) or 0))
+    import graphmail
+    if graphmail.est_graph(acc):  # compte pro (Microsoft Graph, lecture seule)
+        d = graphmail.messages(acc, folder, page, (request.args.get("q") or "").strip()[:200], request.args.get("unread") in ("1", "true"))
+        return jsonify(account=acc["id"], folder=folder, total=d["total"], messages=d["messages"][:limit])
     with mail.session(acc) as c:
         total = mail.select(c, folder)
         uids = mail.search_uids(c, (request.args.get("q") or "").strip()[:200], request.args.get("unread") in ("1", "true")) if total else []
@@ -203,7 +207,7 @@ def mail_send():
 
 def _first_mail_account():
     import accounts
-    acc = next((a for a in accounts.of(g.user["name"]) if a.get("mail")), None)
+    acc = next((a for a in accounts.of(g.user["name"]) if accounts.imap(a)), None)
     if not acc:
         raise ValueError("Aucune boîte mail raccordée")
     return acc["id"]

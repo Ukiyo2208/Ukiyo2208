@@ -409,7 +409,7 @@ def send_quittance(user, t, month):
         raise ValueError("Aucun paiement enregistré pour ce mois")
     if not t.get("email"):
         raise ValueError("Indique l'adresse mail du locataire")
-    acc = next((a for a in accounts.of(user) if a.get("mail")), None)
+    acc = next((a for a in accounts.of(user) if accounts.imap(a)), None)
     if not acc:
         raise ValueError("Ajoute d'abord une boîte mail (Réglages › Mails et agendas) pour envoyer la quittance")
     pdf = quittance_pdf(user, t, month, sum(p["amount"] for p in pays), max(p["date"] for p in pays))

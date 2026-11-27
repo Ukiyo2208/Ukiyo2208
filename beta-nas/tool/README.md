@@ -181,6 +181,14 @@ fournisseur, Bêta Tool les lit et y écrit directement. Les mots de passe et je
 Les nouveaux mails de la boîte de réception sont vérifiés toutes les 2 minutes (`MAIL_POLL_SECONDS`) et envoyés en
 notification push.
 
+**Compte professionnel en lecture seule (Microsoft 365 d'entreprise)** : Mails ou Agenda › Ajouter › « Compte
+professionnel (lecture seule) ». Pour les entreprises qui interdisent les mots de passe d'application : connexion
+Microsoft habituelle (double authentification comprise), par Microsoft Graph (sans IMAP). Bêta Tool lit les mails,
+les pièces jointes et l'agenda, notifie les nouveaux mails et les rendez-vous ; il ne peut jamais envoyer, répondre,
+supprimer ni modifier l'agenda (droits demandés : `Mail.Read`, `Calendars.Read`, `User.Read`). Case « pouvoir ranger » :
+`Mail.ReadWrite` en plus, pour déplacer, archiver et marquer comme lu. Si l'entreprise exige l'approbation d'un
+administrateur, c'est ce qu'il faut demander au service informatique.
+
 **Activer la connexion Microsoft (Outlook)** — une fois, par un administrateur, gratuit :
 1. [portal.azure.com](https://portal.azure.com) → Inscriptions d'applications → Nouvelle inscription « Bêta Tool »,
    comptes « annuaire organisationnel et comptes Microsoft personnels », sans URI de redirection.

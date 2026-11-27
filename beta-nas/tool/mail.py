@@ -86,6 +86,9 @@ def q(name):
 
 def _connect(acc):
     m = acc["mail"]
+    if m.get("kind") == "graph":
+        import graphmail
+        raise ValueError(graphmail.LECTURE_SEULE)
     host, port, sec = m["imap_host"], int(m["imap_port"]), m["imap_sec"]
     try:
         if sec == "ssl":
@@ -194,6 +197,9 @@ def caps(c):
 
 
 def test(acc):
+    import graphmail
+    if graphmail.est_graph(acc):
+        return graphmail.test(acc)
     c = _connect(acc)
     try:
         c.logout()
@@ -721,8 +727,17 @@ def screen(acc, c, uids):
 
 
 def poll_once(state):
+    import graphmail
     for acc in accounts.everyone():
         if not acc.get("mail"):
+            continue
+        if graphmail.est_graph(acc):  # compte pro : nouveaux mails par Microsoft Graph, notifications seulement
+            try:
+                news = graphmail.nouveaux(acc, state)
+            except Exception as e:  # noqa: BLE001
+                print("mails", acc.get("label"), e, flush=True)
+                continue
+            _notifier(acc, news)
             continue
         try:
             with session(acc) as c:
@@ -743,19 +758,24 @@ def poll_once(state):
                 news = [n for n in summaries(c, [u for u in uids if u not in moved and u not in silent], acc)]
             if moved:
                 _unread[acc["id"]] = max(0, _unread.get(acc["id"], 0) - len(moved))
-            if not news or not acc["mail"].get("notify", True):
-                continue
-            link = f"#/mails/{acc['id']}"
-            if len(news) > 3:
-                activity.log(acc["owner"], "mails", f"{len(news)} nouveaux mails · {acc['label']}", link, title=f"Mails · {acc['label']}")
-                continue
-            for n in news:
-                who = (n["from"][0]["name"] or n["from"][0]["email"]) if n["from"] else "?"
-                sus = n.get("security", {}).get("level") == "suspect"
-                activity.log(acc["owner"], "mails", f"{'⚠️ ' if sus else ''}{who} : {n['subject']}", f"{link}?uid={n['uid']}",
-                             title=f"{'Mail suspect' if sus else 'Nouveau mail'} · {acc['label']}")
+            _notifier(acc, news)
         except Exception as e:  # noqa: BLE001
             print("mails", acc.get("label"), e, flush=True)
+
+
+def _notifier(acc, news):
+    if not news or not acc["mail"].get("notify", True):
+        return
+    from urllib.parse import quote as q_url
+    link = f"#/mails/{acc['id']}"
+    if len(news) > 3:
+        activity.log(acc["owner"], "mails", f"{len(news)} nouveaux mails · {acc['label']}", link, title=f"Mails · {acc['label']}")
+        return
+    for n in news:
+        who = (n["from"][0]["name"] or n["from"][0]["email"]) if n["from"] else "?"
+        sus = n.get("security", {}).get("level") == "suspect"
+        activity.log(acc["owner"], "mails", f"{'⚠️ ' if sus else ''}{who} : {n['subject']}", f"{link}?uid={q_url(str(n['uid']), safe='')}",
+                     title=f"{'Mail suspect' if sus else 'Nouveau mail'} · {acc['label']}")
 
 
 def poller():
@@ -794,6 +814,9 @@ def overview():
 @bp.get("/api/mail/<acc_id>/folders")
 def folders_route(acc_id):
     acc = account(acc_id)
+    import graphmail
+    if graphmail.est_graph(acc):
+        return jsonify(folders=graphmail.folders(acc), readonly=True, can_move=graphmail.peut_ranger(acc))
     with session(acc) as c:
         fl = folders(acc, c)
         for f in fl[:40]:
@@ -814,6 +837,9 @@ def messages(acc_id):
     folder = request.args.get("folder") or "INBOX"
     page = max(0, int(request.args.get("page", 0) or 0))
     query = (request.args.get("q") or "").strip()[:200]
+    import graphmail
+    if graphmail.est_graph(acc):
+        return jsonify(graphmail.messages(acc, folder, page, query, request.args.get("unread") == "1"))
     with session(acc) as c:
         total = select(c, folder)
         uids = search_uids(c, query, request.args.get("unread") == "1") if total else []
@@ -825,6 +851,9 @@ def messages(acc_id):
 @bp.get("/api/mail/<acc_id>/message")
 def message(acc_id):
     acc = account(acc_id)
+    import graphmail
+    if graphmail.est_graph(acc):
+        return jsonify(graphmail.read(acc, request.args.get("folder") or "INBOX", request.args["uid"], request.args.get("peek") != "1"))
     folder, uid = request.args.get("folder") or "INBOX", str(int(request.args["uid"]))
     with session(acc) as c:
         select(c, folder)
@@ -838,16 +867,21 @@ def message(acc_id):
 @bp.get("/api/mail/<acc_id>/part")
 def part(acc_id):
     acc = account(acc_id)
-    folder, uid, n = request.args.get("folder") or "INBOX", str(int(request.args["uid"])), int(request.args["n"])
-    with session(acc) as c:
-        select(c, folder)
-        msg = email.message_from_bytes(raw_message(acc, c, folder, uid), policy=email.policy.default)
-    p = part_by_index(msg, n)
-    data = p.get_payload(decode=True) if p.get_content_type() != "message/rfc822" else p.get_payload(0).as_bytes()
-    name = dec(p.get_filename()) or ("message.eml" if p.get_content_type() == "message/rfc822" else "piece-jointe")
+    import graphmail
+    if graphmail.est_graph(acc):
+        name, ctype, data = graphmail.piece(acc, request.args["uid"], int(request.args["n"]))
+    else:
+        folder, uid, n = request.args.get("folder") or "INBOX", str(int(request.args["uid"])), int(request.args["n"])
+        with session(acc) as c:
+            select(c, folder)
+            msg = email.message_from_bytes(raw_message(acc, c, folder, uid), policy=email.policy.default)
+        p = part_by_index(msg, n)
+        data = p.get_payload(decode=True) if p.get_content_type() != "message/rfc822" else p.get_payload(0).as_bytes()
+        name = dec(p.get_filename()) or ("message.eml" if p.get_content_type() == "message/rfc822" else "piece-jointe")
+        ctype = p.get_content_type()
     from urllib.parse import quote
-    inline = request.args.get("inline") == "1" and p.get_content_type() in ("application/pdf", "image/png", "image/jpeg", "image/gif", "image/webp", "text/plain")
-    return Response(data or b"", mimetype=p.get_content_type() if inline else "application/octet-stream", headers={
+    inline = request.args.get("inline") == "1" and ctype in ("application/pdf", "image/png", "image/jpeg", "image/gif", "image/webp", "text/plain")
+    return Response(data or b"", mimetype=ctype if inline else "application/octet-stream", headers={
         "Content-Disposition": f"{'inline' if inline else 'attachment'}; filename*=UTF-8''{quote(name)}",
         "Content-Security-Policy": "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'", "X-Content-Type-Options": "nosniff"})
 
@@ -856,13 +890,17 @@ def part(acc_id):
 def save_part(acc_id):
     acc = account(acc_id)
     d = request.get_json(silent=True) or {}
-    folder, uid, n = d.get("folder") or "INBOX", str(int(d["uid"])), int(d["n"])
-    with session(acc) as c:
-        select(c, folder)
-        msg = email.message_from_bytes(raw_message(acc, c, folder, uid), policy=email.policy.default)
-    p = part_by_index(msg, n)
-    name = re.sub(r'[\\/:*?"<>|\x00-\x1f]', "_", dec(p.get_filename()) or "piece-jointe").strip(". ") or "piece-jointe"
-    data = p.get_payload(decode=True) or b""
+    import graphmail
+    if graphmail.est_graph(acc):  # copier une pièce jointe sur le NAS ne modifie pas la boîte pro
+        brut_nom, _, data = graphmail.piece(acc, str(d["uid"]), int(d["n"]))
+    else:
+        folder, uid, n = d.get("folder") or "INBOX", str(int(d["uid"])), int(d["n"])
+        with session(acc) as c:
+            select(c, folder)
+            msg = email.message_from_bytes(raw_message(acc, c, folder, uid), policy=email.policy.default)
+        p = part_by_index(msg, n)
+        brut_nom, data = dec(p.get_filename()), p.get_payload(decode=True) or b""
+    name = re.sub(r'[\\/:*?"<>|\x00-\x1f]', "_", brut_nom or "piece-jointe").strip(". ") or "piece-jointe"
     if d.get("dest") == "paperasse":
         import paperasse
         import settings
@@ -890,6 +928,13 @@ def save_part(acc_id):
 def action(acc_id):
     acc = account(acc_id)
     d = request.get_json(silent=True) or {}
+    import graphmail
+    if graphmail.est_graph(acc):
+        uids = [str(u) for u in d.get("uids") or []]
+        if not uids:
+            raise ValueError("Aucun mail sélectionné")
+        graphmail.action(acc, d.get("op"), uids, d.get("to"))
+        return jsonify(ok=True)
     folder, op = d.get("folder") or "INBOX", d.get("op")
     uids = ",".join(str(int(u)) for u in d.get("uids") or [])
     if not uids:
@@ -1080,6 +1125,9 @@ def create_folder(acc_id):
 def send_message(acc, d, files=(), info=None):
     """Envoie un mail (d : to, cc, bcc, subject, text, et pour une réponse mode / ref_uid / ref_folder).
     Renvoie un avertissement si le mail est parti sans être rangé dans « Envoyés » ; info reçoit l'identifiant du mail."""
+    if (acc.get("mail") or {}).get("kind") == "graph":
+        import graphmail
+        raise ValueError(graphmail.LECTURE_SEULE + " Les comptes professionnels ne servent qu'à lire.")
     original = None
     if d.get("ref_uid") and d.get("mode"):
         with session(acc) as c:
@@ -1110,6 +1158,9 @@ def send_message(acc, d, files=(), info=None):
 def send(acc_id):
     import mailplus
     acc, d, files = account(acc_id), request.form.to_dict(), request.files.getlist("files")
+    if acc["mail"].get("kind") == "graph":
+        import graphmail
+        raise ValueError(graphmail.LECTURE_SEULE)
     if d.get("send_at"):  # envoi programmé
         return jsonify(mailplus.schedule(acc, d, files))
     info = {}
