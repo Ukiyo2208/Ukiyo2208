@@ -217,3 +217,28 @@ def test_paperasse_remplace_le_trieur(monkeypatch, tmp_path):
         r = c.get("/tri/")
         assert r.status_code == 307 and r.headers["location"].endswith(":8080/#/paperasse/nas")
         assert c.get("/v1/tri/etat").json() == {"paperasse": None}  # Bêta Tool pas encore relié
+
+
+def test_notifications_sms_discord_et_urgences(monkeypatch):
+    import base64 as b64
+    import json as js
+
+    from app import notifications as n
+
+    monkeypatch.setenv("BETA_TOKEN", "secret")
+    r = n.requete("freemobile:12345678:CleAbc", "🚨 Fumée", "Salon")
+    assert r.full_url == "https://smsapi.free-mobile.fr/sendmsg"
+    assert js.loads(r.data) == {"user": "12345678", "pass": "CleAbc", "msg": "🚨 Fumée\nSalon"}
+    r = n.requete("sms:http://192.168.68.50:8080:sms:mdp:+33612345678;+33698765432@urgent", "T", "M")
+    assert r.full_url == "http://192.168.68.50:8080/message"
+    assert js.loads(r.data) == {"message": "T\nM", "phoneNumbers": ["+33612345678", "+33698765432"]}
+    assert r.headers["Authorization"] == "Basic " + b64.b64encode(b"sms:mdp").decode()
+    r = n.requete("discord-bot", "T", "M", "http://lien")
+    assert r.full_url == "http://discord:8803/notifier" and r.headers["Authorization"] == "Bearer secret"
+    liste = ["ha:mobile_app_pixel", "freemobile:1:k@urgent"]
+    assert n.pour_niveau(liste, "info") == ["ha:mobile_app_pixel"]
+    assert n.pour_niveau(liste, "urgence") == liste
+    monkeypatch.setenv("NOTIFICATIONS", " ".join(liste + ["discord-bot", "sms:http://1.2.3.4:8080::+33600000000"]))
+    assert n.resume() == ["Home Assistant", "SMS Free Mobile (urgences)", "bot Discord", "SMS (téléphone Android)"]
+    assert "Authorization" not in n.requete("sms:http://1.2.3.4:8080::+33600000000", "T", "M").headers
+    assert n.requete("sms:http://1.2.3.4:8080:+33600000000", "T", "M").full_url == "http://1.2.3.4:8080/message"

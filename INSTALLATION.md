@@ -303,6 +303,50 @@ Chaque nuit, **Bêta Tool › Paperasse › Sur le NAS** liste les papiers trouv
 bancaires CSV/OFX dans le Budget. Le premier passage peut prendre un moment sur un gros NAS. Tu recevras aussi sur
 ton téléphone (appli Home Assistant) les colis, les rendez-vous, les tâches et les échéances.
 
+### Photos du téléphone, gratuit : Immich
+
+PhotoSync fait payer le transfert automatique. À la place, l'installateur propose **Immich** (gratuit, open source,
+comme Google Photos mais chez toi) :
+
+1. Ouvre `http://192.168.1.20:2283` et crée ton compte (le premier compte est administrateur).
+2. Installe l'appli **Immich** (App Store ou Play Store), adresse du serveur `http://192.168.1.20:2283`.
+3. Active la **sauvegarde en arrière-plan** : toutes les photos et vidéos partent sur le NAS (dossier `IMMICH_PHOTOS`).
+
+Autres solutions gratuites : l'appli **UGREEN NAS** (sauvegarde des photos), **FolderSync** sur Android (version
+gratuite, vers le dossier WebDAV de Bêta Tool › Téléphones), **Documents** de Readdle sur iPhone (WebDAV).
+
+### Notifications sur plusieurs serveurs
+
+`NOTIFICATIONS` (fichier `.env`) peut contenir plusieurs destinations, séparées par des espaces. Ajoute `@urgent` à une
+destination pour n'y recevoir que les alertes importantes (fuite, fumée, porte ouverte maison vide, panne).
+
+| Destination | Coût | À mettre dans NOTIFICATIONS |
+|---|---|---|
+| Appli Home Assistant | gratuit | `ha:mobile_app_ton_telephone` (trouvé tout seul par l'installateur) |
+| Bot Discord de Bêta | gratuit | `discord-bot` (ajouté tout seul quand le bot est configuré) |
+| SMS chez Free Mobile | gratuit (abonnés Free) | `freemobile:IDENTIFIANT:CLE@urgent` (Espace abonné › Mes options › Notifications par SMS) |
+| SMS par ton téléphone Android | gratuit (ton forfait) | `sms:http://IP_DU_TELEPHONE:8080:identifiant:motdepasse:+33612345678@urgent` |
+| ntfy | gratuit | `ntfy:https://ntfy.sh/un-nom-long-secret` |
+
+**SMS sans Free Mobile** : installe l'appli open source **SMS Gateway for Android** (capcom6) sur un vieux téléphone
+Android qui reste à la maison, active **Serveur local** : elle affiche son adresse, un identifiant et un mot de passe.
+Les SMS partent de ce téléphone avec son forfait (les SMS illimités suffisent). Les services payants (Twilio, OVH…)
+ne sont pas nécessaires. Sur iPhone, aucune appli ne peut envoyer de SMS toute seule.
+
+### Bot Discord (gratuit)
+
+1. https://discord.com/developers/applications › **New Application** › onglet **Bot** › **Reset Token** : copie le jeton.
+2. Onglet **OAuth2 › URL Generator** : coche **bot** et **applications.commands**, ouvre le lien et ajoute le bot à ton serveur.
+3. Discord › Paramètres › Avancés › **Mode développeur**. Clic droit sur ton nom › **Copier l'identifiant** (et sur le salon
+   des notifications si tu veux un salon).
+4. Relance l'installateur : il demande le jeton, ton identifiant et le salon (une seule fois).
+
+Dans Discord, tape `/aide`. Commandes : `/beta` (parler à Bêta), `/allumer`, `/eteindre`, `/volets`, `/maison`,
+`/camera` (image en direct), `/resume`, `/energie`, `/alertes`, `/services`, `/journee`, `/agenda`, `/rendezvous`,
+`/rappel`, `/courses`, `/tache`, `/colis`, `/depenses`, `/papiers`, `/telecharger` (vidéo ou MP3 sur le NAS),
+`/envoyer` (un fichier joint, rangé dans Paperasse, le Budget ou l'Album). Seuls les comptes de
+`DISCORD_UTILISATEURS` peuvent s'en servir ; les alertes arrivent dans le salon (`@here` pour les urgences).
+
 ### Restaurer une sauvegarde
 
 1. Arrête Bêta : `cd /volume1/docker/beta/beta-nas && sudo docker compose down`.

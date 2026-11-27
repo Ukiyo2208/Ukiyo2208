@@ -9,7 +9,7 @@
 #   ./fiche-api.sh tester          appels de test sur chaque API
 #   ./fiche-api.sh regler CLE VAL  change un réglage du .env et redémarre le bon conteneur
 #   ./fiche-api.sh jeton           crée un nouveau BETA_TOKEN (à recopier dans la tablette)
-#   ./fiche-api.sh logs [nom]      journaux en direct (beta, beta-presence, beta-trieur…)
+#   ./fiche-api.sh logs [nom]      journaux en direct (beta, beta-presence, beta-tool, beta-discord…)
 #   ./fiche-api.sh maison          ce que la page Domotique lit dans Home Assistant (diagnostic)
 #
 # L'adresse IP du NAS est détectée toute seule ; pour la forcer : NAS_IP=192.168.1.20 ./fiche-api.sh
@@ -101,7 +101,8 @@ ${G}SERVICES${N}
   Bêta (page, API)     $BETA                    $(etat "$e_beta")
      tableau de bord   $BETA/tableau
      documentation     $BETA/docs
-  Tri des documents    $BETA/tri/               $(etat "$e_tri")
+  Papiers du NAS       http://$IP:8080/#/paperasse/nas   $(etat "$e_tri")
+  Bêta Tool            http://$IP:8080           $(etat "$(http_code "http://127.0.0.1:8080/login")")
   Bêta home            $BETA/home/              $(etat "$(http_code "$BETA/home/")")
   Présence (caméras)   http://$IP:$PORT_PRESENCE                    $(etat "$e_pres")
   Home Assistant       $HA                    $(etat "$e_ha")
@@ -136,9 +137,9 @@ ${G}COMMANDES${N} ${D}(d'abord : eval "\$(./fiche-api.sh env)")${N}
   sudo docker exec beta-ollama ollama list
   sudo docker exec beta-ollama ollama ps
 
-  # Tri des documents : état, journal du trieur
+  # Papiers du NAS (Paperasse de Bêta Tool) : état, journal de Bêta Tool
   curl $BETA/v1/tri/etat
-  sudo docker logs --tail 30 beta-trieur
+  sudo docker logs --tail 30 beta-tool
 
 ${G}À LA MAISON${N}  pas de jeton à saisir sur ${G}$BETA${N} (il est demandé seulement hors du réseau local)
 ${G}TABLETTE${N}     Réglages → Adresse du NAS : ${G}$BETA${N} · Jeton : BETA_TOKEN
@@ -212,9 +213,12 @@ if d.get("avertissement"): print("  ⚠️ ", d["avertissement"])
 
 conteneur_de() { # quel conteneur redémarrer pour une clé
   case "$1" in
-    TRI_*|PUID|PGID|NOTIFICATIONS) echo beta-trieur ;;
+    NOTIFICATIONS) echo "beta beta-tool" ;;
+    PAPERASSE_*|BETA_TOOL_LIEN|BETA_TOOL_COMPTE|TRI_MODELE) echo beta-tool ;;
+    DISCORD_*) echo beta-discord ;;
+    BETA_TOOL_JETON) echo "beta beta-discord" ;;
     ALEXA*|HOMEKIT*) echo beta-ponts ;;
-    HA_TOKEN|HA_URL) echo "beta beta-presence beta-trieur" ;;
+    HA_TOKEN|HA_URL) echo "beta beta-presence beta-tool" ;;
     BETA_TOKEN) echo "beta beta-presence" ;;
     WHISPER_MODEL) echo beta-whisper ;;
     PIPER_VOICE) echo "beta-piper beta" ;;
@@ -256,7 +260,7 @@ cmd_jeton() {
 
 cmd_logs() {
   if [ -n "${1:-}" ]; then docker logs -f --tail 50 "$1"; return; fi
-  (cd "$DOSSIER_BETA" && docker compose logs -f --tail 20 beta presence trieur)
+  (cd "$DOSSIER_BETA" && docker compose logs -f --tail 20 beta presence beta-tool)
 }
 
 case "${1:-}" in

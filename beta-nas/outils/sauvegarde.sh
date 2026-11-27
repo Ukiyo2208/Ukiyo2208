@@ -30,7 +30,7 @@ sauvegarder() {
   nom="beta-$(date +%Y-%m-%d_%H%M).tar.gz"
   echo "$(date '+%F %T') Sauvegarde vers $DEST/$nom"
   if tar -czf "$DEST/$nom.part" -C "$SOURCE" \
-      --exclude='beta-nas/ollama' --exclude='beta-nas/whisper' --exclude='beta-nas/piper' \
+      --exclude='beta-nas/ollama' --exclude='beta-nas/whisper' --exclude='beta-nas/piper' --exclude='beta-nas/immich' \
       --exclude='home-assistant_v2.db*' --exclude='*.db-wal' --exclude='*.db-shm' \
       --exclude='*/cache' --exclude='*/tmp' --exclude='*/__pycache__' \
       $(cd "$SOURCE" && ls -d env config beta-nas beta-tool 2>/dev/null) 2> /tmp/erreurs; then

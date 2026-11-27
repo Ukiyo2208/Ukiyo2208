@@ -65,6 +65,12 @@
   .chiffre { background: rgba(255,255,255,.04); border-radius: 14px; padding: 12px; }
   .chiffre b { display: block; font-size: 26px; background: var(--degrade); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .chiffre span { color: var(--doux); font-size: 12px; }
+  .carte-outils { grid-column: 1 / -1; }
+  .outils { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+  .outils a { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; border-radius: 14px; text-decoration: none;
+    color: inherit; background: rgba(255, 255, 255, .04); border: 1px solid rgba(110, 150, 255, .16); font-size: 13px; text-align: center; transition: background .15s; }
+  .outils a:hover { background: rgba(47, 134, 255, .16); }
+  .outils a span { font-size: 22px; line-height: 1; }
   .barre-tri { height: 8px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; margin-bottom: 10px; }
   .barre-tri i { display: block; height: 100%; background: var(--degrade); transition: width .6s; }
   .ligne-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -171,6 +177,10 @@
         <div class="ligne-actions" style="margin-top:6px">
           <a class="bouton secondaire" href="/tableau">Tableau de bord détaillé</a>
         </div>
+      </div>
+      <div class="carte carte-outils">
+        <h2>Outils (Bêta Tool)</h2>
+        <div class="outils" id="outils"></div>
       </div>
     </div>
   </section>
@@ -300,6 +310,20 @@
       $("tri").innerHTML = `<p class="doux">Le tri des documents n'est pas installé ou ne répond pas.</p>`;
     }
   }
+
+  // ---------------------------------------------------------------- Raccourcis vers Bêta Tool (et Immich)
+  const OUTILS = [["🗂️", "Paperasse", "paperasse"], ["📄", "Papiers du NAS", "paperasse/nas"], ["⬇️", "Téléchargeur", "telecharger"],
+    ["📦", "Colis", "colis"], ["📅", "Agenda", "agenda"], ["✅", "Tâches", "taches"], ["💶", "Budget", "budget"], ["❤️", "Santé", "sante"],
+    ["☀️", "Ma journée", "journee"], ["📁", "Fichiers", "fichiers"], ["🔄", "Convertir", "convertir"], ["📝", "Notes", "notes"],
+    ["✉️", "Mails", "mails"], ["🛒", "Recettes", "recettes"], ["📱", "Téléphones", "sauvegarde-tel"], ["⚙️", "Tous les outils", ""]];
+  async function afficherOutils() {
+    const base = `${location.protocol}//${location.hostname}:8080/`;
+    let liens = {};
+    try { liens = await api("/v1/liens"); } catch (_) {}
+    $("outils").innerHTML = (liens.immich ? `<a href="${location.protocol}//${location.hostname}:2283/"><span>🖼️</span>Photos (Immich)</a>` : "")
+      + OUTILS.map(([ico, nom, page]) => `<a href="${base}#/${page}"><span>${ico}</span>${e(nom)}</a>`).join("");
+  }
+  afficherOutils();
 
   // ---------------------------------------------------------------- Discussions
   const SUGGESTIONS = {

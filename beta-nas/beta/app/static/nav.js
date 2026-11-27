@@ -1,6 +1,6 @@
 /* Barre commune du site de Bêta (http://IP_DU_NAS:8800), sur chaque page :
    - les onglets Bêta IA (/) · Domotique (/home/) · Papiers du NAS (Paperasse de Bêta Tool) · Bêta Tool (port 8080) ;
-   - le fond d'écran « Japon » (static/fonds/), le même partout, avec une teinte par partie : il suit l'heure
+   - le fond d'écran « Japon » (static/fonds/), le même partout, rendu comme dans Bêta Tool : il suit l'heure
      (jour, coucher de soleil, nuit) et la saison (cerisiers, été et lucioles, érables, neige).
      ?fond=nuit garde la nuit de printemps sur cet appareil, ?fond=auto revient au fond qui change ;
    - l'écran de veille (static/veille.js, activé avec ?veille=1). */
@@ -14,13 +14,10 @@
     ["domotique", "/home/", "Domotique", ico('<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-6h6v6"/>')],
     ["tri", `${location.protocol}//${location.hostname}:8080/#/paperasse/nas`, 'Papiers<span class="long"> du NAS</span>',
       ico('<path d="M4 4h6l2 2h8v4H4z"/><path d="M4 10h16v10H4z"/><path d="M9 15h6"/>')],
-    ["tool", `${location.protocol}//${location.hostname}:8080/`, 'Bêta<span class="long"> Tool</span>',
+    ["tool", `${location.protocol}//${location.hostname}:8080/`, 'Outils<span class="long"> (Bêta Tool)</span>',
       ico('<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>')],
   ];
 
-  // Fond d'écran unifié, teinté selon la partie (et l'onglet de la Domotique)
-  const TEINTES = { ia: "123, 91, 255", tri: "47, 208, 192", maison: "47, 139, 255", musique: "255, 95, 162",
-    plex: "229, 160, 13", automatisations: "66, 226, 160", energie: "255, 176, 61" };
   const memoire = (k, v) => { try { return v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (_) { return null; } };
   const choixFond = new URLSearchParams(location.search).get("fond");
   if (choixFond) memoire("beta_fond", choixFond === "nuit" ? "nuit" : "auto");
@@ -33,14 +30,12 @@
     return `/static/fonds/japon-${saison}-${moment}.svg`;
   }
   window.betaFond = fondDuMoment;
+  // Exactement le rendu de Bêta Tool (thème sombre) : halo bleu, voile, scène du moment, fond #030816
   function fond() {
-    const vue = actif === "domotique" ? (location.hash.slice(1) || "maison") : actif;
-    const teinte = TEINTES[vue] || TEINTES.maison;
-    const image = fondDuMoment(), jour = image.endsWith("-jour.svg");
     document.body.style.setProperty("background",
-      `radial-gradient(1400px 700px at 50% -15%, rgba(${teinte}, .28), transparent 70%),` +
-      `linear-gradient(180deg, rgba(5, 8, 30, ${jour ? .45 : .35}), rgba(5, 8, 30, ${jour ? .78 : .7})),` +
-      `url("${image}") center bottom / cover fixed, #070b24`, "important");
+      "radial-gradient(1400px 700px at 50% -15%, rgba(47, 134, 255, .26), transparent 70%)," +
+      "linear-gradient(180deg, rgba(3, 8, 22, .35), rgba(3, 8, 22, .72))," +
+      `url("${fondDuMoment()}") center bottom / cover fixed, #030816`, "important");
   }
   fond();
   window.addEventListener("hashchange", fond);

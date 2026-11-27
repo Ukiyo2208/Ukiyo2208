@@ -27,11 +27,17 @@ function appareils(el) {
       <div class="tp-url"><code>${esc(d.url)}</code><button class="btn ghost small" id="tp-copy">${icon("copy")}Copier</button></div>
       <p class="hint">Identifiant : <b>${esc(d.user)}</b> · mot de passe : celui de Bêta Tool. ${d.https ? "" : `${icon("alert")} Adresse en http : à utiliser seulement à la maison, ou passe en https (Réglages › Accès sécurisé).`}</p></div>
     <div class="tp-grid">
-      <div class="card"><div class="card-title"><span class="tile">${icon("image")}</span>iPhone : photos et vidéos</div>
-        <ol class="ac-steps"><li>Installe <b>PhotoSync</b> (App Store).</li><li>Réglages › Configurer › <b>WebDAV</b> : serveur = l'adresse ci-dessus, identifiant et mot de passe Bêta Tool, dossier « iPhone ».</li>
-          <li>Active <b>Transfert automatique</b> (à l'arrivée à la maison ou à la recharge) : seules les nouvelles photos partent.</li></ol></div>
+      <div class="card"><div class="card-title"><span class="tile">${icon("image")}</span>Photos et vidéos : Immich (gratuit, conseillé)</div>
+        <ol class="ac-steps"><li>Installe l'appli <b>Immich</b> (App Store ou Play Store) : gratuite et open source, sans abonnement.</li>
+          <li>Adresse du serveur : <code>${esc(location.protocol + "//" + location.hostname + ":2283")}</code>, puis le compte créé sur cette page.</li>
+          <li>Active la <b>sauvegarde en arrière-plan</b> : toutes les photos et vidéos partent sur le NAS, comme avec Google Photos (visages, carte, recherche).</li></ol>
+        <p class="hint">Immich s'installe avec l'installateur de Bêta (question « photos du téléphone »).</p></div>
+      <div class="card"><div class="card-title"><span class="tile">${icon("image")}</span>iPhone sans Immich : gratuit aussi</div>
+        <ol class="ac-steps"><li><b>Appli UGREEN NAS</b> (gratuite) : Photos › sauvegarde automatique du téléphone vers le NAS.</li>
+          <li>Ou <b>Documents</b> (Readdle, gratuite) : Connexions › + › <b>WebDAV</b> avec l'adresse ci-dessus, puis envoie tes photos dans « iPhone ».</li>
+          <li>PhotoSync marche aussi, mais son transfert automatique est payant.</li></ol></div>
       <div class="card"><div class="card-title"><span class="tile vert">${icon("phone")}</span>Android : photos, documents, WhatsApp…</div>
-        <ol class="ac-steps"><li>Installe <b>FolderSync</b> (Play Store).</li><li>Comptes › + › <b>WebDAV</b> : adresse ci-dessus, identifiant et mot de passe Bêta Tool.</li>
+        <ol class="ac-steps"><li>Installe <b>FolderSync</b> (Play Store, version gratuite).</li><li>Comptes › + › <b>WebDAV</b> : adresse ci-dessus, identifiant et mot de passe Bêta Tool.</li>
           <li>Paires de dossiers › + : « DCIM/Camera » → « Android/Photos », synchro <b>vers le serveur</b>, planifiée (ex. chaque nuit en Wi-Fi). Pareil pour Documents, Download, WhatsApp/Media…</li></ol></div>
       <div class="card"><div class="card-title"><span class="tile violet">${icon("mail")}</span>Android : SMS et journal d'appels</div>
         <ol class="ac-steps"><li>Installe <b>SMS Backup &amp; Restore</b> (SyncTech) et programme une sauvegarde quotidienne des SMS et appels dans un dossier du téléphone.</li>

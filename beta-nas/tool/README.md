@@ -44,7 +44,7 @@ fichier n'est envoyé à un service externe.
 | **Entretien** | Voiture, chaudière, logement, jardin : entretiens réguliers proposés (vidange, contrôle technique, chaudière, ramonage…), au temps et au kilométrage, historique avec prix et factures, rappels avant chaque échéance. |
 | **Santé** | La santé de la famille, privée par compte : fiches (groupe sanguin, allergies, médecin), vaccins et rappels DTP, rendez-vous médicaux dans l'Agenda, ordonnances et remboursements (Paperasse, Budget), reste à charge. |
 | **Colis** | Numéros de suivi repérés tout seuls dans les mails, avancement mis à jour par les mails du transporteur, clé La Poste optionnelle pour le suivi en direct, et synchro avec l'appli **Parcel** (iPhone / Mac, Premium) : colis envoyés à Parcel, suivi et date de livraison prévue rapatriés, commandes Amazon comprises. |
-| **Téléphones** | Dossier WebDAV par compte pour sauvegarder photos, documents et SMS des téléphones (PhotoSync, FolderSync, SMS Backup & Restore), et lecture des SMS et appels sauvegardés. |
+| **Téléphones** | Dossier WebDAV par compte pour sauvegarder photos, documents et SMS des téléphones (Immich gratuit pour les photos, FolderSync, SMS Backup & Restore), et lecture des SMS et appels sauvegardés. |
 | **Traduction** | Textes, documents (Word, OpenDocument, PDF) et sous-titres traduits sur le NAS (Argos Translate), sans service en ligne. |
 | **VPN** | Accès à la maison depuis l'extérieur avec WireGuard (wg-easy) : appareils, QR codes, état des connexions. Optionnel. |
 

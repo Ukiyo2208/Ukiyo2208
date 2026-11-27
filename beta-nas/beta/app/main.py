@@ -1027,7 +1027,7 @@ async def _surveiller_en_boucle() -> None:
                 await _services(), _etat_sauvegarde())
             for a in nouvelles:
                 log.info("Alerte : %s : %s", a.titre, a.message)
-                notifications.envoyer(a.titre, a.message)
+                notifications.envoyer(a.titre, a.message, a.niveau)
         except asyncio.CancelledError:
             raise
         except Exception as e:  # Home Assistant arrêté, etc. : on réessaie à la minute suivante
@@ -1047,8 +1047,15 @@ async def tester_alertes():
     """Envoie une notification d'essai à chaque destination et dit ce qui a marché."""
     if not notifications.destinations():
         raise HTTPException(status_code=400, detail="Aucune destination : remplis NOTIFICATIONS dans .env")
-    resultats = await asyncio.to_thread(notifications.envoyer_maintenant, "🔔 Bêta", "Les alertes de la maison arrivent bien ici.")
-    return {notifications.type_de(d): r for d, r in resultats.items()}
+    resultats = await asyncio.to_thread(notifications.envoyer_maintenant, "🔔 Bêta", "Les alertes de la maison arrivent bien ici.",
+                                        "", None, "urgence")  # « urgence » : les destinations @urgent (SMS) sont testées aussi
+    return {notifications.masquer(d): r for d, r in resultats.items()}
+
+
+@app.get("/v1/liens", dependencies=[Depends(verifier_jeton)])
+async def liens():
+    """Ce qui est installé à côté de Bêta, pour les raccourcis de l'accueil."""
+    return {"immich": etat["settings"].immich}
 
 
 @app.get("/v1/sauvegarde", dependencies=[Depends(verifier_jeton)])

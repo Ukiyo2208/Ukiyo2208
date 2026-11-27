@@ -1,9 +1,9 @@
 """Bêta Tool dans Home Assistant :
 
 1. Notifications : ce que Bêta Tool annonce (colis expédié, en livraison, livré ; rappel d'un rendez-vous ;
-   tâches du jour ; échéance d'un papier ; résumé du matin ; papiers trouvés sur le NAS…) part aussi sur les
-   téléphones de l'appli Home Assistant (HA_NOTIFY : « ha:mobile_app_pixel_8 ha:mobile_app_ipad », comme
-   NOTIFICATIONS dans Bêta). Outils transmis : HA_OUTILS (par défaut colis, agenda, tâches, paperasse,
+   tâches du jour ; échéance d'un papier ; résumé du matin ; papiers trouvés sur le NAS…) part aussi vers les
+   destinations de NOTIFICATIONS, les mêmes que Bêta : appli Home Assistant, bot Discord, SMS, ntfy…
+   (voir notifications.py). Outils transmis : HA_OUTILS (par défaut colis, agenda, tâches, paperasse,
    journée, santé, abonnements).
 2. Capteurs (mis à jour toutes les 5 minutes, pour tes tableaux de bord et automatisations) :
    sensor.beta_tool_colis (colis en route), sensor.beta_tool_prochain_rendez_vous (date du prochain),
@@ -31,10 +31,9 @@ def actif():
     return bool(HA_URL and HA_TOKEN)
 
 
-def telephones():
-    """Services notify de Home Assistant, d'après HA_NOTIFY (« ha:mobile_app_xxx », séparés par espaces ou virgules)."""
-    brut = os.environ.get("HA_NOTIFY", "").replace(",", " ").split()
-    return [d[3:].removeprefix("notify.") for d in brut if d.startswith("ha:")]
+def destinations():
+    import notifications
+    return notifications.destinations(os.environ.get("NOTIFICATIONS", os.environ.get("HA_NOTIFY", "")))
 
 
 def _entetes():
@@ -45,28 +44,23 @@ def _entetes():
 
 def transmettre(entry, titre):
     """Appelé par activity.log : met la notification en file (envoi dans un fil à part, jamais bloquant)."""
-    if not actif() or entry.get("tool") not in OUTILS or not telephones():
+    if entry.get("tool") not in OUTILS or not destinations():
         return
     try:
-        _file.put_nowait((titre, entry.get("text") or "", entry.get("link") or "", entry.get("tool")))
+        _file.put_nowait((titre, entry.get("text") or "", entry.get("link") or "", "attention" if entry.get("kind") == "err" else "info"))
     except queue.Full:
         pass
 
 
 def _envoyeur():
+    import notifications
     base = os.environ.get("BETA_TOOL_LIEN", "").rstrip("/")
     while True:
-        titre, texte, lien, outil = _file.get()
-        donnees = {"tag": f"beta-tool-{outil}", "group": "Bêta Tool"}
-        if base:
-            url = base + "/" + (lien or "#/")
-            donnees.update(url=url, clickAction=url)
-        for service in telephones():
-            try:
-                requests.post(f"{HA_URL}/api/services/notify/{service}", headers=_entetes(), timeout=10,
-                              json={"title": titre, "message": texte[:500], "data": donnees})
-            except requests.RequestException as e:
-                print("homeassistant notify", service, e, flush=True)
+        titre, texte, lien, niveau = _file.get()
+        try:
+            notifications.envoyer_maintenant(titre, texte[:500], base + "/" + (lien or "#/") if base else "", destinations(), niveau)
+        except Exception as e:  # noqa: BLE001
+            print("notifications", e, flush=True)
 
 
 # --- 2. Capteurs -------------------------------------------------------------------------------------
@@ -163,7 +157,6 @@ def _capteurs_en_boucle():
 
 
 def start():
-    if not actif():
-        return
     threading.Thread(target=_envoyeur, daemon=True).start()
-    threading.Thread(target=_capteurs_en_boucle, daemon=True).start()
+    if actif():
+        threading.Thread(target=_capteurs_en_boucle, daemon=True).start()

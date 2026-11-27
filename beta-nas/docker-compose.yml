@@ -190,7 +190,8 @@ services:
       # Home Assistant : notifications (colis, rendez-vous, tâches, échéances…) et capteurs sensor.beta_tool_*
       - HA_URL=${HA_URL:-http://host.docker.internal:8123}
       - HA_TOKEN=${HA_TOKEN:-}
-      - HA_NOTIFY=${NOTIFICATIONS:-}
+      - NOTIFICATIONS=${NOTIFICATIONS:-} # mêmes destinations que Bêta (Home Assistant, bot Discord, SMS…)
+      - BETA_TOKEN=${BETA_TOKEN} # pour envoyer au bot Discord
       - HA_COMPTE=${BETA_TOOL_COMPTE:-}
       - BETA_TOOL_LIEN=${BETA_TOOL_LIEN:-}
     extra_hosts:
@@ -271,3 +272,86 @@ services:
       - ${BETA_TOOL_DONNEES:-/volume3/Docker/Beta-tool/data}:/source/beta-tool:ro
       - ${SAUVEGARDE_DOSSIER:-./data/sauvegardes}:/sauvegardes
     restart: unless-stopped
+
+  # Bot Discord de Bêta (COMPOSE_PROFILES=…,discord) : commandes /beta, /maison, /camera, /colis, /agenda, /courses,
+  # /energie, /telecharger, /envoyer… et les notifications dans un salon (« discord-bot » dans NOTIFICATIONS).
+  discord:
+    profiles: ["discord"]
+    build: ./discord
+    container_name: beta-discord
+    environment:
+      - TZ=${TZ:-Europe/Paris}
+      - DISCORD_TOKEN=${DISCORD_TOKEN:-}
+      - DISCORD_SALON=${DISCORD_SALON:-}
+      - DISCORD_UTILISATEURS=${DISCORD_UTILISATEURS:-}
+      - BETA_URL=http://beta:8800
+      - BETA_TOKEN=${BETA_TOKEN}
+      - BETA_TOOL_URL=http://beta-tool:8080
+      - BETA_TOOL_JETON=${BETA_TOOL_JETON:-}
+      - BETA_TOOL_LIEN=${BETA_TOOL_LIEN:-}
+    depends_on:
+      - beta
+    restart: unless-stopped
+
+  # Photos du téléphone, gratuit et open source (COMPOSE_PROFILES=…,photos) : Immich, comme Google Photos, chez toi.
+  # Appli « Immich » (iPhone et Android) : sauvegarde automatique en arrière-plan. Page : http://IP_DU_NAS:2283
+  immich-server:
+    profiles: ["photos"]
+    container_name: immich_server
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-v3.4.2}
+    volumes:
+      - ${IMMICH_PHOTOS:-./data/immich/photos}:/data
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=${TZ:-Europe/Paris}
+      - DB_HOSTNAME=immich-database
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${IMMICH_DB_MOT_DE_PASSE:-postgres}
+      - DB_DATABASE_NAME=immich
+      - REDIS_HOSTNAME=immich-redis
+    ports:
+      - "2283:2283"
+    depends_on:
+      - immich-redis
+      - immich-database
+    restart: unless-stopped
+    healthcheck:
+      disable: false
+
+  immich-machine-learning:
+    profiles: ["photos"]
+    container_name: immich_machine_learning
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-v3.4.2}
+    volumes:
+      - ./data/immich/modeles:/cache
+    environment:
+      - TZ=${TZ:-Europe/Paris}
+      - MACHINE_LEARNING_MODEL_REVISION=v2
+    restart: unless-stopped
+    healthcheck:
+      disable: false
+
+  immich-redis:
+    profiles: ["photos"]
+    container_name: immich_redis
+    image: docker.io/valkey/valkey:9@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
+    healthcheck:
+      test: redis-cli ping | grep -q PONG || exit 1
+    restart: unless-stopped
+
+  immich-database:
+    profiles: ["photos"]
+    container_name: immich_postgres
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    environment:
+      POSTGRES_PASSWORD: ${IMMICH_DB_MOT_DE_PASSE:-postgres}
+      POSTGRES_USER: postgres
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+      DB_STORAGE_TYPE: "HDD" # disques durs du NAS
+    volumes:
+      - ./data/immich/postgres:/var/lib/postgresql/data # disque local du NAS (pas de partage réseau)
+    shm_size: 128mb
+    restart: unless-stopped
+    healthcheck:
+      disable: false

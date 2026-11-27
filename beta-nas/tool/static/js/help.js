@@ -718,7 +718,7 @@ export const HELP = {
     lead: "Les photos, documents et SMS de vos téléphones sauvegardés sur le NAS, sans cloud.",
     steps: [
       ["Copie ton adresse", "Chaque compte a son dossier WebDAV ; on s'y connecte avec l'identifiant et le mot de passe Bêta Tool."],
-      ["Configure une appli", "iPhone : PhotoSync (transfert automatique des photos). Android : FolderSync (photos, documents, WhatsApp…)."],
+      ["Configure une appli", "Photos : Immich (gratuit, iPhone et Android, sauvegarde automatique). Android : FolderSync gratuit (photos, documents, WhatsApp…). iPhone : appli UGREEN NAS ou Documents (gratuites)."],
       ["Relis tes SMS", "Android : SMS Backup & Restore sauvegarde SMS et appels ; une fois envoyés dans ton dossier, ils se relisent dans les onglets SMS et Appels."],
     ],
     tips: ["Les fichiers sont aussi dans Fichiers › Téléphones.", "Chacun ne voit que son propre dossier."],

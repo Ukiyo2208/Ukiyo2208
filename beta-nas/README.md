@@ -300,6 +300,18 @@ d'un papier ; papiers trouvés sur le NAS ; résumé du matin) part aussi sur le
 `sensor.beta_tool_taches`, `sensor.beta_tool_echeances`, `sensor.beta_tool_poubelles`,
 `sensor.beta_tool_papiers_a_ranger` (compte `BETA_TOOL_COMPTE`, sinon le premier administrateur).
 
+## Bot Discord (conteneur `beta-discord`, profil `discord`)
+
+`discord/` : commandes slash (maison, caméras, Bêta IA, énergie, alertes, agenda, courses, colis, papiers,
+téléchargements, envoi de fichiers) par les API de Bêta et de Bêta Tool, et `POST /notifier` (port 8803, réseau
+interne, jeton `BETA_TOKEN`) pour les notifications (`discord-bot` dans `NOTIFICATIONS`). Accès : `DISCORD_UTILISATEURS`.
+
+## Photos : Immich (profil `photos`)
+
+Immich v3.4.2 (serveur, apprentissage automatique, Valkey, Postgres) : `http://IP_DU_NAS:2283`. Photos dans
+`IMMICH_PHOTOS`, base dans `data/immich/postgres` (pas dans la sauvegarde de la nuit : Immich sauvegarde sa base
+lui-même dans `IMMICH_PHOTOS/backups`).
+
 ## Extension du navigateur
 
 Après un téléchargement (PDF, relevé, photo…), elle propose de l'envoyer sur le NAS (rangé dans le bon outil).

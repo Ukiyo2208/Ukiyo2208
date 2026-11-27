@@ -60,6 +60,25 @@ env_ecrire() { # env_ecrire FICHIER CLE VALEUR
 
 env_si_vide() { [ -n "$(env_lire "$1" "$2")" ] || env_ecrire "$1" "$2" "$3"; }
 
+demander_une_fois() { # comme demander, mais aussi pendant une mise à jour automatique (une seule fois : MEMO dans .env)
+  local var="$1" memo="$2"; shift 2
+  if [ -n "$(env_lire "$ENV_BETA" "$memo")" ] || [ ! -r /dev/tty ]; then return; fi
+  local auto="$AUTO"; AUTO=0; demander "$var" "$@"; AUTO="$auto"
+  MEMOS="${MEMOS:-} $memo"
+}
+profil_ajouter() { # profil_ajouter nom : ajoute un profil Docker Compose (homeassistant, photos, discord…)
+  local p; p=$(env_lire "$ENV_BETA" COMPOSE_PROFILES)
+  case ",$p," in *",$1,"*) ;; *) env_ecrire "$ENV_BETA" COMPOSE_PROFILES "${p:+$p,}$1" ;; esac
+}
+profil_retirer() {
+  local p; p=$(env_lire "$ENV_BETA" COMPOSE_PROFILES)
+  env_ecrire "$ENV_BETA" COMPOSE_PROFILES "$(echo ",$p," | sed "s/,$1,/,/g; s/^,//; s/,$//")"
+}
+a_profil() { case ",$(env_lire "$ENV_BETA" COMPOSE_PROFILES)," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
+notif_ajouter() { # notif_ajouter destination : ajoute une destination aux NOTIFICATIONS si elle n'y est pas
+  local n; n=$(env_lire "$ENV_BETA" NOTIFICATIONS)
+  case " $n " in *" $1 "*) return 1 ;; *) env_ecrire "$ENV_BETA" NOTIFICATIONS "${n:+$n }$1" ;; esac
+}
 aleatoire() { openssl rand -hex "${1:-32}" 2>/dev/null || head -c "${1:-32}" /dev/urandom | od -An -tx1 | tr -d ' \n'; }
 
 normaliser() { # « Léa Martin » -> « lea-martin » (fonctionne quelle que soit la langue du système)
@@ -148,6 +167,16 @@ echo "  Discussion et automatisations : IA cloud, ou modèle puissant sur un PC 
 demander CLE_ANTHROPIC "Clé de l'IA cloud Claude (vide = aucune)" "" secret
 demander PUISSANT_URL "Adresse d'Ollama sur un PC puissant, ex http://192.168.1.50:11434 (vide = aucun)" ""
 [ -n "$PUISSANT_URL" ] && demander PUISSANT_MODELE "Modèle de ce PC" "qwen3.5:27b"
+# Options gratuites en plus (posées une seule fois, même pendant une mise à jour)
+PHOTOS="" DISCORD_JETON="" DISCORD_ID="" DISCORD_SALON_ID="" SMS_FREE=""
+demander_une_fois PHOTOS DEMANDE_PHOTOS "Installer Immich : sauvegarde gratuite des photos du téléphone, comme Google Photos ? (o/n)" "o"
+PHOTOS=$(echo "$PHOTOS" | cut -c1 | tr '[:upper:]' '[:lower:]')
+demander_une_fois DISCORD_JETON DEMANDE_DISCORD "Jeton d'un bot Discord pour piloter Bêta et recevoir les alertes (vide = non ; voir INSTALLATION.md)" "" secret
+if [ -n "$DISCORD_JETON" ]; then
+  demander DISCORD_ID "Ton identifiant Discord (Discord › Paramètres › Avancés › Mode développeur, puis clic droit sur ton nom › Copier l'identifiant)" ""
+  demander DISCORD_SALON_ID "Identifiant du salon des notifications (clic droit sur le salon › Copier l'identifiant ; vide = en message privé)" ""
+fi
+demander_une_fois SMS_FREE DEMANDE_SMS "SMS gratuits des alertes urgentes : chez Free Mobile, « identifiant:clé » de l'option Notifications par SMS (vide = non)" "" secret
 PRIX_KWH=""
 if [ -z "$(env_lire "$ENV_BETA" PRIX_KWH)" ]; then
   demander PRIX_KWH "Prix du kWh TTC sur ta facture d'électricité, en euros (page Énergie)" "0.2516"
@@ -171,7 +200,7 @@ env_si_vide "$ENV_BETA" NAS_NOM "$(hostname 2>/dev/null || echo NAS)"
 [ -n "$CLE_ANTHROPIC" ] && env_ecrire "$ENV_BETA" ANTHROPIC_API_KEY "$CLE_ANTHROPIC"
 if [ -n "${HA_EXISTANT:-}" ]; then
   env_ecrire "$ENV_BETA" HA_URL "${HA_EXISTANT%/}"
-  env_ecrire "$ENV_BETA" COMPOSE_PROFILES ""
+  profil_retirer homeassistant
 elif ! grep -q '^COMPOSE_PROFILES=' "$ENV_BETA"; then
   # Installation d'avant cette option : on garde le Home Assistant du NAS s'il était utilisé
   case "$(env_lire "$ENV_BETA" HA_URL)" in
@@ -281,6 +310,29 @@ for c in beta-tool beta-work vaultwarden wg-easy; do
   fi
 done
 
+# Options : photos (Immich), bot Discord, SMS Free Mobile
+for m in ${MEMOS:-}; do env_ecrire "$ENV_BETA" "$m" fait; done
+if [ "$PHOTOS" = o ]; then
+  profil_ajouter photos
+  env_si_vide "$ENV_BETA" IMMICH_DB_MOT_DE_PASSE "$(aleatoire 16)"
+  if [ -z "$(env_lire "$ENV_BETA" IMMICH_PHOTOS)" ]; then
+    if [ -d "$VOLUME/Photos" ]; then env_ecrire "$ENV_BETA" IMMICH_PHOTOS "$VOLUME/Photos/Immich"
+    else env_ecrire "$ENV_BETA" IMMICH_PHOTOS "$VOLUME/Immich"; fi
+  fi
+  mkdir -p "$(env_lire "$ENV_BETA" IMMICH_PHOTOS)" "$DEST/beta-nas/data/immich/postgres"
+  ok "Immich : photos du téléphone dans $(env_lire "$ENV_BETA" IMMICH_PHOTOS)"
+fi
+if [ -n "$DISCORD_JETON" ]; then
+  env_ecrire "$ENV_BETA" DISCORD_TOKEN "$DISCORD_JETON"
+  [ -n "$DISCORD_ID" ] && env_ecrire "$ENV_BETA" DISCORD_UTILISATEURS "${DISCORD_ID//[^0-9]/}=$PRENOM"
+  [ -n "$DISCORD_SALON_ID" ] && env_ecrire "$ENV_BETA" DISCORD_SALON "${DISCORD_SALON_ID//[^0-9]/}"
+fi
+if [ -n "$(env_lire "$ENV_BETA" DISCORD_TOKEN)" ]; then
+  profil_ajouter discord
+  notif_ajouter discord-bot || true
+fi
+[ -n "$SMS_FREE" ] && notif_ajouter "freemobile:${SMS_FREE// /}@urgent" || true
+
 # Énergie et lien ouvert en touchant une alerte
 [ -n "$PRIX_KWH" ] && env_ecrire "$ENV_BETA" PRIX_KWH "${PRIX_KWH/,/.}"
 env_ecrire "$ENV_BETA" BETA_LIEN "http://$(ip_nas):8800/home/"
@@ -306,7 +358,7 @@ etape "Démarrage de Bêta (première fois : 5 à 15 minutes)"
 cd "$DEST/beta-nas"
 mkdir -p data
 # Ton propre Home Assistant est utilisé : celui du NAS est arrêté (ses données restent dans data/)
-if [ -z "$(env_lire "$ENV_BETA" COMPOSE_PROFILES)" ] && docker inspect homeassistant >/dev/null 2>&1; then
+if ! a_profil homeassistant && docker inspect homeassistant >/dev/null 2>&1; then
   docker stop homeassistant >/dev/null 2>&1; docker rm homeassistant >/dev/null 2>&1
   ok "Home Assistant du NAS arrêté : Bêta utilise $(env_lire "$ENV_BETA" HA_URL)"
 fi
@@ -333,7 +385,7 @@ if [ -z "$(env_lire "$ENV_BETA" HA_TOKEN)" ]; then
         --url "$HA_INTERNE" --nom "$NOM_AFFICHE" \
         --utilisateur "$HA_UTILISATEUR" --mot-de-passe "$HA_MDP" | tail -n1) && [ -n "$jeton" ]; then
     env_ecrire "$ENV_BETA" HA_TOKEN "$jeton"
-    "${DC[@]}" up -d beta presence trieur >/dev/null 2>&1
+    "${DC[@]}" up -d >/dev/null 2>&1
     ok "Compte et jeton Home Assistant prêts"
   else
     HA_ECHEC=1
@@ -346,26 +398,26 @@ fi
 
 etape "Alertes sur le téléphone et Bêta Tool"
 REDEMARRER=0
-if [ -z "$(env_lire "$ENV_BETA" NOTIFICATIONS)" ] && [ -n "$(env_lire "$ENV_BETA" HA_TOKEN)" ]; then
+if ! env_lire "$ENV_BETA" NOTIFICATIONS | grep -q "ha:" && [ -n "$(env_lire "$ENV_BETA" HA_TOKEN)" ]; then
   # Les téléphones qui ont l'appli Home Assistant reçoivent les alertes (et les notifications du tri)
   TELEPHONES=$(docker exec beta python -m app.installation telephones --url "$(env_lire "$ENV_BETA" HA_URL)" \
     --jeton "$(env_lire "$ENV_BETA" HA_TOKEN)" 2>/dev/null | tail -n1 || true)
   if [ -n "$TELEPHONES" ]; then
-    env_ecrire "$ENV_BETA" NOTIFICATIONS "$TELEPHONES"; REDEMARRER=1
+    for t in $TELEPHONES; do notif_ajouter "$t" || true; done; REDEMARRER=1
     ok "Alertes envoyées sur : $(echo "$TELEPHONES" | sed 's/ha:mobile_app_//g; s/ /, /g')"
   else
     avertir "Aucun téléphone avec l'appli Home Assistant : installe l'appli « Home Assistant » sur ton téléphone,"
     avertir "connecte-la à ta maison, puis relance l'installateur (ou remplis NOTIFICATIONS dans .env)."
   fi
-elif [ -n "$(env_lire "$ENV_BETA" NOTIFICATIONS)" ]; then
-  ok "Alertes : $(env_lire "$ENV_BETA" NOTIFICATIONS | sed 's#https\?://[^ ]*#(lien)#g')"
 fi
-if [ -z "$(env_lire "$ENV_BETA" BETA_TOOL_JETON)" ]; then
-  # Jeton « Commandes vocales et widget » créé dans Bêta Tool (visible et révocable dans Réglages → API)
+[ -n "$(env_lire "$ENV_BETA" NOTIFICATIONS)" ] && ok "Alertes envoyées vers : $(env_lire "$ENV_BETA" NOTIFICATIONS \
+  | sed -E 's#https?://[^ ]*#(webhook)#g; s#freemobile:[^ @]*#SMS Free Mobile#g; s#sms:[^ @]*#SMS Android#g; s#ha:mobile_app_##g; s# #, #g')"
+if [ -z "$(env_lire "$ENV_BETA" BETA_TOOL_JETON)" ] || [ "$(env_lire "$ENV_BETA" BETA_TOOL_JETON_DROITS)" != "assistant,extension" ]; then
+  # Jeton « Commandes vocales et widget » + « Extension » créé dans Bêta Tool (visible et révocable dans Réglages → API)
   attendre "Bêta Tool" 300 docker exec beta-tool python -c "import api" >/dev/null 2>&1 || true
   JETON_TOOL=$(docker exec beta-tool python scripts/jeton_beta.py "$PRENOM" 2>/dev/null | tail -n1 || true)
   if [ "${JETON_TOOL#bt_}" != "$JETON_TOOL" ]; then
-    env_ecrire "$ENV_BETA" BETA_TOOL_JETON "$JETON_TOOL"; REDEMARRER=1
+    env_ecrire "$ENV_BETA" BETA_TOOL_JETON "$JETON_TOOL"; env_ecrire "$ENV_BETA" BETA_TOOL_JETON_DROITS "assistant,extension"; REDEMARRER=1
     ok "Bêta relié à Bêta Tool (résumé du matin, courses, agenda et colis à la voix)"
   else
     avertir "Bêta Tool pas encore prêt : relance l'installateur plus tard pour relier Bêta et Bêta Tool"
@@ -374,7 +426,7 @@ else
   ok "Bêta est relié à Bêta Tool"
 fi
 if [ "$REDEMARRER" = 1 ]; then
-  "${DC[@]}" up -d beta trieur >/dev/null 2>&1
+  "${DC[@]}" up -d >/dev/null 2>&1  # relit .env (jetons, destinations) ; les profils actifs seulement
   if [ -n "$(env_lire "$ENV_BETA" NOTIFICATIONS)" ] \
      && attendre "Bêta" 90 curl -sf --noproxy '*' -o /dev/null http://127.0.0.1:8800/sante \
      && curl -sf --noproxy '*' -X POST -H "Authorization: Bearer $BETA_TOKEN" http://127.0.0.1:8800/v1/alertes/test >/dev/null; then
@@ -404,6 +456,8 @@ EOF
 [ "$TRI" = o ] && echo "  ${G}Papiers du NAS${N}    http://$IP:8080/#/paperasse/nas  (Paperasse : les papiers trouvés, à ranger d'un clic)"
 echo "  ${G}Bêta home${N}         http://$IP:8800/home/  (maison, musique, Plex ; Alexa et HomeKit : boutons en haut)"
 echo "  ${G}Bêta Tool${N}         http://$IP:8080        (ta boîte à outils : onglet « Bêta Tool » de la barre)"
+a_profil photos && echo "  ${G}Photos (Immich)${N}   http://$IP:2283        (crée ton compte, puis appli « Immich » sur le téléphone : sauvegarde automatique)"
+a_profil discord && echo "  ${G}Bot Discord${N}       tape /aide dans ton serveur Discord"
 echo "  ${G}Écran de veille${N}   http://$IP:8800/home/?veille=1&piece=$PIECE  (à ouvrir une fois sur l'écran de la tablette)"
 if [ "${HA_MDP_GENERE:-0}" = 1 ] && [ -z "${HA_ECHEC:-}" ]; then
   echo

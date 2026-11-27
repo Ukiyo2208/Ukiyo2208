@@ -119,6 +119,7 @@ class Settings:
     beta_tool_jeton: str = ""
     # Sauvegardes (conteneur beta-sauvegarde) : dossier lu pour l'état et les alertes
     sauvegardes: str = "/sauvegardes"
+    immich: bool = False  # photos du téléphone sauvegardées par Immich (port 2283), lien sur l'accueil
 
     # Présence (service beta-presence + caméras)
     presence_url: str = "http://presence:8801"
@@ -183,6 +184,7 @@ def charger(chemin_config: str | None = None) -> Settings:
         beta_tool_url=_env("BETA_TOOL_URL", Settings.beta_tool_url).rstrip("/"),
         beta_tool_jeton=_env("BETA_TOOL_JETON"),
         sauvegardes=_env("BETA_SAUVEGARDES", Settings.sauvegardes),
+        immich="photos" in _env("COMPOSE_PROFILES").replace(" ", "").split(","),
     )
 
     chemin = Path(chemin_config or _env("BETA_CONFIG", "/config/config.yaml"))
